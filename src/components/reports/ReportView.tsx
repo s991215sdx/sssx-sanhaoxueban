@@ -380,7 +380,7 @@ function RoadmapSection({
     const blocks = buildAnswerBlocks(raw, kinds);
     if (blocks.length === 0) return null;
     return (
-      <details className="group mt-1.5 overflow-hidden rounded-lg border border-border/70 bg-white/60">
+      <details className="group mt-1.5 overflow-hidden rounded-lg border border-border/70 bg-white/60 print:hidden">
         <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
           <span>{title}</span>
           <ChevronDown size={13} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
@@ -997,7 +997,7 @@ function MbtiDetail({ result, onGoCombined }: { result: MbtiResult; onGoCombined
   );
 }
 
-function DiscDetail({ primary, dims, onGoCombined }: { primary: "D" | "I" | "S" | "C"; dims: Record<"D" | "I" | "S" | "C", number>; onGoCombined: () => void }) {
+function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "I" | "S" | "C"; dims: Record<"D" | "I" | "S" | "C", number>; version?: 2; onGoCombined: () => void }) {
   const report = DISC_REPORTS[primary];
   const combo = getDiscCombo(dims);
   const blend = buildDiscComboBlend(combo);
@@ -1005,13 +1005,21 @@ function DiscDetail({ primary, dims, onGoCombined }: { primary: "D" | "I" | "S" 
     <div className="space-y-4">
       {/* 主型头卡 */}
       <div className="paper-card p-5">
-        <div className="flex items-baseline gap-3">
+        <div className="flex flex-wrap items-baseline gap-3">
           <span className="text-3xl font-bold text-olive">{combo.join("")} 型</span>
           <span className="text-lg font-bold text-olive">{report.name}</span>
           {combo.length > 1 && (
             <span className="text-[12.5px] text-olive-mute">
               {combo.map((k) => DISC_ANIMAL[k]).join(" + ")}
             </span>
+          )}
+          {version !== 2 && (
+            <a
+              href="/assessments?start=disc"
+              className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60"
+            >
+              旧版题目 · 已升级为更准的「最像/最不像」版，点这里重测 →
+            </a>
           )}
         </div>
         <p className="mt-1.5 text-[14px] text-olive-soft">
@@ -1046,7 +1054,7 @@ function DiscDetail({ primary, dims, onGoCombined }: { primary: "D" | "I" | "S" 
         </div>
         {/* 四因子倾向度曲线（与综合报告共用组件） */}
         <div className="mt-4 -mx-5">
-          <DiscTendencyChart dims={dims} />
+          <DiscTendencyChart dims={dims} max={version === 2 ? 24 : 12} />
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {report.keywords.map((k) => (
@@ -1165,7 +1173,7 @@ function DiscParentTab({
   if (parents.length === 0) {
     return (
       <MissingCard
-        text="家长 DISC 还没有测评。它由家长各自独立填写（24 道二选一，约 4 分钟），可多位家长各测一次——对照孩子的行为风格，看沟通卡点出在哪里。"
+        text="家长 DISC 还没有测评。它由家长各自独立填写（24 组「最像我 / 最不像我」，约 4 分钟），可多位家长各测一次——对照孩子的行为风格，看沟通卡点出在哪里。"
         actionText="还未测评，开始测评 →"
         to="/assessments?start=discparent"
       />
@@ -1180,12 +1188,20 @@ function DiscParentTab({
         const style = PARENT_DISC_STYLE[p.result.primary];
         return (
           <div key={`${p.label}-${i}`} className="paper-card p-5">
-            <div className="flex items-baseline gap-3">
+            <div className="flex flex-wrap items-baseline gap-3">
               <span className="text-lg font-bold text-olive">{p.label}</span>
               <span className="text-[14px] font-bold text-olive">
                 {combo.join("")} 型{report ? ` · ${report.name}` : ""}
               </span>
               <span className="text-[12px] text-olive-mute">{combo.map((k) => DISC_ANIMAL[k]).join(" + ")}</span>
+              {p.result.version !== 2 && (
+                <a
+                  href="/assessments?start=discparent"
+                  className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60"
+                >
+                  旧版题目 · 建议重测 →
+                </a>
+              )}
             </div>
             <div className="mt-3 space-y-1.5">
               {(["D", "I", "S", "C"] as const).map((k) => (
@@ -1195,7 +1211,7 @@ function DiscParentTab({
                     <div
                       className="h-full rounded-full"
                       style={{
-                        width: `${Math.min(100, (p.result.dims[k] / 12) * 100)}%`,
+                        width: `${Math.min(100, (p.result.dims[k] / (p.result.version === 2 ? 24 : 12)) * 100)}%`,
                         background: combo.includes(k) ? "#c7a23a" : "#7cb83c",
                         opacity: combo.includes(k) ? 1 : 0.5,
                       }}
@@ -1341,10 +1357,10 @@ const DISC_COLOR: Record<"D" | "I" | "S" | "C", string> = {
   S: "#4e9e5f",
   C: "#3d8ec4",
 };
-function DiscTendencyChart({ dims }: { dims: Record<"D" | "I" | "S" | "C", number> }) {
+function DiscTendencyChart({ dims, max = 12 }: { dims: Record<"D" | "I" | "S" | "C", number>; max?: number }) {
   const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
   const combo = getDiscCombo(dims);
-  const MAX = 12; // 单因子满分 12（24 题 ÷ 4 因子 × 2）
+  const MAX = max; // 单因子满分：V1 旧版 12（24 题 ÷ 4 因子 × 2）；V2 新版 24
   return (
     <div className="paper-card p-5">
       <h3 className="font-bold text-olive">行为之镜 · DISC 四因子倾向</h3>
@@ -1601,7 +1617,8 @@ export default function ReportView({
   /** V3.7 判定：有 e3 但不是 V3.7 结果 → 旧版数据，提示重测。 */
   const e3v37 = isE3V37Result(data?.e3) ? data.e3 : null;
   const e3Legacy = !!data?.e3 && !isE3V37Result(data.e3);
-  const [combinedView, setCombinedView] = useState<"full" | "lite">("full");
+  // 支持 ?view=lite 直达简版（冒烟/深链）
+  const [combinedView, setCombinedView] = useState<"full" | "lite">(params.get("view") === "lite" ? "lite" : "full");
   /* 兜底：用户直接 Ctrl+P / 系统菜单打印时，也自动展开所有折叠块，保证 PDF 完整 */
   useEffect(() => {
     let closed: Element[] = [];
@@ -2075,7 +2092,7 @@ export default function ReportView({
         (!disc ? (
           <MissingCard text="还没有 DISC 测评结果，24 道二选一，约 4 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=disc" />
         ) : (
-          <DiscDetail primary={disc.primary} dims={disc.dims} onGoCombined={goCombined} />
+          <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
         ))}
 
       {tab === "multi5" &&
@@ -2204,16 +2221,20 @@ export default function ReportView({
                   onReveal={reveal}
                 />
               )}
-              {/* 一页纸附录：三阶九能逐题得分表 + 全部测评答题明细，默认折叠放最后 */}
+              {/* 一页纸附录：三阶九能逐题得分表 + 全部测评答题明细，默认折叠放最后（打印时隐藏） */}
               {e3v37 && (
-                <Fold title="附录 · 三阶九能观察点得分表（逐题得分，点击展开）">
-                  <AbilityScoreTable e3={e3v37} ratings={e3Ratings} />
-                </Fold>
+                <div className="print:hidden">
+                  <Fold title="附录 · 三阶九能观察点得分表（逐题得分，点击展开）">
+                    <AbilityScoreTable e3={e3v37} ratings={e3Ratings} />
+                  </Fold>
+                </div>
               )}
               {data?.raw && data.raw.length > 0 && (
-                <Fold title="附录 · 全部测评答题明细（点击展开）">
-                  <AnswerDetails raw={data.raw} />
-                </Fold>
+                <div className="print:hidden">
+                  <Fold title="附录 · 全部测评答题明细（点击展开）">
+                    <AnswerDetails raw={data.raw} />
+                  </Fold>
+                </div>
               )}
               </>
             ) : (
@@ -2316,12 +2337,12 @@ export default function ReportView({
               const isAppendix = s.title.includes("附录");
               const detailNode = isAppendix
                 ? e3v37
-                  ? <AbilityScoreTable e3={e3v37} ratings={e3Ratings} />
+                  ? <div className="print:hidden"><AbilityScoreTable e3={e3v37} ratings={e3Ratings} /></div>
                   : undefined
                 : undefined;
               const answersNode =
                 !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec)
-                  ? <AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} />
+                  ? <div className="print:hidden"><AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} /></div>
                   : undefined;
               return <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} />;
             });

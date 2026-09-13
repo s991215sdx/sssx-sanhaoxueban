@@ -6,7 +6,6 @@ import { assessmentResults, studentProfile, type StudentProfile } from "@db/sche
 import {
   MBTI_QUESTIONS,
   DISC_QUESTIONS,
-  DISC_PARENT_QUESTIONS,
   E3V37_QUESTIONS,
   E3V37_STAGE_LABEL,
   E3V37_MOTIVATION_OPTIONS,
@@ -22,6 +21,10 @@ import {
   E3V37P_MIRROR_QUESTIONS,
   scoreMbti,
   scoreDisc,
+  scoreDiscV2,
+  DISC_V2_GROUPS,
+  DISC_PARENT_V2_GROUPS,
+  DISC_V2_GROUP_COUNT,
   scoreE3V37,
   scoreE3V37Parent,
   e3StageOf,
@@ -79,8 +82,16 @@ type E3V37ParentQuestionSet = {
   mirrorQuestions: typeof E3V37P_MIRROR_QUESTIONS;
 };
 
-/** questions 接口返回：家长版 DISC（复用学生 DISC 24 题）。 */
-type DiscParentQuestionSet = { kind: "discparent"; questions: typeof DISC_PARENT_QUESTIONS };
+/** questions 接口返回：DISC V2 强迫选择题包（24 组四词）。 */
+type DiscParentQuestionSet = { kind: "discparent"; groups: typeof DISC_PARENT_V2_GROUPS };
+
+/** DISC V2 作答：most/least 各 24 个词下标（0-3），且同组最像≠最不像。 */
+const discV2AnswersSchema = z
+  .object({
+    most: z.array(z.number().int().min(0).max(3)).length(DISC_V2_GROUP_COUNT),
+    least: z.array(z.number().int().min(0).max(3)).length(DISC_V2_GROUP_COUNT),
+  })
+  .refine((a) => a.most.every((m, i) => m !== a.least[i]), { message: "同一组里最像与最不像不能是同一个词" });
 
 /** questions 接口返回：心理健康 V2（PHQ-9 + GAD-7，两段结构 + 引导语 + 四级选项）。 */
 type MentalQuestionSet = {
@@ -92,7 +103,7 @@ type MentalQuestionSet = {
 
 type AssessmentQuestions =
   | { kind: "mbti"; questions: typeof MBTI_QUESTIONS }
-  | { kind: "disc"; questions: typeof DISC_QUESTIONS }
+  | { kind: "disc"; groups: typeof DISC_V2_GROUPS }
   | E3V37QuestionSet
   | E3V37ParentQuestionSet
   | DiscParentQuestionSet
@@ -222,10 +233,11 @@ export const assessmentRouter = createRouter({
         case "mbti":
           return { kind: "mbti", questions: MBTI_QUESTIONS };
         case "disc":
-          return { kind: "disc", questions: DISC_QUESTIONS };
+          // V2 强迫选择：24 组四词（最像/最不像）
+          return { kind: "disc", groups: DISC_V2_GROUPS };
         case "discparent":
-          // 家长版 DISC：家庭/亲子场景 24 题（aType/bType 与学生版逐题一致，计分直接复用 scoreDisc）
-          return { kind: "discparent", questions: DISC_PARENT_QUESTIONS };
+          // 家长版 V2：家庭/亲子场景词组（维度映射与学生版逐组一致，计分复用 scoreDiscV2）
+          return { kind: "discparent", groups: DISC_PARENT_V2_GROUPS };
         case "e3": {
           // V3.7：按学生学段下发对应版本（小学/初中/高中），默认初中版
           const profile = await getProfile(ctx.user.id);
@@ -289,7 +301,8 @@ export const assessmentRouter = createRouter({
         }),
         z.object({
           kind: z.literal("disc"),
-          answers: z.array(z.union([z.literal(0), z.literal(1)])).length(DISC_QUESTIONS.length),
+          // V2 强迫选择作答；兼容旧版二选一（升级期间在途会话）
+          answers: z.union([z.array(z.union([z.literal(0), z.literal(1)])).length(DISC_QUESTIONS.length), discV2AnswersSchema]),
         }),
         z.object({
           kind: z.literal("e3"),
@@ -329,7 +342,7 @@ export const assessmentRouter = createRouter({
           answers: z.object({
             /** 填写人与孩子的关系标签（如「父亲」「母亲」）。 */
             label: z.string().min(1).max(12),
-            answers: z.array(z.union([z.literal(0), z.literal(1)])).length(DISC_QUESTIONS.length),
+            answers: z.union([z.array(z.union([z.literal(0), z.literal(1)])).length(DISC_QUESTIONS.length), discV2AnswersSchema]),
           }),
         }),
         z.object({
@@ -378,14 +391,15 @@ export const assessmentRouter = createRouter({
         const result: E3V37ParentResult = scoreE3V37Parent(input.answers, stage, ratings);
         outcome = { kind: "e3parent", result };
       } else if (input.kind === "discparent") {
-        // 家长版 DISC：计分同学生版；存整条 {label, answers}，不同步 profile.disc
-        const result: DiscResult = scoreDisc(input.answers.answers);
+        // 家长版 DISC：V2 用词组维度映射计分；旧版数组作答兼容；存整条 {label, answers}，不同步 profile.disc
+        const a = input.answers.answers;
+        const result: DiscResult = Array.isArray(a) ? scoreDisc(a) : scoreDiscV2(a, DISC_PARENT_V2_GROUPS);
         outcome = { kind: "discparent", result };
       } else if (input.kind === "mbti") {
         const result: MbtiResult = scoreMbti(input.answers);
         outcome = { kind: "mbti", result };
       } else if (input.kind === "disc") {
-        const result: DiscResult = scoreDisc(input.answers);
+        const result: DiscResult = Array.isArray(input.answers) ? scoreDisc(input.answers) : scoreDiscV2(input.answers);
         outcome = { kind: "disc", result };
       } else if (input.kind === "multi") {
         const result: MultiResult = scoreMulti(input.answers);

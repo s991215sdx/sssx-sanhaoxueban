@@ -240,3 +240,15 @@
 - 冒烟：`scripts/smoke-render-v36.tsx`（26 项断言，v35 脚本已删；数据层断言三模块章 items 为空且 detailItems 保留）。
 - 验证：tsc app 配置仍仅 3 个历史遗留错误；npm run build 通过；冒烟全过。
 - BUILD_TAG=v36-2026-09-13
+
+## v37（2026-09-13）DISC V2 强迫选择改版 + 综合报告打印隐藏
+（v37 需求五项中的 Q1/Q5；Q2 双心理量表、Q3 亲子对照栏目在 v38；Q4 分学段审题清单待用户逐条确认后实施）
+1. **DISC V2（学生+家长）**：contracts/assessments.ts 新增 DISC_V2_GROUPS / DISC_PARENT_V2_GROUPS（24 组 × 4 词，每组 D/I/S/C 各一；家长版同维度顺序、家庭场景措辞，保证亲子同尺可比）、DiscV2Answers{most,least}、isDiscV2Answers、scoreDiscV2（最像+1/最不像-1 → 净分归一到 0–24：12+净分/2，可出 .5；result.version=2）。旧版 scoreDisc/DISC_QUESTIONS/DISC_PARENT_QUESTIONS 保留供旧结果渲染。DiscResult 增加可选 version 字段；主型/summary 逻辑抽 discSummaryFromDims 共用。
+2. **API**（profileRouter）：questions 的 disc/discparent 改下发 groups；submit 的 answers 支持 V2 对象（zod refine 同组最像≠最不像）并兼容旧版数组（升级期在途会话）；计分按作答形态分流 scoreDisc / scoreDiscV2（家长版传 DISC_PARENT_V2_GROUPS）。
+3. **答题 UI**：新建 `src/components/companion/DiscV2Quiz.tsx`（学生版 + 导出 DiscV2GroupsUI/pickDiscV2 复用件；点词先填「最像」槽再填「最不像」槽，可点已选词取消，双槽齐后 260ms 自动进下一组；草稿 key discv2）；DiscParentQuiz 重写为 V2（保留家长身份选择流，草稿 key discparentv2）；AssessmentCenter 的 disc 路由到 DiscV2Quiz（mbti 仍走 ChoiceStage，ChoiceStage 题包类型按 mbti 收窄）；Welcome onboarding stage3 改用 DiscV2Quiz。测评中心 disc 卡片摘要：旧版结果标注「（旧版题目，建议重测）」。
+4. **报告兼容**：DiscTendencyChart 加 max prop（V1=12/V2=24）；DiscDetail 加 version prop，旧版头卡显示「旧版题目 · 点这里重测 →」徽章；DiscParentTab 家长卡同样徽章 + 条形量尺按 version 适配；DiscParentCompare 统一换算 0–24 量尺（旧版 ×2，nv()），冲突阈值调为 |Δ|≥6 强烈冲突 / 4–5 需留意；answerBlocks disc/discparent 明细支持 V2 三种作答形态（V2 行=「最像「x」· 最不像「y」」，旧版块 note 标「（旧版题目）」）。
+5. **打印隐藏（Q5）**：综合报告详版+简版打印时隐藏——RoadmapSection 的 AnswersFold（details 加 print:hidden）、详版各章 answersNode 与附录章观察点得分表（包 print:hidden div）、简版末尾两个附录 Fold（观察点得分表 + 全部测评答题明细）；E3 tab（学业诊断报告）的附录保持正常打印。combinedView 支持 ?view=lite 深链（冒烟需要）。
+- 冒烟：`scripts/smoke-render-v37.tsx`（v36 全量 26 项 + v37 增量 11 项：V2 题库结构/计分极值/判别/明细兼容/V2 tab 渲染/旧版徽章/print:hidden 断言/E3 附录不隐藏）。运行：`npx esbuild scripts/smoke-render-v37.tsx --bundle --platform=node --format=cjs --jsx=automatic --tsconfig=tsconfig.app.json --outfile=scripts/.smoke.cjs && node scripts/.smoke.cjs`
+- 验证：tsc app 配置仍仅 3 个历史遗留错误；npm run build 通过；冒烟全过。
+- BUILD_TAG=v37-2026-09-13
+- **待办（v38）**：Q2 SDQ（25 题，4-17 岁）+ PHQ-A/GAD-7 学生化（11+）双量表并行选做、去「三甲医院」措辞；Q3 亲子对照独立 tab + 综合报告章 + 简版摘要卡；Q4 分学段题目优化（清单已交用户确认，已知：PRIMARY q4/q34/q50「高中约7—8小时」误植、q68 30分钟偏长；JUNIOR q4；学科快扫 junior 缺生物/地理、primary 可加科学）。

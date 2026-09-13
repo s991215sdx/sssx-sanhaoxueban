@@ -13,7 +13,12 @@ const DISC_COLOR: Record<"D" | "I" | "S" | "C", string> = {
   S: "#4e9e5f",
   C: "#3d8ec4",
 };
-const MAX = 12; // 单因子满分 12
+const MAX = 24; // 统一量尺 0–24（V2 新版原生 0–24；V1 旧版 0–12 ×2 换算）
+
+/** 统一到 0–24 量尺：新版（version=2）原值；旧版二选一结果 ×2。 */
+function nv(result: DiscResult, k: DiscType): number {
+  return (result.dims[k] ?? 0) * (result.version === 2 ? 1 : 2);
+}
 
 function FactorBars({ label, tag, result }: { label: string; tag?: string; result: DiscResult }) {
   const combo = getDiscCombo(result.dims);
@@ -27,7 +32,7 @@ function FactorBars({ label, tag, result }: { label: string; tag?: string; resul
       </div>
       <div className="mt-1.5 space-y-1.5">
         {(["D", "I", "S", "C"] as const).map((k) => {
-          const v = result.dims[k] ?? 0;
+          const v = nv(result, k);
           const inCombo = combo.includes(k);
           return (
             <div key={k} className="flex items-center gap-2">
@@ -49,20 +54,20 @@ function FactorBars({ label, tag, result }: { label: string; tag?: string; resul
   );
 }
 
-/** 家长 × 学生逐维度差值标注：|Δ|≥3 强烈冲突（红，排最前）；Δ=2 需留意（琥珀）。 */
+/** 家长 × 学生逐维度差值标注（0–24 统一量尺）：|Δ|≥6 强烈冲突（红，排最前）；4–5 需留意（琥珀）。 */
 function DimDeltaBadges({ label, parent, student }: { label: string; parent: DiscResult; student: DiscResult }) {
   const deltas = (["D", "I", "S", "C"] as DiscType[]).map((k) => ({
     k,
-    student: student.dims[k] ?? 0,
-    parent: parent.dims[k] ?? 0,
-    abs: Math.abs((student.dims[k] ?? 0) - (parent.dims[k] ?? 0)),
+    student: nv(student, k),
+    parent: nv(parent, k),
+    abs: Math.abs(nv(student, k) - nv(parent, k)),
   }));
-  const strong = deltas.filter((d) => d.abs >= 3).sort((a, b) => b.abs - a.abs);
-  const watch = deltas.filter((d) => d.abs === 2);
+  const strong = deltas.filter((d) => d.abs >= 6).sort((a, b) => b.abs - a.abs);
+  const watch = deltas.filter((d) => d.abs >= 4 && d.abs < 6);
   if (strong.length === 0 && watch.length === 0) {
     return (
       <p className="mt-1.5 text-[11.5px] text-olive-mute">
-        与{label}四个维度差值都在 1 分以内，行为频道总体接近。
+        与{label}四个维度差值都很小，行为频道总体接近。
       </p>
     );
   }
@@ -81,7 +86,7 @@ function DimDeltaBadges({ label, parent, student }: { label: string; parent: Dis
           key={d.k}
           className="rounded-md border border-[#c7a23a]/70 bg-[#f5e7c1] px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]"
         >
-          {d.k} 维需留意（你 {d.student} / {label} {d.parent}，差 2）
+          {d.k} 维需留意（你 {d.student} / {label} {d.parent}，差 {d.abs}）
         </span>
       ))}
     </div>
@@ -99,8 +104,8 @@ export default function DiscParentCompare({
     <div className="paper-card p-5">
       <h3 className="font-bold text-olive">亲子 DISC 行为风格对照</h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
-        同样的分数，不同的表达方式：看看你和家长各自最自然的行为模式差在哪里（类型没有好坏）。某维度差值 ≥3 为「⚠
-        强烈冲突」（日常管教最容易频道对不上），差值 =2 为「需留意」。
+        同样的分数，不同的表达方式：看看你和家长各自最自然的行为模式差在哪里（类型没有好坏）。已统一换算到 0–24
+        量尺对照（旧版二选一结果 ×2）；某维度差值 ≥6 为「⚠ 强烈冲突」（日常管教最容易频道对不上），4–5 为「需留意」。
       </p>
       <div className="mt-3 space-y-4">
         <FactorBars label="学生（你）" tag={DISC_THEORY.find((t) => t.type === student.primary)?.name} result={student} />

@@ -10,6 +10,7 @@ import HollandQuiz from "@/components/companion/HollandQuiz";
 import MentalQuiz from "@/components/companion/MentalQuiz";
 import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
+import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
 import { ClipboardCheck, Sparkles, Target, Compass } from "lucide-react";
@@ -42,10 +43,10 @@ const TESTS: TestDef[] = [
   {
     kind: "disc",
     name: "DISC 行为风格",
-    desc: "24 道二选一 · 必测",
+    desc: "24 组「最像我 / 最不像我」强迫选择 · 必测",
     required: true,
     tab: "disc",
-    summary: (l) => (l.disc ? `主型 ${l.disc.primary}` : null),
+    summary: (l) => (l.disc ? `主型 ${l.disc.primary}${l.disc.version === 2 ? "" : "（旧版题目，建议重测）"}` : null),
   },
   {
     kind: "e3",
@@ -126,17 +127,20 @@ const TESTS: TestDef[] = [
 
 /** 内嵌挂载对应测评的答题组件。 */
 function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
-  if (kind === "mbti" || kind === "disc") {
+  if (kind === "mbti") {
     return (
       <ChoiceStage
-        key={`${kind}-quiz`}
-        kind={kind}
-        title={kind === "mbti" ? "MBTI 快测" : "DISC 快测"}
-        subtitle={kind === "mbti" ? "28 道二选一，看看你的性格能量从哪里来" : "24 道二选一，找到最适合你的带动方式"}
+        key="mbti-quiz"
+        kind="mbti"
+        title="MBTI 快测"
+        subtitle="28 道二选一，看看你的性格能量从哪里来"
         onNext={onDone}
         onSkip={onDone}
       />
     );
+  }
+  if (kind === "disc") {
+    return <DiscV2Quiz key="disc-quiz" onNext={onDone} onSkip={onDone} />;
   }
   if (kind === "e3") {
     return (

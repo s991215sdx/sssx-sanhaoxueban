@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import ProfileStage from "@/components/welcome/ProfileStage";
 import AcademicsStage from "@/components/welcome/AcademicsStage";
 import ChoiceStage from "@/components/welcome/ChoiceStage";
+import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import E3Stage from "@/components/welcome/E3Stage";
 
 const STAGES = ["认识一下", "成绩与目标", "MBTI 快测", "DISC 快测", "学业诊断"];
@@ -67,11 +68,10 @@ export default function Welcome() {
           />
         )}
         {stage === 3 && (
-          <ChoiceStage
+          <DiscV2Quiz
             key="disc"
-            kind="disc"
-            title="DISC 快测"
-            subtitle="24 道二选一，找到最适合你的带动方式"
+            title="DISC 行为风格"
+            subtitle="24 组描述词：每组选 1 个「最像我」+ 1 个「最不像我」，找到最适合你的带动方式"
             onNext={() => setStage(4)}
             onSkip={() => setStage(4)}
           />

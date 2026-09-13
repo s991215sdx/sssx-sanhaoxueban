@@ -55,7 +55,8 @@ export default function ChoiceStage({
     },
   });
 
-  const questions = data?.kind === kind ? data.questions : undefined;
+  // V37 起 DISC 改为 V2 强迫选择（DiscV2Quiz），ChoiceStage 只服务 MBTI；这里按 mbti 收窄题包类型
+  const questions = data?.kind === "mbti" ? data.questions : undefined;
   const total = questions?.length ?? 0;
 
   const pick = (choice: 0 | 1) => {

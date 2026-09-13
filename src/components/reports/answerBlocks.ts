@@ -9,7 +9,15 @@
  * - mental 明细兼容 V2（PHQ-9+GAD-7 共 16 题，0-3 四级评分）与旧版 V1（30 题）。
  */
 
-import { MBTI_QUESTIONS, DISC_QUESTIONS, DISC_PARENT_QUESTIONS } from "@contracts/assessments";
+import {
+  MBTI_QUESTIONS,
+  DISC_QUESTIONS,
+  DISC_PARENT_QUESTIONS,
+  DISC_V2_GROUPS,
+  DISC_PARENT_V2_GROUPS,
+  isDiscV2Answers,
+  type DiscWordGroup,
+} from "@contracts/assessments";
 import {
   E3V37_QUESTIONS,
   E3V37_LIFE_EVENTS,
@@ -68,17 +76,38 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
         })),
       });
     } else if ((r.kind === "disc" || r.kind === "discparent") && r.answers != null) {
-      /* discparent 作答可能为 number[]，或 { label, answers: number[] }（答题组新结构兜底）。 */
-      const payload = r.answers as number[] | { label?: string; answers?: number[] };
-      const a = Array.isArray(payload) ? payload : Array.isArray(payload.answers) ? payload.answers : [];
-      const label = Array.isArray(payload) ? "" : payload.label ?? "";
+      /* 作答形态：number[]（旧版学生）；{ most, least }（V2 学生）；
+         { label, answers: number[] | { most, least } }（家长，旧版/V2）。 */
+      const payload = r.answers as
+        | number[]
+        | { most: number[]; least: number[] }
+        | { label?: string; answers?: number[] | { most: number[]; least: number[] } };
+      const label = Array.isArray(payload) || isDiscV2Answers(payload) ? "" : (payload.label ?? "");
+      const inner = Array.isArray(payload) || isDiscV2Answers(payload) ? payload : (payload.answers ?? []);
+      const who = r.kind === "discparent" ? `家长 DISC${label ? `（${label}）` : ""}` : "DISC 行为风格";
+      if (isDiscV2Answers(inner)) {
+        /* V2 强迫选择：每组 4 词，标注最像/最不像 */
+        const groups: DiscWordGroup[] = r.kind === "discparent" ? DISC_PARENT_V2_GROUPS : DISC_V2_GROUPS;
+        blocks.push({
+          key: `${r.kind}-${label || blocks.length}`,
+          title: `${who} · ${groups.length} 组（${date}）`,
+          note: "每组 4 个描述词，各选 1 个「最像我」+ 1 个「最不像我」。",
+          rows: groups.map((g, i) => ({
+            no: i + 1,
+            text: g.words.join(" / "),
+            ans: `最像「${g.words[inner.most[i]] ?? "?"}」 · 最不像「${g.words[inner.least[i]] ?? "?"}」`,
+          })),
+        });
+        continue;
+      }
+      const a = Array.isArray(inner) ? inner : [];
       if (a.length === 0) continue;
-      /* 家长卷题干用家庭版 DISC_PARENT_QUESTIONS（24 题，亲子场景），学生卷用 DISC_QUESTIONS */
+      /* 旧版二选一：家长卷题干用家庭版 DISC_PARENT_QUESTIONS（24 题，亲子场景），学生卷用 DISC_QUESTIONS */
       const qs = r.kind === "discparent" ? DISC_PARENT_QUESTIONS : DISC_QUESTIONS;
       blocks.push({
         key: `${r.kind}-${label || blocks.length}`,
         title: `${r.kind === "discparent" ? `家长 DISC${label ? `（${label}）` : ""}` : "DISC 行为风格"} · ${a.length} 题（${date}）`,
-        note: "每题二选一，A/B 为选的选项。",
+        note: "（旧版题目）每题二选一，A/B 为选的选项。",
         rows: qs.map((q, i) => ({
           no: i + 1,
           text: q.text,

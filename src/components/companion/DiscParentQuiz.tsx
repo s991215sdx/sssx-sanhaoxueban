@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { trpc } from "@/providers/trpc";
-import { DISC_PARENT_QUESTIONS, type DiscQuestion } from "@contracts/assessments";
+import { DISC_PARENT_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
-import { ChevronLeft, Users } from "lucide-react";
+import { DiscV2GroupsUI, pickDiscV2 } from "@/components/companion/DiscV2Quiz";
+import { Users } from "lucide-react";
 
-/** 家长 DISC（家庭版）作答草稿 key。 */
-const DRAFT = "discparent";
+/** 家长 DISC（家庭版）V2 作答草稿 key。 */
+const DRAFT = "discparentv2";
 
 const LABELS = ["爸爸", "妈妈", "爷爷", "奶奶", "其他家人"] as const;
 
 /**
- * 家长 DISC 家庭版：24 道家庭/亲子场景二选一（逐题维度映射与学生版一致，计分复用 scoreDisc）。
+ * 家长 DISC 家庭版 V2（强迫选择）：24 组家庭/亲子视角描述词，每组选「最像我」+「最不像我」，
+ * 维度映射与学生版逐组一致（scoreDiscV2 计分），保证亲子对照同尺可比。
  * 开始前先选家长身份（多位家长可各测一次，结果与孩子校园 DISC 做冲突对照分析）。
  */
 export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
@@ -21,16 +23,18 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
   const [label, setLabel] = useDraftState<string>(DRAFT, "label", "");
   const [customLabel, setCustomLabel] = useDraftState<string>(DRAFT, "customLabel", "");
   const [idx, setIdx] = useDraftState<number>(DRAFT, "idx", 0);
-  const [answers, setAnswers] = useDraftState<(0 | 1)[]>(DRAFT, "answers", []);
+  const [most, setMost] = useDraftState<number[]>(DRAFT, "most", []);
+  const [least, setLeast] = useDraftState<number[]>(DRAFT, "least", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(DRAFT)?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(DRAFT)?.most as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
     clearQuizDraft(DRAFT);
     setLabel("");
     setCustomLabel("");
     setIdx(0);
-    setAnswers([]);
+    setMost([]);
+    setLeast([]);
     setResumed(false);
   };
 
@@ -41,22 +45,29 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
     },
   });
 
-  const questions: DiscQuestion[] =
-    (data as { questions?: DiscQuestion[] } | undefined)?.questions ?? DISC_PARENT_QUESTIONS;
-  const total = questions.length;
+  const groups: DiscWordGroup[] =
+    (data as { groups?: DiscWordGroup[] } | undefined)?.groups ?? DISC_PARENT_V2_GROUPS;
+  const total = groups.length;
 
   /** 最终称呼：预设身份或「其他家人」的自定义称呼（≤12 字）。 */
   const finalLabel = label === "其他家人" ? customLabel.trim() : label;
 
-  const pick = (choice: 0 | 1) => {
-    const next = [...answers];
-    next[idx] = choice;
-    setAnswers(next);
-    if (idx + 1 < total) {
-      setIdx(idx + 1);
-    } else if (next.length === total) {
-      submit.mutate({ kind: "discparent", answers: { label: finalLabel, answers: next } } as never);
-    }
+  const advance = (m: number[], l: number[], cur: number) => {
+    if (m[cur] == null || l[cur] == null) return;
+    window.setTimeout(() => {
+      if (cur + 1 < total) {
+        setIdx(cur + 1);
+      } else if (m.filter((x) => x != null).length === total && l.filter((x) => x != null).length === total) {
+        submit.mutate({ kind: "discparent", answers: { label: finalLabel, answers: { most: m, least: l } } } as never);
+      }
+    }, 260);
+  };
+
+  const pick = (wi: number) => {
+    const next = pickDiscV2(most, least, idx, wi);
+    setMost(next.most);
+    setLeast(next.least);
+    advance(next.most, next.least, idx);
   };
 
   /* ------- 结果卡 ------- */
@@ -102,10 +113,11 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
         <div className="paper-card p-4 sm:p-6">
           <div className="flex items-center gap-2">
             <Users size={18} className="text-olive" />
-            <h2 className="text-lg font-bold text-olive">家长 DISC（家庭版）· 24 道二选一</h2>
+            <h2 className="text-lg font-bold text-olive">家长 DISC（家庭版）· 24 组最像 / 最不像</h2>
           </div>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-olive-soft">
-            这份是家长在家庭环境中的行为风格测评，多位家长可以各测一次，测过的会放在一起和孩子对照分析。
+            这份是家长在家庭环境中的行为风格测评：每组 4 个描述，选 1 个「最像我」和 1 个「最不像我」。
+            多位家长可以各测一次，测过的会放在一起和孩子对照分析。
           </p>
           <p className="mt-4 text-[14px] font-semibold text-olive">正在填写的是哪位家长？</p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -157,15 +169,16 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
     );
   }
 
-  /* ------- 作答中（逐题二选一） ------- */
-  const q = questions[Math.min(idx, total - 1)];
+  /* ------- 作答中（逐组最像/最不像） ------- */
   return (
     <div className="mx-auto max-w-3xl">
       <div className="paper-card p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-olive">家长 DISC（家庭版）· {finalLabel}</h2>
-            <p className="mt-0.5 text-[13px] text-olive-soft">24 道二选一：请站在「{finalLabel}」在家庭中的真实状态作答。</p>
+            <p className="mt-0.5 text-[13px] text-olive-soft">
+              24 组家庭场景描述：请站在「{finalLabel}」在家庭中的真实状态，选最像与最不像。
+            </p>
           </div>
           <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
             先跳过这测
@@ -174,63 +187,28 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
 
         {resumed && (
           <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-lime/50 bg-lime-pale/60 px-3 py-2">
-            <span className="text-[12.5px] text-olive">已恢复上次进度（第 {idx + 1} 题），接着答就好。</span>
+            <span className="text-[12.5px] text-olive">已恢复上次进度（第 {idx + 1} 组），接着答就好。</span>
             <button onClick={resetAll} className="shrink-0 text-[12px] text-olive-mute underline hover:text-olive">
               重新开始
             </button>
           </div>
         )}
 
-        {isLoading || !q ? (
+        {isLoading ? (
           <div className="flex justify-center py-14">
             <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
           </div>
         ) : (
-          <>
-            <div className="mt-5 flex items-center gap-3">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
-                <div className="h-full rounded-full bg-lime transition-all" style={{ width: `${((idx + 1) / total) * 100}%` }} />
-              </div>
-              <span className="mono shrink-0 text-[12px] text-olive-mute">
-                {idx + 1} / {total}
-              </span>
-            </div>
-
-            <p className="mt-6 text-center text-[16.5px] font-medium leading-relaxed text-olive">{q.text}</p>
-
-            <div className="mt-5 grid gap-3">
-              {(["a", "b"] as const).map((side, i) => (
-                <button
-                  key={side}
-                  disabled={submit.isPending}
-                  onClick={() => pick(i as 0 | 1)}
-                  className={`rounded-2xl border px-5 py-4 text-left text-[15px] leading-relaxed transition-colors ${
-                    answers[idx] === i
-                      ? "border-lime bg-lime-pale font-medium text-olive"
-                      : "border-border bg-cream text-olive-soft hover:border-lime/60 hover:bg-lime-pale/50"
-                  }`}
-                >
-                  <span className="mono mr-2 text-[12px] font-bold text-olive-mute">{side.toUpperCase()}</span>
-                  {q[side]}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-5 flex items-center justify-between">
-              <button
-                onClick={() => setIdx((i) => Math.max(0, i - 1))}
-                disabled={idx === 0}
-                className="flex items-center gap-1 text-[13.5px] text-olive-mute hover:text-olive disabled:opacity-40"
-              >
-                <ChevronLeft size={15} />
-                上一题
-              </button>
-              <span className="text-[12.5px] text-olive-mute">凭第一反应选，没有对错</span>
-            </div>
-
-            {submit.isPending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在生成结果…</p>}
-            {submit.isError && <p className="mt-3 text-center text-[13px] text-terra">提交没成功，请再选一次最后一题。</p>}
-          </>
+          <DiscV2GroupsUI
+            groups={groups}
+            idx={idx}
+            most={most}
+            least={least}
+            onPick={pick}
+            onPrev={() => setIdx((i) => Math.max(0, i - 1))}
+            pending={submit.isPending}
+            error={submit.isError}
+          />
         )}
       </div>
     </div>

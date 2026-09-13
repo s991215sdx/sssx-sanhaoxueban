@@ -151,6 +151,8 @@ export type DiscResult = {
   primary: DiscType;
   dims: DiscDims;
   summary: string;
+  /** 2 = 强迫选择新版（24 组四词，最像/最不像）；缺省为旧版二选一。 */
+  version?: 2;
 };
 
 /** 每种类型各 6 题（作为 aType 出现 6 次，作为 bType 也出现 6 次，计分公平）。 */
@@ -317,6 +319,121 @@ export const DISC_PARENT_QUESTIONS: DiscQuestion[] = DISC_QUESTIONS.map((q, i) =
   if (!item) throw new Error(`家长版 DISC 题库配置缺失：第 ${i + 1} 题`);
   return { text: item.text, a: item.a, b: item.b, aType: q.aType, bType: q.bType };
 });
+
+/* --------------------------- DISC V2 强迫选择版 --------------------------- */
+
+/**
+ * DISC V2（国际通行强迫选择格式）：24 组，每组 4 个描述词（D/I/S/C 各一），
+ * 每组选 1 个「最像我」+ 1 个「最不像我」（不能是同一个词）。
+ * words[i] 的维度归属为 types[i]；每组内四种类型各出现一次，计分公平。
+ */
+export type DiscWordGroup = { words: string[]; types: DiscType[] };
+
+/** V2 作答：most[i]/least[i] 为第 i 组「最像/最不像」的词下标（0-3，且 most[i] ≠ least[i]）。 */
+export type DiscV2Answers = { most: number[]; least: number[] };
+
+export const DISC_V2_GROUP_COUNT = 24;
+
+/** 学生版 V2 词组（校园/日常视角）。 */
+export const DISC_V2_GROUPS: DiscWordGroup[] = [
+  { words: ["爱说爱笑，爱交朋友", "说干就干，行动快", "认真细致，少出错", "脾气稳，不爱争执"], types: ["I", "D", "C", "S"] },
+  { words: ["敢拍板，敢负责", "愿意迁就别人", "会活跃气氛", "讲规则，按步骤来"], types: ["D", "S", "I", "C"] },
+  { words: ["想清楚了再开口", "表达欲强，爱分享", "不服输，喜欢赢", "有耐心，听人把话说完"], types: ["C", "I", "D", "S"] },
+  { words: ["照顾别人的感受", "对细节要求高", "到新环境很快熟", "有主见，不轻易改主意"], types: ["S", "C", "I", "D"] },
+  { words: ["遇到困难迎上去", "点子多，爱玩新花样", "做事有长性，不急躁", "先观察再行动"], types: ["D", "I", "S", "C"] },
+  { words: ["容易被大家的情绪感染", "不爱出风头", "答应的事一定做到", "说话直接，不绕弯子"], types: ["I", "S", "C", "D"] },
+  { words: ["做完先检查再交", "喜欢指挥和安排", "习惯固定的节奏", "讨厌冷场"], types: ["C", "D", "S", "I"] },
+  { words: ["受了委屈先忍着", "凭感觉交朋友", "压力下也能顶住", "犯错会反复想原因"], types: ["S", "I", "D", "C"] },
+  { words: ["目标定得高", "喜欢问「为什么」", "相信好事会发生", "不喜欢突然的变化"], types: ["D", "C", "I", "S"] },
+  { words: ["说话有感染力", "讨厌拖拉", "帮助别人不求回报", "东西摆放有条理"], types: ["I", "D", "S", "C"] },
+  { words: ["做决定前反复比较", "能迁就集体安排", "敢跟别人不一样", "开心就写在脸上"], types: ["C", "S", "D", "I"] },
+  { words: ["倾听比说得多", "竞争来了很兴奋", "笔记做得工整", "朋友多，人缘好"], types: ["S", "D", "C", "I"] },
+  { words: ["出了问题敢承担", "喜欢被表扬", "遵守约定和纪律", "不喜欢催别人"], types: ["D", "I", "C", "S"] },
+  { words: ["热情洋溢", "谨慎小心", "忠诚可靠", "决策果断"], types: ["I", "C", "S", "D"] },
+  { words: ["追求准确", "爱挑战难题", "爱讲笑话逗大家", "情绪平稳"], types: ["C", "D", "I", "S"] },
+  { words: ["乐于配合", "好奇心强爱尝试", "计划性强", "掌控感强"], types: ["S", "I", "C", "D"] },
+  { words: ["看重结果", "看重关系", "看重气氛", "看重标准"], types: ["D", "S", "I", "C"] },
+  { words: ["遇冲突爱打圆场", "遇冲突敢顶回去", "遇冲突讲道理", "遇冲突先退让"], types: ["I", "D", "C", "S"] },
+  { words: ["对自己要求严", "玩起来很投入", "对人包容", "时间抓得紧"], types: ["C", "I", "S", "D"] },
+  { words: ["喜欢当倾听者", "喜欢当把关的人", "喜欢当队长", "喜欢当气氛担当"], types: ["S", "C", "D", "I"] },
+  { words: ["变化来了先行动", "变化来了先研究", "变化来了想先稳住", "变化来了觉得新鲜"], types: ["D", "C", "S", "I"] },
+  { words: ["讨厌无聊", "讨厌争吵", "讨厌被管束", "讨厌马虎"], types: ["I", "S", "D", "C"] },
+  { words: ["很少凭冲动做事", "说话算数，敢坚持", "说到兴头上停不下", "很少发脾气"], types: ["C", "D", "I", "S"] },
+  { words: ["认定的人一直在", "赢了还想赢", "到哪里都有朋友", "认定的事做到位"], types: ["S", "D", "I", "C"] },
+];
+
+/** 家长版 V2 词组（家庭/亲子视角，维度顺序与学生版逐组一致，保证亲子对照同尺可比）。 */
+export const DISC_PARENT_V2_GROUPS: DiscWordGroup[] = [
+  { words: ["爱热闹，爱招呼人", "定事快，说了就办", "做事细致，很少疏漏", "性情温和，不爱计较"], types: ["I", "D", "C", "S"] },
+  { words: ["家里的事敢拿主意", "愿意迁就家人", "会活跃家里的气氛", "讲规矩，按章办事"], types: ["D", "S", "I", "C"] },
+  { words: ["三思而后言", "爱说话，爱分享见闻", "要强，不甘落后", "有耐心，听人把话说完"], types: ["C", "I", "D", "S"] },
+  { words: ["顾全家人的感受", "对细节要求高", "到哪儿都能很快熟络", "有主见，认定了不轻改"], types: ["S", "C", "I", "D"] },
+  { words: ["难事来了顶得上", "点子多，爱尝新", "做事有耐性，不毛躁", "谋定而后动"], types: ["D", "I", "S", "C"] },
+  { words: ["容易被气氛带动", "不爱出风头", "承诺的事一定兑现", "说话直来直去"], types: ["I", "S", "C", "D"] },
+  { words: ["做完事必检查", "习惯张罗安排", "习惯安稳规律", "受不了冷场"], types: ["C", "D", "S", "I"] },
+  { words: ["有委屈先自己消化", "凭眼缘交朋友", "压力再大扛得住", "出了问题必找原因"], types: ["S", "I", "D", "C"] },
+  { words: ["目标定得高", "凡事爱问个究竟", "凡事往好处想", "不喜欢生活突然变动"], types: ["D", "C", "I", "S"] },
+  { words: ["说话有感染力", "最看不惯拖拉", "帮人不图回报", "东西收拾得井井有条"], types: ["I", "D", "S", "C"] },
+  { words: ["做决定前货比三家", "能迁就大家的安排", "敢于与众不同", "喜怒都挂在脸上"], types: ["C", "S", "D", "I"] },
+  { words: ["听得多说得少", "越竞争越来劲", "记录清清楚楚", "朋友多，人缘广"], types: ["S", "D", "C", "I"] },
+  { words: ["出了问题敢担责", "喜欢被夸奖", "重承诺守信用", "从不催逼家人"], types: ["D", "I", "C", "S"] },
+  { words: ["热情爽朗", "谨慎周全", "踏实可靠", "当机立断"], types: ["I", "C", "S", "D"] },
+  { words: ["一丝不苟", "专挑硬骨头啃", "爱说笑，会逗乐", "情绪平稳少波动"], types: ["C", "D", "I", "S"] },
+  { words: ["乐于打配合", "对新鲜事物好奇", "凡事有计划", "一家之主的担当"], types: ["S", "I", "C", "D"] },
+  { words: ["看重结果成效", "看重家人和睦", "看重家庭气氛", "看重规矩标准"], types: ["D", "S", "I", "C"] },
+  { words: ["有分歧会打圆场", "有分歧敢坚持", "有分歧讲道理", "有分歧先让一步"], types: ["I", "D", "C", "S"] },
+  { words: ["对自己要求严格", "玩起来放得开", "对家人包容", "时间观念强"], types: ["C", "I", "S", "D"] },
+  { words: ["家里的倾听者", "家里把关的那个", "家里拿主意的那个", "家里的开心果"], types: ["S", "C", "D", "I"] },
+  { words: ["变动来了马上应对", "变动来了先研究清楚", "变动来了想先稳住", "变动来了觉得新鲜"], types: ["D", "C", "S", "I"] },
+  { words: ["受不了无聊", "受不了争吵", "受不了被管着", "受不了马虎"], types: ["I", "S", "D", "C"] },
+  { words: ["从不冲动行事", "说一不二", "聊起来滔滔不绝", "很少发火"], types: ["C", "D", "I", "S"] },
+  { words: ["认定的家人一心到底", "要强到底", "到哪儿都有熟人", "认定的事做到底"], types: ["S", "D", "I", "C"] },
+];
+
+/** 判断原始作答是否为 V2 结构（{ most, least }）。 */
+export function isDiscV2Answers(x: unknown): x is DiscV2Answers {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return Array.isArray(o.most) && Array.isArray(o.least);
+}
+
+/** 由 dims 生成主型与 summary（V1/V2 共用）。 */
+function discSummaryFromDims(dims: DiscDims): { primary: DiscType; summary: string } {
+  const order: DiscType[] = ["D", "I", "S", "C"];
+  const ranked = [...order].sort((x, y) => dims[y] - dims[x] || order.indexOf(x) - order.indexOf(y));
+  const primary = ranked[0];
+  const second = ranked[1];
+  const combo = dims[primary] - dims[second] <= 1;
+  const head = combo ? `${primary} 主导，${second} 辅助` : `${primary} 主导型`;
+  const summary = combo
+    ? `孩子是「${head}」的性格组合。${DISC_TYPE_TEXT[primary]}；同时也有明显的 ${second} 特质：${DISC_TYPE_TEXT[second]}。`
+    : `孩子是「${head}」。${DISC_TYPE_TEXT[primary]}。`;
+  return { primary, summary };
+}
+
+/**
+ * DISC V2 计分：每组「最像」维度 +1、「最不像」维度 -1（净分 -24..+24），
+ * 再归一到 0–24 量尺（12 + 净分/2，可能出现 .5），与旧版报告图表同尺展示。
+ * groups 传家长版词组即可对家长作答计分（维度映射一致）。
+ */
+export function scoreDiscV2(ans: DiscV2Answers, groups: DiscWordGroup[] = DISC_V2_GROUPS): DiscResult {
+  if (ans.most.length !== groups.length || ans.least.length !== groups.length) {
+    throw new Error(`DISC V2 答案数量应为 ${groups.length} 组`);
+  }
+  const net: DiscDims = { D: 0, I: 0, S: 0, C: 0 };
+  groups.forEach((g, i) => {
+    const m = ans.most[i];
+    const l = ans.least[i];
+    if (m == null || l == null || m < 0 || m > 3 || l < 0 || l > 3 || m === l) {
+      throw new Error(`DISC V2 第 ${i + 1} 组作答无效（最像与最不像须为不同的词）`);
+    }
+    net[g.types[m]] += 1;
+    net[g.types[l]] -= 1;
+  });
+  const dims: DiscDims = { D: 12 + net.D / 2, I: 12 + net.I / 2, S: 12 + net.S / 2, C: 12 + net.C / 2 };
+  const { primary, summary } = discSummaryFromDims(dims);
+  return { primary, dims, summary, version: 2 };
+}
 
 /* ----------------------------------- E3 ---------------------------------- */
 /* E3 学业诊断已升级为 V2.7 五维优化版，题库与计分见 ./e3v27。 */
