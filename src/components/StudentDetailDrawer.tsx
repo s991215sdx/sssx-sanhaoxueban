@@ -1,78 +1,16 @@
 import { useState } from "react";
 import { trpc } from "@/providers/trpc";
-import AnswerDetail from "@/components/companion/AnswerDetail";
 import CoachingPlanCard from "@/components/CoachingPlanCard";
+import V37CoachingPlanCard from "@/components/V37CoachingPlanCard";
+import ReportView from "@/components/reports/ReportView";
+import AcademicsEditorCore from "@/components/companion/AcademicsEditorCore";
+import type { AcademicsSubmit } from "@/components/companion/AcademicsEditorCore";
 import type { AcademicsData } from "@contracts/academics";
 import { defaultFullScore } from "@contracts/academics";
 import { isE3V27Result } from "@contracts/assessments";
 import { isE3V37Result } from "@contracts/e3v37";
-import type { E3V37Result } from "@contracts/e3v37";
 import { isE3V37ParentResult } from "@contracts/e3v37Parent";
-import { e3v37LevelTextClass, E3V37_LEVEL_CAPTION } from "@/components/reports/e3v37Theme";
-import { downloadReport, e3V37PrintHtml } from "@/lib/reportDownload";
-import { X, Maximize2, Minimize2, Printer } from "lucide-react";
-import {
-  MbtiReportCard,
-  DiscReportCard,
-  MultiReportCard,
-  CombinedReportCard,
-} from "@/components/StudentReportCards";
-
-/** 伴学师端 · V3.7 三阶九能概览卡：九能分数 chips + 主卡点 + 红线 + 打印。 */
-function E3V37OverviewCard({ e3, studentName }: { e3: E3V37Result; studentName: string }) {
-  return (
-    <div className="rounded-xl border border-cream-deep bg-cream-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-[13px] font-bold text-olive">学习力诊断 · 三阶九能 V3.7（{e3.stageLabel}）</div>
-        <button
-          onClick={() => downloadReport("学业诊断报告（三阶九能 V3.7）", e3V37PrintHtml(e3, studentName), studentName)}
-          className="flex shrink-0 items-center gap-1 rounded-lg bg-olive px-2.5 py-1.5 text-[11.5px] font-semibold text-cream hover:bg-lime-deep"
-        >
-          <Printer size={12} /> 打印
-        </button>
-      </div>
-      <p className="mt-1 text-[11px] text-olive-mute">{E3V37_LEVEL_CAPTION}</p>
-      <div className="mt-2 grid grid-cols-3 gap-1.5">
-        {e3.abilities.map((a) => (
-          <div key={a.key} className="rounded-lg bg-cream px-1.5 py-1.5 text-center">
-            <div className="text-[10.5px] text-olive-mute">
-              {a.system}·{a.label}
-            </div>
-            <div className={`mono text-[13px] font-bold ${e3v37LevelTextClass(a.level)}`}>{a.score}</div>
-            <div className={`text-[10px] ${e3v37LevelTextClass(a.level)}`}>{a.level}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {e3.systems.condition.cells.map((c) => (
-          <span key={c.key} className={`chip !text-[10.5px] ${c.level === "卡点" ? "!border-[#8f1313]/50 !bg-[#fbe3df] !text-[#8f1313]" : ""}`}>
-            条件·{c.label} {c.score}
-          </span>
-        ))}
-        {e3.aptitude.map((a) => (
-          <span key={a.key} className="chip !text-[10.5px]">
-            学能·{a.label} {a.score}
-          </span>
-        ))}
-      </div>
-      {e3.mainBlock && (
-        <p className="mt-2 text-[12.5px] font-semibold text-[#8f1313]">
-          主卡点：{e3.mainBlock.label} {e3.mainBlock.score}/5（优先干预）
-        </p>
-      )}
-      {e3.redFlags.length > 0 && (
-        <div className="mt-2 rounded-lg border border-terra/40 bg-terra/10 px-3 py-2">
-          <div className="text-[11.5px] font-bold text-terra">红线提示（先照顾好状态，再谈成绩）</div>
-          {e3.redFlags.map((f, i) => (
-            <p key={i} className="mt-0.5 text-[11.5px] leading-relaxed text-terra">{f}</p>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-type RawItem = { kind: string; answers: unknown; createdAt: Date | string };
+import { X, Maximize2, Minimize2, ChevronDown, ChevronUp } from "lucide-react";
 
 /**
  * 学员完整详情抽屉：档案 + 学业目标 + 测评摘要（含答题明细）+ 学习数据。
@@ -93,9 +31,22 @@ export default function StudentDetailDrawer({
   const data = q.data;
   /** 宽屏模式：电脑上默认右半屏抽屉，可一键放大到全屏阅读报告。 */
   const [wide, setWide] = useState(false);
+  /** 测评报告：默认收起为一行摘要，展开渲染与学生端一致的 ReportView。 */
+  const [reportOpen, setReportOpen] = useState(false);
+  /** 成绩与目标 · 可代填：伴学师/管理员代学员填写。 */
+  const [editAcad, setEditAcad] = useState(false);
+  const [acadSaved, setAcadSaved] = useState(false);
 
-  const rawOf = (kind: string): unknown =>
-    data?.assessments?.raw?.find((r: RawItem) => r.kind === kind)?.answers ?? null;
+  const utils = trpc.useUtils();
+  const saveMut = trpc.coach.saveAcademics.useMutation({
+    onSuccess: () => {
+      // 后端已放行 admin：两个入口共用同一 mutation，按当前数据源刷新对应查询。
+      if (source === "admin") utils.admin.studentDetail.invalidate({ userId });
+      else utils.coach.studentDetail.invalidate({ userId });
+      setEditAcad(false);
+      setAcadSaved(true);
+    },
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-olive/30 backdrop-blur-sm" onClick={onClose}>
@@ -158,91 +109,97 @@ export default function StudentDetailDrawer({
               </div>
             </div>
 
-            {/* 测评完整报告（查看 / 下载）+ 答题明细 */}
+            {/* 测评报告：默认一行摘要，展开渲染与学生端完全一致的 ReportView */}
             <div className="paper-card p-4">
-              <div className="mono text-[10px] tracking-wider text-olive-mute">测评报告</div>
-              <div className="mt-2 space-y-3">
-                {data.assessments.mbti ? (
-                  <div>
-                    <MbtiReportCard mbti={data.assessments.mbti} studentName={data.profile?.name || data.user.name || "学员"} />
-                    <AnswerDetail kind="mbti" answers={rawOf("mbti")} />
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-cream-deep bg-cream/60 px-3.5 py-3 text-[13px] font-semibold text-olive">
-                    MBTI 性格测评：未测
-                  </div>
-                )}
-                {data.assessments.disc ? (
-                  <div>
-                    <DiscReportCard disc={data.assessments.disc} studentName={data.profile?.name || data.user.name || "学员"} />
-                    <AnswerDetail kind="disc" answers={rawOf("disc")} />
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-cream-deep bg-cream/60 px-3.5 py-3 text-[13px] font-semibold text-olive">
-                    DISC 行为风格：未测
-                  </div>
-                )}
-                {data.assessments.e3 ? (
-                  isE3V37Result(data.assessments.e3) ? (
-                    <div>
-                      <E3V37OverviewCard e3={data.assessments.e3} studentName={data.profile?.name || data.user.name || "学员"} />
-                      <AnswerDetail kind="e3" answers={rawOf("e3")} />
-                    </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="mono text-[10px] tracking-wider text-olive-mute">测评报告</div>
+                <button
+                  onClick={() => setReportOpen((v) => !v)}
+                  className="flex shrink-0 items-center gap-0.5 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-lime/20"
+                >
+                  {reportOpen ? (
+                    <>
+                      收起 <ChevronUp size={13} />
+                    </>
                   ) : (
-                    <div className="rounded-xl border border-[#c7a23a]/60 bg-[#f5e7c1] px-3.5 py-3 text-[13px] font-semibold text-[#8a6d1a]">
-                      学习力诊断（E3）：学生是旧版 V2.7 结果——学业诊断已升级为 V3.7 三阶九能版，需提醒学生重新完成一次诊断（约 16-18 分钟）。
-                    </div>
-                  )
-                ) : (
-                  <div className="rounded-xl border border-cream-deep bg-cream/60 px-3.5 py-3 text-[13px] font-semibold text-olive">
-                    学习力诊断（E3 三阶九能）：未测
-                  </div>
-                )}
-                {isE3V37ParentResult(data.assessments.optional?.e3parent) && (
-                  <div className="rounded-xl border border-cream-deep bg-cream-card p-4">
-                    <div className="text-[13px] font-bold text-olive">家长卷 · 认知盲区判读（V3.7）</div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="chip !text-[11px]">不了解 {data.assessments.optional.e3parent.unknownCount} 项（{data.assessments.optional.e3parent.unknownLevel}）</span>
-                      <span className="chip !text-[11px]">观察与孩子自评明显差异 {data.assessments.optional.e3parent.blindSpots.length} 项</span>
-                      {data.assessments.optional.e3parent.overestimates.length > 0 && (
-                        <span className="chip !text-[11px] text-terra">高估：{data.assessments.optional.e3parent.overestimates.map((d) => d.kp).join("、")}</span>
-                      )}
-                      {data.assessments.optional.e3parent.underestimates.length > 0 && (
-                        <span className="chip !text-[11px] text-terra">低估：{data.assessments.optional.e3parent.underestimates.map((d) => d.kp).join("、")}</span>
-                      )}
-                      {data.assessments.optional.e3parent.severeConflict && (
-                        <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{data.assessments.optional.e3parent.summary}</p>
-                  </div>
-                )}
-                {data.assessments.multi ? (
-                  <div>
-                    <MultiReportCard multi={data.assessments.multi} studentName={data.profile?.name || data.user.name || "学员"} />
-                    <AnswerDetail kind="multi" answers={rawOf("multi")} />
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-cream-deep bg-cream/60 px-3.5 py-3 text-[13px] font-semibold text-olive">
-                    多元智能：未测
-                  </div>
-                )}
-                {/* 综合报告卡仅对 V3.7 e3 结果展示（V2.7 老数据上面已提示学生重测） */}
-                {data.assessments.mbti && data.assessments.disc && isE3V37Result(data.assessments.e3) && (
-                  <CombinedReportCard
-                    mbti={data.assessments.mbti}
-                    disc={data.assessments.disc}
-                    e3={data.assessments.e3}
-                    multi={data.assessments.multi ?? null}
-                    academics={(data.academics as AcademicsData | null) ?? null}
-                    optional={data.assessments.optional ?? null}
-                    studentName={data.profile?.name || data.user.name || "学员"}
-                  />
-                )}
+                    <>
+                      查看完整报告（与学生端一致） <ChevronDown size={13} />
+                    </>
+                  )}
+                </button>
               </div>
+              <p className="mt-2 text-[12.5px] text-olive-soft">
+                {(() => {
+                  const a = data.assessments;
+                  const names: string[] = [];
+                  if (a.mbti) names.push("MBTI 性格测评");
+                  if (a.disc) names.push("DISC 行为风格");
+                  if (a.e3) names.push(isE3V37Result(a.e3) ? "学习力诊断（V3.7 三阶九能）" : "学习力诊断（旧版 V2.7）");
+                  if (a.multi) names.push("多元智能");
+                  if (a.optional?.multi5) names.push("多元智能五项");
+                  if (a.optional?.anchor) names.push("职业锚");
+                  if (a.optional?.holland) names.push("霍兰德职业兴趣");
+                  if (a.optional?.mental) names.push("心理健康");
+                  if (a.e3parent) names.push("家长卷");
+                  return names.length > 0 ? `已测 ${names.length} 项：${names.join("、")}` : "还没有测评结果。";
+                })()}
+              </p>
+              {reportOpen && (
+                <div className="mt-3">
+                  {(() => {
+                    const a = data.assessments;
+                    return (
+                      <ReportView
+                        data={{
+                          mbti: a.mbti, disc: a.disc, e3: a.e3, multi: a.multi ?? null,
+                          multi5: (a.optional?.multi5 as any) ?? null, anchor: (a.optional?.anchor as any) ?? null,
+                          holland: (a.optional?.holland as any) ?? null, mental: (a.optional?.mental as any) ?? null,
+                          e3parent: a.e3parent, discParents: (a.discParents ?? []) as any, raw: a.raw ?? [],
+                        }}
+                        profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as any }}
+                        viewer="tutor"
+                        onEditAcademics={() => {
+                          setEditAcad(true);
+                          document.getElementById("drawer-academics-editor")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                      />
+                    );
+                  })()}
+                </div>
+              )}
+              {/* 家长卷 · 认知盲区判读（V3.7）：伴学师/管理员专属信息，学生端不可见，保留在 ReportView 展开区之外 */}
+              {isE3V37ParentResult(data.assessments.e3parent) && (
+                <div className="mt-3 rounded-xl border border-cream-deep bg-cream-card p-4">
+                  <div className="text-[13px] font-bold text-olive">家长卷 · 认知盲区判读（V3.7）</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="chip !text-[11px]">不了解 {data.assessments.e3parent.unknownCount} 项（{data.assessments.e3parent.unknownLevel}）</span>
+                    <span className="chip !text-[11px]">观察与孩子自评明显差异 {data.assessments.e3parent.blindSpots.length} 项</span>
+                    {data.assessments.e3parent.overestimates.length > 0 && (
+                      <span className="chip !text-[11px] text-terra">高估：{data.assessments.e3parent.overestimates.map((d) => d.kp).join("、")}</span>
+                    )}
+                    {data.assessments.e3parent.underestimates.length > 0 && (
+                      <span className="chip !text-[11px] text-terra">低估：{data.assessments.e3parent.underestimates.map((d) => d.kp).join("、")}</span>
+                    )}
+                    {data.assessments.e3parent.severeConflict && (
+                      <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{data.assessments.e3parent.summary}</p>
+                </div>
+              )}
             </div>
 
-            {/* 学习力陪跑训练方案（需 E3 已完成） */}
+            {/* 学习力陪跑训练方案（V3.7 三阶九能） */}
+            {data.assessments.e3 && isE3V37Result(data.assessments.e3) && (
+              <V37CoachingPlanCard
+                name={data.profile?.name || data.user.name || "学员"}
+                grade={data.profile?.grade ?? null}
+                e3={data.assessments.e3}
+                academics={(data.academics as AcademicsData | null) ?? null}
+              />
+            )}
+
+            {/* 学习力陪跑训练方案（V2.7 旧版，需 E3 已完成） */}
             {data.assessments.e3 && isE3V27Result(data.assessments.e3) && (
               <CoachingPlanCard
                 name={data.profile?.name || data.user.name || "学员"}
@@ -255,10 +212,24 @@ export default function StudentDetailDrawer({
               />
             )}
 
-            {/* 学业目标 */}
+            {/* 成绩与目标 · 可代填（伴学师/管理员代学员填写） */}
             <div className="paper-card p-4">
-              <div className="mono text-[10px] tracking-wider text-olive-mute">
-                学业自评与目标{(data.academics as AcademicsData | null)?.examName ? ` · ${(data.academics as AcademicsData).examName}` : ""}
+              <div className="flex items-center justify-between gap-2">
+                <div className="mono text-[10px] tracking-wider text-olive-mute">
+                  成绩与目标 · 可代填{(data.academics as AcademicsData | null)?.examName ? ` · ${(data.academics as AcademicsData).examName}` : ""}
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {acadSaved && !editAcad && <span className="text-[11.5px] font-medium text-olive">已保存 ✓</span>}
+                  <button
+                    onClick={() => {
+                      setEditAcad((v) => !v);
+                      setAcadSaved(false);
+                    }}
+                    className="rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-lime/20"
+                  >
+                    {editAcad ? "收起填写" : "帮TA填写 / 修改"}
+                  </button>
+                </div>
               </div>
               {!(data.academics as AcademicsData | null)?.subjects?.length ? (
                 <p className="mt-2 text-[12.5px] text-olive-mute">还没有填写学业目标。</p>
@@ -277,6 +248,29 @@ export default function StudentDetailDrawer({
                     ))}
                 </div>
               )}
+              <div id="drawer-academics-editor">
+                {editAcad && (
+                  <div className="mt-3">
+                    <AcademicsEditorCore
+                      grade={data.profile?.grade}
+                      initial={data.academics as AcademicsData | null}
+                      submitting={saveMut.isPending}
+                      submitLabel="保存到学员档案"
+                      onSubmit={(d: AcademicsSubmit) => {
+                        setAcadSaved(false);
+                        saveMut.mutate({ userId, ...d });
+                      }}
+                      footer={
+                        <>
+                          {saveMut.isError && (
+                            <p className="mt-2 text-center text-[13px] text-terra">保存失败，请再试一次。</p>
+                          )}
+                        </>
+                      }
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 学习动态 */}

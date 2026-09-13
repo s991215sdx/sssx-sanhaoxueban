@@ -191,3 +191,22 @@
 - 关系章：multi5 负向归因（最弱维<60、细心指数<70）；八维图谱注明主观自评参考权重低于五项客观题
 - 图表随章节分布：顶部只留「分数现状与目标」+ 九维雷达；MbtiChart（四组字母对比柱，入选字母绿色）与 DiscTendencyChart（倾向度曲线，抽出共用组件）插在三镜画像章前；multi5/霍兰德/心理图插在更多测评章前；八维雷达插在多元智能图谱章前；ReportDetail 拆出 MbtiChart/DiscTendencyChart/Multi5Radar/HollandRadar/MentalBar/MultiRadarCard 组件
 - BUILD_TAG=v29.7-2026-09-06，build_version=a1ac1c5，git fd05a97
+
+## v34（2026-09-13）报告结构大改版 + 伴学端全量同步
+（注：v30-v33 的详细记录见 README「已实现功能（截至 v33.2）」，本文件从 v34 恢复逐版记录。）
+
+1. **综合报告头部**：删除概要九宫格（OverviewGrid 组件文件保留未用）；学习力系统框架图置顶为报告第一元素；SystemFramework 新增 FrameworkStatus 可选 props——顶部挂「成绩与目标 已填/未填」、三阶各挂 E3 阶分、条件框挂 E3 条件均分+心理健康、学能框挂 E3 学能均分+多元五项+多元八维、底座下新增「深层特质」行（MBTI/DISC/霍兰德/职业锚），全部标明已测（带结果值绿 chip）/未测（灰虚线 chip）；零 props 向后兼容静态图。
+2. **综合结论章**：顶部两段文字下沉并入章末「概要总论」（closing 数组最前），paragraphs 清空——章节直接以「第一步 · 理清现状与目标」卡开场。
+3. **冰山模型重排**（RoadmapSection）：冰山下从上→下 = 学能→善学→会学→乐学→条件→心理健康→DISC→MBTI→职业锚（新增行）→霍兰德，共享一个动态 rowSpan 的「冰山下」单元格；各系统内部行序全部倒转（乐学：韧劲/信心/动力；会学：会用/记住/学懂；善学：智学/复盘/计划；条件：资源/关系/状态；学能：加工速度/工作记忆/注意力，layerUnits 各数组 .reverse()）；第三步「建议进步方案」表行序同步倒转（planLayers）。RoadmapSection 新增 anchor prop。
+4. **答题明细上移一级**：CollapsibleSection 新增 answers prop，「本章相关测评 · 答题明细」成为与「图形与图表」「详细报告文字」并列的独立折叠；AnswerDetailsByKind 内部小标题删除。
+5. **删除「成绩现状与目标分数」独立章节**（secAcad 及 subjectStrategy/acadPriorityNames 一并移除；hasAcadSec 自然为 false，学科快扫答题明细自动并入条件章）。「成绩与目标」tab 保留。
+6. **「给家长的话」重写**：一句开场引导 + 最多 9 张分块卡（只记三件事/怎么说话/陪写作业/动力和奖励/分数怎么聊/特别提醒/认知对照/管教风格/最后一句），短句通俗。
+7. **后端**：coach.saveAcademics mutation（tutor 限名下学员、admin 放行，zod 与 profileRouter 一致）；getStudentDetail 的 assessments 补 e3parent + discParents（含 raw），支撑伴学端报告与学生端完全一致。
+8. **ReportView 提取**：`src/components/reports/ReportView.tsx`（约 2500 行）承载全部报告渲染（所有 tab/图表/打印链路/详版+简版），props {data, profile, viewer, onEditAcademics}，**不得 import trpc**；`src/pages/ReportDetail.tsx` 变为 21 行数据壳。tutor 模式隐藏「我的档案」tab 与返回按钮，成绩 tab 只读 + 可选「帮TA填写」。
+9. **伴学端同步**：StudentDetailDrawer 测评报告区整体替换为 ReportView（viewer="tutor"，该有图就有图，含框架图/冰山/雷达）；家长卷认知盲区卡保留在 ReportView 之外（伴学专属）；StudentReportCards.tsx 已删除。
+10. **成绩代填**：drawer「成绩与目标 · 可代填」卡接入 AcademicsEditorCore + coach.saveAcademics；ReportView 成绩 tab 的「帮TA填写/修改」按钮滚动定位到该编辑器。
+11. **注册即填成绩**：Welcome 向导 STAGES 改为 认识一下 → 成绩与目标（AcademicsStage，可跳过）→ MBTI → DISC → 学业诊断。
+12. **训练方案**：AcademicsForm 抽取受控核心 AcademicsEditorCore（grade/initial/onSubmit 注入）；新增 `src/data/training/e3v37Training.ts`（V3.7 十五项→方法 id 映射，id 已经脚本校验全部存在）+ `src/components/V37CoachingPlanCard.tsx`（条件→乐学→会学→善学→学能 顺序出方案卡，可下载）；V2.7 CoachingPlanCard 原样保留。
+13. **冒烟脚本入仓**：`scripts/smoke-render-v34.tsx`（ReportView 双模式 9 tab renderToStaticMarkup + 关键词断言）、`scripts/check-order.tsx`（冰山顺序/层内倒序/方案表倒序断言）、`scripts/check-editor.tsx`。运行方式：`TSX_TSCONFIG_PATH=tsconfig.app.json npx tsx scripts/xxx.tsx`。
+- 验证：tsc 双配置 0 错误；npm run build 通过；renderToStaticMarkup 双模式全 tab 无白屏；冰山顺序逐项断言通过。
+- BUILD_TAG=v34-2026-09-13
