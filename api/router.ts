@@ -84,6 +84,35 @@ export const appRouter = createRouter({
       return { ok: false as const, error: formatErr(e) };
     }
   }),
+  /** 临时诊断（定位生产库用，用完即删）：列出集群内 UUID 形库名 + 各自知识点数与 users.phone 是否存在 */
+  dbList: publicQuery.query(async () => {
+    const { drizzle } = await import("drizzle-orm/mysql2");
+    const { env } = await import("./lib/env");
+    const base = env.databaseUrl.replace(/\/[^/]*$/, "/"); // 去掉库名，仅连集群
+    const db = drizzle(base, { mode: "planetscale" });
+    const r = await db.execute(sql`SHOW DATABASES`);
+    const names = (r[0] as unknown as Record<string, unknown>[]).map(
+      (row) => String(Object.values(row)[0]),
+    );
+    const out: { name: string; knowledgePoints: number | null; usersHasPhone: boolean | null }[] = [];
+    for (const name of names) {
+      if (!/^[0-9a-f-]{36}$/.test(name)) continue; // 只看应用库，名字本身即 app 标识
+      let knowledgePoints: number | null = null;
+      let usersHasPhone: boolean | null = null;
+      try {
+        const c = await db.execute(sql.raw(`SELECT COUNT(*) AS c FROM \`${name}\`.knowledge_points`));
+        knowledgePoints = Number((c[0] as unknown as { c: number }[])[0]?.c ?? 0);
+      } catch { knowledgePoints = null; }
+      try {
+        const c2 = await db.execute(
+          sql.raw(`SELECT COUNT(*) AS c FROM information_schema.columns WHERE table_schema='${name}' AND table_name='users' AND column_name='phone'`),
+        );
+        usersHasPhone = Number((c2[0] as unknown as { c: number }[])[0]?.c ?? 0) > 0;
+      } catch { usersHasPhone = null; }
+      out.push({ name, knowledgePoints, usersHasPhone });
+    }
+    return { databases: out };
+  }),
   /** DDL 诊断：判定"CREATE TABLE 成功但表不存在"是落错 schema 还是 DDL 子系统异常（每步独立 try/catch，全部跑完） */
   ddlProbe: publicQuery.query(async () => {
     const { formatErr } = await import("./initDb");
