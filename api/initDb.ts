@@ -1,23 +1,32 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import { sql } from "drizzle-orm";
-import fs from "node:fs";
 import crypto from "node:crypto";
 import { env } from "./lib/env";
 import { runSeed, runSkeletonSeed } from "../db/seed-core";
-
-const MIGRATIONS_DIR = "db/migrations";
+import { JOURNAL_ENTRIES, MIGRATION_SQL } from "./migrationsEmbedded";
 
 type JournalEntry = { idx: number; when: number; tag: string };
 
+/**
+ * 迁移内容来源：内嵌模块（随 esbuild 打入 dist/boot.js）。
+ * 历史教训：平台部署的运行时容器里 db/migrations 下的文件可能缺失
+ * （_journal.json / *.sql 读不到，ENOENT），自研迁移器永远卡死。
+ * 因此不再在运行时读文件，一律以内嵌数据为准。
+ */
 function readJournalEntries(): JournalEntry[] {
-  const j = JSON.parse(
-    fs.readFileSync(`${MIGRATIONS_DIR}/meta/_journal.json`, "utf8"),
-  ) as { entries: JournalEntry[] };
-  return j.entries;
+  return JOURNAL_ENTRIES;
+}
+
+function migrationSql(tag: string): string {
+  const content = MIGRATION_SQL[tag];
+  if (content == null) {
+    throw new Error(`embedded migration missing: ${tag}.sql（请重新生成 api/migrationsEmbedded.ts）`);
+  }
+  return content;
 }
 
 function migrationHash(tag: string): string {
-  const content = fs.readFileSync(`${MIGRATIONS_DIR}/${tag}.sql`, "utf8");
+  const content = migrationSql(tag);
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 
@@ -237,7 +246,7 @@ export async function runMigrations(db: Db) {
   );
   for (const entry of readJournalEntries()) {
     if (applied.has(entry.when)) continue;
-    const content = fs.readFileSync(`${MIGRATIONS_DIR}/${entry.tag}.sql`, "utf8");
+    const content = migrationSql(entry.tag);
     const statements = content
       .split("--> statement-breakpoint")
       .map((s) => s.trim())
@@ -262,7 +271,7 @@ export async function runMigrations(db: Db) {
 
 /**
  * 生产环境启动时自动初始化数据库：
- * 1. 应用 db/migrations 下的建表迁移
+ * 1. 应用内嵌的建表迁移
  * 2. 若 knowledge_points 为空则灌入种子数据
  * 带重试（应对 Serverless 数据库冷启动）。
  */
