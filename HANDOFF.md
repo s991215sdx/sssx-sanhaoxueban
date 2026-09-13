@@ -1,0 +1,193 @@
+# 三好学伴 · 交接文档（v29.3 · 2026-09-06）
+
+## 0. 给新代理的第一句话
+请通读本文件后，从「第 6 节：待办任务」继续。所有代码在 `/mnt/agents/output/app`，禁止凭记忆改动，先读文件再动手。
+
+## 1. 项目概况
+- **产品**：三好学伴——K12 数学伴学 Web 应用（当前内容覆盖初一数学，即将扩展全学段）
+- **线上域名**：sanhao2.kimi.site（用户手动点「发布」上线，代理只负责 build_version 保存版本）
+- **项目路径**：`/mnt/agents/output/app`
+- **技术栈**：React 19 + Vite + Tailwind（olive/lime 低饱和设计令牌）前端；Hono + tRPC（superjson）+ drizzle-orm/mysql2 + TiDB Serverless 后端；recharts 图表
+- **构建**：`npm run build`（前端 vite build → dist/public；后端 esbuild → dist/boot.js）
+- **类型检查**：`npx tsc --noEmit -p tsconfig.json`（前端）、`npx tsc --noEmit -p tsconfig.server.json`（后端，已知唯一遗留报错 api/router.ts(72) TS7053，运行时安全，v17 起遗留，勿动）
+- **版本保存**：`website_version_manager` action=build_version, type=dynamic, project_dir=/mnt/agents/output/app
+- **测试账号**：小明 13900000002 / Simu123456
+
+## 2. 硬性约束（红线，勿碰）
+1. 禁改：`api/kimi/`、`api/lib/`、`api/queries/connection.ts`、`drizzle.config.ts`、`.env`
+2. 勿 drop 表、勿 `db:push --force`
+3. 沙箱无法直连数据库（TCP 4000 超时/PrivateLink）。观察线上状态只能用公开探针：
+   - `GET https://sanhao2.kimi.site/api/trpc/ping?input={"json":null}`
+   - `GET https://sanhao2.kimi.site/api/trpc/dbHealth?input={"json":null}`（含迁移执行状态 initStatus）
+4. 同一文件禁止并行编辑（多个子代理改同一文件会互相覆盖）
+5. **改已存在文件前必须先 read_file**（本会话曾因未读直接 write_file 覆盖 api/tutorRouter.ts，靠从 dist/boot.js 反提取源码才恢复）
+6. 前端验证必须跑真实 `tsc -p tsconfig.json` 并在改完后重跑——v22 曾因子代理在旧文件上跑 tsc 漏检 `Layout.tsx` 未定义变量 `showCoach`，导致线上全站白屏
+
+## 3. 架构要点
+
+### 数据库与迁移
+- 自定义 TiDB 安全迁移器 `api/initDb.ts`：读 `db/migrations/meta/_journal.json` 的 entries → 执行 `<tag>.sql`（按 `--> statement-breakpoint` 分割），逐语句容忍 errno 1050/1060/1061/1091，**不用事务**（TiDB 不支持事务型 DDL）
+- 新迁移 = 写 `db/migrations/XXXX_name.sql` + 在 `_journal.json` 追加 entry（idx 递增、tag=文件名去后缀、when=毫秒时间戳、breakpoints=true），发布重启时自动执行
+- 现有迁移至 `0006_tutor_role`（users.role 增加 'tutor'；student_profile 增加 tutor_id）
+
+### 关键表（db/schema.ts）
+- `users`：role enum ["user","tutor","admin"]；phone 即账号；passwordHash scrypt
+- `studentProfile`：grade/school/targetSchool/dailyMinutes/mbti/disc/onboarded/tutorId/**academics json**
+- `knowledgePoints`：code（如 G7-1-01，唯一）、chapter、title、summary json[{heading,body}]、example json{stem,analysis,answer}、prereqCodes string[]、commonErrors json、socratic json{keyConcepts,probes,hints}、sortOrder。**当前无 grade 字段，初一耦合在 code 前缀 G7**
+- `questions`：kpId、type(choice/fill)、stage(check/practice/variant 先备检测/预习练习/变式训练)、difficulty 1-3、stem、options、answer、hint、explanation
+- `assessmentResults`：kind enum(mbti/disc/e3/multi)、result json、**answers json（原始答题明细）**
+- 其余：mastery、attempts、errorLogs、dailyPlans、previewSessions、tutorSessions、moodLogs 等
+
+### 测评体系（contracts/）
+- `assessments.ts`：MBTI(28 迫选)/DISC(24 迫选)/E3 学习力(40 Likert+动机+生活事件+开放题) 题库与计分器
+- `multi.ts`：多元智能（加德纳八维 40 题 Likert，6 题反向计分），scoreMulti → MultiResult{dims, top3, summary}
+- `academics.ts`：**v22 已改逐科满分**——ACADEMIC_SUBJECTS 9 科（含物理化学），SubjectStatus{name, selfLevel 1-5|null, fullScore|null, lastScore|null, targetScore|null}，calcGaps 按各科自身 fullScore 算差距
+- 报告内容纯前端数据：`src/data/reports/{types,mbti-a..d,disc,combined,index}.ts`，`**关键词**` 由 RichText.tsx 渲染加粗；combined.ts v3 共 12 章，第①章为「综合结论」（跨测评归纳，置于最前），导出 buildCombinedReport(mbti, mbtiReport, disc, discReport, e3, opts?:{multi, academics})
+
+### tRPC 路由（api/）
+- middleware.ts：publicQuery / authedQuery / adminQuery / tutorQuery（requireAnyRole(["tutor","admin"])）
+- router.ts：BUILD_TAG 常量、ping、dbHealth 探针
+- profileRouter.ts：测评 questions/submit/latest（含 raw 答题明细）、saveAcademics（zod 校验逐科 fullScore 1-1500 可空）
+- adminRouter.ts：claimAdmin（仅当系统无管理员时可自举，首个管理员靠它）、setRole、students、studentDetail、tutors、assignTutor
+- coachRouter.ts：myStudents（admin 全量/tutor 仅自己名下）、studentDetail（越权校验）
+- studentDetail.ts：listStudents + getStudentDetail 共享逻辑（含 phone 字段）
+- tutorRouter.ts：**AI 伴学路由**（start/state/beginQuiz/submitQuiz/chat/reviewCard），与 coachRouter 是两回事，勿混淆
+- auth-router.ts：logout 是 publicQuery（过期会话也要能退出）
+
+### 前端关键页面（src/pages|components）
+- App.tsx 路由：/ /preview /gaps /learn/:errorId /papers /treehole /companion /report /report-detail /admin /tutor /login /welcome
+- Layout.tsx：角色导航（admin 见「伴学工作台」+「后台管理」；tutor 见「伴学工作台」）
+- Admin.tsx：三 tab 总览/学员/伴学师，学员行内分配伴学师，详情抽屉 StudentDetailDrawer.tsx
+- Tutor.tsx：伴学工作台（coach.myStudents + 抽屉）
+- Welcome.tsx：注册向导 5 步（档案→MBTI→DISC→E3→多元智能可跳过）
+- ReportDetail.tsx：4 tab（mbti/disc/multi/combined），综合 tab = 概览卡 → 全部图表（E3九维雷达/多元八维雷达/分数差距柱状）→ 章节（首章综合结论）；每 tab「下载报告」按钮 → src/lib/reportDownload.ts 生成打印 HTML 调 window.print
+- companion/ 目录：AssessmentReport、AnswerDetail（答题原始选项回顾，支持外部传 answers）、MultiQuiz、AcademicsForm（逐科满分）
+
+## 4. 已完成版本史
+- v20 (832f703)：MBTI/DISC 详细报告（仿两份参考 PDF 风格，校园场景化）+ MBTI+DISC+E3 综合报告
+- v21 (9669ef5)：关键词加粗、三阶九能归纳、图表化；多元智能测评（选做）；伴学师可见答题原始选项；学业现状/差距填报；修复退出登录
+- v22 (559e09f)：多元智能入注册向导；逐科满分；综合报告图表全前置+首章综合结论；四份报告可下载；管理员系统（学员/伴学师 tabs+分配）+ 伴学师工作台 /tutor
+- v22.1 (d545111)：**修复线上白屏**（Layout.tsx showCoach 未定义）+ 补 /tutor 路由
+- v22.2 (5026af3)：学业表单加物理、化学
+
+## 5. 经验教训
+1. 白屏类故障排查顺序：公开探针看后端 → 浏览器工具复现 → 静态读渲染链组件（v22.1 就是未定义变量导致整树崩溃）
+2. esbuild 冒烟测试里相对路径 `../../contracts/x` 偶发解析失败，用绝对路径 `/mnt/agents/output/app/contracts/...`
+3. zod 为 v4.3.5，`z.enum(readonly tuple)` 可用
+4. 子代理交付后必须亲自复核其声明的每一项（v22 子代理漏注册 /tutor 路由、漏定义变量）
+5. **edit_file 静默失败**：同一条消息里对同一文件发两个 edit_file，第二个常静默不生效（工具却报成功）。规则：同文件每次只改一处，改完必 grep 验证
+6. 新增深度内容 KP 与骨架撞 code 是特性：runSeed upsert 覆盖升级，runSkeletonSeed 只插不更新
+
+## 6. 待办任务
+
+### 任务 A 第一期：全学段知识骨架 ✅ 已完成（v23, e7936f0, 2026-09-04）
+- 迁移 0007：knowledge_points 加 stage/grade；contracts/constants.ts 有 STAGES/GRADES/stageOfGrade
+- db/seed-skeleton-{primary,junior,senior}.ts：143 章 554 个骨架 KP（G1-G12 全覆盖，人教版目录），seed-core.ts 的 expandSkeleton 自动展开+链前置，runSkeletonSeed 幂等只插不更新（initDb 每次启动调用）
+- 空内容 KP 判定：`Array.isArray(summary) && summary.length > 0`（graphRouter/previewRouter/planRouter/dashboardRouter 均已按此门控）；前端 PreviewList 年级选择器（默认取档案年级）+「精讲内容建设中」置灰，Gaps 页同步
+- code 规则：G{1-12}-{章号}-{序号}，sortOrder=编码序；小学下册章号从 11 起
+- **注意**：runSeed 只在空库时跑；骨架铺数据靠 runSkeletonSeed（每次启动）
+
+### 任务 A 第二期（待做）：按孩子实际年级优先填深度内容（精讲/例题/错因/费曼 + 三阶段题库），一批一验。参考 db/seed-ch1.ts 的 KPSeed 格式
+
+## 7. 快速自检清单（每次交付前）
+- [ ] 两个 tsconfig 的 tsc 都干净（除已知 router.ts:72）
+- [ ] npm run build 成功
+- [ ] grep 构建产物确认关键文案存在
+- [ ] 涉及登录后页面的改动：用 browser 工具 + 测试账号在线上复现验证（发布后）
+- [ ] build_version 保存并告知用户去点「发布」
+
+## v24.1 (8266f29) 2026-09-05
+- 修复 /companion 白屏：AcademicsForm 调 subjectsForGrade 但未 import（edit_file 静默失败）→ ReferenceError 整树卸载
+- 修复 /gaps 潜在白屏：Gaps.tsx 用 GRADES/STAGES/STAGE_GRADES 未 import
+- graph.overview 默认按档案年级过滤（scopeKpsToUserGrade），新增 allGrades:true 仅 PreviewList 使用 → 修复 Dashboard「最需要关注的 5 个知识点」串年级、报告/错题/试卷页串年级
+- graph.detail 返回补 hasContent（PreviewSession 依赖）
+- 类型修复：subjectsForGrade 返回 AcademicSubject[]；StudentListItem 补 phone；router.ts seedProbe recount 括号 bug；LearnFlow tutorMessage 可空兜底
+- 教训再次验证：每次改动后必须 tsc 双配置全绿 + grep 验证 import 落盘
+
+## v25 (2026-09-05) AI 化三大升级
+- api/ai.ts 重写：多凭据源（DEFAULT_AI_* 网关 → MOONSHOT_API_KEY 直连 api.moonshot.cn，默认模型 kimi-latest 支持图片）、支持 image_url 视觉消息、tryChatJSON、aiSelfTest
+- router.ts 新增公开探针 `GET /api/trpc/aiHealth?input={"json":null}`（configured/provider/pong/ms）；BUILD_TAG=v25-2026-09-05
+- 苏格拉底大模型化：tutorRouter.chat 先走 LLM（system prompt 含 KP 精讲/关键概念/错题/检验题与答案保密），[UNDERSTOOD] 标记判定想通；失败回退规则引擎
+- 错题自动识别：gapsRouter.autoClassify（图片 OCR 题干+按年级候选 KP 匹配+五类归因+置信度）；AddErrorForm 加「✨AI 自动识别」按钮、拍照后自动触发、全部可手动改；AddErrorForm 的 overview 改 allGrades:true（配合 v24.1 默认按年级过滤）
+- 首页全能入口：api/analyzeRouter.ts（analyze mutation：文字/图片→意图识别+KP 匹配+系统性查漏方案，降级关键词匹配）；src/components/OmniBox.tsx 置顶 Dashboard（麦克风占位「即将支持」，音视频需 ASR 待评估）
+- .env.example 补 MOONSHOT_API_KEY 说明；typescript 需 node_modules 本地装（npx tsc 会拉到错误包）
+- 注意：.git 曾被环境清空，v25 起重建仓库（旧提交历史丢失）
+
+## v25.1 (2026-09-05)
+- OmniBox 麦克风语音输入：Web Speech API（zh-CN、interim+continuous，复用 FeynmanChat 模式），识别文字进输入框可再编辑；不支持的浏览器自动隐藏按钮
+- 线上验证：v25 已发布，aiHealth 探针 configured:false → 平台未注入 DEFAULT_AI_*，需用户配置 MOONSHOT_API_KEY（.env 会被 Dockerfile 打进镜像，dotenv/config 会加载）
+
+## v26 (2026-09-05)
+- 学习力训练系统入库：用户提供的 xlsx（N能力训练65/D动力激发60/X学法优化65/P品格养成68 + 120问题映射）→ `src/data/training/methods.ts`（258 法结构化：板块/目的/工具/步骤/频率）；解析脚本流程见会话（openpyxl）
+- `src/data/training/e3Training.ts`：E3NineKey ×（警戒|危险）→ 2-3 个方法 id + 一句话理由（按 id 引用，勿按名称）
+- combined.ts 新增章节「针对性训练方案（三阶九能 × 学习力训练系统）」，插在九维体检后；只有非「正常」维度出方案
+- 文案精炼：NINE_TEXT 27 条全部重写为「结论+本周行动」短句式；删除 adaptText 风格适配模板（九维不再拼接泛泛建议）；综合结论/三镜画像/JP_PLAN_HINT 精简
+- 教训：xlsx 解析后 method 名含前导字母和空格，映射一律用 id（如 X57、D31）
+
+## v27 (2026-09-05)
+- combined.ts：删「核心结论速览」「综合优势与待提升盘点」两章（与综合结论/sec2 重复）；NINE_TEXT 改 export；抽 buildTrainingSection(e3) 公共；新增 buildE3Report(e3) 三阶九能单列报告生成器
+- `src/data/reports/coachingPlan.ts`：buildCoachingPlan（参照用户 docx 模板：画像诊断→陪跑框架→优先专题(最弱2维全量步骤)→常态化盯办(问·错·讲，落到 App 功能)→每周检查表→协同分工→储备方法库）；输出 CombinedReport 复用 combinedPrintHtml 打印
+- ReportDetail：Tab 新增「学习力诊断报告」(e3，置首位)；新增 SectionToc 章节直达导航；SectionCard 加序号+左侧色条+锚点
+- StudentDetailDrawer：测评摘要后插 CoachingPlanCard（展开/下载）
+- RichText 支持 \n 换行；reportDownload rich() 换行转 <br/>（训练步骤不再糊成一团）
+- AssessmentReport：E3 卡加「查看详细报告」→ /report-detail?tab=e3
+
+## v28（2026-09-05，commit db4ea58）
+用户 7 项反馈全部落地：
+1. **拍照错题/试卷分析准确性修复**：autoClassify 与 analyze 改两阶段——阶段一 vision 只做题干转录+学科判定（禁止挑知识点，防止跨学科张冠李戴），阶段二在判定学科的 KP 子集内纯文本匹配；返回 subject/transcript；前端 OmniBox 显示「AI 识别到的内容·判定学科」供核对，Gaps 提示语含转录核对与学科。
+2. **报告文字聚焦学习**：删除 MBTI 详版「代表人物」卡、DISC 科普末尾非学习提示；页脚改「聚焦学习相关因子」。
+3. **Tab 顺序**：综合报告第 1 位 → 学业诊断(E3) → MBTI → DISC → 多元智能五项 → 多元智能·自评版。
+4. **多元智能五项客观测评（multi5）**：contracts/multi5.ts（演绎推理/细节感知/数字计算/词义理解/空间定向，每维 8 道客观单选带标准答案，维度分=正确率、细心指数=全卷正确率、band 四档文案含特征/评估/学习/职业/成长建议，卡特尔理论依据）；questions 剥离答案下发；Multi5Quiz + ReportDetail multi5 tab（雷达+五维卡）+ multi5PrintHtml；**db 迁移 0009**：assessment_results.kind enum 加 'multi5'（启动时自研迁移器自动执行）。
+5. **信效度**：docs/RELIABILITY.md 检验报告（五项测评结构/反向题/内容效度逐项过审 + 数据积累后复核清单）。
+6. **单项重测**：AssessmentReport 五张卡均有「重新测这项」内嵌重测入口（不必走 /welcome 全流程）；EmptyCard 同样本地启动单项。
+7. **伴学师/管理员可见完整报告**：StudentReportCards.tsx（MBTI/DISC/E3/multi/综合 完整报告展开查看+下载），StudentDetailDrawer 接入；Admin/Tutor 复用同一抽屉，后端无需改（getStudentDetail 已返回完整 result，权限模式沿用）。
+
+## v29（2026-09-05）
+1. **测评中心大栏目**：左侧导航新增「测评中心」(/assessments)，8 项测评统一入口（必测 MBTI/DISC/E3 + 选做 多元五项/自评/职业锚/霍兰德/心理健康），支持开始测评/查看报告/重新测；AssessmentReport 顶部加引导卡。
+2. **三项选做测评**（参照用户 PDF 模板）：contracts/careerAnchor.ts（施恩八型40题，top2 详解+学习影响）、contracts/holland.ts（RIASEC 36题，code+专业职业建议）、contracts/mentalHealth.ts（SCL-90 式 10 因子 30 题，阳性线+免责声明，非医学诊断）；迁移 0010 扩 enum；均为选做不影响 onboarding；详情组件 src/components/reports/{Anchor,Holland,Mental}Detail.tsx；打印 anchorPrintHtml/hollandPrintHtml/mentalPrintHtml。
+3. **Tab 重排**：综合报告→成绩现状及目标分数（新 academics tab，无中考表述）→学业诊断→MBTI→DISC→多元5项→自评→职业锚→霍兰德→心理健康；Tab 条 flex-wrap。
+4. **综合报告集成选做测评**：opts 增 anchor/holland/mental，任一存在则追加「选做测评·对学习的综合影响」章；学生端 ReportDetail 与伴学端 CombinedReportCard 均已接线；studentDetail.assessments 增 optional 字段。
+5. **DISC 详版精简**：删 communicationTips 与 DISC 科普卡，保留头卡/overview/校园五幕/压力/obstacles/supports/teacherFit。
+6. **文案**：基本信息「想考的高中」→「自己的目标学校」；combined.ts 中考表述全部改为「成绩现状与目标分数/目标总差距」。
+
+## v29.1（2026-09-05，commit ca4e56b）⚠️ 关键修复
+**AI 全链路静默失败的根因**：kimi-k2.x 推理模型仅允许 temperature=1，api/ai.ts 之前固定下发 0.7/0.2 → Moonshot 返回 400「invalid temperature」→ tryChat 静默降级 → 拍照识别/苏格拉底/全能入口全部失效（v25-v28 的"数学题讲成语文"实因 AI 失败后跨学科关键词兜底）。修复：k2 系列不下发 temperature；阶段二 token 预算 1200→3000、超时 45s→60s；analyze 学科判定 300→800。
+**测试账号全流程回归**（v29 线上）：8 项测评全部提交成功（含职业锚/霍兰德/心理健康，迁移 0010 自动执行）；错题本录入+根因回溯+复习队列 OK；试卷分析 create+analyze OK（错题自动入错题本 linkedErrorIds）。拍照 AI 识别待 v29.1 发布后回归。
+
+## v29.2（2026-09-05）
+综合报告改版：① 数据速览图表区扩列——E3九维雷达/多元八维/多元五项雷达/霍兰德六型雷达(赭色)/心理健康十因子条形(带阳性线)/分数差距，全部前置在报告最前；霍兰德详版顶部也加六型雷达。② 「三镜画像」与「性格×行为」合并为一章，三镜描述精简突出学习相关，新增「天然优点/可能出现的卡点」交叉分析，卡点用 **!!红色加粗!!** 标记（RichText 与打印 rich() 均支持 **!!...!!** 语法，terra 红）。③ 针对性训练方案从综合报告与 E3 诊断报告中移除，只在伴学师陪跑方案（CoachingPlanCard）展示。④ 选做测评影响章节移到三镜画像之后。章节序：综合结论→三镜画像与风格密码→选做影响→九维体检→多元智能→成绩目标→校园场景→信号→家长→30天行动。
+
+## v29.3（2026-09-06）综合报告再改版
+- 三镜画像重写：每镜列出测评得分（MBTI 四组字母分 / DISC 四因子分 / E3 三阶分）+ 各镜优点与卡点；新增「三镜结合·优势从哪来 / 卡点从哪来」两卡，逐条标注指标归因；删除原四张交叉卡（气氛带动型等，EI_DISC_TABLE/JP_DISC_TABLE/SN_TEXT/TF_TEXT 已移除）
+- 综合报告末尾新增「学习力训练点子速查」章：优点巩固 + 每个卡点/问题一条训练点子（方法名引用 E3_TRAINING，不展开步骤，具体操作仍在伴学师陪跑方案）
+- DISC 详细报告：四因子分数已逐条标注，并新增 D/I/S/C 得分曲线图（recharts LineChart，赭色 #cf6a3c）
+- BUILD_TAG=v29.3-2026-09-06，build_version=31800a3，git 4133d06
+
+## v29.4（2026-09-06）综合报告：概览卡扩容 + 性格×行为影响学习力
+- 顶部概览卡：已完成的测评全部上卡（不再区分必做/选做），每张卡带基础数值——MBTI 八字母分、DISC 四因子分、E3 三阶分、多元智能 Top1、multi5 综合分+细心指数、职业锚 Top1/Top2、霍兰德代码+首位分、心理健康等级+总分+阳性数
+- buildCombinedReport opts 新增 multi5；调用方 ReportDetail / StudentReportCards 均已传入
+- 三镜画像新增「性格 × 行为 · 这样的孩子，学习力会怎样被影响」卡：DISC 动物形象（老虎/孔雀/考拉/猫头鹰）+ 每型学习影响文案（DISC_LEARN_IMPACT）+ J/P、T/F 修饰句 + E3 九维实际分数印证（DISC_E3_ECHO 映射），偏低维度红标
+- DISC 详细页曲线图改为「倾向度曲线」（偏离均值百分比、零线 ReferenceLine，对标专业 DISC 报告样式）
+- 全报告去掉「选做」字样（章节改名「更多测评 · 对学习的综合影响」，tab 标签去掉 ·选做）
+- BUILD_TAG=v29.4-2026-09-06，build_version=5f12c71，git c23dbbf
+
+## v29.5（2026-09-06）图示数值 + 逐因子解读 + 测评×学习力关系章
+- OverviewCharts：所有雷达图角度轴直接带分数（如「学习动力 3.5」）；心理十因子/分数差距条形图加 LabelList 数值；多元智能八维标题改「（主观认同自评）」并移到五项客观题之后；DISC 倾向度曲线沿用
+- 三镜画像 MBTI 卡：四组字母逐项解读（明显偏/略偏/均衡 + 每个字母含义，MBTI_POLE_MEANING）；DISC 卡：四因子按得分排序逐项解读（主导/辅助/不典型/最弱 + 高低分含义，DISC_FACTOR_MEANING）
+- 新增章节「测评因子 × 学习力：谁在帮忙、谁在拖后腿」（secRelation，位于更多测评之后）：正相关清单（DISC特质→E3印证维度、多元智能通道、multi5底盘、最强九维）+ 负向清单红标（DISC惯性压低的E3维度、MBTI盲点、心理阳性因子）+ 三条个性化优化方向
+- BUILD_TAG=v29.5-2026-09-06，build_version=0fb150a，git 14d7f63
+
+## v29.6（2026-09-06）综合报告结构重构
+- 修复 bug：综合结论 conclP2 内层双引号字符串里的 ${} 不插值（截图中"乐学 ${e3.stages.乐学}"原样显示），整段重写
+- 综合结论重写：学习阶段定位 → 三阶逐层现状（每层最弱两维）→ 成绩现状与目标差距 → 优先提升建议（层+维度；学科优先语数外三主科按差距排序）→ 日常时间分配（主科 60-70%，差距最大主科独占 25-30%）→ 两件事收尾
+- 章节重排：综合结论 → 成绩现状与目标分数 → 九维体检 → 三镜画像 → 更多测评 → 多元智能 → 测评因子×学习力关系 → 校园场景 → 信号 → 家长 → 30天行动 → 训练点子速查
+- 关系章加「很好/最差」指标归因（最强九维←DISC关键词+MBTI特质；最弱九维←DISC阻碍+MBTI盲点，红标）
+- 心理健康：正常因子统一绿色（正常），阳性因子标红并写明 轻度/中度/重度（mentalBand：≥2 轻/≥2.5 中/≥3 重）；OverviewCharts 心理图改单条+Cell 按因子着色+阳性参考线；MentalDetail 同步
+- BUILD_TAG=v29.6-2026-09-06，build_version=0c7802d，git 46ad196
+
+## v29.7（2026-09-06）DISC组合型 + 图表随文分布
+- DISC 多主因子：getDiscCombo（最高分必选，差≤1 分的因子一并纳入，最多3个）；buildDiscComboBlend 混合型融合分析（按场景切换模式）；概览卡/三镜画像DISC卡/影响卡/关系章/DiscDetail 全部改用组合标签（如「DI 型 · 老虎+孔雀」）；DiscDetail 头部显示组合+混合分析卡
+- 各测评优缺点：职业锚（优势驱动+需要注意）、霍兰德 top3 逐型学习影响；multi5 在「更多测评」章独立成段（客观作答权重>八维自评）：最强维=优点、最弱维=问题、细心指数<70 红标提醒
+- 关系章：multi5 负向归因（最弱维<60、细心指数<70）；八维图谱注明主观自评参考权重低于五项客观题
+- 图表随章节分布：顶部只留「分数现状与目标」+ 九维雷达；MbtiChart（四组字母对比柱，入选字母绿色）与 DiscTendencyChart（倾向度曲线，抽出共用组件）插在三镜画像章前；multi5/霍兰德/心理图插在更多测评章前；八维雷达插在多元智能图谱章前；ReportDetail 拆出 MbtiChart/DiscTendencyChart/Multi5Radar/HollandRadar/MentalBar/MultiRadarCard 组件
+- BUILD_TAG=v29.7-2026-09-06，build_version=a1ac1c5，git fd05a97

@@ -1,0 +1,97 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1788353292784,
+      "tag": "0000_solid_maximus",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1788361090425,
+      "tag": "0001_greedy_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1788431657903,
+      "tag": "0002_smiling_bloodscream",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1788520000000,
+      "tag": "0003_tutor_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1788542400000,
+      "tag": "0004_phone_password_login",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1788560000000,
+      "tag": "0005_assessment_answers_academics",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1788563600000,
+      "tag": "0006_tutor_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1788604800000,
+      "tag": "0007_kp_stage_grade",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1788657600000,
+      "tag": "0008_kp_subject",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1788715200000,
+      "tag": "0009_multi5_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1788780000000,
+      "tag": "0010_optional_assessments",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1788990000000,
+      "tag": "0011_e3parent_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1789222055198,
+      "tag": "0012_discparent_kind",
+      "breakpoints": true
+    }
+  ]
+}
