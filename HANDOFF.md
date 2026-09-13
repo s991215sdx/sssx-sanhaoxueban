@@ -252,3 +252,17 @@
 - 验证：tsc app 配置仍仅 3 个历史遗留错误；npm run build 通过；冒烟全过。
 - BUILD_TAG=v37-2026-09-13
 - **待办（v38）**：Q2 SDQ（25 题，4-17 岁）+ PHQ-A/GAD-7 学生化（11+）双量表并行选做、去「三甲医院」措辞；Q3 亲子对照独立 tab + 综合报告章 + 简版摘要卡；Q4 分学段题目优化（清单已交用户确认，已知：PRIMARY q4/q34/q50「高中约7—8小时」误植、q68 30分钟偏长；JUNIOR q4；学科快扫 junior 缺生物/地理、primary 可加科学）。
+
+## v38（2026-09-13）E3 分学段题目优化 + 家长报告栏目 + 附录整章不打印
+（用户确认：Q4 清单 A/B 全改、C 不改；另追加：附录整章不打印、家长版独立专属报告）
+1. **E3 分学段题目**（contracts/e3v37.ts，只改小学/初中卷，高中卷不动）：小学卷 q4→「想读哪所中学、长大想做什么样的事」、q8→「知道为什么学习——成为更厉害的自己」、q10→「做了不起的事帮到很多人」、q26→「画图或列表串知识」、q34→「期末、升初中目标」、q35→「先做重要着急的作业」、q42→「错的是不会/粗心/时间不够」、q50→「小学约9—10小时」（原误植高中7—8小时）、q68→「连续20分钟」；初中卷 q4→「想读哪所高中+对长大做什么有初步想法」。e3v37Parent P9 镜像题措辞同步（画图或列表）。学科快扫科目未动（C 不改）。
+2. **打印**：综合详版「附录章」整章 print:hidden（CollapsibleSection 外包 div；此前 v37 已隐藏章内得分表与各章答题明细）；E3 tab 附录仍正常打印。
+3. **家长报告独立 tab**（TABS 将「家长 DISC」改为「家长报告」，key="parent"；旧 ?tab=discparent 深链兼容）：ParentReportTab 组件（ReportView 内，替换原 DiscParentTab）五版块——① 亲子冲突点清单与改进方案（buildParentChildAnalysis 聚合：severeConflict 红线 / 每位家长 DISC 频道冲突 0–24 量尺 |Δ|≥6 / 高估 / 低估 / 家长认为较差 / 了解不足 + 对应建议）；② 家庭支持与环境观察（condView 卡：家长观察 × 孩子自评分级 chip）；③ 家长认知对照（blindSpots 表格：家长评/孩子自评/差值/高估低估徽章）；④ 亲子 DISC 对照（DiscParentCompare + 每位家长结果卡含管教风格/冲突点/建议/旧版徽章）；⑤ 答题明细双 Fold（e3parent + discparent）。空态双 MissingCard 分别引导两份测评。
+4. **综合报告新章**：combined.ts 新增 secParentChild「亲子对照与沟通建议（家长卷 × 家长 DISC）」，紧随条件模块章（条件大类），含冲突点清单卡（标 !! 时 level=卡点）与沟通优化建议卡；仅在有 e3parent 或 discParents 时生成。ReportView chartNode 新增「亲子对照」映射 → DiscParentCompare；answerKindsForSection 新增「亲子对照」→ ["e3parent","discparent"]（答题明细随章下沉、打印隐藏同其他章）。
+5. **一页简版**：CombinedLite 新增 e3parent/discParents props 与「亲子对照 · 摘要」卡（前 3 条冲突 + 一条核心建议 + 条数指引）。
+6. **入口**：AssessmentCenter 的 e3parent/discparent 卡片报告跳转 tab 改 "parent"（原 discparent 指向学生 DISC 页的问题解决）；canDownload/TAB_TITLE 适配 parent。
+7. **combined.ts 亲子 DISC 差值量尺归一**：新增 discNorm（V2 原值 / V1 ×2，0–24 同尺），冲突阈值 |Δ|≥6 强烈 / 4–5 需留意（原 0–12 量尺 ≥3/=2 在 V2 下失真）；buildParentChildAnalysis 用同款 discNv。
+- 冒烟：`scripts/smoke-render-v38.tsx`（v37 全量 + v38 增量 18 项：题目修改断言、家长 tab 四版块+明细+空态+旧深链、综合亲子章+图表、简版摘要卡、附录整章 print:hidden）。
+- 验证：tsc app 配置仍仅 3 个历史遗留错误；npm run build 通过；冒烟全过。
+- BUILD_TAG=v38-2026-09-13
+- **待办（v39）**：Q2 双心理量表——SDQ 学生自评版 25 题（4-17 岁，五维 + 保留 1 条自伤安全预警题沿用红线）+ PHQ-A 9 题/GAD-7 学生化（11 岁以上），两套可分别选做、结果都进报告、各标适用年龄；去全部「三甲医院」措辞改「国际通用筛查工具」；旧 V1/V2 结果兼容+提示重测（isMentalV2 按 length===16 判别需扩展版本识别；answerBlocks mental 块适配；测评中心 mental 入口改双量表选择页）。

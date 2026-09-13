@@ -66,7 +66,7 @@ const TESTS: TestDef[] = [
     name: "家长卷 · 家庭支持与观察对照",
     desc: "约 8 分钟 · 由家长填写 · 进入系统后随时可补 · 选做",
     required: false,
-    tab: "e3",
+    tab: "parent",
     summary: (l) =>
       l.e3parent
         ? isE3V37ParentResult(l.e3parent)
@@ -87,7 +87,7 @@ const TESTS: TestDef[] = [
     name: "家长 DISC（家庭版）",
     desc: "家长测家庭环境下的行为风格，多位家长可各测一次，自动与孩子的校园 DISC 做冲突对照分析 · 选做",
     required: false,
-    tab: "disc",
+    tab: "parent",
     summary: (l) => {
       const n = (l.discParents as unknown[] | undefined)?.length ?? 0;
       return n > 0 ? `已测 ${n} 位家长` : null;

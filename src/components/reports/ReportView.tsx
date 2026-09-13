@@ -19,7 +19,7 @@ import {
   e3v37Level,
 } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Stage, E3V37ItemScore } from "@contracts/e3v37";
-import { isE3V37ParentResult } from "@contracts/e3v37Parent";
+import { isE3V37ParentResult, type E3V37ParentResult } from "@contracts/e3v37Parent";
 import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { AnchorResult } from "@contracts/careerAnchor";
 import type { MultiResult } from "@contracts/multi";
@@ -73,7 +73,7 @@ export type ReportAssessmentData = {
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
-type Tab = "combined" | "profile" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "discparent";
+type Tab = "combined" | "profile" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "discparent" | "parent";
 
 /** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
 type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
@@ -89,7 +89,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "anchor", label: "职业锚" },
   { key: "holland", label: "职业兴趣" },
   { key: "mental", label: "心理健康" },
-  { key: "discparent", label: "家长 DISC" },
+  { key: "parent", label: "家长报告" },
 ];
 
 const POLE_LABEL: Record<string, string> = {
@@ -1162,27 +1162,223 @@ const PARENT_DISC_STYLE: Record<"D" | "I" | "S" | "C", { style: string; risk: Re
   },
 };
 
-/** 家长 DISC tab：每位家长的结果卡 + 与学生 DISC 的对照分析（冲突点 + 管教建议）。 */
-function DiscParentTab({
+/** 亲子冲突/建议聚合（家长报告 tab 与一页简版摘要卡共用）。 */
+function buildParentChildAnalysis(
+  student: DiscResult | null,
+  parents: { label: string; result: DiscResult }[],
+  e3parent: E3V37ParentResult | null,
+): { conflicts: string[]; tips: string[] } {
+  const conflicts: string[] = [];
+  const tips: string[] = [];
+  if (e3parent?.severeConflict) {
+    conflicts.push("家庭近期有严重亲子冲突信号（家长卷）——先修复关系与安全感，再谈学习要求。");
+    tips.push("红线期原则：暂停加压与说教，先恢复日常陪伴（一起吃饭、散步、不谈学习的闲聊），必要时寻求学校心理老师或专业机构支持。");
+  }
+  for (const p of parents) {
+    const style = PARENT_DISC_STYLE[p.result.primary];
+    if (student) {
+      const deltas = (["D", "I", "S", "C"] as const).map((k) => ({
+        k,
+        abs: Math.abs(discNv(student, k) - discNv(p.result, k)),
+      }));
+      const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+      if (strong.length > 0) {
+        conflicts.push(
+          `${p.label}（${p.result.primary} 型）× 孩子（${student.primary} 型）：${strong.map((x) => `${x.k} 维差 ${x.abs} 分`).join("、")}（0–24 量尺，≥6 强烈冲突）——${style.risk[student.primary]}。`,
+        );
+      } else {
+        conflicts.push(`${p.label}（${p.result.primary} 型）× 孩子（${student.primary} 型）：频道总体接近；留意——${style.risk[student.primary]}。`);
+      }
+    } else {
+      conflicts.push(`${p.label} 偏 ${p.result.primary} 型（${style.style}）；孩子完成 DISC 后这里会给出亲子冲突对照。`);
+    }
+    tips.push(`对${p.label}（${p.result.primary} 型家长）：${style.tip}`);
+  }
+  if (e3parent) {
+    if (e3parent.overestimates.length > 0) {
+      conflicts.push(`家长更看好的方面（高估）：${e3parent.overestimates.map((x) => `${x.kp}（家长 ${x.parentScore} / 孩子 ${x.studentScore}）`).join("、")}——期待高于孩子的实际感受，容易变成压力。`);
+      tips.push("高估项：把「我以为你行」换成「我们一起看看难在哪」，先对齐事实再定目标。");
+    }
+    if (e3parent.underestimates.length > 0) {
+      conflicts.push(`家长没看到的闪光点（低估）：${e3parent.underestimates.map((x) => `${x.kp}（家长 ${x.parentScore} / 孩子 ${x.studentScore}）`).join("、")}——孩子的努力值得被看见。`);
+      tips.push("低估项：让孩子主动展示一次（讲一道题、翻一次错题本），比辩解十次更有效。");
+    }
+    const badCond = e3parent.condView.filter((cv) => cv.note.includes("状况较差"));
+    if (badCond.length > 0) conflicts.push(`家长认为较差的方向：${badCond.map((cv) => cv.label).join("、")}——需要家校一起核实真因，优先处理。`);
+    if (e3parent.unknownCount >= 3) conflicts.push(`家长对孩子学习「不了解」${e3parent.unknownCount} 项（了解程度「${e3parent.unknownLevel}」）——先补上了解，再谈管教。`);
+    tips.push("家长和孩子一起玩「对照游戏」：各说各的理由，先对齐事实，再讨论方法。");
+  }
+  tips.push("每周留一次「不谈学习」的亲子时间；批评对事不对人，先肯定再提一个（只提一个）改进点。");
+  return { conflicts, tips };
+}
+
+/** DISC 量尺归一（0–24）：V2 原值，V1 ×2。 */
+function discNv(r: DiscResult, k: "D" | "I" | "S" | "C"): number {
+  return (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
+}
+
+/**
+ * 家长报告 tab：家长版专属报告——家庭支持与环境观察（家长卷）+ 家长认知对照 +
+ * 亲子 DISC 冲突对照 + 冲突点清单与改进方案 + 答题明细。
+ */
+function ParentReportTab({
   student,
   parents,
+  e3parent,
+  raw,
 }: {
   student: DiscResult | null;
   parents: { label: string; result: DiscResult }[];
+  e3parent: E3V37ParentResult | null;
+  raw?: RawAnswer[];
 }) {
-  if (parents.length === 0) {
+  if (parents.length === 0 && !e3parent) {
     return (
-      <MissingCard
-        text="家长 DISC 还没有测评。它由家长各自独立填写（24 组「最像我 / 最不像我」，约 4 分钟），可多位家长各测一次——对照孩子的行为风格，看沟通卡点出在哪里。"
-        actionText="还未测评，开始测评 →"
-        to="/assessments?start=discparent"
-      />
+      <div className="space-y-4">
+        <MissingCard
+          text="家长报告还没有数据。它由两部分组成：① 家长卷（约 8 分钟，家庭支持与认知对照）；② 家长 DISC（24 组「最像我 / 最不像我」，约 4 分钟，可多位家长各测一次）。完成后这里会生成家庭支持对照、亲子冲突点清单与改进方案。"
+          actionText="去测家长卷 →"
+          to="/assessments?start=e3parent"
+        />
+        <MissingCard
+          text="家长 DISC：对照孩子的行为风格，看沟通卡点出在哪里。"
+          actionText="去测家长 DISC →"
+          to="/assessments?start=discparent"
+        />
+      </div>
     );
   }
+  const { conflicts, tips } = buildParentChildAnalysis(student, parents, e3parent);
   return (
     <div className="space-y-4">
-      {student && <DiscParentCompare student={student} parents={parents} />}
-      {parents.map((p, i) => {
+      {/* ① 冲突点清单与改进方案（核心卡） */}
+      <div className="paper-card accent-l border-terra/50 p-5">
+        <h3 className="font-bold text-olive">亲子冲突点清单与改进方案</h3>
+        <p className="mt-1 text-[12.5px] text-olive-mute">
+          合并家长卷（家庭支持与认知对照）与家长 DISC × 孩子 DISC（行为频道对照）综合判读，按优先级排序。
+        </p>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-xl border border-terra/30 bg-terra/5 p-3.5">
+            <div className="text-[13px] font-bold text-terra">冲突点清单 · {conflicts.length} 条</div>
+            <ol className="mt-2 space-y-1.5">
+              {conflicts.map((c, i) => (
+                <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
+                  <b className="text-olive">{i + 1}.</b> {c}
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="rounded-xl border border-lime/40 bg-lime-pale/50 p-3.5">
+            <div className="text-[13px] font-bold text-olive">改进方案 · {tips.length} 条</div>
+            <ol className="mt-2 space-y-1.5">
+              {tips.map((t, i) => (
+                <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
+                  <b className="text-olive">{i + 1}.</b> {t}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      {/* ② 家庭支持与环境观察（家长卷） */}
+      {e3parent ? (
+        <div className="paper-card p-5">
+          <h3 className="font-bold text-olive">家庭支持与环境观察（家长卷）</h3>
+          <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">{e3parent.summary}</p>
+          {e3parent.severeConflict && (
+            <div className="mt-2.5 rounded-xl border border-[#8f1313]/40 bg-[#fbe3df] p-3 text-[12.5px] font-semibold text-[#8f1313]">
+              !! 红线提醒：家庭近期出现严重亲子冲突信号——建议先修复关系，必要时寻求学校心理老师或专业机构支持。
+            </div>
+          )}
+          <div className="mt-3 space-y-2">
+            {e3parent.condView.map((cv) => (
+              <div key={cv.key} className="rounded-xl border border-border/70 bg-cream/60 px-3.5 py-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[13px] font-bold text-olive">{cv.label}</span>
+                  <span className="chip !text-[11px]">家长观察：{cv.parentView}</span>
+                  {cv.studentScore != null && (
+                    <span
+                      className="chip !text-[11px]"
+                      style={
+                        cv.studentLevel === "卡点"
+                          ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#fbe3df" }
+                          : cv.studentLevel === "待提升"
+                            ? { borderColor: "#c7a23a66", color: "#8a6d1a", background: "#f5e7c1" }
+                            : { borderColor: "#7cb83c66", color: "#5a9326", background: "#f0f7dd" }
+                      }
+                    >
+                      孩子自评 {cv.studentScore}/5 · {cv.studentLevel}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">{cv.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <MissingCard
+          text="家长卷还没有填写（约 8 分钟）。填好后这里会给出家庭支持观察与家长—孩子认知对照。"
+          actionText="去测家长卷 →"
+          to="/assessments?start=e3parent"
+        />
+      )}
+
+      {/* ③ 家长认知对照（观察 vs 孩子自评） */}
+      {e3parent && (
+        <div className="paper-card p-5">
+          <h3 className="font-bold text-olive">家长认知对照</h3>
+          <p className="mt-1 text-[12.5px] text-olive-mute">
+            家长的估计与孩子的实际自评逐项对照（|差值| ≥ 2 视为明显差异）；「不了解」{e3parent.unknownCount} 项（了解程度「{e3parent.unknownLevel}」）。
+          </p>
+          {e3parent.blindSpots.length === 0 ? (
+            <p className="mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] text-olive">
+              无明显差异项——家长的观察与孩子的自评总体一致，认知同频。
+            </p>
+          ) : (
+            <div className="mt-3 overflow-hidden rounded-xl border border-border">
+              <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 bg-cream-deep/60 px-3 py-1.5 text-[11.5px] font-bold text-olive-mute">
+                <span>关注点</span>
+                <span>家长评</span>
+                <span>孩子自评</span>
+                <span>差值</span>
+                <span>判读</span>
+              </div>
+              {e3parent.blindSpots.map((b) => (
+                <div key={b.key} className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-3 border-t border-border/60 px-3 py-2 text-[12.5px]">
+                  <span className="font-semibold text-olive">{b.kp}</span>
+                  <span className="mono text-olive-soft">{b.parentScore}</span>
+                  <span className="mono text-olive-soft">{b.studentScore}</span>
+                  <span className="mono text-olive-soft">{b.gap > 0 ? `+${b.gap}` : b.gap}</span>
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                    style={
+                      b.gap >= 2
+                        ? { background: "#f5e7c1", color: "#8a6d1a" }
+                        : { background: "#f0f7dd", color: "#5a9326" }
+                    }
+                  >
+                    {b.gap >= 2 ? "家长高估" : "家长低估"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ④ 亲子 DISC 对照 */}
+      {parents.length === 0 ? (
+        <MissingCard
+          text="家长 DISC 还没有测评（24 组「最像我 / 最不像我」，约 4 分钟），可多位家长各测一次——对照孩子的行为风格，看沟通卡点出在哪里。"
+          actionText="去测家长 DISC →"
+          to="/assessments?start=discparent"
+        />
+      ) : (
+        <>
+          {student && <DiscParentCompare student={student} parents={parents} />}
+          {parents.map((p, i) => {
         const combo = getDiscCombo(p.result.dims);
         const report = DISC_REPORTS[p.result.primary];
         const style = PARENT_DISC_STYLE[p.result.primary];
@@ -1237,8 +1433,22 @@ function DiscParentTab({
             </div>
           </div>
         );
-      })}
-      <p className="text-center text-[12px] text-olive-mute">可多位家长各测一次：让家长打开「测评中心 → 家长 DISC」分别填写。</p>
+          })}
+          <p className="text-center text-[12px] text-olive-mute">可多位家长各测一次：让家长打开「测评中心 → 家长 DISC」分别填写。</p>
+        </>
+      )}
+
+      {/* ⑤ 答题明细（家长卷 + 家长 DISC） */}
+      {raw && raw.length > 0 && (
+        <>
+          <Fold title="答题明细 · 家长卷（点击展开）">
+            <AnswerDetailsByKind raw={raw} kinds={["e3parent"]} />
+          </Fold>
+          <Fold title="答题明细 · 家长 DISC（点击展开）">
+            <AnswerDetailsByKind raw={raw} kinds={["discparent"]} />
+          </Fold>
+        </>
+      )}
     </div>
   );
 }
@@ -1695,7 +1905,7 @@ export default function ReportView({
     if (tab === "mbti") return !!(data?.mbti && MBTI_REPORTS[data.mbti.type]);
     if (tab === "disc") return !!(data?.disc && DISC_REPORTS[data.disc.primary]);
     if (tab === "multi5") return !!data?.multi5;
-    if (tab === "discparent") return discParents.length > 0; // window.print 直接可用
+    if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
     if (tab === "academics" || tab === "profile") return false; // 档案/成绩 tab 不提供下载
     if (tab === "anchor" || tab === "holland" || tab === "mental") return !!(data as any)?.[tab];
     return !!combined;
@@ -1714,7 +1924,8 @@ export default function ReportView({
       anchor: "职业锚测评报告",
       holland: "霍兰德职业兴趣测评报告",
       mental: "心理健康评估报告",
-      discparent: "家长 DISC 对照报告",
+      discparent: "家长报告（亲子对照与沟通建议）",
+      parent: "家长报告（亲子对照与沟通建议）",
       combined: "综合学习力报告",
     };
     const prevTitle = document.title;
@@ -2102,7 +2313,9 @@ export default function ReportView({
           <Multi5Detail result={multi5} />
         ))}
 
-      {tab === "discparent" && <DiscParentTab student={disc ?? null} parents={discParents} />}
+      {(tab === "parent" || tab === "discparent") && (
+        <ParentReportTab student={disc ?? null} parents={discParents} e3parent={parentResult} raw={data?.raw} />
+      )}
 
       {tab === "anchor" &&
         (!anchor ? (
@@ -2202,6 +2415,8 @@ export default function ReportView({
                 mental={mental}
                 status={frameworkStatus}
                 onOpen={openFramework}
+                e3parent={parentResult}
+                discParents={discParents}
               />
               {/* 综合结论三张图表：现状与目标 / 冰山模型 / 进步方案（与详版一致） */}
               {combined.sections[0] && (
@@ -2298,6 +2513,9 @@ export default function ReportView({
                       {disc && discParents.length > 0 && <DiscParentCompare student={disc} parents={discParents} />}
                     </div>
                   ) : undefined;
+              } else if (s.title.includes("亲子对照")) {
+                chartNode =
+                  disc && discParents.length > 0 ? <DiscParentCompare student={disc} parents={discParents} /> : undefined;
               } else if (s.title.includes("学能模块")) {
                 chartNode =
                   data?.multi5 || e3v37 ? (
@@ -2344,7 +2562,9 @@ export default function ReportView({
                 !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec)
                   ? <div className="print:hidden"><AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} /></div>
                   : undefined;
-              return <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} />;
+              const secNode = <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} />;
+              /* 附录章整章不打印（详版） */
+              return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
             });
             })()}
             <p className="text-center text-[12.5px] text-olive-mute">
@@ -2627,6 +2847,8 @@ function CombinedLite({
   mental,
   status,
   onOpen,
+  e3parent,
+  discParents,
 }: {
   name: string;
   mbti: MbtiResult;
@@ -2640,6 +2862,9 @@ function CombinedLite({
   status?: FrameworkStatus;
   /** 框架图节点点击（已测→图表 / 未测→测评 / 成绩未填→填写）。 */
   onOpen?: (l: FrameworkLink) => void;
+  /** 家长卷结果（选做）与家长 DISC（可多位），用于亲子对照摘要卡。 */
+  e3parent?: E3V37ParentResult | null;
+  discParents?: { label: string; result: DiscResult }[];
 }) {
   const mr = MBTI_REPORTS[mbti.type];
   const dr = DISC_REPORTS[disc.primary];
@@ -2698,6 +2923,32 @@ function CombinedLite({
           )}
         </div>
       </div>
+
+      {/* 亲子对照摘要卡：前 3 条冲突 + 一句核心建议（有家长数据时显示） */}
+      {(e3parent || (discParents && discParents.length > 0)) &&
+        (() => {
+          const { conflicts, tips } = buildParentChildAnalysis(disc, discParents ?? [], e3parent ?? null);
+          return (
+            <div className="paper-card accent-l border-terra/40 p-5">
+              <h3 className="font-bold text-olive">亲子对照 · 摘要</h3>
+              <ol className="mt-2 space-y-1.5">
+                {conflicts.slice(0, 3).map((c, i) => (
+                  <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
+                    <b className="text-terra">{i + 1}.</b> {c}
+                  </li>
+                ))}
+              </ol>
+              {conflicts.length > 3 && (
+                <p className="mt-1 text-[12px] text-olive-mute">……共 {conflicts.length} 条冲突点，详见「家长报告」栏目或详版「亲子对照与沟通建议」章。</p>
+              )}
+              {tips.length > 0 && (
+                <p className="mt-2.5 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-olive">
+                  <b>核心建议：</b>{tips[0]}
+                </p>
+              )}
+            </div>
+          );
+        })()}
 
       {/* 各已做测评的结果图解（图形 + 一句解读 + 一句对学习力的影响） */}
       <AssessmentChartsLite

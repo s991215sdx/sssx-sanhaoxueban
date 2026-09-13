@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v37.tsx
+// scripts/smoke-render-v38.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -102393,20 +102393,21 @@ ${condViewOf(["resEnv", "resTime", "resSupport", "aiPhone"])}` : "")
       })
     }
   ];
+  const discNorm = (r, k) => (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
   for (const p of discParents.slice(0, 2)) {
     const pp = p.result.primary;
     const parentAnimal = DISC_ANIMAL[pp].split("\uFF08")[0];
     const childAnimal = DISC_ANIMAL[d].split("\uFF08")[0];
-    const dimDeltas = ["D", "I", "S", "C"].map((k) => ({ k, student: disc2.dims[k], parent: p.result.dims[k], abs: Math.abs(disc2.dims[k] - p.result.dims[k]) }));
-    const strongClashes = dimDeltas.filter((x) => x.abs >= 3).sort((a, b) => b.abs - a.abs);
-    const watchDims = dimDeltas.filter((x) => x.abs === 2);
-    const clashLine = strongClashes.length > 0 || watchDims.length > 0 ? `**\u9010\u7EF4\u5EA6\u5DEE\u503C\uFF08\u4F60 vs ${p.label}\uFF09**\uFF1A` + [
+    const dimDeltas = ["D", "I", "S", "C"].map((k) => ({ k, student: discNorm(disc2, k), parent: discNorm(p.result, k), abs: Math.abs(discNorm(disc2, k) - discNorm(p.result, k)) }));
+    const strongClashes = dimDeltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+    const watchDims = dimDeltas.filter((x) => x.abs >= 4 && x.abs < 6);
+    const clashLine = strongClashes.length > 0 || watchDims.length > 0 ? `**\u9010\u7EF4\u5EA6\u5DEE\u503C\uFF08\u4F60 vs ${p.label}\uFF0C0\u201324 \u7EDF\u4E00\u91CF\u5C3A\uFF09**\uFF1A` + [
       ...strongClashes.map(
         (x) => `**!!\u26A0 ${x.k} \u7EF4\u5F3A\u70C8\u51B2\u7A81!!**\uFF08\u4F60 ${x.student} / ${p.label} ${x.parent}\uFF0C\u5DEE ${x.abs} \u5206\uFF09`
       ),
-      ...watchDims.map((x) => `\u26A0 ${x.k} \u7EF4\u9700\u7559\u610F\uFF08\u4F60 ${x.student} / ${p.label} ${x.parent}\uFF0C\u5DEE 2 \u5206\uFF09`)
+      ...watchDims.map((x) => `\u26A0 ${x.k} \u7EF4\u9700\u7559\u610F\uFF08\u4F60 ${x.student} / ${p.label} ${x.parent}\uFF0C\u5DEE ${x.abs} \u5206\uFF09`)
     ].join("\uFF1B") + `\u3002${strongClashes.length > 0 ? "\u5DEE\u503C\u8D8A\u5927\u7684\u7EF4\u5EA6\uFF0C\u65E5\u5E38\u7BA1\u6559\u91CC\u8D8A\u5BB9\u6613\u300C\u9891\u9053\u5BF9\u4E0D\u4E0A\u300D\u2014\u2014\u5F3A\u70C8\u51B2\u7A81\u7EF4\u5EA6\u8BF7\u4F18\u5148\u6309\u4E0B\u65B9\u5EFA\u8BAE\u8C03\u6574\u6C9F\u901A\u65B9\u5F0F\u3002" : "\u8FD9\u4E24\u4E2A\u7EF4\u5EA6\u5DF2\u4E34\u8FD1\u51B2\u7A81\u7EBF\uFF0C\u6C9F\u901A\u65F6\u591A\u7559\u610F\u3002"}
-` : `**\u9010\u7EF4\u5EA6\u5DEE\u503C\uFF08\u4F60 vs ${p.label}\uFF09**\uFF1A\u56DB\u4E2A\u7EF4\u5EA6\u5DEE\u503C\u90FD\u5728 1 \u5206\u4EE5\u5185\uFF08${dimDeltas.map((x) => `${x.k} \u5DEE ${x.abs}`).join("\u3001")}\uFF09\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\uFF0C\u6C9F\u901A\u5929\u7136\u7701\u529B\u3002
+` : `**\u9010\u7EF4\u5EA6\u5DEE\u503C\uFF08\u4F60 vs ${p.label}\uFF09**\uFF1A\u56DB\u4E2A\u7EF4\u5EA6\u5DEE\u503C\u90FD\u5728 3 \u5206\u4EE5\u5185\uFF08${dimDeltas.map((x) => `${x.k} \u5DEE ${x.abs}`).join("\u3001")}\uFF09\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\uFF0C\u6C9F\u901A\u5929\u7136\u7701\u529B\u3002
 `;
     secCondItems.push({
       heading: `**\u4EB2\u5B50 DISC \u5BF9\u7167 \xB7 ${p.label}\uFF08${pp} \u578B\xB7${parentAnimal}\uFF09\xD7 \u4F60\uFF08${d} \u578B\xB7${childAnimal}\uFF09**${strongClashes.length > 0 ? ` \xB7 !!\u26A0 ${strongClashes.map((x) => x.k).join("/")} \u7EF4\u5F3A\u70C8\u51B2\u7A81!!` : ""}`,
@@ -102441,6 +102442,72 @@ ${condViewOf(["resEnv", "resTime", "resSupport", "aiPhone"])}` : "")
     ],
     items: secCondItems
   };
+  let secParentChild = null;
+  if (e3parent || discParents.length > 0) {
+    const conflicts = [];
+    const tips = [];
+    if (e3parent?.severeConflict) {
+      conflicts.push("**!!\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7!!**\uFF08\u5BB6\u957F\u5377\uFF09\uFF1A\u5BB6\u5EAD\u8FD1\u671F\u53D1\u751F\u4E86\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u2014\u2014\u5148\u4FEE\u590D\u5173\u7CFB\u4E0E\u5B89\u5168\u611F\uFF0C\u518D\u8C08\u5B66\u4E60\u8981\u6C42\u3002");
+      tips.push("**\u7EA2\u7EBF\u671F\u539F\u5219**\uFF1A\u6682\u505C\u52A0\u538B\u4E0E\u8BF4\u6559\uFF0C\u5148\u6062\u590D\u65E5\u5E38\u966A\u4F34\uFF08\u4E00\u8D77\u5403\u996D\u3001\u6563\u6B65\u3001\u4E0D\u8C08\u5B66\u4E60\u7684\u95F2\u804A\uFF09\uFF0C\u5FC5\u8981\u65F6\u5BFB\u6C42\u5B66\u6821\u5FC3\u7406\u8001\u5E08\u6216\u4E13\u4E1A\u673A\u6784\u652F\u6301\u3002");
+    }
+    for (const p of discParents) {
+      const pp = p.result.primary;
+      const deltas = ["D", "I", "S", "C"].map((k) => ({
+        k,
+        abs: Math.abs(discNorm(disc2, k) - discNorm(p.result, k))
+      }));
+      const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+      conflicts.push(
+        strong.length > 0 ? `**${p.label}\uFF08${pp} \u578B\uFF09\xD7 \u4F60\uFF08${d} \u578B\uFF09\xB7 DISC \u9891\u9053\u51B2\u7A81**\uFF1A${strong.map((x) => `${x.k} \u7EF4\u5DEE ${x.abs} \u5206`).join("\u3001")}\uFF080\u201324 \u91CF\u5C3A\uFF0C\u22656 \u4E3A\u5F3A\u70C8\u51B2\u7A81\uFF09\u2014\u2014${DISC_CONFLICT[pp][d]}\u3002` : `${p.label}\uFF08${pp} \u578B\uFF09\xD7 \u4F60\uFF08${d} \u578B\uFF09\uFF1ADISC \u56DB\u7EF4\u5EA6\u5DEE\u503C\u5747\u5728\u5B89\u5168\u533A\uFF08\u6700\u5927 ${Math.max(...deltas.map((x) => x.abs))} \u5206\uFF09\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\uFF1B\u4ECD\u9700\u7559\u610F\u2014\u2014${DISC_CONFLICT[pp][d]}\u3002`
+      );
+    }
+    if (disc2) {
+      tips.push(
+        `**\u4E0E\u4F60\uFF08${d} \u578B\uFF09\u6C9F\u901A\u6700\u6709\u6548\u7684\u65B9\u5F0F**\uFF1A${discReport.communicationTips.slice(0, 3).map((t) => t.replace(/。+$/, "")).join("\uFF1B")}\u3002`
+      );
+    }
+    if (e3parent) {
+      if (e3parent.overestimates.length > 0) {
+        conflicts.push(
+          `**\u5BB6\u957F\u66F4\u770B\u597D\u7684\u65B9\u9762**\uFF08\u9AD8\u4F30 ${e3parent.overestimates.length} \u9879\uFF09\uFF1A${e3parent.overestimates.map((x) => `${x.kp}\uFF08\u5BB6\u957F ${x.parentScore} / \u4F60 ${x.studentScore}\uFF09`).join("\u3001")}\u2014\u2014\u671F\u5F85\u9AD8\u4E8E\u4F60\u7684\u5B9E\u9645\u611F\u53D7\uFF0C\u5BB9\u6613\u53D8\u6210\u65E0\u5F62\u538B\u529B\u3002`
+        );
+        tips.push("\u9AD8\u4F30\u9879\uFF1A\u548C\u5BB6\u957F\u4E00\u8D77\u770B\u5B69\u5B50\u7684\u5B9E\u9645\u4F5C\u7B54\uFF0C\u628A\u300C\u6211\u4EE5\u4E3A\u4F60\u884C\u300D\u6362\u6210\u300C\u6211\u4EEC\u4E00\u8D77\u770B\u770B\u96BE\u5728\u54EA\u300D\u3002");
+      }
+      if (e3parent.underestimates.length > 0) {
+        conflicts.push(
+          `**\u5BB6\u957F\u6CA1\u770B\u5230\u7684\u95EA\u5149\u70B9**\uFF08\u4F4E\u4F30 ${e3parent.underestimates.length} \u9879\uFF09\uFF1A${e3parent.underestimates.map((x) => `${x.kp}\uFF08\u5BB6\u957F ${x.parentScore} / \u4F60 ${x.studentScore}\uFF09`).join("\u3001")}\u2014\u2014\u4F60\u7684\u52AA\u529B\u503C\u5F97\u88AB\u770B\u89C1\uFF0C\u5EFA\u8BAE\u4E3B\u52A8\u5C55\u793A\u7ED9\u5BB6\u957F\u3002`
+        );
+        tips.push("\u4F4E\u4F30\u9879\uFF1A\u5B69\u5B50\u4E3B\u52A8\u5C55\u793A\u4E00\u6B21\uFF08\u8BB2\u4E00\u9053\u9898\u3001\u7FFB\u4E00\u6B21\u9519\u9898\u672C\uFF09\uFF0C\u6BD4\u8FA9\u89E3\u5341\u6B21\u66F4\u6709\u6548\u3002");
+      }
+      const badCond = e3parent.condView.filter((cv) => cv.note.includes("\u72B6\u51B5\u8F83\u5DEE"));
+      if (badCond.length > 0) {
+        conflicts.push(`**\u5BB6\u957F\u8BA4\u4E3A\u8F83\u5DEE\u7684\u65B9\u5411**\uFF1A${badCond.map((cv) => cv.label).join("\u3001")}\u2014\u2014\u9700\u8981\u5BB6\u6821\u4E00\u8D77\u6838\u5B9E\u771F\u56E0\uFF0C\u4F18\u5148\u5904\u7406\u3002`);
+      }
+      if (e3parent.unknownCount >= 3) {
+        conflicts.push(`**\u5BB6\u957F\u4E86\u89E3\u7A0B\u5EA6\u4E0D\u8DB3**\uFF1A\u8BA4\u77E5\u5BF9\u7167\u9898\u4E2D\u300C\u4E0D\u4E86\u89E3\u300D${e3parent.unknownCount} \u9879\uFF08\u4E86\u89E3\u7A0B\u5EA6\u300C${e3parent.unknownLevel}\u300D\uFF09\u2014\u2014\u5148\u8865\u4E0A\u4E86\u89E3\uFF0C\u518D\u8C08\u7BA1\u6559\u3002`);
+      }
+      tips.push("\u628A\u8FD9\u4E00\u7AE0\u5BB6\u957F\u548C\u5B69\u5B50\u4E00\u8D77\u770B\uFF1A\u5B69\u5B50\u8BF4\u8BF4\u81EA\u8BC4\u7684\u7406\u7531\uFF0C\u5BB6\u957F\u8BF4\u8BF4\u89C2\u5BDF\u7684\u4F9D\u636E\u2014\u2014\u5148\u5BF9\u9F50\u4E8B\u5B9E\uFF0C\u518D\u8BA8\u8BBA\u65B9\u6CD5\u3002");
+    }
+    tips.push("\u6BCF\u5468\u7559\u4E00\u6B21\u300C\u4E0D\u8C08\u5B66\u4E60\u300D\u7684\u4EB2\u5B50\u65F6\u95F4\uFF1B\u6279\u8BC4\u5BF9\u4E8B\u4E0D\u5BF9\u4EBA\uFF0C\u5148\u80AF\u5B9A\u518D\u63D0\u4E00\u4E2A\uFF08\u53EA\u63D0\u4E00\u4E2A\uFF09\u6539\u8FDB\u70B9\u3002");
+    secParentChild = {
+      title: "\u4EB2\u5B50\u5BF9\u7167\u4E0E\u6C9F\u901A\u5EFA\u8BAE\uFF08\u5BB6\u957F\u5377 \xD7 \u5BB6\u957F DISC\uFF09",
+      paragraphs: [
+        e3parent ? `**\u5BB6\u957F\u5377**\uFF1A\u5BB6\u957F\u5BF9\u5B69\u5B50\u5B66\u4E60\u72B6\u6001\u7684\u4E86\u89E3\u7A0B\u5EA6\u300C**${e3parent.unknownLevel}**\u300D\uFF08\u4E0D\u4E86\u89E3 ${e3parent.unknownCount} \u9879\uFF09\uFF0C\u89C2\u5BDF\u4E0E\u5B69\u5B50\u81EA\u8BC4\u7684\u660E\u663E\u5DEE\u5F02 **${e3parent.blindSpots.length} \u9879**\uFF08\u9AD8\u4F30 ${e3parent.overestimates.length} / \u4F4E\u4F30 ${e3parent.underestimates.length}\uFF09${e3parent.severeConflict ? "\uFF1B!!\u5E76\u51FA\u73B0\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7!!" : ""}\u3002` : "\u5BB6\u957F\u5377\u5C1A\u672A\u586B\u5199\u2014\u2014\u586B\u5199\u540E\u8FD9\u91CC\u4F1A\u7ED9\u51FA\u5BB6\u957F\u89C2\u5BDF\u4E0E\u5B69\u5B50\u81EA\u8BC4\u7684\u8BA4\u77E5\u5BF9\u7167\uFF08\u53EF\u5230\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5BB6\u957F\u5377\u300D\u8865\u586B\uFF09\u3002",
+        discParents.length > 0 ? `**\u5BB6\u957F DISC**\uFF1A${discParents.map((p) => `${p.label}\uFF08${p.result.primary} \u578B\uFF09`).join("\u3001")} \xD7 \u4F60\uFF08${d} \u578B\uFF09\u2014\u2014\u7C7B\u578B\u6CA1\u6709\u597D\u574F\uFF0C\u51B2\u7A81\u6765\u81EA\u9891\u9053\u5DEE\u5F02\uFF0C\u53EF\u8C03\u7684\u662F\u6C9F\u901A\u65B9\u5F0F\u3002` : "\u5BB6\u957F DISC \u5C1A\u672A\u6D4B\u8BC4\u2014\u2014\u6D4B\u540E\u8FD9\u91CC\u4F1A\u7ED9\u51FA\u4EB2\u5B50\u884C\u4E3A\u9891\u9053\u5BF9\u7167\uFF08\u53EF\u5230\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5BB6\u957F DISC\u300D\u8865\u6D4B\uFF09\u3002"
+      ],
+      items: [
+        {
+          heading: `**\u51B2\u7A81\u70B9\u6E05\u5355 \xB7 \u5171 ${conflicts.length} \u6761**\uFF08\u6309\u4F18\u5148\u7EA7\u6392\u5E8F\uFF09`,
+          level: conflicts.some((c) => c.includes("!!")) ? "\u5361\u70B9" : conflicts.length > 1 ? "\u5F85\u63D0\u5347" : void 0,
+          text: conflicts.map((t, i) => `${i + 1}. ${t}`).join("\n")
+        },
+        {
+          heading: "**\u6C9F\u901A\u4F18\u5316\u5EFA\u8BAE**\uFF08\u7ED9\u5BB6\u957F\uFF0C\u4E5F\u7ED9\u5B69\u5B50\uFF09",
+          text: tips.map((t, i) => `${i + 1}. ${t}`).join("\n")
+        }
+      ]
+    };
+  }
   const aptLine = e32.aptitude.map((a) => `${a.label} ${a.score}/5\uFF08${a.level}\uFF09`).join(" \xB7 ");
   const secAptParas = [
     `\u5B66\u80FD\u4E09\u9879\uFF1A${aptLine}\u3002\u8FD9\u4E09\u9879**\u53CD\u6620\u5F53\u524D\u52A0\u5DE5\u6548\u7387\uFF0C\u4E0D\u662F\u667A\u529B**\uFF0C\u4E5F\u4E0D\u4EE3\u8868\u6F5C\u529B\u4E0A\u9650\u2014\u2014\u7761\u7720\u3001\u72B6\u6001\u548C\u523B\u610F\u7EC3\u4E60\u90FD\u80FD\u6539\u53D8\u5B83\u4EEC\u3002`
@@ -102694,6 +102761,7 @@ ${parts.join("\n")}`
     ]
   };
   const sections = [secConclusion, ...secModules, secApt, secCond];
+  if (secParentChild) sections.push(secParentChild);
   if (secCareer) sections.push(secCareer);
   sections.push(secFlags, secParents, secIdeas, secAppendix);
   return {
@@ -108856,13 +108924,13 @@ var E3V37_QUESTIONS_PRIMARY = [
   { no: 1, kp: "\u5B66\u4E60\u5174\u8DA3", text: "\u6211\u5BF9\u67D0\u4E9B\u5B66\u79D1\u5185\u5BB9\u672C\u8EAB\u5F88\u611F\u5174\u8DA3\uFF0C\u5E38\u5E38\u4E3B\u52A8\u94BB\u7814", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 2, kp: "\u5B66\u4E60\u5174\u8DA3", text: "\u5B66\u65B0\u77E5\u8BC6\u65F6\uFF0C\u6211\u5E38\u5E38\u6709\u300C\u60F3\u77E5\u9053\u66F4\u591A\u300D\u7684\u597D\u5947\u5FC3", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 3, kp: "\u76EE\u6807\u611F", text: "\u6211\u6E05\u695A\u81EA\u5DF1\u4ECA\u5E74\u8981\u8FBE\u5230\u7684\u76EE\u6807\uFF08\u5206\u6570\u3001\u6392\u540D\u3001\u5347\u8BFB\u5B66\u6821\uFF09", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
-  { no: 4, kp: "\u76EE\u6807\u611F", text: "\u6211\u5BF9\u672A\u6765\u60F3\u8BFB\u4EC0\u4E48\u5927\u5B66\u3001\u4EC0\u4E48\u4E13\u4E1A\u3001\u60F3\u4ECE\u4E8B\u4EC0\u4E48\u5DE5\u4F5C\uFF0C\u6709\u6BD4\u8F83\u6E05\u6670\u7684\u76EE\u6807\uFF0C\u5E76\u77E5\u9053\u5B83\u4EEC\u5BF9\u6210\u7EE9\u548C\u80FD\u529B\u7684\u8981\u6C42", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
+  { no: 4, kp: "\u76EE\u6807\u611F", text: "\u6211\u5BF9\u5C06\u6765\u60F3\u8BFB\u54EA\u6240\u4E2D\u5B66\u3001\u957F\u5927\u540E\u60F3\u505A\u4EC0\u4E48\u6837\u7684\u4E8B\uFF0C\u6709\u81EA\u5DF1\u7684\u60F3\u6CD5", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 5, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5916\u9A71", text: "\u6211\u52AA\u529B\u5B66\u4E60\uFF0C\u4E3B\u8981\u662F\u4E3A\u4E86\u4E0D\u88AB\u7236\u6BCD\u6216\u8001\u5E08\u6279\u8BC4\u3001\u60E9\u7F5A", reverse: true, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 6, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5916\u9A71", text: "\u6211\u5B66\u4E60\u7684\u65F6\u5019\uFF0C\u603B\u671F\u5F85\u6709\u793C\u7269\u3001\u96F6\u82B1\u94B1\u6216\u6E38\u620F\u65F6\u95F4\u7B49\u5956\u52B1\uFF0C\u8FD9\u6837\u6211\u4F1A\u66F4\u6709\u5E72\u52B2", reverse: true, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 7, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5916\u9A71", text: "\u8001\u5E08\u8868\u626C\u3001\u540C\u5B66\u8BA4\u53EF\u6216\u6392\u540D\u8FDB\u6B65\uFF0C\u662F\u6211\u5B66\u4E60\u7684\u4E3B\u8981\u52A8\u529B", reverse: true, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
-  { no: 8, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5185\u9A71", text: "\u6211\u6709\u81EA\u5DF1\u6E05\u6670\u7684\u4EBA\u751F\u89C4\u5212\uFF0C\u6211\u5B66\u4E60\u4E3A\u4E86\u5B9E\u73B0\u81EA\u5DF1\u7684\u4EBA\u751F\u76EE\u6807\uFF0C\u6210\u4E3A\u66F4\u597D\u7684\u81EA\u5DF1", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
+  { no: 8, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5185\u9A71", text: "\u6211\u77E5\u9053\u81EA\u5DF1\u4E3A\u4EC0\u4E48\u5B66\u4E60\u2014\u2014\u4E3A\u4E86\u6210\u4E3A\u66F4\u5389\u5BB3\u7684\u81EA\u5DF1", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 9, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5185\u9A71", text: "\u6211\u5E0C\u671B\u81EA\u5DF1\u5C06\u6765\u80FD\u7528\u6240\u5B66\u77E5\u8BC6\uFF0C\u5E2E\u52A9\u4ED6\u4EBA", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
-  { no: 10, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5185\u9A71", text: "\u6211\u6709\u5F3A\u70C8\u7684\u4F7F\u547D\u611F\uFF0C\u6211\u5E0C\u671B\u672A\u6765\u80FD\u6210\u5C31\u4E00\u756A\u4E8B\u4E1A\uFF0C\u4E3A\u793E\u4F1A\u505A\u51FA\u91CD\u5927\u8D21\u732E", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
+  { no: 10, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5185\u9A71", text: "\u6211\u5E0C\u671B\u5C06\u6765\u80FD\u505A\u4E86\u4E0D\u8D77\u7684\u4E8B\uFF0C\u5E2E\u5230\u5F88\u591A\u4EBA", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 11, kp: "\u6BD4\u8F83\u4F18\u52BF", text: "\u6211\u6709\u4E00\u4E2A\u660E\u786E\u6BD4\u522B\u4EBA\u505A\u5F97\u597D\u7684\u9886\u57DF\uFF08\u5B66\u4E60\u6216\u5B66\u4E60\u4E4B\u5916\u90FD\u7B97\uFF09", reverse: false, system: "\u4E50\u5B66", ability: "\u4FE1\u5FC3" },
   { no: 12, kp: "\u6BD4\u8F83\u4F18\u52BF", text: "\u6211\u4E0D\u592A\u81EA\u4FE1\uFF0C\u611F\u89C9\u81EA\u5DF1\u5F88\u7B28\uFF0C\u627E\u4E0D\u5230\u4E00\u4E2A\u80FD\u8D62\u8FC7\u522B\u4EBA\u7684\u5730\u65B9", reverse: true, system: "\u4E50\u5B66", ability: "\u4FE1\u5FC3" },
   { no: 13, kp: "\u81EA\u6211\u6548\u80FD\u611F", text: "\u6211\u76F8\u4FE1\u53EA\u8981\u6211\u597D\u597D\u5B66\u3001\u65B9\u6CD5\u5BF9\uFF0C\u5C31\u4E00\u5B9A\u80FD\u5B66\u5F97\u5F88\u597D", reverse: false, system: "\u4E50\u5B66", ability: "\u4FE1\u5FC3" },
@@ -108878,7 +108946,7 @@ var E3V37_QUESTIONS_PRIMARY = [
   { no: 23, kp: "\u5E26\u95EE\u9898\u542C\u8BFE", text: "\u4E0A\u8BFE\u6211\u80FD\u6293\u4F4F\u91CD\u70B9\uFF0C\u542C\u4E0D\u61C2\u7684\u5730\u65B9\u4F1A\u6807\u8BB0\u4E0B\u6765", reverse: false, system: "\u4F1A\u5B66", ability: "\u5B66\u61C2" },
   { no: 24, kp: "\u4E3B\u52A8\u6C42\u95EE", text: "\u4E0D\u61C2\u7684\u5730\u65B9\uFF0C\u6211\u4F1A\u5E38\u4E3B\u52A8\u95EE\u8001\u5E08\u3001\u540C\u5B66\u6216\u67E5\u8D44\u6599\uFF0C\u76F4\u5230\u5F04\u660E\u767D", reverse: false, system: "\u4F1A\u5B66", ability: "\u5B66\u61C2" },
   { no: 25, kp: "\u63D0\u70BC\u5173\u952E\u8BCD", text: "\u5B66\u5B8C\u4E00\u6BB5\u5185\u5BB9\uFF0C\u6211\u80FD\u6293\u4F4F\u91CD\u70B9\u3001\u63D0\u70BC\u51FA\u5173\u952E\u8BCD", reverse: false, system: "\u4F1A\u5B66", ability: "\u8BB0\u4F4F" },
-  { no: 26, kp: "\u7ED3\u6784\u5316\u6574\u7406", text: "\u5B66\u5B8C\u4E00\u7AE0\uFF0C\u6211\u4F1A\u4E60\u60EF\u6027\u81EA\u5DF1\u52A8\u624B\u753B\u7ED3\u6784\u56FE\u6216\u601D\u7EF4\u5BFC\u56FE\uFF0C\u628A\u77E5\u8BC6\u4E32\u8D77\u6765", reverse: false, system: "\u4F1A\u5B66", ability: "\u8BB0\u4F4F" },
+  { no: 26, kp: "\u7ED3\u6784\u5316\u6574\u7406", text: "\u5B66\u5B8C\u4E00\u7AE0\uFF0C\u6211\u4F1A\u7528\u753B\u56FE\u6216\u5217\u8868\u7684\u65B9\u5F0F\uFF0C\u628A\u5B66\u8FC7\u7684\u77E5\u8BC6\u4E32\u8D77\u6765", reverse: false, system: "\u4F1A\u5B66", ability: "\u8BB0\u4F4F" },
   { no: 27, kp: "\u590D\u8FF0\u8F93\u51FA", text: "\u5B66\u5B8C\u4E00\u4E2A\u5185\u5BB9\uFF0C\u6211\u80FD\u4E0D\u770B\u4E66\uFF0C\u7528\u81EA\u5DF1\u7684\u8BDD\u628A\u5B83\u8BB2\u6E05\u695A", reverse: false, system: "\u4F1A\u5B66", ability: "\u8BB0\u4F4F" },
   { no: 28, kp: "\u9519\u9898\u6574\u7406", text: "\u505A\u9519\u7684\u9898\u6211\u4F1A\u6574\u7406\u4E0B\u6765\uFF0C\u5199\u6E05\u9519\u8BEF\u539F\u56E0\uFF08\u7C97\u5FC3\u3001\u4E0D\u4F1A\u8FD8\u662F\u6982\u5FF5\u4E0D\u6E05\uFF09\uFF0C\u4EE5\u53CA\u6807\u6CE8\u5BF9\u5E94\u77E5\u8BC6\u70B9", reverse: false, system: "\u4F1A\u5B66", ability: "\u4F1A\u7528" },
   { no: 29, kp: "\u9519\u9898\u590D\u4E60", text: "\u9488\u5BF9\u9519\u9898\u5BF9\u5E94\u7684\u77E5\u8BC6\u70B9\uFF0C\u6211\u4F1A\u8BA4\u771F\u53BB\u590D\u4E60\u8FD9\u4E9B\u77E5\u8BC6\u70B9", reverse: false, system: "\u4F1A\u5B66", ability: "\u4F1A\u7528" },
@@ -108886,15 +108954,15 @@ var E3V37_QUESTIONS_PRIMARY = [
   { no: 31, kp: "\u4E3E\u4E00\u53CD\u4E09", text: "\u9047\u5230\u65B0\u9898\u578B\uFF0C\u6211\u5E38\u4E0D\u77E5\u9053\u4ECE\u54EA\u5206\u6790\uFF0C\u5F88\u96BE\u628A\u5B66\u8FC7\u7684\u89E3\u6CD5\u7528\u4E0A\u53BB", reverse: true, system: "\u4F1A\u5B66", ability: "\u4F1A\u7528" },
   { no: 32, kp: "\u7EFC\u5408\u8FD0\u7528", text: "\u80FD\u5C06\u540C\u4E00\u5B66\u79D1\u4E0D\u540C\u5355\u5143\u77E5\u8BC6\u4E32\u8054\u8D77\u6765\u5206\u6790\u95EE\u9898\uFF0C\u7CFB\u7EDF\u6027\u89E3\u51B3\u95EE\u9898", reverse: false, system: "\u4F1A\u5B66", ability: "\u4F1A\u7528" },
   { no: 33, kp: "\u7EFC\u5408\u8FD0\u7528", text: "\u8003\u7684\u6BCF\u4E00\u4E2A\u77E5\u8BC6\u70B9\uFF0C\u6211\u90FD\u80FD\u8BB2\u51FA\u5B83\u8003\u4E86\u54EA\u4E9B\u6240\u5B66\u77E5\u8BC6\u70B9", reverse: false, system: "\u4F1A\u5B66", ability: "\u4F1A\u7528" },
-  { no: 34, kp: "\u76EE\u6807\u62C6\u89E3", text: "\u6211\u4F1A\u628A\u5927\u76EE\u6807\uFF08\u671F\u672B\u3001\u9AD8\u8003\u76EE\u6807\uFF09\u62C6\u6210\u4E00\u4E2A\u4E2A\u53EF\u6267\u884C\u7684\u5C0F\u4EFB\u52A1", reverse: false, system: "\u5584\u5B66", ability: "\u8BA1\u5212" },
-  { no: 35, kp: "\u65F6\u95F4\u5B89\u6392", text: "\u6211\u80FD\u6839\u636E\u4EFB\u52A1\u8F7B\u91CD\u7F13\u6025\u548C\u5404\u79D1\u60C5\u51B5\uFF0C\u5408\u7406\u5B89\u6392\u65F6\u95F4", reverse: false, system: "\u5584\u5B66", ability: "\u8BA1\u5212" },
+  { no: 34, kp: "\u76EE\u6807\u62C6\u89E3", text: "\u6211\u4F1A\u628A\u5927\u76EE\u6807\uFF08\u671F\u672B\u3001\u5347\u521D\u4E2D\u76EE\u6807\uFF09\u62C6\u6210\u4E00\u4E2A\u4E2A\u53EF\u6267\u884C\u7684\u5C0F\u4EFB\u52A1", reverse: false, system: "\u5584\u5B66", ability: "\u8BA1\u5212" },
+  { no: 35, kp: "\u65F6\u95F4\u5B89\u6392", text: "\u6211\u4F1A\u5148\u505A\u91CD\u8981\u548C\u7740\u6025\u7684\u4F5C\u4E1A\uFF0C\u518D\u5B89\u6392\u5176\u4ED6\u7684\u4E8B", reverse: false, system: "\u5584\u5B66", ability: "\u8BA1\u5212" },
   { no: 36, kp: "\u8BA1\u5212\u6267\u884C", text: "\u6211\u6BCF\u5929\u6709\u660E\u786E\u7684\u5B66\u4E60\u8BA1\u5212\uFF0C\u5E76\u4E14\u5927\u90E8\u5206\u80FD\u5B8C\u6210", reverse: false, system: "\u5584\u5B66", ability: "\u8BA1\u5212" },
   { no: 37, kp: "\u81EA\u6211\u76D1\u63A7", text: "\u5B66\u5B8C\u4E00\u6BB5\u5185\u5BB9\uFF0C\u6211\u4F1A\u505C\u4E0B\u6765\u95EE\u81EA\u5DF1\u300C\u6211\u771F\u7684\u61C2\u4E86\u5417\u300D", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
   { no: 38, kp: "\u81EA\u6211\u76D1\u63A7", text: "\u5B66\u4E60\u65B0\u77E5\u8BC6\u540E\uFF0C\u6211\u4F1A\u5C1D\u8BD5\u7528\u81EA\u5DF1\u7684\u8BDD\u590D\u8FF0\uFF0C\u68C0\u9A8C\u638C\u63E1\u7A0B\u5EA6", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
   { no: 39, kp: "\u81EA\u6211\u76D1\u63A7", text: "\u8003\u5B8C\u8003\u8BD5\uFF0C\u6211\u4F1A\u7559\u65F6\u95F4\u51FA\u6765\u68C0\u67E5\u505A\u8FC7\u7684\u9898\u662F\u5426\u6709\u9519\u8BEF", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
   { no: 40, kp: "\u81EA\u6211\u76D1\u63A7", text: "\u672C\u6765\u6253\u7B97\u505A\u4F5C\u4E1A\uFF0C\u7ED3\u679C\u5237\u4E86\u597D\u4E00\u4F1A\u513F\u624B\u673A\u6216\u89C6\u9891\uFF0C\u7B49\u53CD\u5E94\u8FC7\u6765\u65F6\u95F4\u5DF2\u7ECF\u8FC7\u53BB\u4E86", reverse: true, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
   { no: 41, kp: "\u53CD\u601D\u5F52\u56E0", text: "\u5B66\u4E60\u603B\u662F\u4E0D\u80FD\u6309\u8BA1\u5212\u8FDB\u884C\u65F6\uFF0C\u6211\u4F1A\u56DE\u987E\u5B66\u4E60\u8FC7\u7A0B\uFF0C\u627E\u51FA\u5B58\u5728\u7684\u95EE\u9898", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
-  { no: 42, kp: "\u53CD\u601D\u5F52\u56E0", text: "\u8003\u8BD5\u7ED3\u675F\u540E\uFF0C\u6211\u4F1A\u4E60\u60EF\u6027\u505A\u8BD5\u5377\u5206\u6790\uFF0C\u533A\u5206\u5931\u5229\u662F\u77E5\u8BC6\u6F0F\u6D1E\u3001\u7C97\u5FC3\u8FD8\u662F\u8003\u8BD5\u6280\u5DE7\u95EE\u9898", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
+  { no: 42, kp: "\u53CD\u601D\u5F52\u56E0", text: "\u8003\u8BD5\u7ED3\u675F\u540E\uFF0C\u6211\u4F1A\u770B\u770B\u9519\u7684\u662F\u4E0D\u4F1A\u3001\u7C97\u5FC3\uFF0C\u8FD8\u662F\u65F6\u95F4\u4E0D\u591F", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
   { no: 43, kp: "\u7B56\u7565\u8C03\u8282", text: "\u53D1\u73B0\u5B66\u4E60\u65B9\u6CD5\u6548\u679C\u4E0D\u597D\u65F6\uFF0C\u6211\u4F1A\u4E3B\u52A8\u8C03\u6574\u5B66\u4E60\u65B9\u6CD5", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
   { no: 44, kp: "\u7B56\u7565\u8C03\u8282", text: "\u6211\u4F1A\u5199\u590D\u76D8\u5C0F\u7ED3\u6216\u65E5\u8BB0\uFF0C\u7528\u5B83\u6765\u4F18\u5316\u81EA\u5DF1\u7684\u5B66\u4E60", reverse: false, system: "\u5584\u5B66", ability: "\u590D\u76D8" },
   { no: 45, kp: "AI\u8FD0\u7528\u4E60\u60EF", text: "\u5468\u672B\u548C\u5047\u671F\uFF0C\u6211\u4E60\u60EF\u6027\u628A\u9519\u9898\u6216\u8BD5\u5377\u7ED9\u5230AI\u6216\u5B66\u4E60\u673A\uFF08\u8C46\u5305\u3001DeepSeek\u6216\u5B66\u4E60\u673A\uFF09\uFF0C\u5E2E\u6211\u67E5\u6F0F\u8865\u7F3A\uFF0C\u8F85\u52A9\u6211\u81EA\u4E3B\u5B66\u4E60", reverse: false, system: "\u5584\u5B66", ability: "\u667A\u5B66" },
@@ -108902,7 +108970,7 @@ var E3V37_QUESTIONS_PRIMARY = [
   { no: 47, kp: "\u4F1A\u9A8C\u8BC1AI\u7ED3\u679C", text: "\u6211\u4F1A\u6838\u5BF9AI\u7ED9\u7684\u7B54\u6848\u548C\u8BB2\u89E3\uFF0C\u53D1\u73B0\u4E0D\u5BF9\u4F1A\u8D28\u7591\uFF0C\u800C\u4E0D\u662F\u76F4\u63A5\u7167\u6284", reverse: false, system: "\u5584\u5B66", ability: "\u667A\u5B66" },
   { no: 48, kp: "\u4F1A\u7528AI\u8FC1\u79FB", text: "\u6211\u4F1A\u8BA9AI\u5E2E\u6211\u6574\u7406\u77E5\u8BC6\u3001\u51FA\u540C\u7C7B\u9898\u7EC3\u4E60\uFF0C\u800C\u4E0D\u662F\u8BA9AI\u66FF\u6211\u628A\u7B54\u6848\u6284\u5B8C", reverse: false, system: "\u5584\u5B66", ability: "\u667A\u5B66" },
   { no: 49, kp: "AI\u4F9D\u8D56", text: "\u6CA1\u6709AI\u6216\u624B\u673A\u5E2E\u5FD9\uFF0C\u6211\u5C31\u5F88\u96BE\u72EC\u7ACB\u5B8C\u6210\u5B66\u4E60\u4EFB\u52A1", reverse: true, system: "\u5584\u5B66", ability: "\u667A\u5B66" },
-  { no: 50, kp: "\u7CBE\u529B", text: "\u6211\u6700\u8FD1\u4E00\u4E2A\u6708\u7761\u7720\u89C4\u5F8B\uFF0C\u80FD\u7761\u591F\uFF08\u9AD8\u4E2D\u7EA67\u20148\u5C0F\u65F6\uFF09", reverse: false, system: "\u6761\u4EF6", ability: "\u72B6\u6001" },
+  { no: 50, kp: "\u7CBE\u529B", text: "\u6211\u6700\u8FD1\u4E00\u4E2A\u6708\u7761\u7720\u89C4\u5F8B\uFF0C\u80FD\u7761\u591F\uFF08\u5C0F\u5B66\u7EA69\u201410\u5C0F\u65F6\uFF09", reverse: false, system: "\u6761\u4EF6", ability: "\u72B6\u6001" },
   { no: 51, kp: "\u7CBE\u529B", text: "\u6211\u996E\u98DF\u5065\u5EB7\u3001\u5403\u996D\u6B63\u5E38\uFF0C\u5BB6\u4EBA\u5728\u751F\u6D3B\u4E0A\u628A\u6211\u7167\u987E\u5F97\u5F88\u597D", reverse: false, system: "\u6761\u4EF6", ability: "\u72B6\u6001" },
   { no: 52, kp: "\u7CBE\u529B", text: "\u6211\u6BCF\u5468\u90FD\u6709\u6BD4\u8F83\u8DB3\u591F\u7684\u8FD0\u52A8\u65F6\u95F4", reverse: false, system: "\u6761\u4EF6", ability: "\u72B6\u6001" },
   { no: 53, kp: "\u7CBE\u529B", text: "\u6700\u8FD1\u6211\u8EAB\u4F53\u5E38\u6709\u4E0D\u8212\u670D\uFF08\u5934\u75DB\u3001\u80A0\u80C3\u7B49\uFF09\uFF0C\u5F71\u54CD\u5B66\u4E60", reverse: true, system: "\u6761\u4EF6", ability: "\u72B6\u6001" },
@@ -108920,7 +108988,7 @@ var E3V37_QUESTIONS_PRIMARY = [
   { no: 65, kp: "\u65F6\u95F4\u8D44\u6E90", text: "\u4E00\u73A9\u8D77\u6E38\u620F\u3001\u5237\u8D77\u624B\u673A\u6216\u8FFD\u8D77\u661F\u6765\uFF0C\u6211\u5C31\u505C\u4E0D\u4E0B\u6765\uFF0C\u8D85\u65F6\u4E86\u4E5F\u5FCD\u4E0D\u4F4F", reverse: true, system: "\u6761\u4EF6", ability: "\u8D44\u6E90" },
   { no: 66, kp: "\u5B66\u6821\u8D44\u6E90", text: "\u6211\u57FA\u672C\u4E0A\u80FD\u8DDF\u5F97\u4E0A\u5B66\u6821\u7684\u6559\u5B66\u8FDB\u5EA6\uFF0C\u5B66\u6821\u80FD\u63D0\u4F9B\u6211\u5B66\u4E60\u6240\u9700\u8981\u7684\u5E2E\u52A9\u4E0E\u5B66\u4E60\u6761\u4EF6", reverse: false, system: "\u6761\u4EF6", ability: "\u8D44\u6E90" },
   { no: 67, kp: "\u5BB6\u5EAD\u8D44\u6E90", text: "\u5BB6\u4EBA\u652F\u6301\u6211\u7684\u5B66\u4E60\uFF0C\u603B\u5728\u4E3A\u6211\u7684\u5B66\u4E60\u63D0\u4F9B\u5FC5\u8981\u534F\u52A9", reverse: false, system: "\u6761\u4EF6", ability: "\u8D44\u6E90" },
-  { no: 68, kp: "\u6CE8\u610F\u529B", text: "\u6211\u5F88\u96BE\u8FDE\u7EED30\u5206\u949F\u96C6\u4E2D\u7CBE\u529B\u505A\u4E00\u4EF6\u4E8B\uFF0C\u7ECF\u5E38\u8D70\u795E", reverse: true, system: "\u5B66\u80FD", ability: "\u6CE8\u610F\u529B" },
+  { no: 68, kp: "\u6CE8\u610F\u529B", text: "\u6211\u5F88\u96BE\u8FDE\u7EED20\u5206\u949F\u96C6\u4E2D\u7CBE\u529B\u505A\u4E00\u4EF6\u4E8B\uFF0C\u7ECF\u5E38\u8D70\u795E", reverse: true, system: "\u5B66\u80FD", ability: "\u6CE8\u610F\u529B" },
   { no: 69, kp: "\u5DE5\u4F5C\u8BB0\u5FC6", text: "\u521A\u80CC\u8FC7\u7684\u8BFE\u6587\u3001\u5355\u8BCD\u6216\u516C\u5F0F\uFF0C\u6211\u5F88\u5FEB\u5C31\u56DE\u5FC6\u4E0D\u8D77\u6765", reverse: true, system: "\u5B66\u80FD", ability: "\u5DE5\u4F5C\u8BB0\u5FC6" },
   { no: 70, kp: "\u52A0\u5DE5\u901F\u5EA6", text: "\u6211\u7406\u89E3\u65B0\u77E5\u8BC6\u3001\u89E3\u9898\u6216\u505A\u4F5C\u4E1A\u7684\u901F\u5EA6\u660E\u663E\u6BD4\u540C\u5B66\u6162", reverse: true, system: "\u5B66\u80FD", ability: "\u52A0\u5DE5\u901F\u5EA6" }
 ];
@@ -108928,7 +108996,7 @@ var E3V37_QUESTIONS_JUNIOR = [
   { no: 1, kp: "\u5B66\u4E60\u5174\u8DA3", text: "\u6211\u5BF9\u67D0\u4E9B\u5B66\u79D1\u5185\u5BB9\u672C\u8EAB\u5F88\u611F\u5174\u8DA3\uFF0C\u5E38\u5E38\u4E3B\u52A8\u94BB\u7814", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 2, kp: "\u5B66\u4E60\u5174\u8DA3", text: "\u5B66\u65B0\u77E5\u8BC6\u65F6\uFF0C\u6211\u5E38\u5E38\u6709\u300C\u60F3\u77E5\u9053\u66F4\u591A\u300D\u7684\u597D\u5947\u5FC3", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 3, kp: "\u76EE\u6807\u611F", text: "\u6211\u6E05\u695A\u81EA\u5DF1\u4ECA\u5E74\u8981\u8FBE\u5230\u7684\u76EE\u6807\uFF08\u5206\u6570\u3001\u6392\u540D\u3001\u5347\u8BFB\u5B66\u6821\uFF09", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
-  { no: 4, kp: "\u76EE\u6807\u611F", text: "\u6211\u5BF9\u672A\u6765\u60F3\u8BFB\u4EC0\u4E48\u9AD8\u4E2D\u3001\u4EC0\u4E48\u5927\u5B66\u65B9\u5411\u3001\u60F3\u4ECE\u4E8B\u4EC0\u4E48\u5DE5\u4F5C\uFF0C\u6709\u6BD4\u8F83\u6E05\u6670\u7684\u76EE\u6807\uFF0C\u5E76\u77E5\u9053\u5B83\u4EEC\u5BF9\u6210\u7EE9\u548C\u80FD\u529B\u7684\u8981\u6C42", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
+  { no: 4, kp: "\u76EE\u6807\u611F", text: "\u6211\u5BF9\u60F3\u8BFB\u54EA\u6240\u9AD8\u4E2D\u6709\u6BD4\u8F83\u6E05\u6670\u7684\u76EE\u6807\uFF0C\u77E5\u9053\u5B83\u9700\u8981\u7684\u6210\u7EE9\uFF1B\u5BF9\u957F\u5927\u540E\u60F3\u505A\u4EC0\u4E48\u6709\u521D\u6B65\u60F3\u6CD5", reverse: false, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 5, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5916\u9A71", text: "\u6211\u52AA\u529B\u5B66\u4E60\uFF0C\u4E3B\u8981\u662F\u4E3A\u4E86\u4E0D\u88AB\u7236\u6BCD\u6216\u8001\u5E08\u6279\u8BC4\u3001\u60E9\u7F5A", reverse: true, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 6, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5916\u9A71", text: "\u6211\u5B66\u4E60\u7684\u65F6\u5019\uFF0C\u603B\u671F\u5F85\u6709\u793C\u7269\u3001\u96F6\u82B1\u94B1\u6216\u6E38\u620F\u65F6\u95F4\u7B49\u5956\u52B1\uFF0C\u8FD9\u6837\u6211\u4F1A\u66F4\u6709\u5E72\u52B2", reverse: true, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
   { no: 7, kp: "\u52A8\u529B\u6765\u6E90\xB7\u5916\u9A71", text: "\u8001\u5E08\u8868\u626C\u3001\u540C\u5B66\u8BA4\u53EF\u6216\u6392\u540D\u8FDB\u6B65\uFF0C\u662F\u6211\u5B66\u4E60\u7684\u4E3B\u8981\u52A8\u529B", reverse: true, system: "\u4E50\u5B66", ability: "\u52A8\u529B" },
@@ -109358,7 +109426,7 @@ var E3V37P_MIRROR_QUESTIONS = [
   { key: "P6", kp: "\u97E7\u52B2\xB7\u6297\u632B\u6298", text: "\u5B69\u5B50\u8003\u8BD5\u5931\u5229\u540E\u80FD\u8F83\u5FEB\u8C03\u6574\u3001\u91CD\u65B0\u6295\u5165", ref: "18", refNos: [18] },
   { key: "P7", kp: "\u97E7\u52B2\xB7\u575A\u6301", text: "\u5B69\u5B50\u80CC\u5355\u8BCD\u3001\u5237\u9898\u80FD\u957F\u671F\u575A\u6301\uFF0C\u4E0D\u4E09\u5929\u6253\u9C7C", ref: "19", refNos: [19] },
   { key: "P8", kp: "\u4F1A\u5B66\xB7\u5B66\u61C2", text: "\u5B69\u5B50\u9047\u5230\u4E0D\u61C2\u4F1A\u4E3B\u52A8\u95EE\u8001\u5E08\u3001\u540C\u5B66\u6216\u67E5\u8D44\u6599", ref: "24", refNos: [24] },
-  { key: "P9", kp: "\u4F1A\u5B66\xB7\u8BB0\u4F4F", text: "\u5B69\u5B50\u4F1A\u81EA\u5DF1\u52A8\u624B\u753B\u7ED3\u6784\u56FE\u3001\u601D\u7EF4\u5BFC\u56FE\u6574\u7406\u77E5\u8BC6", ref: "26", refNos: [26] },
+  { key: "P9", kp: "\u4F1A\u5B66\xB7\u8BB0\u4F4F", text: "\u5B69\u5B50\u4F1A\u81EA\u5DF1\u52A8\u624B\u753B\u56FE\u6216\u5217\u8868\u6574\u7406\u77E5\u8BC6", ref: "26", refNos: [26] },
   { key: "P10", kp: "\u4F1A\u5B66\xB7\u4F1A\u7528", text: "\u5B69\u5B50\u4F1A\u6574\u7406\u9519\u9898\u5E76\u5B9A\u671F\u91CD\u505A", ref: "28", refNos: [28] },
   { key: "P11", kp: "\u5584\u5B66\xB7\u8BA1\u5212", text: "\u5B69\u5B50\u6709\u660E\u786E\u5B66\u4E60\u8BA1\u5212\uFF0C\u4E14\u5927\u90E8\u5206\u80FD\u5B8C\u6210", ref: "36", refNos: [36] },
   { key: "P12", kp: "\u5584\u5B66\xB7\u590D\u76D8", text: "\u5B69\u5B50\u4F1A\u5199\u590D\u76D8\u5C0F\u7ED3\uFF0C\u8003\u540E\u505A\u8BD5\u5377\u5206\u6790", ref: "44", refNos: [44] },
@@ -109861,6 +109929,7 @@ function answerKindsForSection(title, hasAcadSec) {
   if (title.includes("\u6761\u4EF6\u6A21\u5757")) {
     return ["mental", "e3parent", "discparent", "mbti", "disc", "e3:\u6761\u4EF6", ...hasAcadSec ? [] : ["e3:\u5FEB\u626B"]];
   }
+  if (title.includes("\u4EB2\u5B50\u5BF9\u7167")) return ["e3parent", "discparent"];
   if (title.includes("\u6210\u7EE9\u73B0\u72B6")) return ["e3:\u5FEB\u626B"];
   if (title.includes("\u5B66\u80FD\u6A21\u5757")) return ["multi5", "e3:\u5B66\u80FD"];
   if (title.includes("\u5174\u8DA3\u4E0E\u65B9\u5411")) return ["anchor", "holland"];
@@ -110987,7 +111056,7 @@ var TABS = [
   { key: "anchor", label: "\u804C\u4E1A\u951A" },
   { key: "holland", label: "\u804C\u4E1A\u5174\u8DA3" },
   { key: "mental", label: "\u5FC3\u7406\u5065\u5EB7" },
-  { key: "discparent", label: "\u5BB6\u957F DISC" }
+  { key: "parent", label: "\u5BB6\u957F\u62A5\u544A" }
 ];
 var POLE_LABEL = {
   E: "\u5916\u5411",
@@ -111773,87 +111842,264 @@ var PARENT_DISC_STYLE = {
     tip: "\u5148\u80AF\u5B9A\u518D\u63D0\u4E00\u4E2A\uFF08\u53EA\u63D0\u4E00\u4E2A\uFF09\u6539\u8FDB\u70B9\uFF1B\u5141\u8BB8\u5B69\u5B50\u7528\u81EA\u5DF1\u7684\u8282\u594F\u5B8C\u6210\uFF0C\u628A\u300C\u5B8C\u7F8E\u300D\u8C03\u6210\u300C\u5B8C\u6210\u4F18\u5148\u300D\u3002"
   }
 };
-function DiscParentTab({
-  student,
-  parents
-}) {
-  if (parents.length === 0) {
-    return /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-      MissingCard,
-      {
-        text: "\u5BB6\u957F DISC \u8FD8\u6CA1\u6709\u6D4B\u8BC4\u3002\u5B83\u7531\u5BB6\u957F\u5404\u81EA\u72EC\u7ACB\u586B\u5199\uFF0824 \u7EC4\u300C\u6700\u50CF\u6211 / \u6700\u4E0D\u50CF\u6211\u300D\uFF0C\u7EA6 4 \u5206\u949F\uFF09\uFF0C\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\u2014\u2014\u5BF9\u7167\u5B69\u5B50\u7684\u884C\u4E3A\u98CE\u683C\uFF0C\u770B\u6C9F\u901A\u5361\u70B9\u51FA\u5728\u54EA\u91CC\u3002",
-        actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192",
-        to: "/assessments?start=discparent"
-      }
-    );
+function buildParentChildAnalysis(student, parents, e3parent) {
+  const conflicts = [];
+  const tips = [];
+  if (e3parent?.severeConflict) {
+    conflicts.push("\u5BB6\u5EAD\u8FD1\u671F\u6709\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7\uFF08\u5BB6\u957F\u5377\uFF09\u2014\u2014\u5148\u4FEE\u590D\u5173\u7CFB\u4E0E\u5B89\u5168\u611F\uFF0C\u518D\u8C08\u5B66\u4E60\u8981\u6C42\u3002");
+    tips.push("\u7EA2\u7EBF\u671F\u539F\u5219\uFF1A\u6682\u505C\u52A0\u538B\u4E0E\u8BF4\u6559\uFF0C\u5148\u6062\u590D\u65E5\u5E38\u966A\u4F34\uFF08\u4E00\u8D77\u5403\u996D\u3001\u6563\u6B65\u3001\u4E0D\u8C08\u5B66\u4E60\u7684\u95F2\u804A\uFF09\uFF0C\u5FC5\u8981\u65F6\u5BFB\u6C42\u5B66\u6821\u5FC3\u7406\u8001\u5E08\u6216\u4E13\u4E1A\u673A\u6784\u652F\u6301\u3002");
   }
+  for (const p of parents) {
+    const style = PARENT_DISC_STYLE[p.result.primary];
+    if (student) {
+      const deltas = ["D", "I", "S", "C"].map((k) => ({
+        k,
+        abs: Math.abs(discNv(student, k) - discNv(p.result, k))
+      }));
+      const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+      if (strong.length > 0) {
+        conflicts.push(
+          `${p.label}\uFF08${p.result.primary} \u578B\uFF09\xD7 \u5B69\u5B50\uFF08${student.primary} \u578B\uFF09\uFF1A${strong.map((x) => `${x.k} \u7EF4\u5DEE ${x.abs} \u5206`).join("\u3001")}\uFF080\u201324 \u91CF\u5C3A\uFF0C\u22656 \u5F3A\u70C8\u51B2\u7A81\uFF09\u2014\u2014${style.risk[student.primary]}\u3002`
+        );
+      } else {
+        conflicts.push(`${p.label}\uFF08${p.result.primary} \u578B\uFF09\xD7 \u5B69\u5B50\uFF08${student.primary} \u578B\uFF09\uFF1A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\uFF1B\u7559\u610F\u2014\u2014${style.risk[student.primary]}\u3002`);
+      }
+    } else {
+      conflicts.push(`${p.label} \u504F ${p.result.primary} \u578B\uFF08${style.style}\uFF09\uFF1B\u5B69\u5B50\u5B8C\u6210 DISC \u540E\u8FD9\u91CC\u4F1A\u7ED9\u51FA\u4EB2\u5B50\u51B2\u7A81\u5BF9\u7167\u3002`);
+    }
+    tips.push(`\u5BF9${p.label}\uFF08${p.result.primary} \u578B\u5BB6\u957F\uFF09\uFF1A${style.tip}`);
+  }
+  if (e3parent) {
+    if (e3parent.overestimates.length > 0) {
+      conflicts.push(`\u5BB6\u957F\u66F4\u770B\u597D\u7684\u65B9\u9762\uFF08\u9AD8\u4F30\uFF09\uFF1A${e3parent.overestimates.map((x) => `${x.kp}\uFF08\u5BB6\u957F ${x.parentScore} / \u5B69\u5B50 ${x.studentScore}\uFF09`).join("\u3001")}\u2014\u2014\u671F\u5F85\u9AD8\u4E8E\u5B69\u5B50\u7684\u5B9E\u9645\u611F\u53D7\uFF0C\u5BB9\u6613\u53D8\u6210\u538B\u529B\u3002`);
+      tips.push("\u9AD8\u4F30\u9879\uFF1A\u628A\u300C\u6211\u4EE5\u4E3A\u4F60\u884C\u300D\u6362\u6210\u300C\u6211\u4EEC\u4E00\u8D77\u770B\u770B\u96BE\u5728\u54EA\u300D\uFF0C\u5148\u5BF9\u9F50\u4E8B\u5B9E\u518D\u5B9A\u76EE\u6807\u3002");
+    }
+    if (e3parent.underestimates.length > 0) {
+      conflicts.push(`\u5BB6\u957F\u6CA1\u770B\u5230\u7684\u95EA\u5149\u70B9\uFF08\u4F4E\u4F30\uFF09\uFF1A${e3parent.underestimates.map((x) => `${x.kp}\uFF08\u5BB6\u957F ${x.parentScore} / \u5B69\u5B50 ${x.studentScore}\uFF09`).join("\u3001")}\u2014\u2014\u5B69\u5B50\u7684\u52AA\u529B\u503C\u5F97\u88AB\u770B\u89C1\u3002`);
+      tips.push("\u4F4E\u4F30\u9879\uFF1A\u8BA9\u5B69\u5B50\u4E3B\u52A8\u5C55\u793A\u4E00\u6B21\uFF08\u8BB2\u4E00\u9053\u9898\u3001\u7FFB\u4E00\u6B21\u9519\u9898\u672C\uFF09\uFF0C\u6BD4\u8FA9\u89E3\u5341\u6B21\u66F4\u6709\u6548\u3002");
+    }
+    const badCond = e3parent.condView.filter((cv) => cv.note.includes("\u72B6\u51B5\u8F83\u5DEE"));
+    if (badCond.length > 0) conflicts.push(`\u5BB6\u957F\u8BA4\u4E3A\u8F83\u5DEE\u7684\u65B9\u5411\uFF1A${badCond.map((cv) => cv.label).join("\u3001")}\u2014\u2014\u9700\u8981\u5BB6\u6821\u4E00\u8D77\u6838\u5B9E\u771F\u56E0\uFF0C\u4F18\u5148\u5904\u7406\u3002`);
+    if (e3parent.unknownCount >= 3) conflicts.push(`\u5BB6\u957F\u5BF9\u5B69\u5B50\u5B66\u4E60\u300C\u4E0D\u4E86\u89E3\u300D${e3parent.unknownCount} \u9879\uFF08\u4E86\u89E3\u7A0B\u5EA6\u300C${e3parent.unknownLevel}\u300D\uFF09\u2014\u2014\u5148\u8865\u4E0A\u4E86\u89E3\uFF0C\u518D\u8C08\u7BA1\u6559\u3002`);
+    tips.push("\u5BB6\u957F\u548C\u5B69\u5B50\u4E00\u8D77\u73A9\u300C\u5BF9\u7167\u6E38\u620F\u300D\uFF1A\u5404\u8BF4\u5404\u7684\u7406\u7531\uFF0C\u5148\u5BF9\u9F50\u4E8B\u5B9E\uFF0C\u518D\u8BA8\u8BBA\u65B9\u6CD5\u3002");
+  }
+  tips.push("\u6BCF\u5468\u7559\u4E00\u6B21\u300C\u4E0D\u8C08\u5B66\u4E60\u300D\u7684\u4EB2\u5B50\u65F6\u95F4\uFF1B\u6279\u8BC4\u5BF9\u4E8B\u4E0D\u5BF9\u4EBA\uFF0C\u5148\u80AF\u5B9A\u518D\u63D0\u4E00\u4E2A\uFF08\u53EA\u63D0\u4E00\u4E2A\uFF09\u6539\u8FDB\u70B9\u3002");
+  return { conflicts, tips };
+}
+function discNv(r, k) {
+  return (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
+}
+function ParentReportTab({
+  student,
+  parents,
+  e3parent,
+  raw
+}) {
+  if (parents.length === 0 && !e3parent) {
+    return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+        MissingCard,
+        {
+          text: "\u5BB6\u957F\u62A5\u544A\u8FD8\u6CA1\u6709\u6570\u636E\u3002\u5B83\u7531\u4E24\u90E8\u5206\u7EC4\u6210\uFF1A\u2460 \u5BB6\u957F\u5377\uFF08\u7EA6 8 \u5206\u949F\uFF0C\u5BB6\u5EAD\u652F\u6301\u4E0E\u8BA4\u77E5\u5BF9\u7167\uFF09\uFF1B\u2461 \u5BB6\u957F DISC\uFF0824 \u7EC4\u300C\u6700\u50CF\u6211 / \u6700\u4E0D\u50CF\u6211\u300D\uFF0C\u7EA6 4 \u5206\u949F\uFF0C\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\uFF09\u3002\u5B8C\u6210\u540E\u8FD9\u91CC\u4F1A\u751F\u6210\u5BB6\u5EAD\u652F\u6301\u5BF9\u7167\u3001\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848\u3002",
+          actionText: "\u53BB\u6D4B\u5BB6\u957F\u5377 \u2192",
+          to: "/assessments?start=e3parent"
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+        MissingCard,
+        {
+          text: "\u5BB6\u957F DISC\uFF1A\u5BF9\u7167\u5B69\u5B50\u7684\u884C\u4E3A\u98CE\u683C\uFF0C\u770B\u6C9F\u901A\u5361\u70B9\u51FA\u5728\u54EA\u91CC\u3002",
+          actionText: "\u53BB\u6D4B\u5BB6\u957F DISC \u2192",
+          to: "/assessments?start=discparent"
+        }
+      )
+    ] });
+  }
+  const { conflicts, tips } = buildParentChildAnalysis(student, parents, e3parent);
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
-    student && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student, parents }),
-    parents.map((p, i) => {
-      const combo = getDiscCombo(p.result.dims);
-      const report = DISC_REPORTS[p.result.primary];
-      const style = PARENT_DISC_STYLE[p.result.primary];
-      return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex flex-wrap items-baseline gap-3", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-lg font-bold text-olive", children: p.label }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("span", { className: "text-[14px] font-bold text-olive", children: [
-            combo.join(""),
-            " \u578B",
-            report ? ` \xB7 ${report.name}` : ""
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card accent-l border-terra/50 p-5", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u5408\u5E76\u5BB6\u957F\u5377\uFF08\u5BB6\u5EAD\u652F\u6301\u4E0E\u8BA4\u77E5\u5BF9\u7167\uFF09\u4E0E\u5BB6\u957F DISC \xD7 \u5B69\u5B50 DISC\uFF08\u884C\u4E3A\u9891\u9053\u5BF9\u7167\uFF09\u7EFC\u5408\u5224\u8BFB\uFF0C\u6309\u4F18\u5148\u7EA7\u6392\u5E8F\u3002" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 grid gap-3 lg:grid-cols-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-terra/30 bg-terra/5 p-3.5", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-terra", children: [
+            "\u51B2\u7A81\u70B9\u6E05\u5355 \xB7 ",
+            conflicts.length,
+            " \u6761"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-[12px] text-olive-mute", children: combo.map((k) => DISC_ANIMAL[k]).join(" + ") }),
-          p.result.version !== 2 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-            "a",
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
+              i + 1,
+              "."
+            ] }),
+            " ",
+            c
+          ] }, i)) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-lime/40 bg-lime-pale/50 p-3.5", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-olive", children: [
+            "\u6539\u8FDB\u65B9\u6848 \xB7 ",
+            tips.length,
+            " \u6761"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: tips.map((t, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
+              i + 1,
+              "."
+            ] }),
+            " ",
+            t
+          ] }, i)) })
+        ] })
+      ] })
+    ] }),
+    e3parent ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5BB6\u5EAD\u652F\u6301\u4E0E\u73AF\u5883\u89C2\u5BDF\uFF08\u5BB6\u957F\u5377\uFF09" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[13px] leading-relaxed text-olive-soft", children: e3parent.summary }),
+      e3parent.severeConflict && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-2.5 rounded-xl border border-[#8f1313]/40 bg-[#fbe3df] p-3 text-[12.5px] font-semibold text-[#8f1313]", children: "!! \u7EA2\u7EBF\u63D0\u9192\uFF1A\u5BB6\u5EAD\u8FD1\u671F\u51FA\u73B0\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7\u2014\u2014\u5EFA\u8BAE\u5148\u4FEE\u590D\u5173\u7CFB\uFF0C\u5FC5\u8981\u65F6\u5BFB\u6C42\u5B66\u6821\u5FC3\u7406\u8001\u5E08\u6216\u4E13\u4E1A\u673A\u6784\u652F\u6301\u3002" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-3 space-y-2", children: e3parent.condView.map((cv) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-border/70 bg-cream/60 px-3.5 py-2.5", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex flex-wrap items-center gap-2", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-[13px] font-bold text-olive", children: cv.label }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("span", { className: "chip !text-[11px]", children: [
+            "\u5BB6\u957F\u89C2\u5BDF\uFF1A",
+            cv.parentView
+          ] }),
+          cv.studentScore != null && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
+            "span",
             {
-              href: "/assessments?start=discparent",
-              className: "rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60",
-              children: "\u65E7\u7248\u9898\u76EE \xB7 \u5EFA\u8BAE\u91CD\u6D4B \u2192"
+              className: "chip !text-[11px]",
+              style: cv.studentLevel === "\u5361\u70B9" ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#fbe3df" } : cv.studentLevel === "\u5F85\u63D0\u5347" ? { borderColor: "#c7a23a66", color: "#8a6d1a", background: "#f5e7c1" } : { borderColor: "#7cb83c66", color: "#5a9326", background: "#f0f7dd" },
+              children: [
+                "\u5B69\u5B50\u81EA\u8BC4 ",
+                cv.studentScore,
+                "/5 \xB7 ",
+                cv.studentLevel
+              ]
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-3 space-y-1.5", children: ["D", "I", "S", "C"].map((k) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: `w-10 shrink-0 text-[12px] ${combo.includes(k) ? "font-bold text-olive" : "text-olive-mute"}`, children: k }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-            "div",
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] leading-relaxed text-olive-soft", children: cv.note })
+      ] }, cv.key)) })
+    ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+      MissingCard,
+      {
+        text: "\u5BB6\u957F\u5377\u8FD8\u6CA1\u6709\u586B\u5199\uFF08\u7EA6 8 \u5206\u949F\uFF09\u3002\u586B\u597D\u540E\u8FD9\u91CC\u4F1A\u7ED9\u51FA\u5BB6\u5EAD\u652F\u6301\u89C2\u5BDF\u4E0E\u5BB6\u957F\u2014\u5B69\u5B50\u8BA4\u77E5\u5BF9\u7167\u3002",
+        actionText: "\u53BB\u6D4B\u5BB6\u957F\u5377 \u2192",
+        to: "/assessments?start=e3parent"
+      }
+    ),
+    e3parent && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5BB6\u957F\u8BA4\u77E5\u5BF9\u7167" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
+        "\u5BB6\u957F\u7684\u4F30\u8BA1\u4E0E\u5B69\u5B50\u7684\u5B9E\u9645\u81EA\u8BC4\u9010\u9879\u5BF9\u7167\uFF08|\u5DEE\u503C| \u2265 2 \u89C6\u4E3A\u660E\u663E\u5DEE\u5F02\uFF09\uFF1B\u300C\u4E0D\u4E86\u89E3\u300D",
+        e3parent.unknownCount,
+        " \u9879\uFF08\u4E86\u89E3\u7A0B\u5EA6\u300C",
+        e3parent.unknownLevel,
+        "\u300D\uFF09\u3002"
+      ] }),
+      e3parent.blindSpots.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] text-olive", children: "\u65E0\u660E\u663E\u5DEE\u5F02\u9879\u2014\u2014\u5BB6\u957F\u7684\u89C2\u5BDF\u4E0E\u5B69\u5B50\u7684\u81EA\u8BC4\u603B\u4F53\u4E00\u81F4\uFF0C\u8BA4\u77E5\u540C\u9891\u3002" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 overflow-hidden rounded-xl border border-border", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 bg-cream-deep/60 px-3 py-1.5 text-[11.5px] font-bold text-olive-mute", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5173\u6CE8\u70B9" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5BB6\u957F\u8BC4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5B69\u5B50\u81EA\u8BC4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5DEE\u503C" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5224\u8BFB" })
+        ] }),
+        e3parent.blindSpots.map((b) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-3 border-t border-border/60 px-3 py-2 text-[12.5px]", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "font-semibold text-olive", children: b.kp }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono text-olive-soft", children: b.parentScore }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono text-olive-soft", children: b.studentScore }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono text-olive-soft", children: b.gap > 0 ? `+${b.gap}` : b.gap }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+            "span",
             {
-              className: "h-full rounded-full",
-              style: {
-                width: `${Math.min(100, p.result.dims[k] / (p.result.version === 2 ? 24 : 12) * 100)}%`,
-                background: combo.includes(k) ? "#c7a23a" : "#7cb83c",
-                opacity: combo.includes(k) ? 1 : 0.5
-              }
+              className: "rounded-full px-2 py-0.5 text-[11px] font-bold",
+              style: b.gap >= 2 ? { background: "#f5e7c1", color: "#8a6d1a" } : { background: "#f0f7dd", color: "#5a9326" },
+              children: b.gap >= 2 ? "\u5BB6\u957F\u9AD8\u4F30" : "\u5BB6\u957F\u4F4E\u4F30"
             }
-          ) }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono w-5 shrink-0 text-right text-[12px] text-olive-soft", children: p.result.dims[k] })
-        ] }, k)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 space-y-2 text-[13px] leading-relaxed text-olive-soft", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u7BA1\u6559\u98CE\u683C\uFF1A" }),
-            p.label,
-            "\u504F ",
-            p.result.primary,
-            " \u578B\uFF08",
-            style.style,
-            "\uFF09\u3002"
+          )
+        ] }, b.key))
+      ] })
+    ] }),
+    parents.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+      MissingCard,
+      {
+        text: "\u5BB6\u957F DISC \u8FD8\u6CA1\u6709\u6D4B\u8BC4\uFF0824 \u7EC4\u300C\u6700\u50CF\u6211 / \u6700\u4E0D\u50CF\u6211\u300D\uFF0C\u7EA6 4 \u5206\u949F\uFF09\uFF0C\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\u2014\u2014\u5BF9\u7167\u5B69\u5B50\u7684\u884C\u4E3A\u98CE\u683C\uFF0C\u770B\u6C9F\u901A\u5361\u70B9\u51FA\u5728\u54EA\u91CC\u3002",
+        actionText: "\u53BB\u6D4B\u5BB6\u957F DISC \u2192",
+        to: "/assessments?start=discparent"
+      }
+    ) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+      student && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student, parents }),
+      parents.map((p, i) => {
+        const combo = getDiscCombo(p.result.dims);
+        const report = DISC_REPORTS[p.result.primary];
+        const style = PARENT_DISC_STYLE[p.result.primary];
+        return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex flex-wrap items-baseline gap-3", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-lg font-bold text-olive", children: p.label }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("span", { className: "text-[14px] font-bold text-olive", children: [
+              combo.join(""),
+              " \u578B",
+              report ? ` \xB7 ${report.name}` : ""
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-[12px] text-olive-mute", children: combo.map((k) => DISC_ANIMAL[k]).join(" + ") }),
+            p.result.version !== 2 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+              "a",
+              {
+                href: "/assessments?start=discparent",
+                className: "rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60",
+                children: "\u65E7\u7248\u9898\u76EE \xB7 \u5EFA\u8BAE\u91CD\u6D4B \u2192"
+              }
+            )
           ] }),
-          student && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u53EF\u80FD\u7684\u51B2\u7A81\u70B9\uFF1A" }),
-            "\u5B69\u5B50\u662F ",
-            getDiscCombo(student.dims).join(""),
-            " \u578B",
-            DISC_REPORTS[student.primary] ? `\u300C${DISC_REPORTS[student.primary].name}\u300D` : "",
-            "\u2014\u2014",
-            style.risk[student.primary],
-            "\u3002"
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u7BA1\u6559\u5EFA\u8BAE\uFF1A" }),
-            style.tip
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-3 space-y-1.5", children: ["D", "I", "S", "C"].map((k) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: `w-10 shrink-0 text-[12px] ${combo.includes(k) ? "font-bold text-olive" : "text-olive-mute"}`, children: k }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+              "div",
+              {
+                className: "h-full rounded-full",
+                style: {
+                  width: `${Math.min(100, p.result.dims[k] / (p.result.version === 2 ? 24 : 12) * 100)}%`,
+                  background: combo.includes(k) ? "#c7a23a" : "#7cb83c",
+                  opacity: combo.includes(k) ? 1 : 0.5
+                }
+              }
+            ) }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono w-5 shrink-0 text-right text-[12px] text-olive-soft", children: p.result.dims[k] })
+          ] }, k)) }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 space-y-2 text-[13px] leading-relaxed text-olive-soft", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u7BA1\u6559\u98CE\u683C\uFF1A" }),
+              p.label,
+              "\u504F ",
+              p.result.primary,
+              " \u578B\uFF08",
+              style.style,
+              "\uFF09\u3002"
+            ] }),
+            student && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u53EF\u80FD\u7684\u51B2\u7A81\u70B9\uFF1A" }),
+              "\u5B69\u5B50\u662F ",
+              getDiscCombo(student.dims).join(""),
+              " \u578B",
+              DISC_REPORTS[student.primary] ? `\u300C${DISC_REPORTS[student.primary].name}\u300D` : "",
+              "\u2014\u2014",
+              style.risk[student.primary],
+              "\u3002"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u7BA1\u6559\u5EFA\u8BAE\uFF1A" }),
+              style.tip
+            ] })
           ] })
-        ] })
-      ] }, `${p.label}-${i}`);
-    }),
-    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "text-center text-[12px] text-olive-mute", children: "\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\uFF1A\u8BA9\u5BB6\u957F\u6253\u5F00\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5BB6\u957F DISC\u300D\u5206\u522B\u586B\u5199\u3002" })
+        ] }, `${p.label}-${i}`);
+      }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "text-center text-[12px] text-olive-mute", children: "\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\uFF1A\u8BA9\u5BB6\u957F\u6253\u5F00\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5BB6\u957F DISC\u300D\u5206\u522B\u586B\u5199\u3002" })
+    ] }),
+    raw && raw.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Fold, { title: "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F\u5377\uFF08\u70B9\u51FB\u5C55\u5F00\uFF09", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswerDetailsByKind, { raw, kinds: ["e3parent"] }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Fold, { title: "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F DISC\uFF08\u70B9\u51FB\u5C55\u5F00\uFF09", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswerDetailsByKind, { raw, kinds: ["discparent"] }) })
+    ] })
   ] });
 }
 var MULTI5_BAND_CLASS = {
@@ -112240,7 +112486,7 @@ function ReportView({
     if (tab === "mbti") return !!(data3?.mbti && MBTI_REPORTS[data3.mbti.type]);
     if (tab === "disc") return !!(data3?.disc && DISC_REPORTS[data3.disc.primary]);
     if (tab === "multi5") return !!data3?.multi5;
-    if (tab === "discparent") return discParents.length > 0;
+    if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult;
     if (tab === "academics" || tab === "profile") return false;
     if (tab === "anchor" || tab === "holland" || tab === "mental") return !!data3?.[tab];
     return !!combined2;
@@ -112258,7 +112504,8 @@ function ReportView({
       anchor: "\u804C\u4E1A\u951A\u6D4B\u8BC4\u62A5\u544A",
       holland: "\u970D\u5170\u5FB7\u804C\u4E1A\u5174\u8DA3\u6D4B\u8BC4\u62A5\u544A",
       mental: "\u5FC3\u7406\u5065\u5EB7\u8BC4\u4F30\u62A5\u544A",
-      discparent: "\u5BB6\u957F DISC \u5BF9\u7167\u62A5\u544A",
+      discparent: "\u5BB6\u957F\u62A5\u544A\uFF08\u4EB2\u5B50\u5BF9\u7167\u4E0E\u6C9F\u901A\u5EFA\u8BAE\uFF09",
+      parent: "\u5BB6\u957F\u62A5\u544A\uFF08\u4EB2\u5B50\u5BF9\u7167\u4E0E\u6C9F\u901A\u5EFA\u8BAE\uFF09",
       combined: "\u7EFC\u5408\u5B66\u4E60\u529B\u62A5\u544A"
     };
     const prevTitle = document.title;
@@ -112583,7 +112830,7 @@ function ReportView({
       tab === "mbti" && (!mbti2 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MissingCard, { text: "\u8FD8\u6CA1\u6709 MBTI \u6D4B\u8BC4\u7ED3\u679C\uFF0C28 \u9053\u4E8C\u9009\u4E00\uFF0C\u7EA6 5 \u5206\u949F\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=mbti" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MbtiDetail, { result: mbti2, onGoCombined: goCombined })),
       tab === "disc" && (!disc2 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MissingCard, { text: "\u8FD8\u6CA1\u6709 DISC \u6D4B\u8BC4\u7ED3\u679C\uFF0C24 \u9053\u4E8C\u9009\u4E00\uFF0C\u7EA6 4 \u5206\u949F\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=disc" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscDetail, { primary: disc2.primary, dims: disc2.dims, version: disc2.version, onGoCombined: goCombined })),
       tab === "multi5" && (!multi5 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MissingCard, { text: "\u591A\u5143\u667A\u80FD\u4E94\u9879\u4E3A\u5BA2\u89C2\u9898\u6D4B\u8BC4\uFF08\u9009\u505A\uFF09\uFF0C40 \u9898\u7EA6 8 \u5206\u949F\uFF0C\u6BD4\u81EA\u8BC4\u66F4\u80FD\u53CD\u6620\u771F\u5B9E\u80FD\u529B\u5E95\u5B50\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=multi5" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Multi5Detail, { result: multi5 })),
-      tab === "discparent" && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentTab, { student: disc2 ?? null, parents: discParents }),
+      (tab === "parent" || tab === "discparent") && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(ParentReportTab, { student: disc2 ?? null, parents: discParents, e3parent: parentResult, raw: data3?.raw }),
       tab === "anchor" && (!anchor ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
         MissingCard,
         {
@@ -112660,7 +112907,9 @@ function ReportView({
               holland,
               mental,
               status: frameworkStatus,
-              onOpen: openFramework
+              onOpen: openFramework,
+              e3parent: parentResult,
+              discParents
             }
           ),
           combined2.sections[0] && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
@@ -112738,6 +112987,8 @@ function ReportView({
                   mental && (isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalBar, { mental })),
                   disc2 && discParents.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student: disc2, parents: discParents })
                 ] }) : void 0;
+              } else if (s.title.includes("\u4EB2\u5B50\u5BF9\u7167")) {
+                chartNode = disc2 && discParents.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student: disc2, parents: discParents }) : void 0;
               } else if (s.title.includes("\u5B66\u80FD\u6A21\u5757")) {
                 chartNode = data3?.multi5 || e3v37 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
                   data3?.multi5 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Multi5Radar, { multi5: data3.multi5 }),
@@ -112771,7 +113022,8 @@ function ReportView({
               const isAppendix = s.title.includes("\u9644\u5F55");
               const detailNode = isAppendix ? e3v37 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "print:hidden", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AbilityScoreTable, { e3: e3v37, ratings: e3Ratings }) }) : void 0 : void 0;
               const answersNode = !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "print:hidden", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswerDetailsByKind, { raw, kinds: answerKindsForSection(s.title, hasAcadSec) }) }) : void 0;
-              return /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(CollapsibleSection, { section: s, index: i, charts: chartNode, detail: detailNode, answers: answersNode }, i);
+              const secNode = /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(CollapsibleSection, { section: s, index: i, charts: chartNode, detail: detailNode, answers: answersNode }, i);
+              return isAppendix ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "print:hidden", children: secNode }, i) : secNode;
             });
           })(),
           /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "text-center text-[12.5px] text-olive-mute", children: "\u62A5\u544A\u5185\u5BB9\u805A\u7126\u5B66\u4E60\u76F8\u5173\u56E0\u5B50\uFF0C\u968F\u5B66\u4E60\u6570\u636E\u79EF\u7D2F\u6301\u7EED\u66F4\u65B0\u3002" })
@@ -113074,7 +113326,9 @@ function CombinedLite({
   holland,
   mental,
   status,
-  onOpen
+  onOpen,
+  e3parent,
+  discParents
 }) {
   const mr = MBTI_REPORTS[mbti2.type];
   const dr = DISC_REPORTS[disc2.primary];
@@ -113137,6 +113391,29 @@ function CombinedLite({
         ] })
       ] })
     ] }),
+    (e3parent || discParents && discParents.length > 0) && (() => {
+      const { conflicts, tips } = buildParentChildAnalysis(disc2, discParents ?? [], e3parent ?? null);
+      return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card accent-l border-terra/40 p-5", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50\u5BF9\u7167 \xB7 \u6458\u8981" }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.slice(0, 3).map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-terra", children: [
+            i + 1,
+            "."
+          ] }),
+          " ",
+          c
+        ] }, i)) }),
+        conflicts.length > 3 && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12px] text-olive-mute", children: [
+          "\u2026\u2026\u5171 ",
+          conflicts.length,
+          " \u6761\u51B2\u7A81\u70B9\uFF0C\u8BE6\u89C1\u300C\u5BB6\u957F\u62A5\u544A\u300D\u680F\u76EE\u6216\u8BE6\u7248\u300C\u4EB2\u5B50\u5BF9\u7167\u4E0E\u6C9F\u901A\u5EFA\u8BAE\u300D\u7AE0\u3002"
+        ] }),
+        tips.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-2.5 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-olive", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { children: "\u6838\u5FC3\u5EFA\u8BAE\uFF1A" }),
+          tips[0]
+        ] })
+      ] });
+    })(),
     /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
       AssessmentChartsLite,
       {
@@ -113239,7 +113516,7 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v37.tsx
+// scripts/smoke-render-v38.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -113386,7 +113663,65 @@ if (!e3Html.includes("\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70
 var e3AppendixSeg = e3Html.slice(e3Html.indexOf("\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868") - 200, e3Html.indexOf("\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868") + 100);
 if (/print:hidden/.test(e3AppendixSeg)) throw new Error("E3 tab \u9644\u5F55\u4E0D\u5E94\u6253\u5370\u9690\u85CF");
 console.log("OK \u6253\u5370\u9690\u85CF\uFF08\u8BE6\u7248/\u7B80\u7248\u9690\u85CF\uFF0CE3 tab \u9644\u5F55\u4FDD\u7559\uFF09");
-console.log("RENDER_SMOKE_V37_OK");
+var pq = (no) => E3V37_QUESTIONS_PRIMARY.find((q) => q.no === no)?.text ?? "";
+var jq = (no) => E3V37_QUESTIONS_JUNIOR.find((q) => q.no === no)?.text ?? "";
+if (!pq(50).includes("\u5C0F\u5B66\u7EA69\u201410\u5C0F\u65F6")) throw new Error("\u5C0F\u5B66 q50 \u7761\u7720\u6807\u51C6\u672A\u6539");
+if (pq(4).includes("\u5927\u5B66") || !pq(4).includes("\u4E2D\u5B66")) throw new Error("\u5C0F\u5B66 q4 \u672A\u6539");
+if (!pq(34).includes("\u5347\u521D\u4E2D")) throw new Error("\u5C0F\u5B66 q34 \u672A\u6539");
+if (!pq(68).includes("\u8FDE\u7EED20\u5206\u949F")) throw new Error("\u5C0F\u5B66 q68 \u672A\u6539");
+if (!jq(4).includes("\u9AD8\u4E2D") || jq(4).includes("\u5927\u5B66\u65B9\u5411")) throw new Error("\u521D\u4E2D q4 \u672A\u6539");
+console.log("OK \u5206\u5B66\u6BB5\u9898\u76EE\u4FEE\u6539\uFF08\u5C0F\u5B66 q4/q34/q50/q68\u3001\u521D\u4E2D q4\uFF09");
+var e3parentFake = {
+  version: "3.7",
+  summary: "\u5BB6\u957F\u4E86\u89E3\u7A0B\u5EA6\u300C\u4E2D\u300D\uFF08\u4E0D\u4E86\u89E3 3 \u9879\uFF09\uFF0C\u89C2\u5BDF\u4E0E\u5B69\u5B50\u81EA\u8BC4\u7684\u660E\u663E\u5DEE\u5F02 1 \u9879\u3002",
+  condView: [
+    { key: "state", label: "\u7761\u7720\u4E0E\u4F5C\u606F", parentView: "\u8F83\u597D", studentScore: 2, studentLevel: "\u5361\u70B9", note: "\u5BB6\u957F\u8BA4\u4E3A\u8F83\u597D\uFF1B\u5B66\u751F\u81EA\u8BC4\u5BF9\u5E94\u9898\u5747\u5206 2.0\uFF08\u22642.0\uFF09\uFF0C\u4E3A\u660E\u663E\u77ED\u677F\u3002" },
+    { key: "relParent", label: "\u4EB2\u5B50\u6C9F\u901A", parentView: "\u8F83\u5DEE", studentScore: 3, studentLevel: "\u5F85\u63D0\u5347", note: "\u5BB6\u957F\u8BA4\u4E3A\u4EB2\u5B50\u6C9F\u901A\u72B6\u51B5\u8F83\u5DEE\uFF0C\u9700\u4F18\u5148\u6838\u5B9E\u5E76\u5904\u7406\u3002" }
+  ],
+  blindSpots: [{ key: "P1", kp: "\u5B66\u4E60\u5174\u8DA3", parentScore: 5, studentScore: 2, gap: 3 }],
+  overestimates: [{ key: "P1", kp: "\u5B66\u4E60\u5174\u8DA3", parentScore: 5, studentScore: 2, gap: 3 }],
+  underestimates: [],
+  unknownCount: 3,
+  unknownLevel: "\u4E2D",
+  severeConflict: true
+};
+var dataParent = {
+  ...data2,
+  e3parent: e3parentFake,
+  discParents: [{ label: "\u5988\u5988", result: disc, createdAt: /* @__PURE__ */ new Date() }],
+  raw: [...data2.raw, { kind: "e3parent", answers: { family: {}, condObserve: {}, mirror: [] }, createdAt: /* @__PURE__ */ new Date() }]
+};
+var renderP = (tab) => (0, import_server.renderToStaticMarkup)(
+  import_react5.default.createElement(
+    MemoryRouter,
+    { initialEntries: [`/report-detail?tab=${tab}`] },
+    import_react5.default.createElement(ReportView, { data: dataParent, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    } })
+  )
+);
+var parentHtml = renderP("parent");
+for (const kw of ["\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848", "\u5BB6\u5EAD\u652F\u6301\u4E0E\u73AF\u5883\u89C2\u5BDF\uFF08\u5BB6\u957F\u5377\uFF09", "\u5BB6\u957F\u8BA4\u77E5\u5BF9\u7167", "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167", "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F\u5377", "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F DISC", "\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7", "\u5BB6\u957F\u9AD8\u4F30"]) {
+  need(parentHtml, kw, "\u5BB6\u957F\u62A5\u544A tab");
+}
+var legacyTabHtml = renderP("discparent");
+need(legacyTabHtml, "\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848", "\u65E7 discparent tab \u517C\u5BB9");
+var emptyParent = render("parent");
+need(emptyParent, "\u5BB6\u957F\u62A5\u544A\u8FD8\u6CA1\u6709\u6570\u636E", "\u5BB6\u957F\u62A5\u544A(\u7A7A\u6001)");
+var fullParent = renderP("combined");
+need(fullParent, "\u4EB2\u5B50\u5BF9\u7167\u4E0E\u6C9F\u901A\u5EFA\u8BAE\uFF08\u5BB6\u957F\u5377 \xD7 \u5BB6\u957F DISC\uFF09", "\u7EFC\u5408\u8BE6\u7248\u4EB2\u5B50\u7AE0");
+need(fullParent, "\u51B2\u7A81\u70B9\u6E05\u5355", "\u7EFC\u5408\u8BE6\u7248\u4EB2\u5B50\u7AE0");
+need(fullParent, "\u6C9F\u901A\u4F18\u5316\u5EFA\u8BAE", "\u7EFC\u5408\u8BE6\u7248\u4EB2\u5B50\u7AE0");
+need(fullParent, "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167", "\u7EFC\u5408\u8BE6\u7248\u4EB2\u5B50\u7AE0\u56FE\u8868");
+var liteParent = renderP("combined&view=lite");
+need(liteParent, "\u4EB2\u5B50\u5BF9\u7167 \xB7 \u6458\u8981", "\u7B80\u7248\u6458\u8981\u5361");
+need(liteParent, "\u6838\u5FC3\u5EFA\u8BAE", "\u7B80\u7248\u6458\u8981\u5361");
+var apxIdx = fullParent.lastIndexOf("\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868");
+if (apxIdx < 0) throw new Error("\u7EFC\u5408\u8BE6\u7248\u7F3A\u5C11\u9644\u5F55\u7AE0");
+if (!fullParent.slice(Math.max(0, apxIdx - 400), apxIdx).includes('class="print:hidden"')) {
+  throw new Error("\u7EFC\u5408\u8BE6\u7248\u9644\u5F55\u7AE0\u672A\u6574\u7AE0 print:hidden");
+}
+console.log("OK \u7EFC\u5408\u8BE6\u7248\u9644\u5F55\u7AE0\u6574\u7AE0\u4E0D\u6253\u5370");
+console.log("RENDER_SMOKE_V38_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

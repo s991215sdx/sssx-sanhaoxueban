@@ -875,27 +875,29 @@ export function buildCombinedReport(
       }),
     },
   ];
+  /* DISC 量尺归一：V2 新版原生 0–24；V1 旧版 0–12 ×2，亲子对照同尺可比 */
+  const discNorm = (r: DiscResult, k: DiscType) => (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
   /* 亲子 DISC 对照：每位家长与学生主型的差异分析（逐维度差值冲突标注 + 冲突点 + 管教风格建议），最多 2 张卡 */
   for (const p of discParents.slice(0, 2)) {
     const pp = p.result.primary;
     const parentAnimal = DISC_ANIMAL[pp].split("（")[0];
     const childAnimal = DISC_ANIMAL[d].split("（")[0];
-    /* 逐维度 |学生-家长| 差值：|Δ|≥3 强烈冲突（排最前），Δ=2 需留意 */
+    /* 逐维度 |学生-家长| 差值（0–24 统一量尺）：|Δ|≥6 强烈冲突（排最前），4–5 需留意 */
     const dimDeltas = (["D", "I", "S", "C"] as DiscType[])
-      .map((k) => ({ k, student: disc.dims[k], parent: p.result.dims[k], abs: Math.abs(disc.dims[k] - p.result.dims[k]) }));
-    const strongClashes = dimDeltas.filter((x) => x.abs >= 3).sort((a, b) => b.abs - a.abs);
-    const watchDims = dimDeltas.filter((x) => x.abs === 2);
+      .map((k) => ({ k, student: discNorm(disc, k), parent: discNorm(p.result, k), abs: Math.abs(discNorm(disc, k) - discNorm(p.result, k)) }));
+    const strongClashes = dimDeltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+    const watchDims = dimDeltas.filter((x) => x.abs >= 4 && x.abs < 6);
     const clashLine =
       strongClashes.length > 0 || watchDims.length > 0
-        ? `**逐维度差值（你 vs ${p.label}）**：` +
+        ? `**逐维度差值（你 vs ${p.label}，0–24 统一量尺）**：` +
           [
             ...strongClashes.map(
               (x) => `**!!⚠ ${x.k} 维强烈冲突!!**（你 ${x.student} / ${p.label} ${x.parent}，差 ${x.abs} 分）`,
             ),
-            ...watchDims.map((x) => `⚠ ${x.k} 维需留意（你 ${x.student} / ${p.label} ${x.parent}，差 2 分）`),
+            ...watchDims.map((x) => `⚠ ${x.k} 维需留意（你 ${x.student} / ${p.label} ${x.parent}，差 ${x.abs} 分）`),
           ].join("；") +
           `。${strongClashes.length > 0 ? "差值越大的维度，日常管教里越容易「频道对不上」——强烈冲突维度请优先按下方建议调整沟通方式。" : "这两个维度已临近冲突线，沟通时多留意。"}\n`
-        : `**逐维度差值（你 vs ${p.label}）**：四个维度差值都在 1 分以内（${dimDeltas.map((x) => `${x.k} 差 ${x.abs}`).join("、")}），行为频道总体接近，沟通天然省力。\n`;
+        : `**逐维度差值（你 vs ${p.label}）**：四个维度差值都在 3 分以内（${dimDeltas.map((x) => `${x.k} 差 ${x.abs}`).join("、")}），行为频道总体接近，沟通天然省力。\n`;
     secCondItems.push({
       heading: `**亲子 DISC 对照 · ${p.label}（${pp} 型·${parentAnimal}）× 你（${d} 型·${childAnimal}）**${strongClashes.length > 0 ? ` · !!⚠ ${strongClashes.map((x) => x.k).join("/")} 维强烈冲突!!` : ""}`,
       level: strongClashes.length > 0 ? "卡点" : watchDims.length > 0 ? "待提升" : relCell.level === "卡点" ? "卡点" : undefined,
@@ -936,6 +938,80 @@ export function buildCombinedReport(
     ],
     items: secCondItems,
   };
+
+  /* ④b. 亲子对照与沟通建议（条件大类独立成章：家长卷认知对照 × 亲子 DISC 冲突，合并出冲突点清单与改进方案） */
+  let secParentChild: CombinedSection | null = null;
+  if (e3parent || discParents.length > 0) {
+    const conflicts: string[] = [];
+    const tips: string[] = [];
+    if (e3parent?.severeConflict) {
+      conflicts.push("**!!严重亲子冲突信号!!**（家长卷）：家庭近期发生了严重亲子冲突——先修复关系与安全感，再谈学习要求。");
+      tips.push("**红线期原则**：暂停加压与说教，先恢复日常陪伴（一起吃饭、散步、不谈学习的闲聊），必要时寻求学校心理老师或专业机构支持。");
+    }
+    for (const p of discParents) {
+      const pp = p.result.primary;
+      const deltas = (["D", "I", "S", "C"] as DiscType[]).map((k) => ({
+        k,
+        abs: Math.abs(discNorm(disc, k) - discNorm(p.result, k)),
+      }));
+      const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+      conflicts.push(
+        strong.length > 0
+          ? `**${p.label}（${pp} 型）× 你（${d} 型）· DISC 频道冲突**：${strong.map((x) => `${x.k} 维差 ${x.abs} 分`).join("、")}（0–24 量尺，≥6 为强烈冲突）——${DISC_CONFLICT[pp][d]}。`
+          : `${p.label}（${pp} 型）× 你（${d} 型）：DISC 四维度差值均在安全区（最大 ${Math.max(...deltas.map((x) => x.abs))} 分），行为频道总体接近；仍需留意——${DISC_CONFLICT[pp][d]}。`,
+      );
+    }
+    if (disc) {
+      tips.push(
+        `**与你（${d} 型）沟通最有效的方式**：${discReport.communicationTips.slice(0, 3).map((t) => t.replace(/。+$/, "")).join("；")}。`,
+      );
+    }
+    if (e3parent) {
+      if (e3parent.overestimates.length > 0) {
+        conflicts.push(
+          `**家长更看好的方面**（高估 ${e3parent.overestimates.length} 项）：${e3parent.overestimates.map((x) => `${x.kp}（家长 ${x.parentScore} / 你 ${x.studentScore}）`).join("、")}——期待高于你的实际感受，容易变成无形压力。`,
+        );
+        tips.push("高估项：和家长一起看孩子的实际作答，把「我以为你行」换成「我们一起看看难在哪」。");
+      }
+      if (e3parent.underestimates.length > 0) {
+        conflicts.push(
+          `**家长没看到的闪光点**（低估 ${e3parent.underestimates.length} 项）：${e3parent.underestimates.map((x) => `${x.kp}（家长 ${x.parentScore} / 你 ${x.studentScore}）`).join("、")}——你的努力值得被看见，建议主动展示给家长。`,
+        );
+        tips.push("低估项：孩子主动展示一次（讲一道题、翻一次错题本），比辩解十次更有效。");
+      }
+      const badCond = e3parent.condView.filter((cv) => cv.note.includes("状况较差"));
+      if (badCond.length > 0) {
+        conflicts.push(`**家长认为较差的方向**：${badCond.map((cv) => cv.label).join("、")}——需要家校一起核实真因，优先处理。`);
+      }
+      if (e3parent.unknownCount >= 3) {
+        conflicts.push(`**家长了解程度不足**：认知对照题中「不了解」${e3parent.unknownCount} 项（了解程度「${e3parent.unknownLevel}」）——先补上了解，再谈管教。`);
+      }
+      tips.push("把这一章家长和孩子一起看：孩子说说自评的理由，家长说说观察的依据——先对齐事实，再讨论方法。");
+    }
+    tips.push("每周留一次「不谈学习」的亲子时间；批评对事不对人，先肯定再提一个（只提一个）改进点。");
+    secParentChild = {
+      title: "亲子对照与沟通建议（家长卷 × 家长 DISC）",
+      paragraphs: [
+        e3parent
+          ? `**家长卷**：家长对孩子学习状态的了解程度「**${e3parent.unknownLevel}**」（不了解 ${e3parent.unknownCount} 项），观察与孩子自评的明显差异 **${e3parent.blindSpots.length} 项**（高估 ${e3parent.overestimates.length} / 低估 ${e3parent.underestimates.length}）${e3parent.severeConflict ? "；!!并出现严重亲子冲突信号!!" : ""}。`
+          : "家长卷尚未填写——填写后这里会给出家长观察与孩子自评的认知对照（可到「测评中心 → 家长卷」补填）。",
+        discParents.length > 0
+          ? `**家长 DISC**：${discParents.map((p) => `${p.label}（${p.result.primary} 型）`).join("、")} × 你（${d} 型）——类型没有好坏，冲突来自频道差异，可调的是沟通方式。`
+          : "家长 DISC 尚未测评——测后这里会给出亲子行为频道对照（可到「测评中心 → 家长 DISC」补测）。",
+      ],
+      items: [
+        {
+          heading: `**冲突点清单 · 共 ${conflicts.length} 条**（按优先级排序）`,
+          level: conflicts.some((c) => c.includes("!!")) ? "卡点" : conflicts.length > 1 ? "待提升" : undefined,
+          text: conflicts.map((t, i) => `${i + 1}. ${t}`).join("\n"),
+        },
+        {
+          heading: "**沟通优化建议**（给家长，也给孩子）",
+          text: tips.map((t, i) => `${i + 1}. ${t}`).join("\n"),
+        },
+      ],
+    };
+  }
 
   /* ⑤. 学能模块 · 能力系统（学能筛查三项 + 多元智能五项） */
   const aptLine = e3.aptitude.map((a) => `${a.label} ${a.score}/5（${a.level}）`).join(" · ");
@@ -1220,8 +1296,9 @@ export function buildCombinedReport(
     ],
   };
 
-  /* 章节组装：综合结论 → 乐学/会学/善学模块 → 学能模块 → 条件模块 → 兴趣与方向 → 信号 → 家长 → 训练点子速查 → 附录 */
+  /* 章节组装：综合结论 → 乐学/会学/善学模块 → 学能模块 → 条件模块 → 亲子对照（条件大类）→ 兴趣与方向 → 信号 → 家长 → 训练点子速查 → 附录 */
   const sections: CombinedSection[] = [secConclusion, ...secModules, secApt, secCond];
+  if (secParentChild) sections.push(secParentChild);
   if (secCareer) sections.push(secCareer);
   sections.push(secFlags, secParents, secIdeas, secAppendix);
 

@@ -83,7 +83,7 @@ export const E3V37P_MIRROR_QUESTIONS: E3V37ParentMirrorQ[] = [
   { key: "P6", kp: "韧劲·抗挫折", text: "孩子考试失利后能较快调整、重新投入", ref: "18", refNos: [18] },
   { key: "P7", kp: "韧劲·坚持", text: "孩子背单词、刷题能长期坚持，不三天打鱼", ref: "19", refNos: [19] },
   { key: "P8", kp: "会学·学懂", text: "孩子遇到不懂会主动问老师、同学或查资料", ref: "24", refNos: [24] },
-  { key: "P9", kp: "会学·记住", text: "孩子会自己动手画结构图、思维导图整理知识", ref: "26", refNos: [26] },
+  { key: "P9", kp: "会学·记住", text: "孩子会自己动手画图或列表整理知识", ref: "26", refNos: [26] },
   { key: "P10", kp: "会学·会用", text: "孩子会整理错题并定期重做", ref: "28", refNos: [28] },
   { key: "P11", kp: "善学·计划", text: "孩子有明确学习计划，且大部分能完成", ref: "36", refNos: [36] },
   { key: "P12", kp: "善学·复盘", text: "孩子会写复盘小结，考后做试卷分析", ref: "44", refNos: [44] },

@@ -51,6 +51,7 @@ export function answerKindsForSection(title: string, hasAcadSec: boolean): strin
   if (title.includes("条件模块")) {
     return ["mental", "e3parent", "discparent", "mbti", "disc", "e3:条件", ...(hasAcadSec ? [] : ["e3:快扫"])];
   }
+  if (title.includes("亲子对照")) return ["e3parent", "discparent"];
   if (title.includes("成绩现状")) return ["e3:快扫"];
   if (title.includes("学能模块")) return ["multi5", "e3:学能"];
   if (title.includes("兴趣与方向")) return ["anchor", "holland"];
