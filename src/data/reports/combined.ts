@@ -39,7 +39,6 @@ import type {
   MbtiTypeReport,
   DiscTypeReport,
 } from "./types";
-import { DISC_REPORTS } from "./disc";
 
 type TfPole = "T" | "F";
 
@@ -401,22 +400,6 @@ const DISC_FACTOR_MEANING: Record<DiscType, { high: string; low: string }> = {
 };
 
 /* ------------------------- 亲子 DISC 对照素材 ------------------------- */
-
-/** 各主型家长的管教风格倾向与风险。 */
-const DISC_PARENT_STYLE: Record<DiscType, string> = {
-  D: "目标导向、要求明确、行动快；风险是指令多、节奏快，容易变成催促与命令",
-  I: "热情、爱表达、赏罚分明；风险是情绪化、当众说教，表扬和批评都太响亮",
-  S: "温和、包容、有耐心；风险是回避冲突、原则不够坚定，容易「说了不算」",
-  C: "重规则、重细节、标准高；风险是纠错多、肯定少，孩子容易觉得「怎么做都不够好」",
-};
-
-/** 各主型孩子面对管教的典型反应。 */
-const DISC_CHILD_REACT: Record<DiscType, string> = {
-  D: "吃软不吃硬：被强压会顶撞，给他选择权和挑战目标，反而配合",
-  I: "面子薄、在乎评价：当众批评会记很久，公开肯定、私下提醒最有效",
-  S: "表面顺从、内心有数：催促会引发拖延式抵抗，明确节奏加温和坚持最管用",
-  C: "敏感且内耗：纠错过多会自我否定，先肯定、一次只提一个改进点",
-};
 
 /** 家长主型 × 孩子主型的典型冲突点。 */
 const DISC_CONFLICT: Record<DiscType, Record<DiscType, string>> = {
@@ -877,38 +860,7 @@ export function buildCombinedReport(
   ];
   /* DISC 量尺归一：V2 新版原生 0–24；V1 旧版 0–12 ×2，亲子对照同尺可比 */
   const discNorm = (r: DiscResult, k: DiscType) => (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
-  /* 亲子 DISC 对照：每位家长与学生主型的差异分析（逐维度差值冲突标注 + 冲突点 + 管教风格建议），最多 2 张卡 */
-  for (const p of discParents.slice(0, 2)) {
-    const pp = p.result.primary;
-    const parentAnimal = DISC_ANIMAL[pp].split("（")[0];
-    const childAnimal = DISC_ANIMAL[d].split("（")[0];
-    /* 逐维度 |学生-家长| 差值（0–24 统一量尺）：|Δ|≥6 强烈冲突（排最前），4–5 需留意 */
-    const dimDeltas = (["D", "I", "S", "C"] as DiscType[])
-      .map((k) => ({ k, student: discNorm(disc, k), parent: discNorm(p.result, k), abs: Math.abs(discNorm(disc, k) - discNorm(p.result, k)) }));
-    const strongClashes = dimDeltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
-    const watchDims = dimDeltas.filter((x) => x.abs >= 4 && x.abs < 6);
-    const clashLine =
-      strongClashes.length > 0 || watchDims.length > 0
-        ? `**逐维度差值（你 vs ${p.label}，0–24 统一量尺）**：` +
-          [
-            ...strongClashes.map(
-              (x) => `**!!⚠ ${x.k} 维强烈冲突!!**（你 ${x.student} / ${p.label} ${x.parent}，差 ${x.abs} 分）`,
-            ),
-            ...watchDims.map((x) => `⚠ ${x.k} 维需留意（你 ${x.student} / ${p.label} ${x.parent}，差 ${x.abs} 分）`),
-          ].join("；") +
-          `。${strongClashes.length > 0 ? "差值越大的维度，日常管教里越容易「频道对不上」——强烈冲突维度请优先按下方建议调整沟通方式。" : "这两个维度已临近冲突线，沟通时多留意。"}\n`
-        : `**逐维度差值（你 vs ${p.label}）**：四个维度差值都在 3 分以内（${dimDeltas.map((x) => `${x.k} 差 ${x.abs}`).join("、")}），行为频道总体接近，沟通天然省力。\n`;
-    secCondItems.push({
-      heading: `**亲子 DISC 对照 · ${p.label}（${pp} 型·${parentAnimal}）× 你（${d} 型·${childAnimal}）**${strongClashes.length > 0 ? ` · !!⚠ ${strongClashes.map((x) => x.k).join("/")} 维强烈冲突!!` : ""}`,
-      level: strongClashes.length > 0 ? "卡点" : watchDims.length > 0 ? "待提升" : relCell.level === "卡点" ? "卡点" : undefined,
-      text:
-        clashLine +
-        `${p.label}是 **${pp} 型（${DISC_REPORTS[pp].name}）** 家长：${DISC_PARENT_STYLE[pp]}。\n` +
-        `你是 **${d} 型（${discReport.name}）** 孩子：${DISC_CHILD_REACT[d]}。\n` +
-        `**!!可能的冲突点!!**：${DISC_CONFLICT[pp][d]}。\n` +
-        `**管教风格改进建议**（与你这个类型沟通最有效的方式）：${discReport.communicationTips.slice(0, 3).map((t) => t.replace(/。+$/, "")).join("；")}。`,
-    });
-  }
+  /* 亲子 DISC 对照卡已整体迁入「亲子对照与沟通建议」章（V38），条件章不再重复展示 */
   if (e3.redFlags.length > 0) {
     secCondItems.push({
       heading: `**!!红线提醒 · 共 ${e3.redFlags.length} 条!!**`,

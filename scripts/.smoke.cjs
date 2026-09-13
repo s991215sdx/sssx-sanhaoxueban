@@ -53073,7 +53073,7 @@ var require_react_is_development = __commonJS({
         var ContextProvider = REACT_PROVIDER_TYPE;
         var Element2 = REACT_ELEMENT_TYPE;
         var ForwardRef = REACT_FORWARD_REF_TYPE;
-        var Fragment12 = REACT_FRAGMENT_TYPE;
+        var Fragment13 = REACT_FRAGMENT_TYPE;
         var Lazy = REACT_LAZY_TYPE;
         var Memo = REACT_MEMO_TYPE;
         var Portal = REACT_PORTAL_TYPE;
@@ -53141,7 +53141,7 @@ var require_react_is_development = __commonJS({
         exports2.ContextProvider = ContextProvider;
         exports2.Element = Element2;
         exports2.ForwardRef = ForwardRef;
-        exports2.Fragment = Fragment12;
+        exports2.Fragment = Fragment13;
         exports2.Lazy = Lazy;
         exports2.Memo = Memo;
         exports2.Portal = Portal;
@@ -75396,7 +75396,7 @@ var require_react_is_development2 = __commonJS({
         var ContextProvider = REACT_PROVIDER_TYPE;
         var Element2 = REACT_ELEMENT_TYPE;
         var ForwardRef = REACT_FORWARD_REF_TYPE;
-        var Fragment12 = REACT_FRAGMENT_TYPE;
+        var Fragment13 = REACT_FRAGMENT_TYPE;
         var Lazy = REACT_LAZY_TYPE;
         var Memo = REACT_MEMO_TYPE;
         var Portal = REACT_PORTAL_TYPE;
@@ -75455,7 +75455,7 @@ var require_react_is_development2 = __commonJS({
         exports2.ContextProvider = ContextProvider;
         exports2.Element = Element2;
         exports2.ForwardRef = ForwardRef;
-        exports2.Fragment = Fragment12;
+        exports2.Fragment = Fragment13;
         exports2.Lazy = Lazy;
         exports2.Memo = Memo;
         exports2.Portal = Portal;
@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v38.tsx
+// scripts/smoke-render-v39.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -102031,18 +102031,6 @@ var DISC_FACTOR_MEANING = {
     low: "\u7075\u6D3B\u3001\u4E0D\u62D8\u5C0F\u8282\uFF0C\u4F46\u7EC6\u8282\u628A\u63A7\u548C\u68C0\u67E5\u4E60\u60EF\u504F\u5F31"
   }
 };
-var DISC_PARENT_STYLE = {
-  D: "\u76EE\u6807\u5BFC\u5411\u3001\u8981\u6C42\u660E\u786E\u3001\u884C\u52A8\u5FEB\uFF1B\u98CE\u9669\u662F\u6307\u4EE4\u591A\u3001\u8282\u594F\u5FEB\uFF0C\u5BB9\u6613\u53D8\u6210\u50AC\u4FC3\u4E0E\u547D\u4EE4",
-  I: "\u70ED\u60C5\u3001\u7231\u8868\u8FBE\u3001\u8D4F\u7F5A\u5206\u660E\uFF1B\u98CE\u9669\u662F\u60C5\u7EEA\u5316\u3001\u5F53\u4F17\u8BF4\u6559\uFF0C\u8868\u626C\u548C\u6279\u8BC4\u90FD\u592A\u54CD\u4EAE",
-  S: "\u6E29\u548C\u3001\u5305\u5BB9\u3001\u6709\u8010\u5FC3\uFF1B\u98CE\u9669\u662F\u56DE\u907F\u51B2\u7A81\u3001\u539F\u5219\u4E0D\u591F\u575A\u5B9A\uFF0C\u5BB9\u6613\u300C\u8BF4\u4E86\u4E0D\u7B97\u300D",
-  C: "\u91CD\u89C4\u5219\u3001\u91CD\u7EC6\u8282\u3001\u6807\u51C6\u9AD8\uFF1B\u98CE\u9669\u662F\u7EA0\u9519\u591A\u3001\u80AF\u5B9A\u5C11\uFF0C\u5B69\u5B50\u5BB9\u6613\u89C9\u5F97\u300C\u600E\u4E48\u505A\u90FD\u4E0D\u591F\u597D\u300D"
-};
-var DISC_CHILD_REACT = {
-  D: "\u5403\u8F6F\u4E0D\u5403\u786C\uFF1A\u88AB\u5F3A\u538B\u4F1A\u9876\u649E\uFF0C\u7ED9\u4ED6\u9009\u62E9\u6743\u548C\u6311\u6218\u76EE\u6807\uFF0C\u53CD\u800C\u914D\u5408",
-  I: "\u9762\u5B50\u8584\u3001\u5728\u4E4E\u8BC4\u4EF7\uFF1A\u5F53\u4F17\u6279\u8BC4\u4F1A\u8BB0\u5F88\u4E45\uFF0C\u516C\u5F00\u80AF\u5B9A\u3001\u79C1\u4E0B\u63D0\u9192\u6700\u6709\u6548",
-  S: "\u8868\u9762\u987A\u4ECE\u3001\u5185\u5FC3\u6709\u6570\uFF1A\u50AC\u4FC3\u4F1A\u5F15\u53D1\u62D6\u5EF6\u5F0F\u62B5\u6297\uFF0C\u660E\u786E\u8282\u594F\u52A0\u6E29\u548C\u575A\u6301\u6700\u7BA1\u7528",
-  C: "\u654F\u611F\u4E14\u5185\u8017\uFF1A\u7EA0\u9519\u8FC7\u591A\u4F1A\u81EA\u6211\u5426\u5B9A\uFF0C\u5148\u80AF\u5B9A\u3001\u4E00\u6B21\u53EA\u63D0\u4E00\u4E2A\u6539\u8FDB\u70B9"
-};
 var DISC_CONFLICT = {
   D: {
     D: "\u4E24\u864E\u76F8\u4E89\uFF1A\u90FD\u5F3A\u52BF\u3001\u90FD\u8981\u8D62\uFF0C\u7BA1\u6559\u5BB9\u6613\u6F14\u53D8\u6210\u6743\u529B\u5BF9\u6297\u2014\u2014\u7ED9\u5B69\u5B50\u9009\u62E9\u6743\uFF0C\u76EE\u6807\u8BA9\u4ED6\u81EA\u5DF1\u5B9A",
@@ -102394,30 +102382,6 @@ ${condViewOf(["resEnv", "resTime", "resSupport", "aiPhone"])}` : "")
     }
   ];
   const discNorm = (r, k) => (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
-  for (const p of discParents.slice(0, 2)) {
-    const pp = p.result.primary;
-    const parentAnimal = DISC_ANIMAL[pp].split("\uFF08")[0];
-    const childAnimal = DISC_ANIMAL[d].split("\uFF08")[0];
-    const dimDeltas = ["D", "I", "S", "C"].map((k) => ({ k, student: discNorm(disc2, k), parent: discNorm(p.result, k), abs: Math.abs(discNorm(disc2, k) - discNorm(p.result, k)) }));
-    const strongClashes = dimDeltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
-    const watchDims = dimDeltas.filter((x) => x.abs >= 4 && x.abs < 6);
-    const clashLine = strongClashes.length > 0 || watchDims.length > 0 ? `**\u9010\u7EF4\u5EA6\u5DEE\u503C\uFF08\u4F60 vs ${p.label}\uFF0C0\u201324 \u7EDF\u4E00\u91CF\u5C3A\uFF09**\uFF1A` + [
-      ...strongClashes.map(
-        (x) => `**!!\u26A0 ${x.k} \u7EF4\u5F3A\u70C8\u51B2\u7A81!!**\uFF08\u4F60 ${x.student} / ${p.label} ${x.parent}\uFF0C\u5DEE ${x.abs} \u5206\uFF09`
-      ),
-      ...watchDims.map((x) => `\u26A0 ${x.k} \u7EF4\u9700\u7559\u610F\uFF08\u4F60 ${x.student} / ${p.label} ${x.parent}\uFF0C\u5DEE ${x.abs} \u5206\uFF09`)
-    ].join("\uFF1B") + `\u3002${strongClashes.length > 0 ? "\u5DEE\u503C\u8D8A\u5927\u7684\u7EF4\u5EA6\uFF0C\u65E5\u5E38\u7BA1\u6559\u91CC\u8D8A\u5BB9\u6613\u300C\u9891\u9053\u5BF9\u4E0D\u4E0A\u300D\u2014\u2014\u5F3A\u70C8\u51B2\u7A81\u7EF4\u5EA6\u8BF7\u4F18\u5148\u6309\u4E0B\u65B9\u5EFA\u8BAE\u8C03\u6574\u6C9F\u901A\u65B9\u5F0F\u3002" : "\u8FD9\u4E24\u4E2A\u7EF4\u5EA6\u5DF2\u4E34\u8FD1\u51B2\u7A81\u7EBF\uFF0C\u6C9F\u901A\u65F6\u591A\u7559\u610F\u3002"}
-` : `**\u9010\u7EF4\u5EA6\u5DEE\u503C\uFF08\u4F60 vs ${p.label}\uFF09**\uFF1A\u56DB\u4E2A\u7EF4\u5EA6\u5DEE\u503C\u90FD\u5728 3 \u5206\u4EE5\u5185\uFF08${dimDeltas.map((x) => `${x.k} \u5DEE ${x.abs}`).join("\u3001")}\uFF09\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\uFF0C\u6C9F\u901A\u5929\u7136\u7701\u529B\u3002
-`;
-    secCondItems.push({
-      heading: `**\u4EB2\u5B50 DISC \u5BF9\u7167 \xB7 ${p.label}\uFF08${pp} \u578B\xB7${parentAnimal}\uFF09\xD7 \u4F60\uFF08${d} \u578B\xB7${childAnimal}\uFF09**${strongClashes.length > 0 ? ` \xB7 !!\u26A0 ${strongClashes.map((x) => x.k).join("/")} \u7EF4\u5F3A\u70C8\u51B2\u7A81!!` : ""}`,
-      level: strongClashes.length > 0 ? "\u5361\u70B9" : watchDims.length > 0 ? "\u5F85\u63D0\u5347" : relCell.level === "\u5361\u70B9" ? "\u5361\u70B9" : void 0,
-      text: clashLine + `${p.label}\u662F **${pp} \u578B\uFF08${DISC_REPORTS[pp].name}\uFF09** \u5BB6\u957F\uFF1A${DISC_PARENT_STYLE[pp]}\u3002
-\u4F60\u662F **${d} \u578B\uFF08${discReport.name}\uFF09** \u5B69\u5B50\uFF1A${DISC_CHILD_REACT[d]}\u3002
-**!!\u53EF\u80FD\u7684\u51B2\u7A81\u70B9!!**\uFF1A${DISC_CONFLICT[pp][d]}\u3002
-**\u7BA1\u6559\u98CE\u683C\u6539\u8FDB\u5EFA\u8BAE**\uFF08\u4E0E\u4F60\u8FD9\u4E2A\u7C7B\u578B\u6C9F\u901A\u6700\u6709\u6548\u7684\u65B9\u5F0F\uFF09\uFF1A${discReport.communicationTips.slice(0, 3).map((t) => t.replace(/。+$/, "")).join("\uFF1B")}\u3002`
-    });
-  }
   if (e32.redFlags.length > 0) {
     secCondItems.push({
       heading: `**!!\u7EA2\u7EBF\u63D0\u9192 \xB7 \u5171 ${e32.redFlags.length} \u6761!!**`,
@@ -109440,6 +109404,164 @@ function isE3V37ParentResult(r) {
   return !!r && typeof r === "object" && r.version === "3.7";
 }
 
+// src/components/reports/DiscParentCompare.tsx
+var import_jsx_runtime8 = __toESM(require_jsx_runtime(), 1);
+var DISC_COLOR = {
+  D: "#d44f3a",
+  I: "#e8a33d",
+  S: "#4e9e5f",
+  C: "#3d8ec4"
+};
+var MAX = 24;
+var DISC_DIM_PLAIN = {
+  D: "\u8C01\u8BF4\u4E86\u7B97\u3001\u542C\u8C01\u7684",
+  I: "\u7231\u70ED\u95F9\u3001\u7231\u8868\u8FBE",
+  S: "\u6C42\u7A33\u3001\u6015\u53D8\u5316",
+  C: "\u91CD\u7EC6\u8282\u3001\u8BB2\u89C4\u77E9"
+};
+function nv(result, k) {
+  return (result.dims[k] ?? 0) * (result.version === 2 ? 1 : 2);
+}
+function FactorBars({ label, tag, result, hot = [] }) {
+  const combo = getDiscCombo(result.dims);
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "flex items-baseline gap-2", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "text-[13px] font-bold text-olive", children: label }),
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "text-[11.5px] text-olive-mute", children: [
+        combo.join(""),
+        " \u578B",
+        tag ? ` \xB7 ${tag}` : ""
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "mt-1.5 space-y-1.5", children: ["D", "I", "S", "C"].map((k) => {
+      const v = nv(result, k);
+      const inCombo = combo.includes(k);
+      const isHot = hot.includes(k);
+      return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+        "div",
+        {
+          className: `flex items-center gap-2 rounded-lg px-1.5 py-0.5 -mx-1.5 ${isHot ? "bg-[#fbe3df] ring-1 ring-[#b91c1c]/50" : ""}`,
+          children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: `w-16 shrink-0 text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : inCombo ? "font-bold text-olive" : "text-olive-mute"}`, children: [
+              k,
+              " \xB7 ",
+              DISC_THEORY.find((t) => t.type === k)?.name
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+              "div",
+              {
+                className: "h-full rounded-full",
+                style: { width: `${Math.min(100, v / MAX * 100)}%`, background: DISC_COLOR[k], opacity: inCombo || isHot ? 1 : 0.45 }
+              }
+            ) }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: `mono w-5 shrink-0 text-right text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : "text-olive-soft"}`, children: v })
+          ]
+        },
+        k
+      );
+    }) })
+  ] });
+}
+function DimDeltaBadges({ label, parent, student }) {
+  const deltas = ["D", "I", "S", "C"].map((k) => ({
+    k,
+    student: nv(student, k),
+    parent: nv(parent, k),
+    abs: Math.abs(nv(student, k) - nv(parent, k))
+  }));
+  const strong = deltas.filter((d) => d.abs >= 6).sort((a, b) => b.abs - a.abs);
+  const watch = deltas.filter((d) => d.abs >= 4 && d.abs < 6);
+  if (strong.length === 0 && watch.length === 0) {
+    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { className: "mt-1.5 text-[11.5px] text-olive-mute", children: [
+      "\u4E0E",
+      label,
+      "\u56DB\u4E2A\u7EF4\u5EA6\u5DEE\u503C\u90FD\u5F88\u5C0F\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\u3002"
+    ] });
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "mt-2 flex flex-wrap gap-1.5", children: [
+    strong.map((d) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+      "span",
+      {
+        className: "rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]",
+        children: [
+          "\u26A0 ",
+          d.k,
+          "\uFF08",
+          DISC_DIM_PLAIN[d.k],
+          "\uFF09\u660E\u663E\u9876\u725B\uFF1A\u4F60 ",
+          d.student,
+          " \u5206 / ",
+          label,
+          " ",
+          d.parent,
+          " \u5206\uFF0C\u5DEE ",
+          d.abs,
+          " \u5206"
+        ]
+      },
+      d.k
+    )),
+    watch.map((d) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+      "span",
+      {
+        className: "rounded-md border border-[#c7a23a]/70 bg-[#f5e7c1] px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]",
+        children: [
+          d.k,
+          "\uFF08",
+          DISC_DIM_PLAIN[d.k],
+          "\uFF09\u7565\u6709\u5DEE\u5F02\uFF1A\u4F60 ",
+          d.student,
+          " \u5206 / ",
+          label,
+          " ",
+          d.parent,
+          " \u5206\uFF0C\u5DEE ",
+          d.abs,
+          " \u5206"
+        ]
+      },
+      d.k
+    ))
+  ] });
+}
+function DiscParentCompare({
+  student,
+  parents
+}) {
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167" }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u770B\u770B\u5B69\u5B50\u548C\u5BB6\u957F\u5404\u81EA\u6700\u81EA\u7136\u7684\u884C\u4E3A\u6A21\u5F0F\u5DEE\u5728\u54EA\u91CC\uFF08\u7C7B\u578B\u6CA1\u6709\u597D\u574F\uFF0C\u53EA\u6709\u4E0D\u540C\uFF09\u3002\u5206\u6570\u5DF2\u7EDF\u4E00\u6362\u7B97\u5230 0\u201324 \u91CF\u5C3A\u5BF9\u7167\uFF08\u65E7\u7248\u4E8C\u9009\u4E00\u7ED3\u679C \xD72\uFF09\uFF1B\u540C\u4E00\u7EF4\u5EA6\u4E24\u8FB9\u5DEE 6 \u5206\u4EE5\u4E0A\u7B97\u300C\u660E\u663E\u9876\u725B\u300D\uFF08\u65E5\u5E38\u76F8\u5904\u6700\u5BB9\u6613\u9891\u9053\u5BF9\u4E0D\u4E0A\uFF0C\u7EA2\u8272\u6807\u51FA\uFF09\uFF0C\u5DEE 4\u20135 \u5206\u300C\u7565\u6709\u5DEE\u5F02\u300D\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "mt-3 space-y-4", children: (() => {
+      const dims = ["D", "I", "S", "C"];
+      const perParent = parents.map((p) => dims.filter((k) => Math.abs(nv(p.result, k) - nv(student, k)) >= 6));
+      const unionHot = [...new Set(perParent.flat())];
+      return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+          FactorBars,
+          {
+            label: "\u5B66\u751F\uFF08\u4F60\uFF09",
+            tag: DISC_THEORY.find((t) => t.type === student.primary)?.name,
+            result: student,
+            hot: unionHot
+          }
+        ),
+        parents.map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+            FactorBars,
+            {
+              label: `\u5BB6\u957F \xB7 ${p.label}`,
+              tag: DISC_THEORY.find((t) => t.type === p.result.primary)?.name,
+              result: p.result,
+              hot: perParent[i]
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(DimDeltaBadges, { label: p.label, parent: p.result, student })
+        ] }, `${p.label}-${i}`))
+      ] });
+    })() })
+  ] });
+}
+
 // contracts/multi.ts
 var MULTI_DIM_LABEL = {
   linguistic: "\u8BED\u8A00\u667A\u80FD",
@@ -110154,13 +110276,13 @@ function buildAnswerBlocks(raw, kinds) {
 }
 
 // src/components/RichText.tsx
-var import_jsx_runtime8 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime9 = __toESM(require_jsx_runtime(), 1);
 function RichText({ text, className }) {
   const parts = text.split(/\*\*(.+?)\*\*/g);
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className, children: parts.map(
-    (part, i) => i % 2 === 1 ? part.startsWith("!!") && part.endsWith("!!") ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("b", { className: "font-bold text-terra", children: part.slice(2, -2) }, i) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("b", { className: "font-semibold text-olive", children: part }, i) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: part.split("\n").map((line, j, arr) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className, children: parts.map(
+    (part, i) => i % 2 === 1 ? part.startsWith("!!") && part.endsWith("!!") ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("b", { className: "font-bold text-terra", children: part.slice(2, -2) }, i) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("b", { className: "font-semibold text-olive", children: part }, i) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: part.split("\n").map((line, j, arr) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
       line,
-      j < arr.length - 1 && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("br", {})
+      j < arr.length - 1 && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("br", {})
     ] }, j)) }, i)
   ) });
 }
@@ -110186,7 +110308,7 @@ function e3v37LevelTextClass(level) {
 }
 
 // src/components/reports/NineAbilityRadar.tsx
-var import_jsx_runtime9 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime10 = __toESM(require_jsx_runtime(), 1);
 var SYSTEM_COLOR = {
   \u4E50\u5B66: "#7cb83c",
   \u4F1A\u5B66: "#3d8ec4",
@@ -110206,17 +110328,17 @@ function NineAbilityRadar({
     level: a.level,
     system: a.system
   }));
-  return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "paper-card p-5", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { className: "font-bold text-olive", children: title }),
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { className: "font-bold text-olive", children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
       "\u4E50\u5B66\uFF08\u52A8\u529B/\u4FE1\u5FC3/\u97E7\u52B2\uFF0C\u7EFF\u8F74\u6807\uFF09\xB7 \u4F1A\u5B66\uFF08\u5B66\u61C2/\u8BB0\u4F4F/\u4F1A\u7528\uFF0C\u84DD\u8F74\u6807\uFF09\xB7 \u5584\u5B66\uFF08\u8BA1\u5212/\u590D\u76D8/\u667A\u5B66\uFF0C\u91D1\u8F74\u6807\uFF09\uFF1B",
       E3V37_LEVEL_CAPTION,
       "\u3002"
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "mt-2", style: { height }, children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_recharts.ResponsiveContainer, { width: "100%", height: "100%", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_recharts.RadarChart, { data: data3, outerRadius: "68%", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_recharts.PolarGrid, { stroke: "#d9dcb8" }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_recharts.PolarRadiusAxis, { domain: [0, 5], tick: false, axisLine: false }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "mt-2", style: { height }, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(import_recharts.ResponsiveContainer, { width: "100%", height: "100%", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(import_recharts.RadarChart, { data: data3, outerRadius: "68%", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(import_recharts.PolarGrid, { stroke: "#d9dcb8" }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(import_recharts.PolarRadiusAxis, { domain: [0, 5], tick: false, axisLine: false }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
         import_recharts.PolarAngleAxis,
         {
           dataKey: "label",
@@ -110225,20 +110347,20 @@ function NineAbilityRadar({
             const lvColor = d ? E3V37_LEVEL_STYLE[d.level].text : "#556339";
             const sysColor = d ? SYSTEM_COLOR[d.system] : "#556339";
             const [name, score] = String(payload.value).split(" ");
-            return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("text", { x, y, textAnchor: "middle", fontSize: 11, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("tspan", { fill: sysColor, fontWeight: 700, children: name }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("tspan", { dx: 3, fill: lvColor, fontWeight: 700, children: score })
+            return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("text", { x, y, textAnchor: "middle", fontSize: 11, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("tspan", { fill: sysColor, fontWeight: 700, children: name }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("tspan", { dx: 3, fill: lvColor, fontWeight: 700, children: score })
             ] });
           }
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(import_recharts.Radar, { dataKey: "\u5F97\u5206", stroke: "#7cb83c", fill: "#7cb83c", fillOpacity: 0.3, strokeWidth: 2.5 })
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(import_recharts.Radar, { dataKey: "\u5F97\u5206", stroke: "#7cb83c", fill: "#7cb83c", fillOpacity: 0.3, strokeWidth: 2.5 })
     ] }) }) })
   ] });
 }
 
 // src/components/reports/AbilityScoreTable.tsx
-var import_jsx_runtime10 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime11 = __toESM(require_jsx_runtime(), 1);
 function GroupRows({
   subs,
   items,
@@ -110251,40 +110373,40 @@ function GroupRows({
   const itemsOf = (label) => items.filter((it) => it.ability === label && it.system === systemOf()).sort((a, b) => a.no - b.no);
   const rowCount = subs.reduce((n, s) => n + 1 + itemsOf(s.label).length, 0);
   let groupCellDone = false;
-  return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(import_jsx_runtime10.Fragment, { children: subs.flatMap((s) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(import_jsx_runtime11.Fragment, { children: subs.flatMap((s) => {
     const qItems = itemsOf(s.label);
-    const headRow = /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("tr", { className: `bg-cream/70 ${s.level && s.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/50" : ""}`, children: [
+    const headRow = /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("tr", { className: `bg-cream/70 ${s.level && s.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/50" : ""}`, children: [
       firstGroupCell && !groupCellDone && (() => {
         groupCellDone = true;
-        return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("td", { rowSpan: rowCount, className: "w-16 border border-border px-2 py-1.5 align-top font-bold text-olive", children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("td", { rowSpan: rowCount, className: "w-16 border border-border px-2 py-1.5 align-top font-bold text-olive", children: [
           groupLabel,
-          groupScore ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "mono ml-1 font-semibold", children: groupScore }) : null,
-          groupNote ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "mt-0.5 block text-[10.5px] font-normal leading-snug text-olive-mute", children: groupNote }) : null
+          groupScore ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "mono ml-1 font-semibold", children: groupScore }) : null,
+          groupNote ? /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "mt-0.5 block text-[10.5px] font-normal leading-snug text-olive-mute", children: groupNote }) : null
         ] });
       })(),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("td", { className: "border border-border px-2 py-1.5 font-semibold text-olive", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("td", { className: "border border-border px-2 py-1.5 font-semibold text-olive", children: [
         s.label,
-        s.note ? /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: "ml-1 text-[10.5px] font-normal text-olive-mute", children: [
+        s.note ? /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { className: "ml-1 text-[10.5px] font-normal text-olive-mute", children: [
           "\uFF08",
           s.note,
           "\uFF09"
         ] }) : null
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("td", { className: `border border-border px-2 py-1.5 text-center mono font-bold ${s.level ? e3v37LevelTextClass(s.level) : "text-olive"}`, children: s.score ?? "-" }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("td", { className: `border border-border px-2 py-1.5 text-center text-[11.5px] font-semibold ${s.level ? e3v37LevelTextClass(s.level) : ""}`, children: s.level ?? "-" })
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("td", { className: `border border-border px-2 py-1.5 text-center mono font-bold ${s.level ? e3v37LevelTextClass(s.level) : "text-olive"}`, children: s.score ?? "-" }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("td", { className: `border border-border px-2 py-1.5 text-center text-[11.5px] font-semibold ${s.level ? e3v37LevelTextClass(s.level) : ""}`, children: s.level ?? "-" })
     ] }, s.key);
-    const qRows = qItems.map((it) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("tr", { className: it.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/40" : "", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("td", { className: "border border-border px-2 py-1 text-olive-soft", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: "mono text-[11px] text-olive-mute", children: [
+    const qRows = qItems.map((it) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("tr", { className: it.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/40" : "", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("td", { className: "border border-border px-2 py-1 text-olive-soft", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { className: "mono text-[11px] text-olive-mute", children: [
           it.no,
           "."
         ] }),
         " ",
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "font-medium", children: it.kp }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "mt-0.5 block text-[11px] leading-snug text-olive-mute", children: it.text })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "font-medium", children: it.kp }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "mt-0.5 block text-[11px] leading-snug text-olive-mute", children: it.text })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("td", { className: `border border-border px-2 py-1 text-center mono text-[12px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.score }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("td", { className: `border border-border px-2 py-1 text-center text-[11px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.level })
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("td", { className: `border border-border px-2 py-1 text-center mono text-[12px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.score }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("td", { className: `border border-border px-2 py-1 text-center text-[11px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.level })
     ] }, `q${it.no}`));
     return [headRow, ...qRows];
   }) });
@@ -110295,23 +110417,23 @@ function AbilityScoreTable({
 }) {
   const items = ratings && ratings.length === E3V37_RATING_COUNT ? scoreE3V37Items(e32.stage, ratings) : [];
   const coreScore = (sys) => e32.systems.core.find((c) => c.key === sys)?.score;
-  return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "paper-card p-5", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { className: "font-bold text-olive", children: "\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868" }),
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h3", { className: "font-bold text-olive", children: "\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868" }),
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
       "\u6BCF\u80FD\u4E00\u884C\u5C0F\u8BA1\uFF0C\u4E0B\u6302\u8BE5\u80FD\u6BCF\u9053\u9898\u7684\u5F97\u5206\uFF08\u53CD\u5411\u9898\u5DF2\u6362\u7B97\uFF0C5 \u5206\u5236\uFF0C\u8D8A\u4F4E\u8D8A\u9700\u5173\u6CE8\uFF09\uFF1A",
       E3V37_LEVEL_CAPTION,
       "\u3002",
       items.length === 0 && "\uFF08\u672C\u6B21\u8BB0\u5F55\u672A\u4FDD\u5B58\u9010\u9898\u4F5C\u7B54\uFF0C\u4EC5\u663E\u793A\u80FD\u7EA7\u5C0F\u8BA1\uFF1B\u91CD\u65B0\u5B8C\u6210\u4E00\u6B21\u8BCA\u65AD\u5373\u53EF\u770B\u5230\u9010\u9898\u660E\u7EC6\u3002\uFF09"
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "mt-3 overflow-x-auto", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("table", { className: "w-full min-w-[460px] border-collapse text-[12.5px]", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("tr", { className: "bg-cream-deep/60 text-olive", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u5927\u7C7B" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u80FD\u529B / \u9898\u76EE" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5F97\u5206" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5224\u5B9A" })
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-3 overflow-x-auto", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("table", { className: "w-full min-w-[460px] border-collapse text-[12.5px]", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("tr", { className: "bg-cream-deep/60 text-olive", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u5927\u7C7B" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u80FD\u529B / \u9898\u76EE" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5F97\u5206" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5224\u5B9A" })
       ] }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("tbody", { children: [
-        ["\u4E50\u5B66", "\u4F1A\u5B66", "\u5584\u5B66"].map((sys) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("tbody", { children: [
+        ["\u4E50\u5B66", "\u4F1A\u5B66", "\u5584\u5B66"].map((sys) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
           GroupRows,
           {
             groupLabel: sys,
@@ -110322,7 +110444,7 @@ function AbilityScoreTable({
           },
           sys
         )),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
           GroupRows,
           {
             groupLabel: "\u6761\u4EF6",
@@ -110332,7 +110454,7 @@ function AbilityScoreTable({
             subs: e32.systems.condition.cells.map((c) => ({ key: c.key, label: c.label, score: c.score, level: c.level }))
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
           GroupRows,
           {
             groupLabel: "\u5B66\u80FD",
@@ -110350,12 +110472,12 @@ function AbilityScoreTable({
         )
       ] })
     ] }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "mt-2 text-[11.5px] leading-relaxed text-olive-mute", children: "\u5B66\u80FD\u4E09\u9879\uFF08\u6CE8\u610F\u529B/\u5DE5\u4F5C\u8BB0\u5FC6/\u52A0\u5DE5\u901F\u5EA6\uFF09\u53CD\u6620\u5F53\u524D\u52A0\u5DE5\u6548\u7387\uFF0C\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206\uFF0C\u4E0D\u662F\u667A\u529B\u3001\u4E5F\u4E0D\u4EE3\u8868\u6F5C\u529B\u4E0A\u9650\uFF1B\u6761\u4EF6\u7CFB\u7EDF\uFF08\u72B6\u6001/\u5173\u7CFB/\u8D44\u6E90\uFF09\u540C\u6837\u5355\u72EC\u62A5\u544A\u3002" })
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-2 text-[11.5px] leading-relaxed text-olive-mute", children: "\u5B66\u80FD\u4E09\u9879\uFF08\u6CE8\u610F\u529B/\u5DE5\u4F5C\u8BB0\u5FC6/\u52A0\u5DE5\u901F\u5EA6\uFF09\u53CD\u6620\u5F53\u524D\u52A0\u5DE5\u6548\u7387\uFF0C\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206\uFF0C\u4E0D\u662F\u667A\u529B\u3001\u4E5F\u4E0D\u4EE3\u8868\u6F5C\u529B\u4E0A\u9650\uFF1B\u6761\u4EF6\u7CFB\u7EDF\uFF08\u72B6\u6001/\u5173\u7CFB/\u8D44\u6E90\uFF09\u540C\u6837\u5355\u72EC\u62A5\u544A\u3002" })
   ] });
 }
 
 // src/components/reports/SystemFramework.tsx
-var import_jsx_runtime11 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime12 = __toESM(require_jsx_runtime(), 1);
 var TIERS = [
   { name: "\u4E50\u5B66 \xB7 \u52A8\u529B\u7CFB\u7EDF", key: "\u4E50\u5B66", sub: "\u53D1\u52A8\u673A \xB7 \u5148\u89E3\u51B3\u300C\u4E3A\u4EC0\u4E48\u5B66\u300D", abilities: ["\u52A8\u529B", "\u4FE1\u5FC3", "\u97E7\u52B2"], color: "#7cb83c", bg: "#f0f7dd" },
   { name: "\u4F1A\u5B66 \xB7 \u884C\u4E3A\u7CFB\u7EDF", key: "\u4F1A\u5B66", sub: "\u5E95\u76D8 \xB7 \u8DD1\u987A\u65E5\u5E38\u5B66\u4E60\u95ED\u73AF", abilities: ["\u5B66\u61C2", "\u8BB0\u4F4F", "\u4F1A\u7528"], color: "#3d8ec4", bg: "#e3edf6" },
@@ -110373,8 +110495,8 @@ var DEEP_TRAITS = [
 ];
 function LinkChip({ done, label, onClick }) {
   const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${done ? "border border-[#7cb83c]/60 bg-[#e9f4d2] text-[#4e7d20]" : "border border-dashed border-[#a8b08c]/80 text-olive-mute"}`;
-  if (!onClick) return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: cls, children: label });
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+  if (!onClick) return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: cls, children: label });
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
     "button",
     {
       type: "button",
@@ -110383,14 +110505,14 @@ function LinkChip({ done, label, onClick }) {
       className: `${cls} cursor-pointer transition hover:shadow-sm hover:brightness-95`,
       children: [
         label,
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "ml-0.5 opacity-70", children: "\u2192" })
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "ml-0.5 opacity-70", children: "\u2192" })
       ]
     }
   );
 }
 function FocusDot({ f }) {
   const st = E3V37_LEVEL_STYLE[f.level];
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
     "span",
     {
       className: "inline-block rounded border px-1 py-px text-[10px] leading-tight",
@@ -110406,12 +110528,12 @@ function FocusDot({ f }) {
 function UnitBlock({ name, unit, done }) {
   const lv = unit?.level ?? (done ? "\u6B63\u5E38" : "\u5F85\u63D0\u5347");
   const st = E3V37_LEVEL_STYLE[lv];
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-lg border border-[#a8b08c]/40 bg-white/70 px-1.5 py-1 text-center", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "flex items-baseline justify-center gap-1", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "text-[12px] font-semibold text-olive", children: name }),
-      done && unit?.score != null && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "mono text-[11.5px] font-bold", style: { color: st.text }, children: unit.score })
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "rounded-lg border border-[#a8b08c]/40 bg-white/70 px-1.5 py-1 text-center", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "flex items-baseline justify-center gap-1", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-[12px] font-semibold text-olive", children: name }),
+      done && unit?.score != null && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mono text-[11.5px] font-bold", style: { color: st.text }, children: unit.score })
     ] }),
-    done && unit?.focuses && unit.focuses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-1 flex flex-wrap justify-center gap-0.5", children: unit.focuses.map((f) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(FocusDot, { f }, f.kp)) })
+    done && unit?.focuses && unit.focuses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-1 flex flex-wrap justify-center gap-0.5", children: unit.focuses.map((f) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(FocusDot, { f }, f.kp)) })
   ] });
 }
 function SystemFramework({
@@ -110423,10 +110545,10 @@ function SystemFramework({
   const assessE3 = onOpen ? () => open({ kind: "assess", start: "e3" }) : void 0;
   const unitOf = (label) => status?.e3?.units?.[label];
   const showDeep = !!(status?.mbti || status?.disc || status?.holland || status?.anchor);
-  return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-xl border border-border bg-cream/60 p-4 sm:p-5", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mx-auto w-fit rounded-full bg-olive px-6 py-1.5 text-[13px] font-bold text-cream", children: "\u5B66\u4E60\u76EE\u6807 \xB7 \u6210\u7EE9" }),
-    status?.academics && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-1.5 text-center", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "rounded-xl border border-border bg-cream/60 p-4 sm:p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mx-auto w-fit rounded-full bg-olive px-6 py-1.5 text-[13px] font-bold text-cream", children: "\u5B66\u4E60\u76EE\u6807 \xB7 \u6210\u7EE9" }),
+    status?.academics && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-1.5 text-center", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
         LinkChip,
         {
           done: status.academics.filled,
@@ -110434,7 +110556,7 @@ function SystemFramework({
           onClick: !status.academics.filled && onOpen ? () => open({ kind: "fill-academics" }) : void 0
         }
       ),
-      status.academics.filled && (status.academics.subjects?.length ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-1.5 flex flex-wrap justify-center gap-1", children: status.academics.subjects.map((s) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+      status.academics.filled && (status.academics.subjects?.length ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-1.5 flex flex-wrap justify-center gap-1", children: status.academics.subjects.map((s) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
         "span",
         {
           className: "rounded border border-border bg-white/70 px-1.5 py-px text-[10.5px] leading-tight text-olive-soft",
@@ -110449,23 +110571,23 @@ function SystemFramework({
         s.name
       )) })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mx-auto my-1.5 h-3 w-px bg-olive-mute/50" }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "grid grid-cols-1 gap-2.5 sm:grid-cols-3", children: TIERS.map((t, i) => {
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mx-auto my-1.5 h-3 w-px bg-olive-mute/50" }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "grid grid-cols-1 gap-2.5 sm:grid-cols-3", children: TIERS.map((t, i) => {
       const score = e3Done ? status?.e3?.scores?.[t.key] : void 0;
-      return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+      return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
         "div",
         {
           className: "rounded-xl border px-3 py-3 text-center",
           style: { borderColor: `${t.color}80`, background: t.bg },
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "text-[13.5px] font-bold", style: { color: t.color }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "text-[13.5px] font-bold", style: { color: t.color }, children: [
               i + 1,
               " \u9636 \xB7 ",
               t.name
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-0.5 text-[11px] text-olive-mute", children: t.sub }),
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-2 grid grid-cols-3 gap-1", children: t.abilities.map((a) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(UnitBlock, { name: a, unit: unitOf(a), done: e3Done }, a)) }),
-            status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-2", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-0.5 text-[11px] text-olive-mute", children: t.sub }),
+            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2 grid grid-cols-3 gap-1", children: t.abilities.map((a) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(UnitBlock, { name: a, unit: unitOf(a), done: e3Done }, a)) }),
+            status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
               LinkChip,
               {
                 done: e3Done && score != null,
@@ -110478,13 +110600,13 @@ function SystemFramework({
         t.name
       );
     }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mx-auto my-1.5 h-3 w-px bg-olive-mute/50" }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "grid grid-cols-1 gap-2.5 sm:grid-cols-2", children: BASES.map((b) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-xl border border-[#a8b08c]/60 bg-[#eef0e4] px-3 py-3 text-center", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "text-[13.5px] font-bold text-[#6b7452]", children: b.name }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-0.5 text-[11px] text-olive-mute", children: b.sub }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-2 grid grid-cols-3 gap-1", children: b.abilities.map((a) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(UnitBlock, { name: a, unit: unitOf(a), done: e3Done }, a)) }),
-      b.key === "\u6761\u4EF6" && (status?.e3 || status?.mental) && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-2 flex flex-wrap justify-center gap-1.5", children: [
-        status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mx-auto my-1.5 h-3 w-px bg-olive-mute/50" }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "grid grid-cols-1 gap-2.5 sm:grid-cols-2", children: BASES.map((b) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "rounded-xl border border-[#a8b08c]/60 bg-[#eef0e4] px-3 py-3 text-center", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "text-[13.5px] font-bold text-[#6b7452]", children: b.name }),
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-0.5 text-[11px] text-olive-mute", children: b.sub }),
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2 grid grid-cols-3 gap-1", children: b.abilities.map((a) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(UnitBlock, { name: a, unit: unitOf(a), done: e3Done }, a)) }),
+      b.key === "\u6761\u4EF6" && (status?.e3 || status?.mental) && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-2 flex flex-wrap justify-center gap-1.5", children: [
+        status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           LinkChip,
           {
             done: e3Done && status.e3.conditionAvg != null,
@@ -110492,7 +110614,7 @@ function SystemFramework({
             onClick: !(e3Done && status.e3.conditionAvg != null) ? assessE3 : void 0
           }
         ),
-        status?.mental && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+        status?.mental && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           LinkChip,
           {
             done: status.mental.done,
@@ -110501,8 +110623,8 @@ function SystemFramework({
           }
         )
       ] }),
-      b.key === "\u5B66\u80FD" && (status?.e3 || status?.multi5 || status?.multi) && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "mt-2 flex flex-wrap justify-center gap-1.5", children: [
-        status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+      b.key === "\u5B66\u80FD" && (status?.e3 || status?.multi5 || status?.multi) && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-2 flex flex-wrap justify-center gap-1.5", children: [
+        status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           LinkChip,
           {
             done: e3Done && status.e3.aptitudeAvg != null,
@@ -110510,7 +110632,7 @@ function SystemFramework({
             onClick: !(e3Done && status.e3.aptitudeAvg != null) ? assessE3 : void 0
           }
         ),
-        status?.multi5 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+        status?.multi5 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           LinkChip,
           {
             done: status.multi5.done,
@@ -110518,19 +110640,19 @@ function SystemFramework({
             onClick: !status.multi5.done && onOpen ? () => open({ kind: "assess", start: "multi5" }) : void 0
           }
         ),
-        status?.multi && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(LinkChip, { done: status.multi.done, label: status.multi.done ? `\u591A\u5143\u516B\u7EF4 \xB7 ${status.multi.note ?? "\u5DF2\u6D4B"}` : "\u591A\u5143\u667A\u80FD\u516B\u7EF4 \xB7 \u672A\u6D4B" })
+        status?.multi && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(LinkChip, { done: status.multi.done, label: status.multi.done ? `\u591A\u5143\u516B\u7EF4 \xB7 ${status.multi.note ?? "\u5DF2\u6D4B"}` : "\u591A\u5143\u667A\u80FD\u516B\u7EF4 \xB7 \u672A\u6D4B" })
       ] }),
-      b.key === "\u5B66\u80FD" && status?.multi5?.done && (status.multi5.subs?.length ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-1.5 flex flex-wrap justify-center gap-1", children: status.multi5.subs.map((s) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "rounded border border-border bg-white/70 px-1.5 py-px text-[10px] leading-tight text-olive-soft", children: s }, s)) })
+      b.key === "\u5B66\u80FD" && status?.multi5?.done && (status.multi5.subs?.length ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-1.5 flex flex-wrap justify-center gap-1", children: status.multi5.subs.map((s) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "rounded border border-border bg-white/70 px-1.5 py-px text-[10px] leading-tight text-olive-soft", children: s }, s)) })
     ] }, b.name)) }),
-    showDeep && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mx-auto my-1.5 h-3 w-px bg-olive-mute/50" }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "rounded-xl border border-[#a8b08c]/60 bg-[#eef0e4] px-3.5 py-3", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "text-center text-[12.5px] font-bold text-[#6b7452]", children: "\u6DF1\u5C42\u7279\u8D28 \xB7 \u6027\u683C\u4E0E\u65B9\u5411\u7684\u957F\u671F\u5E95\u8272" }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4", children: DEEP_TRAITS.map((d) => {
+    showDeep && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mx-auto my-1.5 h-3 w-px bg-olive-mute/50" }),
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "rounded-xl border border-[#a8b08c]/60 bg-[#eef0e4] px-3.5 py-3", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "text-center text-[12.5px] font-bold text-[#6b7452]", children: "\u6DF1\u5C42\u7279\u8D28 \xB7 \u6027\u683C\u4E0E\u65B9\u5411\u7684\u957F\u671F\u5E95\u8272" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4", children: DEEP_TRAITS.map((d) => {
           const st = status?.[d.key];
-          const box = /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(import_jsx_runtime11.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "text-[11px] font-semibold text-olive", children: d.label }),
-            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-1", children: /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+          const box = /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "text-[11px] font-semibold text-olive", children: d.label }),
+            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-1", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
               LinkChip,
               {
                 done: !!st?.done,
@@ -110538,140 +110660,14 @@ function SystemFramework({
                 onClick: !st?.done && onOpen ? () => open({ kind: "assess", start: d.key }) : void 0
               }
             ) }),
-            st?.done && (st.subs?.length ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "mt-1 flex flex-wrap justify-center gap-0.5", children: st.subs.map((s) => /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "rounded bg-cream px-1 py-px text-[9.5px] leading-tight text-olive-mute", children: s }, s)) })
+            st?.done && (st.subs?.length ?? 0) > 0 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-1 flex flex-wrap justify-center gap-0.5", children: st.subs.map((s) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "rounded bg-cream px-1 py-px text-[9.5px] leading-tight text-olive-mute", children: s }, s)) })
           ] });
-          return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "rounded-lg border border-[#a8b08c]/50 bg-white/70 px-2 py-1.5 text-center", children: box }, d.key);
+          return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "rounded-lg border border-[#a8b08c]/50 bg-white/70 px-2 py-1.5 text-center", children: box }, d.key);
         }) })
       ] })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-2.5 text-center text-[11px] text-olive-mute", children: "\u6210\u7EE9\u957F\u5728\u4E09\u5C42\u7CFB\u7EDF\u4E4B\u4E0A\uFF0C\u4E09\u5C42\u7CFB\u7EDF\u7ACB\u5728\u6761\u4EF6\u4E0E\u5B66\u80FD\u7684\u5E95\u5EA7\u4E0A\u2014\u2014\u4FEE\u5B66\u4E60\u529B\uFF0C\u4ECE\u5730\u57FA\u5F80\u4E0A\u4FEE\u3002" }),
-    onOpen && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("p", { className: "mt-1 text-center text-[10.5px] text-olive-mute", children: "\u7070\u865A\u7EBF\u5FBD\u7AE0\u53EF\u76F4\u63A5\u70B9\u51FB\u5F00\u59CB\u6D4B\u8BC4\uFF1B\u7EA2 <3.0 \u5361\u70B9 \xB7 \u9EC4 3.0-3.7 \u5F85\u63D0\u5347 \xB7 \u7EFF \u22653.8 \u6B63\u5E38\u3002" })
-  ] });
-}
-
-// src/components/reports/DiscParentCompare.tsx
-var import_jsx_runtime12 = __toESM(require_jsx_runtime(), 1);
-var DISC_COLOR = {
-  D: "#d44f3a",
-  I: "#e8a33d",
-  S: "#4e9e5f",
-  C: "#3d8ec4"
-};
-var MAX = 24;
-function nv(result, k) {
-  return (result.dims[k] ?? 0) * (result.version === 2 ? 1 : 2);
-}
-function FactorBars({ label, tag, result }) {
-  const combo = getDiscCombo(result.dims);
-  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "flex items-baseline gap-2", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-[13px] font-bold text-olive", children: label }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: "text-[11.5px] text-olive-mute", children: [
-        combo.join(""),
-        " \u578B",
-        tag ? ` \xB7 ${tag}` : ""
-      ] })
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-1.5 space-y-1.5", children: ["D", "I", "S", "C"].map((k) => {
-      const v = nv(result, k);
-      const inCombo = combo.includes(k);
-      return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: `w-16 shrink-0 text-[11.5px] ${inCombo ? "font-bold text-olive" : "text-olive-mute"}`, children: [
-          k,
-          " \xB7 ",
-          DISC_THEORY.find((t) => t.type === k)?.name
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-          "div",
-          {
-            className: "h-full rounded-full",
-            style: { width: `${Math.min(100, v / MAX * 100)}%`, background: DISC_COLOR[k], opacity: inCombo ? 1 : 0.45 }
-          }
-        ) }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mono w-5 shrink-0 text-right text-[11.5px] text-olive-soft", children: v })
-      ] }, k);
-    }) })
-  ] });
-}
-function DimDeltaBadges({ label, parent, student }) {
-  const deltas = ["D", "I", "S", "C"].map((k) => ({
-    k,
-    student: nv(student, k),
-    parent: nv(parent, k),
-    abs: Math.abs(nv(student, k) - nv(parent, k))
-  }));
-  const strong = deltas.filter((d) => d.abs >= 6).sort((a, b) => b.abs - a.abs);
-  const watch = deltas.filter((d) => d.abs >= 4 && d.abs < 6);
-  if (strong.length === 0 && watch.length === 0) {
-    return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("p", { className: "mt-1.5 text-[11.5px] text-olive-mute", children: [
-      "\u4E0E",
-      label,
-      "\u56DB\u4E2A\u7EF4\u5EA6\u5DEE\u503C\u90FD\u5F88\u5C0F\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\u3002"
-    ] });
-  }
-  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-2 flex flex-wrap gap-1.5", children: [
-    strong.map((d) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
-      "span",
-      {
-        className: "rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]",
-        children: [
-          "\u26A0 ",
-          d.k,
-          " \u7EF4\u5F3A\u70C8\u51B2\u7A81\uFF08\u4F60 ",
-          d.student,
-          " / ",
-          label,
-          " ",
-          d.parent,
-          "\uFF0C\u5DEE ",
-          d.abs,
-          "\uFF09"
-        ]
-      },
-      d.k
-    )),
-    watch.map((d) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
-      "span",
-      {
-        className: "rounded-md border border-[#c7a23a]/70 bg-[#f5e7c1] px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]",
-        children: [
-          d.k,
-          " \u7EF4\u9700\u7559\u610F\uFF08\u4F60 ",
-          d.student,
-          " / ",
-          label,
-          " ",
-          d.parent,
-          "\uFF0C\u5DEE ",
-          d.abs,
-          "\uFF09"
-        ]
-      },
-      d.k
-    ))
-  ] });
-}
-function DiscParentCompare({
-  student,
-  parents
-}) {
-  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "paper-card p-5", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167" }),
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u540C\u6837\u7684\u5206\u6570\uFF0C\u4E0D\u540C\u7684\u8868\u8FBE\u65B9\u5F0F\uFF1A\u770B\u770B\u4F60\u548C\u5BB6\u957F\u5404\u81EA\u6700\u81EA\u7136\u7684\u884C\u4E3A\u6A21\u5F0F\u5DEE\u5728\u54EA\u91CC\uFF08\u7C7B\u578B\u6CA1\u6709\u597D\u574F\uFF09\u3002\u5DF2\u7EDF\u4E00\u6362\u7B97\u5230 0\u201324 \u91CF\u5C3A\u5BF9\u7167\uFF08\u65E7\u7248\u4E8C\u9009\u4E00\u7ED3\u679C \xD72\uFF09\uFF1B\u67D0\u7EF4\u5EA6\u5DEE\u503C \u22656 \u4E3A\u300C\u26A0 \u5F3A\u70C8\u51B2\u7A81\u300D\uFF08\u65E5\u5E38\u7BA1\u6559\u6700\u5BB9\u6613\u9891\u9053\u5BF9\u4E0D\u4E0A\uFF09\uFF0C4\u20135 \u4E3A\u300C\u9700\u7559\u610F\u300D\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-3 space-y-4", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(FactorBars, { label: "\u5B66\u751F\uFF08\u4F60\uFF09", tag: DISC_THEORY.find((t) => t.type === student.primary)?.name, result: student }),
-      parents.map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-          FactorBars,
-          {
-            label: `\u5BB6\u957F \xB7 ${p.label}`,
-            tag: DISC_THEORY.find((t) => t.type === p.result.primary)?.name,
-            result: p.result
-          }
-        ),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(DimDeltaBadges, { label: p.label, parent: p.result, student })
-      ] }, `${p.label}-${i}`))
-    ] })
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { className: "mt-2.5 text-center text-[11px] text-olive-mute", children: "\u6210\u7EE9\u957F\u5728\u4E09\u5C42\u7CFB\u7EDF\u4E4B\u4E0A\uFF0C\u4E09\u5C42\u7CFB\u7EDF\u7ACB\u5728\u6761\u4EF6\u4E0E\u5B66\u80FD\u7684\u5E95\u5EA7\u4E0A\u2014\u2014\u4FEE\u5B66\u4E60\u529B\uFF0C\u4ECE\u5730\u57FA\u5F80\u4E0A\u4FEE\u3002" }),
+    onOpen && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { className: "mt-1 text-center text-[10.5px] text-olive-mute", children: "\u7070\u865A\u7EBF\u5FBD\u7AE0\u53EF\u76F4\u63A5\u70B9\u51FB\u5F00\u59CB\u6D4B\u8BC4\uFF1B\u7EA2 <3.0 \u5361\u70B9 \xB7 \u9EC4 3.0-3.7 \u5F85\u63D0\u5347 \xB7 \u7EFF \u22653.8 \u6B63\u5E38\u3002" })
   ] });
 }
 
@@ -111846,7 +111842,7 @@ function buildParentChildAnalysis(student, parents, e3parent) {
   const conflicts = [];
   const tips = [];
   if (e3parent?.severeConflict) {
-    conflicts.push("\u5BB6\u5EAD\u8FD1\u671F\u6709\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7\uFF08\u5BB6\u957F\u5377\uFF09\u2014\u2014\u5148\u4FEE\u590D\u5173\u7CFB\u4E0E\u5B89\u5168\u611F\uFF0C\u518D\u8C08\u5B66\u4E60\u8981\u6C42\u3002");
+    conflicts.push({ text: "\u5BB6\u91CC\u6700\u8FD1\u4EB2\u5B50\u51B2\u7A81\u6BD4\u8F83\u4E25\u91CD\uFF08\u5BB6\u957F\u5377\u4FE1\u53F7\uFF09\u2014\u2014\u5148\u4FEE\u590D\u5173\u7CFB\u3001\u8BA9\u5B69\u5B50\u611F\u5230\u5B89\u5168\uFF0C\u518D\u8C08\u5B66\u4E60\u8981\u6C42\u3002", hot: true });
     tips.push("\u7EA2\u7EBF\u671F\u539F\u5219\uFF1A\u6682\u505C\u52A0\u538B\u4E0E\u8BF4\u6559\uFF0C\u5148\u6062\u590D\u65E5\u5E38\u966A\u4F34\uFF08\u4E00\u8D77\u5403\u996D\u3001\u6563\u6B65\u3001\u4E0D\u8C08\u5B66\u4E60\u7684\u95F2\u804A\uFF09\uFF0C\u5FC5\u8981\u65F6\u5BFB\u6C42\u5B66\u6821\u5FC3\u7406\u8001\u5E08\u6216\u4E13\u4E1A\u673A\u6784\u652F\u6301\u3002");
   }
   for (const p of parents) {
@@ -111858,29 +111854,36 @@ function buildParentChildAnalysis(student, parents, e3parent) {
       }));
       const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
       if (strong.length > 0) {
-        conflicts.push(
-          `${p.label}\uFF08${p.result.primary} \u578B\uFF09\xD7 \u5B69\u5B50\uFF08${student.primary} \u578B\uFF09\uFF1A${strong.map((x) => `${x.k} \u7EF4\u5DEE ${x.abs} \u5206`).join("\u3001")}\uFF080\u201324 \u91CF\u5C3A\uFF0C\u22656 \u5F3A\u70C8\u51B2\u7A81\uFF09\u2014\u2014${style.risk[student.primary]}\u3002`
-        );
+        conflicts.push({
+          text: `${p.label} \xD7 \u5B69\u5B50\u5728\u300C${strong.map((x) => `${x.k}\uFF08${DISC_DIM_PLAIN[x.k]}\uFF09`).join("\u3001")}\u300D\u4E0A\u660E\u663E\u9876\u725B\uFF08\u5DEE ${strong.map((x) => x.abs).join("\u3001")} \u5206\uFF0C\u5DEE 6 \u5206\u4EE5\u4E0A\u5C31\u7B97\u660E\u663E\uFF09\u2014\u2014${style.risk[student.primary]}\u3002`,
+          hot: true
+        });
       } else {
-        conflicts.push(`${p.label}\uFF08${p.result.primary} \u578B\uFF09\xD7 \u5B69\u5B50\uFF08${student.primary} \u578B\uFF09\uFF1A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\uFF1B\u7559\u610F\u2014\u2014${style.risk[student.primary]}\u3002`);
+        conflicts.push({ text: `${p.label} \xD7 \u5B69\u5B50\uFF1A\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\uFF0C\u6CA1\u6709\u660E\u663E\u9876\u725B\u7684\u7EF4\u5EA6\uFF1B\u65E5\u5E38\u7559\u610F\u2014\u2014${style.risk[student.primary]}\u3002`, hot: false });
       }
     } else {
-      conflicts.push(`${p.label} \u504F ${p.result.primary} \u578B\uFF08${style.style}\uFF09\uFF1B\u5B69\u5B50\u5B8C\u6210 DISC \u540E\u8FD9\u91CC\u4F1A\u7ED9\u51FA\u4EB2\u5B50\u51B2\u7A81\u5BF9\u7167\u3002`);
+      conflicts.push({ text: `${p.label} \u504F ${p.result.primary} \u578B\uFF08${style.style}\uFF09\uFF1B\u5B69\u5B50\u5B8C\u6210 DISC \u540E\u8FD9\u91CC\u4F1A\u7ED9\u51FA\u4EB2\u5B50\u51B2\u7A81\u5BF9\u7167\u3002`, hot: false });
     }
     tips.push(`\u5BF9${p.label}\uFF08${p.result.primary} \u578B\u5BB6\u957F\uFF09\uFF1A${style.tip}`);
   }
   if (e3parent) {
     if (e3parent.overestimates.length > 0) {
-      conflicts.push(`\u5BB6\u957F\u66F4\u770B\u597D\u7684\u65B9\u9762\uFF08\u9AD8\u4F30\uFF09\uFF1A${e3parent.overestimates.map((x) => `${x.kp}\uFF08\u5BB6\u957F ${x.parentScore} / \u5B69\u5B50 ${x.studentScore}\uFF09`).join("\u3001")}\u2014\u2014\u671F\u5F85\u9AD8\u4E8E\u5B69\u5B50\u7684\u5B9E\u9645\u611F\u53D7\uFF0C\u5BB9\u6613\u53D8\u6210\u538B\u529B\u3002`);
-      tips.push("\u9AD8\u4F30\u9879\uFF1A\u628A\u300C\u6211\u4EE5\u4E3A\u4F60\u884C\u300D\u6362\u6210\u300C\u6211\u4EEC\u4E00\u8D77\u770B\u770B\u96BE\u5728\u54EA\u300D\uFF0C\u5148\u5BF9\u9F50\u4E8B\u5B9E\u518D\u5B9A\u76EE\u6807\u3002");
+      conflicts.push({
+        text: `\u5BB6\u957F\u6BD4\u5B69\u5B50\u66F4\u4E50\u89C2\u7684\u65B9\u9762\uFF1A${e3parent.overestimates.map((x) => `\u300C${x.kp}\u300D\u5BB6\u957F\u6253 ${x.parentScore} \u5206\u3001\u5B69\u5B50\u53EA\u7ED9\u81EA\u5DF1 ${x.studentScore} \u5206`).join("\uFF1B")}\u2014\u2014\u5BB6\u957F\u7684\u671F\u5F85\u9AD8\u8FC7\u5B69\u5B50\u7684\u5B9E\u9645\u611F\u53D7\uFF0C\u5BB9\u6613\u53D8\u6210\u538B\u529B\u3002`,
+        hot: e3parent.overestimates.some((x) => x.gap >= 3)
+      });
+      tips.push("\u5BB6\u957F\u66F4\u4E50\u89C2\u7684\u9879\uFF1A\u628A\u300C\u6211\u4EE5\u4E3A\u4F60\u6CA1\u95EE\u9898\u300D\u6362\u6210\u300C\u6211\u4EEC\u4E00\u8D77\u770B\u770B\u96BE\u5728\u54EA\u300D\uFF0C\u5148\u95EE\u6E05\u695A\u56F0\u96BE\uFF0C\u518D\u5B9A\u76EE\u6807\u3002");
     }
     if (e3parent.underestimates.length > 0) {
-      conflicts.push(`\u5BB6\u957F\u6CA1\u770B\u5230\u7684\u95EA\u5149\u70B9\uFF08\u4F4E\u4F30\uFF09\uFF1A${e3parent.underestimates.map((x) => `${x.kp}\uFF08\u5BB6\u957F ${x.parentScore} / \u5B69\u5B50 ${x.studentScore}\uFF09`).join("\u3001")}\u2014\u2014\u5B69\u5B50\u7684\u52AA\u529B\u503C\u5F97\u88AB\u770B\u89C1\u3002`);
-      tips.push("\u4F4E\u4F30\u9879\uFF1A\u8BA9\u5B69\u5B50\u4E3B\u52A8\u5C55\u793A\u4E00\u6B21\uFF08\u8BB2\u4E00\u9053\u9898\u3001\u7FFB\u4E00\u6B21\u9519\u9898\u672C\uFF09\uFF0C\u6BD4\u8FA9\u89E3\u5341\u6B21\u66F4\u6709\u6548\u3002");
+      conflicts.push({
+        text: `\u5BB6\u957F\u6CA1\u770B\u5230\u7684\u95EA\u5149\u70B9\uFF1A${e3parent.underestimates.map((x) => `\u300C${x.kp}\u300D\u5B69\u5B50\u7ED9\u81EA\u5DF1 ${x.studentScore} \u5206\u3001\u5BB6\u957F\u53EA\u6253 ${x.parentScore} \u5206`).join("\uFF1B")}\u2014\u2014\u5B69\u5B50\u7684\u52AA\u529B\u503C\u5F97\u88AB\u770B\u89C1\u3002`,
+        hot: false
+      });
+      tips.push("\u6CA1\u770B\u5230\u95EA\u5149\u70B9\u7684\u9879\uFF1A\u8BA9\u5B69\u5B50\u4E3B\u52A8\u5C55\u793A\u4E00\u6B21\uFF08\u8BB2\u4E00\u9053\u9898\u3001\u7FFB\u4E00\u6B21\u9519\u9898\u672C\uFF09\uFF0C\u6BD4\u8FA9\u89E3\u5341\u6B21\u66F4\u6709\u6548\u3002");
     }
     const badCond = e3parent.condView.filter((cv) => cv.note.includes("\u72B6\u51B5\u8F83\u5DEE"));
-    if (badCond.length > 0) conflicts.push(`\u5BB6\u957F\u8BA4\u4E3A\u8F83\u5DEE\u7684\u65B9\u5411\uFF1A${badCond.map((cv) => cv.label).join("\u3001")}\u2014\u2014\u9700\u8981\u5BB6\u6821\u4E00\u8D77\u6838\u5B9E\u771F\u56E0\uFF0C\u4F18\u5148\u5904\u7406\u3002`);
-    if (e3parent.unknownCount >= 3) conflicts.push(`\u5BB6\u957F\u5BF9\u5B69\u5B50\u5B66\u4E60\u300C\u4E0D\u4E86\u89E3\u300D${e3parent.unknownCount} \u9879\uFF08\u4E86\u89E3\u7A0B\u5EA6\u300C${e3parent.unknownLevel}\u300D\uFF09\u2014\u2014\u5148\u8865\u4E0A\u4E86\u89E3\uFF0C\u518D\u8C08\u7BA1\u6559\u3002`);
+    if (badCond.length > 0) conflicts.push({ text: `\u5BB6\u957F\u8BA4\u4E3A\u72B6\u51B5\u8F83\u5DEE\u7684\u65B9\u5411\uFF1A${badCond.map((cv) => cv.label).join("\u3001")}\u2014\u2014\u9700\u8981\u5BB6\u6821\u4E00\u8D77\u6838\u5B9E\u771F\u56E0\uFF0C\u4F18\u5148\u5904\u7406\u3002`, hot: true });
+    if (e3parent.unknownCount >= 3) conflicts.push({ text: `\u5BB6\u957F\u5BF9\u5B69\u5B50\u5B66\u4E60\u300C\u4E0D\u4E86\u89E3\u300D\u6709 ${e3parent.unknownCount} \u9879\uFF08\u4E86\u89E3\u7A0B\u5EA6\u300C${e3parent.unknownLevel}\u300D\uFF09\u2014\u2014\u5148\u628A\u60C5\u51B5\u4E86\u89E3\u6E05\u695A\uFF0C\u518D\u8C08\u600E\u4E48\u7BA1\u3002`, hot: false });
     tips.push("\u5BB6\u957F\u548C\u5B69\u5B50\u4E00\u8D77\u73A9\u300C\u5BF9\u7167\u6E38\u620F\u300D\uFF1A\u5404\u8BF4\u5404\u7684\u7406\u7531\uFF0C\u5148\u5BF9\u9F50\u4E8B\u5B9E\uFF0C\u518D\u8BA8\u8BBA\u65B9\u6CD5\u3002");
   }
   tips.push("\u6BCF\u5468\u7559\u4E00\u6B21\u300C\u4E0D\u8C08\u5B66\u4E60\u300D\u7684\u4EB2\u5B50\u65F6\u95F4\uFF1B\u6279\u8BC4\u5BF9\u4E8B\u4E0D\u5BF9\u4EBA\uFF0C\u5148\u80AF\u5B9A\u518D\u63D0\u4E00\u4E2A\uFF08\u53EA\u63D0\u4E00\u4E2A\uFF09\u6539\u8FDB\u70B9\u3002");
@@ -111919,7 +111922,7 @@ function ParentReportTab({
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
     /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card accent-l border-terra/50 p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848" }),
-      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u5408\u5E76\u5BB6\u957F\u5377\uFF08\u5BB6\u5EAD\u652F\u6301\u4E0E\u8BA4\u77E5\u5BF9\u7167\uFF09\u4E0E\u5BB6\u957F DISC \xD7 \u5B69\u5B50 DISC\uFF08\u884C\u4E3A\u9891\u9053\u5BF9\u7167\uFF09\u7EFC\u5408\u5224\u8BFB\uFF0C\u6309\u4F18\u5148\u7EA7\u6392\u5E8F\u3002" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u5DE6\u8FB9\u662F\u5BB6\u957F\u548C\u5B69\u5B50\u300C\u60F3\u4E0D\u5230\u4E00\u5757\u300D\u7684\u5730\u65B9\uFF08\u7EA2\u8272\u4E3A\u6700\u9700\u8981\u6CE8\u610F\u7684\uFF09\uFF0C\u53F3\u8FB9\u662F\u7167\u7740\u5C31\u80FD\u505A\u7684\u6539\u8FDB\u529E\u6CD5\u3002" }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 grid gap-3 lg:grid-cols-2", children: [
         /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-terra/30 bg-terra/5 p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-terra", children: [
@@ -111927,14 +111930,21 @@ function ParentReportTab({
             conflicts.length,
             " \u6761"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
-              i + 1,
-              "."
-            ] }),
-            " ",
-            c
-          ] }, i)) })
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
+            "li",
+            {
+              className: c.hot ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50" : "text-[12.5px] leading-relaxed text-olive-soft",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: c.hot ? "text-[#8f1313]" : "text-olive", children: [
+                  i + 1,
+                  "."
+                ] }),
+                " ",
+                c.text
+              ]
+            },
+            i
+          )) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-lime/40 bg-lime-pale/50 p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-olive", children: [
@@ -111991,35 +112001,62 @@ function ParentReportTab({
     e3parent && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5BB6\u957F\u8BA4\u77E5\u5BF9\u7167" }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
-        "\u5BB6\u957F\u7684\u4F30\u8BA1\u4E0E\u5B69\u5B50\u7684\u5B9E\u9645\u81EA\u8BC4\u9010\u9879\u5BF9\u7167\uFF08|\u5DEE\u503C| \u2265 2 \u89C6\u4E3A\u660E\u663E\u5DEE\u5F02\uFF09\uFF1B\u300C\u4E0D\u4E86\u89E3\u300D",
+        "\u540C\u4E00\u4EF6\u4E8B\uFF0C\u5BB6\u957F\u600E\u4E48\u770B\u3001\u5B69\u5B50\u81EA\u5DF1\u600E\u4E48\u611F\u89C9\uFF0C\u6446\u5728\u4E00\u8D77\u5BF9\u7167\uFF08\u4E24\u8FB9\u5DEE 2 \u5206\u4EE5\u4E0A\u5217\u5728\u8FD9\u91CC\uFF0C\u5DEE\u5F97\u8D8A\u591A\u8D8A\u7EA2\uFF09\uFF1B\u53E6\u6709\u300C\u4E0D\u4E86\u89E3\u300D",
         e3parent.unknownCount,
         " \u9879\uFF08\u4E86\u89E3\u7A0B\u5EA6\u300C",
         e3parent.unknownLevel,
         "\u300D\uFF09\u3002"
       ] }),
-      e3parent.blindSpots.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] text-olive", children: "\u65E0\u660E\u663E\u5DEE\u5F02\u9879\u2014\u2014\u5BB6\u957F\u7684\u89C2\u5BDF\u4E0E\u5B69\u5B50\u7684\u81EA\u8BC4\u603B\u4F53\u4E00\u81F4\uFF0C\u8BA4\u77E5\u540C\u9891\u3002" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 overflow-hidden rounded-xl border border-border", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 bg-cream-deep/60 px-3 py-1.5 text-[11.5px] font-bold text-olive-mute", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5173\u6CE8\u70B9" }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5BB6\u957F\u8BC4" }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5B69\u5B50\u81EA\u8BC4" }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5DEE\u503C" }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { children: "\u5224\u8BFB" })
-        ] }),
-        e3parent.blindSpots.map((b) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-3 border-t border-border/60 px-3 py-2 text-[12.5px]", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "font-semibold text-olive", children: b.kp }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono text-olive-soft", children: b.parentScore }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono text-olive-soft", children: b.studentScore }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "mono text-olive-soft", children: b.gap > 0 ? `+${b.gap}` : b.gap }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-            "span",
-            {
-              className: "rounded-full px-2 py-0.5 text-[11px] font-bold",
-              style: b.gap >= 2 ? { background: "#f5e7c1", color: "#8a6d1a" } : { background: "#f0f7dd", color: "#5a9326" },
-              children: b.gap >= 2 ? "\u5BB6\u957F\u9AD8\u4F30" : "\u5BB6\u957F\u4F4E\u4F30"
-            }
-          )
-        ] }, b.key))
-      ] })
+      e3parent.blindSpots.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] text-olive", children: "\u65E0\u660E\u663E\u5DEE\u5F02\u9879\u2014\u2014\u5BB6\u957F\u7684\u89C2\u5BDF\u4E0E\u5B69\u5B50\u7684\u81EA\u8BC4\u603B\u4F53\u4E00\u81F4\uFF0C\u8BA4\u77E5\u540C\u9891\u3002" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-3 grid gap-3 md:grid-cols-2", children: e3parent.blindSpots.map((b) => {
+        const mirror = E3V37P_MIRROR_QUESTIONS.find((m) => m.key === b.key);
+        const over = b.gap >= 2;
+        const strong = Math.abs(b.gap) >= 3;
+        return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
+          "div",
+          {
+            className: `rounded-xl border p-3.5 ${strong ? "border-[#b91c1c]/50 bg-[#fbe3df]/60" : over ? "border-[#c7a23a]/50 bg-[#f5e7c1]/40" : "border-lime/40 bg-lime-pale/40"}`,
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex flex-wrap items-center gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-[13px] font-bold text-olive", children: b.kp }),
+                /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
+                  "span",
+                  {
+                    className: `rounded-full px-2 py-0.5 text-[11px] font-bold ${strong ? "bg-[#b91c1c] text-white" : over ? "bg-[#f5e7c1] text-[#8a6d1a]" : "bg-[#f0f7dd] text-[#5a9326]"}`,
+                    children: [
+                      "\u5DEE ",
+                      Math.abs(b.gap),
+                      " \u5206 \xB7 ",
+                      over ? "\u5BB6\u957F\u66F4\u4E50\u89C2" : "\u5BB6\u957F\u6CA1\u770B\u5230"
+                    ]
+                  }
+                )
+              ] }),
+              mirror && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1.5 text-[12px] leading-relaxed text-olive-mute", children: [
+                "\u5BF9\u7167\u7684\u4E8B\uFF1A",
+                mirror.text
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-2 grid grid-cols-2 gap-2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-lg bg-white/70 px-2.5 py-1.5 text-center", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[11px] text-olive-mute", children: "\u5BB6\u957F\u7684\u4F30\u8BA1" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: `mono text-[16px] font-bold ${strong ? "text-[#8f1313]" : "text-olive"}`, children: [
+                    b.parentScore,
+                    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-[11px] font-normal text-olive-mute", children: " /5" })
+                  ] })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-lg bg-white/70 px-2.5 py-1.5 text-center", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[11px] text-olive-mute", children: "\u5B69\u5B50\u7684\u5B9E\u9645\u611F\u53D7" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: `mono text-[16px] font-bold ${strong ? "text-[#8f1313]" : "text-olive"}`, children: [
+                    b.studentScore,
+                    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-[11px] font-normal text-olive-mute", children: " /5" })
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[12px] leading-relaxed text-olive-soft", children: over ? "\u5BB6\u957F\u4EE5\u4E3A\u6CA1\u95EE\u9898\uFF0C\u5176\u5B9E\u5B69\u5B50\u89C9\u5F97\u96BE\u2014\u2014\u522B\u53EA\u5938\u300C\u4F60\u53EF\u4EE5\u7684\u300D\uFF0C\u5148\u95EE\u95EE\u96BE\u5728\u54EA\u3002" : "\u5B69\u5B50\u89C9\u5F97\u81EA\u5DF1\u505A\u5F97\u4E0D\u9519\uFF0C\u5BB6\u957F\u6CA1\u770B\u5230\u2014\u2014\u503C\u5F97\u5F53\u9762\u80AF\u5B9A\u4E00\u6B21\u3002" })
+            ]
+          },
+          b.key
+        );
+      }) })
     ] }),
     parents.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
       MissingCard,
@@ -112983,10 +113020,7 @@ function ReportView({
                   }
                 ) : void 0;
               } else if (s.title.includes("\u6761\u4EF6\u6A21\u5757")) {
-                chartNode = mental || discParents.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
-                  mental && (isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalBar, { mental })),
-                  disc2 && discParents.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student: disc2, parents: discParents })
-                ] }) : void 0;
+                chartNode = mental ? isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalBar, { mental }) : void 0;
               } else if (s.title.includes("\u4EB2\u5B50\u5BF9\u7167")) {
                 chartNode = disc2 && discParents.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student: disc2, parents: discParents }) : void 0;
               } else if (s.title.includes("\u5B66\u80FD\u6A21\u5757")) {
@@ -113395,13 +113429,13 @@ function CombinedLite({
       const { conflicts, tips } = buildParentChildAnalysis(disc2, discParents ?? [], e3parent ?? null);
       return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card accent-l border-terra/40 p-5", children: [
         /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50\u5BF9\u7167 \xB7 \u6458\u8981" }),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.slice(0, 3).map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-terra", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.slice(0, 3).map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: `text-[12.5px] leading-relaxed ${c.hot ? "font-semibold text-[#8f1313]" : "text-olive-soft"}`, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: c.hot ? "text-[#8f1313]" : "text-terra", children: [
             i + 1,
             "."
           ] }),
           " ",
-          c
+          c.text
         ] }, i)) }),
         conflicts.length > 3 && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12px] text-olive-mute", children: [
           "\u2026\u2026\u5171 ",
@@ -113516,7 +113550,7 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v38.tsx
+// scripts/smoke-render-v39.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -113688,7 +113722,7 @@ var e3parentFake = {
 var dataParent = {
   ...data2,
   e3parent: e3parentFake,
-  discParents: [{ label: "\u5988\u5988", result: disc, createdAt: /* @__PURE__ */ new Date() }],
+  discParents: [{ label: "\u5988\u5988", result: { primary: "I", dims: { D: 2, I: 20, S: 6, C: 8 }, summary: "I \u4E3B\u5BFC\u578B", version: 2 }, createdAt: /* @__PURE__ */ new Date() }],
   raw: [...data2.raw, { kind: "e3parent", answers: { family: {}, condObserve: {}, mirror: [] }, createdAt: /* @__PURE__ */ new Date() }]
 };
 var renderP = (tab) => (0, import_server.renderToStaticMarkup)(
@@ -113700,7 +113734,7 @@ var renderP = (tab) => (0, import_server.renderToStaticMarkup)(
   )
 );
 var parentHtml = renderP("parent");
-for (const kw of ["\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848", "\u5BB6\u5EAD\u652F\u6301\u4E0E\u73AF\u5883\u89C2\u5BDF\uFF08\u5BB6\u957F\u5377\uFF09", "\u5BB6\u957F\u8BA4\u77E5\u5BF9\u7167", "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167", "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F\u5377", "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F DISC", "\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7", "\u5BB6\u957F\u9AD8\u4F30"]) {
+for (const kw of ["\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848", "\u5BB6\u5EAD\u652F\u6301\u4E0E\u73AF\u5883\u89C2\u5BDF\uFF08\u5BB6\u957F\u5377\uFF09", "\u5BB6\u957F\u8BA4\u77E5\u5BF9\u7167", "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167", "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F\u5377", "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F DISC", "\u4E25\u91CD\u4EB2\u5B50\u51B2\u7A81\u4FE1\u53F7", "\u5BB6\u957F\u66F4\u4E50\u89C2"]) {
   need(parentHtml, kw, "\u5BB6\u957F\u62A5\u544A tab");
 }
 var legacyTabHtml = renderP("discparent");
@@ -113721,7 +113755,18 @@ if (!fullParent.slice(Math.max(0, apxIdx - 400), apxIdx).includes('class="print:
   throw new Error("\u7EFC\u5408\u8BE6\u7248\u9644\u5F55\u7AE0\u672A\u6574\u7AE0 print:hidden");
 }
 console.log("OK \u7EFC\u5408\u8BE6\u7248\u9644\u5F55\u7AE0\u6574\u7AE0\u4E0D\u6253\u5370");
-console.log("RENDER_SMOKE_V38_OK");
+var compareCount = fullParent.split("\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167").length - 1;
+if (compareCount !== 1) throw new Error(`\u7EFC\u5408\u8BE6\u7248\u4EB2\u5B50 DISC \u5BF9\u7167\u56FE\u51FA\u73B0 ${compareCount} \u6B21\uFF0C\u5E94\u4E3A 1 \u6B21`);
+need(parentHtml, "#fbe3df", "\u5BB6\u957F\u62A5\u544A\u7EA2\u8272\u9AD8\u4EAE");
+need(parentHtml, "\u660E\u663E\u9876\u725B", "DISC \u5DEE\u503C\u767D\u8BDD");
+need(parentHtml, "\u7231\u70ED\u95F9\u3001\u7231\u8868\u8FBE", "DISC \u7EF4\u5EA6\u767D\u8BDD\u6CE8\u91CA");
+need(parentHtml, "\u5BB6\u957F\u7684\u4F30\u8BA1", "\u8BA4\u77E5\u5BF9\u7167\u5361");
+need(parentHtml, "\u5B69\u5B50\u7684\u5B9E\u9645\u611F\u53D7", "\u8BA4\u77E5\u5BF9\u7167\u5361");
+need(parentHtml, "\u5BF9\u7167\u7684\u4E8B\uFF1A", "\u8BA4\u77E5\u5BF9\u7167\u5361\u955C\u5B50\u9898");
+need(parentHtml, "\u5BB6\u957F\u4EE5\u4E3A\u6CA1\u95EE\u9898\uFF0C\u5176\u5B9E\u5B69\u5B50\u89C9\u5F97\u96BE", "\u8BA4\u77E5\u5BF9\u7167\u5361\u767D\u8BDD");
+need(parentHtml, "ring-[#b91c1c]/50", "\u51B2\u7A81\u6E05\u5355\u7EA2\u8272\u5F3A\u5316");
+console.log("OK v39 \u53BB\u91CD/\u7EA2\u8272\u5F3A\u5316/\u5BF9\u7167\u5361/\u901A\u4FD7\u5316");
+console.log("RENDER_SMOKE_V39_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

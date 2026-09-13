@@ -19,7 +19,8 @@ import {
   e3v37Level,
 } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Stage, E3V37ItemScore } from "@contracts/e3v37";
-import { isE3V37ParentResult, type E3V37ParentResult } from "@contracts/e3v37Parent";
+import { E3V37P_MIRROR_QUESTIONS, isE3V37ParentResult, type E3V37ParentResult } from "@contracts/e3v37Parent";
+import { DISC_DIM_PLAIN } from "./DiscParentCompare";
 import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { AnchorResult } from "@contracts/careerAnchor";
 import type { MultiResult } from "@contracts/multi";
@@ -1162,16 +1163,16 @@ const PARENT_DISC_STYLE: Record<"D" | "I" | "S" | "C", { style: string; risk: Re
   },
 };
 
-/** 亲子冲突/建议聚合（家长报告 tab 与一页简版摘要卡共用）。 */
+/** 亲子冲突/建议聚合（家长报告 tab 与一页简版摘要卡共用）。hot=true 的冲突条目在报告里红色强化。 */
 function buildParentChildAnalysis(
   student: DiscResult | null,
   parents: { label: string; result: DiscResult }[],
   e3parent: E3V37ParentResult | null,
-): { conflicts: string[]; tips: string[] } {
-  const conflicts: string[] = [];
+): { conflicts: { text: string; hot: boolean }[]; tips: string[] } {
+  const conflicts: { text: string; hot: boolean }[] = [];
   const tips: string[] = [];
   if (e3parent?.severeConflict) {
-    conflicts.push("家庭近期有严重亲子冲突信号（家长卷）——先修复关系与安全感，再谈学习要求。");
+    conflicts.push({ text: "家里最近亲子冲突比较严重（家长卷信号）——先修复关系、让孩子感到安全，再谈学习要求。", hot: true });
     tips.push("红线期原则：暂停加压与说教，先恢复日常陪伴（一起吃饭、散步、不谈学习的闲聊），必要时寻求学校心理老师或专业机构支持。");
   }
   for (const p of parents) {
@@ -1183,29 +1184,36 @@ function buildParentChildAnalysis(
       }));
       const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
       if (strong.length > 0) {
-        conflicts.push(
-          `${p.label}（${p.result.primary} 型）× 孩子（${student.primary} 型）：${strong.map((x) => `${x.k} 维差 ${x.abs} 分`).join("、")}（0–24 量尺，≥6 强烈冲突）——${style.risk[student.primary]}。`,
-        );
+        conflicts.push({
+          text: `${p.label} × 孩子在「${strong.map((x) => `${x.k}（${DISC_DIM_PLAIN[x.k]}）`).join("、")}」上明显顶牛（差 ${strong.map((x) => x.abs).join("、")} 分，差 6 分以上就算明显）——${style.risk[student.primary]}。`,
+          hot: true,
+        });
       } else {
-        conflicts.push(`${p.label}（${p.result.primary} 型）× 孩子（${student.primary} 型）：频道总体接近；留意——${style.risk[student.primary]}。`);
+        conflicts.push({ text: `${p.label} × 孩子：行为频道总体接近，没有明显顶牛的维度；日常留意——${style.risk[student.primary]}。`, hot: false });
       }
     } else {
-      conflicts.push(`${p.label} 偏 ${p.result.primary} 型（${style.style}）；孩子完成 DISC 后这里会给出亲子冲突对照。`);
+      conflicts.push({ text: `${p.label} 偏 ${p.result.primary} 型（${style.style}）；孩子完成 DISC 后这里会给出亲子冲突对照。`, hot: false });
     }
     tips.push(`对${p.label}（${p.result.primary} 型家长）：${style.tip}`);
   }
   if (e3parent) {
     if (e3parent.overestimates.length > 0) {
-      conflicts.push(`家长更看好的方面（高估）：${e3parent.overestimates.map((x) => `${x.kp}（家长 ${x.parentScore} / 孩子 ${x.studentScore}）`).join("、")}——期待高于孩子的实际感受，容易变成压力。`);
-      tips.push("高估项：把「我以为你行」换成「我们一起看看难在哪」，先对齐事实再定目标。");
+      conflicts.push({
+        text: `家长比孩子更乐观的方面：${e3parent.overestimates.map((x) => `「${x.kp}」家长打 ${x.parentScore} 分、孩子只给自己 ${x.studentScore} 分`).join("；")}——家长的期待高过孩子的实际感受，容易变成压力。`,
+        hot: e3parent.overestimates.some((x) => x.gap >= 3),
+      });
+      tips.push("家长更乐观的项：把「我以为你没问题」换成「我们一起看看难在哪」，先问清楚困难，再定目标。");
     }
     if (e3parent.underestimates.length > 0) {
-      conflicts.push(`家长没看到的闪光点（低估）：${e3parent.underestimates.map((x) => `${x.kp}（家长 ${x.parentScore} / 孩子 ${x.studentScore}）`).join("、")}——孩子的努力值得被看见。`);
-      tips.push("低估项：让孩子主动展示一次（讲一道题、翻一次错题本），比辩解十次更有效。");
+      conflicts.push({
+        text: `家长没看到的闪光点：${e3parent.underestimates.map((x) => `「${x.kp}」孩子给自己 ${x.studentScore} 分、家长只打 ${x.parentScore} 分`).join("；")}——孩子的努力值得被看见。`,
+        hot: false,
+      });
+      tips.push("没看到闪光点的项：让孩子主动展示一次（讲一道题、翻一次错题本），比辩解十次更有效。");
     }
     const badCond = e3parent.condView.filter((cv) => cv.note.includes("状况较差"));
-    if (badCond.length > 0) conflicts.push(`家长认为较差的方向：${badCond.map((cv) => cv.label).join("、")}——需要家校一起核实真因，优先处理。`);
-    if (e3parent.unknownCount >= 3) conflicts.push(`家长对孩子学习「不了解」${e3parent.unknownCount} 项（了解程度「${e3parent.unknownLevel}」）——先补上了解，再谈管教。`);
+    if (badCond.length > 0) conflicts.push({ text: `家长认为状况较差的方向：${badCond.map((cv) => cv.label).join("、")}——需要家校一起核实真因，优先处理。`, hot: true });
+    if (e3parent.unknownCount >= 3) conflicts.push({ text: `家长对孩子学习「不了解」有 ${e3parent.unknownCount} 项（了解程度「${e3parent.unknownLevel}」）——先把情况了解清楚，再谈怎么管。`, hot: false });
     tips.push("家长和孩子一起玩「对照游戏」：各说各的理由，先对齐事实，再讨论方法。");
   }
   tips.push("每周留一次「不谈学习」的亲子时间；批评对事不对人，先肯定再提一个（只提一个）改进点。");
@@ -1255,15 +1263,22 @@ function ParentReportTab({
       <div className="paper-card accent-l border-terra/50 p-5">
         <h3 className="font-bold text-olive">亲子冲突点清单与改进方案</h3>
         <p className="mt-1 text-[12.5px] text-olive-mute">
-          合并家长卷（家庭支持与认知对照）与家长 DISC × 孩子 DISC（行为频道对照）综合判读，按优先级排序。
+          左边是家长和孩子「想不到一块」的地方（红色为最需要注意的），右边是照着就能做的改进办法。
         </p>
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <div className="rounded-xl border border-terra/30 bg-terra/5 p-3.5">
             <div className="text-[13px] font-bold text-terra">冲突点清单 · {conflicts.length} 条</div>
             <ol className="mt-2 space-y-1.5">
               {conflicts.map((c, i) => (
-                <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
-                  <b className="text-olive">{i + 1}.</b> {c}
+                <li
+                  key={i}
+                  className={
+                    c.hot
+                      ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
+                      : "text-[12.5px] leading-relaxed text-olive-soft"
+                  }
+                >
+                  <b className={c.hot ? "text-[#8f1313]" : "text-olive"}>{i + 1}.</b> {c.text}
                 </li>
               ))}
             </ol>
@@ -1330,39 +1345,54 @@ function ParentReportTab({
         <div className="paper-card p-5">
           <h3 className="font-bold text-olive">家长认知对照</h3>
           <p className="mt-1 text-[12.5px] text-olive-mute">
-            家长的估计与孩子的实际自评逐项对照（|差值| ≥ 2 视为明显差异）；「不了解」{e3parent.unknownCount} 项（了解程度「{e3parent.unknownLevel}」）。
+            同一件事，家长怎么看、孩子自己怎么感觉，摆在一起对照（两边差 2 分以上列在这里，差得越多越红）；另有「不了解」{e3parent.unknownCount} 项（了解程度「{e3parent.unknownLevel}」）。
           </p>
           {e3parent.blindSpots.length === 0 ? (
             <p className="mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] text-olive">
               无明显差异项——家长的观察与孩子的自评总体一致，认知同频。
             </p>
           ) : (
-            <div className="mt-3 overflow-hidden rounded-xl border border-border">
-              <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 bg-cream-deep/60 px-3 py-1.5 text-[11.5px] font-bold text-olive-mute">
-                <span>关注点</span>
-                <span>家长评</span>
-                <span>孩子自评</span>
-                <span>差值</span>
-                <span>判读</span>
-              </div>
-              {e3parent.blindSpots.map((b) => (
-                <div key={b.key} className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-3 border-t border-border/60 px-3 py-2 text-[12.5px]">
-                  <span className="font-semibold text-olive">{b.kp}</span>
-                  <span className="mono text-olive-soft">{b.parentScore}</span>
-                  <span className="mono text-olive-soft">{b.studentScore}</span>
-                  <span className="mono text-olive-soft">{b.gap > 0 ? `+${b.gap}` : b.gap}</span>
-                  <span
-                    className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-                    style={
-                      b.gap >= 2
-                        ? { background: "#f5e7c1", color: "#8a6d1a" }
-                        : { background: "#f0f7dd", color: "#5a9326" }
-                    }
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {e3parent.blindSpots.map((b) => {
+                const mirror = E3V37P_MIRROR_QUESTIONS.find((m) => m.key === b.key);
+                const over = b.gap >= 2; // 家长打分高于孩子自评 = 家长更乐观
+                const strong = Math.abs(b.gap) >= 3;
+                return (
+                  <div
+                    key={b.key}
+                    className={`rounded-xl border p-3.5 ${
+                      strong ? "border-[#b91c1c]/50 bg-[#fbe3df]/60" : over ? "border-[#c7a23a]/50 bg-[#f5e7c1]/40" : "border-lime/40 bg-lime-pale/40"
+                    }`}
                   >
-                    {b.gap >= 2 ? "家长高估" : "家长低估"}
-                  </span>
-                </div>
-              ))}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[13px] font-bold text-olive">{b.kp}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                          strong ? "bg-[#b91c1c] text-white" : over ? "bg-[#f5e7c1] text-[#8a6d1a]" : "bg-[#f0f7dd] text-[#5a9326]"
+                        }`}
+                      >
+                        差 {Math.abs(b.gap)} 分 · {over ? "家长更乐观" : "家长没看到"}
+                      </span>
+                    </div>
+                    {mirror && <p className="mt-1.5 text-[12px] leading-relaxed text-olive-mute">对照的事：{mirror.text}</p>}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <div className="rounded-lg bg-white/70 px-2.5 py-1.5 text-center">
+                        <div className="text-[11px] text-olive-mute">家长的估计</div>
+                        <div className={`mono text-[16px] font-bold ${strong ? "text-[#8f1313]" : "text-olive"}`}>{b.parentScore}<span className="text-[11px] font-normal text-olive-mute"> /5</span></div>
+                      </div>
+                      <div className="rounded-lg bg-white/70 px-2.5 py-1.5 text-center">
+                        <div className="text-[11px] text-olive-mute">孩子的实际感受</div>
+                        <div className={`mono text-[16px] font-bold ${strong ? "text-[#8f1313]" : "text-olive"}`}>{b.studentScore}<span className="text-[11px] font-normal text-olive-mute"> /5</span></div>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[12px] leading-relaxed text-olive-soft">
+                      {over
+                        ? "家长以为没问题，其实孩子觉得难——别只夸「你可以的」，先问问难在哪。"
+                        : "孩子觉得自己做得不错，家长没看到——值得当面肯定一次。"}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -2506,13 +2536,8 @@ export default function ReportView({
                   />
                 ) : undefined;
               } else if (s.title.includes("条件模块")) {
-                chartNode =
-                  mental || discParents.length > 0 ? (
-                    <div className="space-y-4">
-                      {mental && (isMentalV2(mental) ? <MentalV2Bars mental={mental} /> : <MentalBar mental={mental} />)}
-                      {disc && discParents.length > 0 && <DiscParentCompare student={disc} parents={discParents} />}
-                    </div>
-                  ) : undefined;
+                /* 亲子 DISC 对照图只放在「亲子对照」章（V38 起），条件章不再重复 */
+                chartNode = mental ? (isMentalV2(mental) ? <MentalV2Bars mental={mental} /> : <MentalBar mental={mental} />) : undefined;
               } else if (s.title.includes("亲子对照")) {
                 chartNode =
                   disc && discParents.length > 0 ? <DiscParentCompare student={disc} parents={discParents} /> : undefined;
@@ -2933,8 +2958,8 @@ function CombinedLite({
               <h3 className="font-bold text-olive">亲子对照 · 摘要</h3>
               <ol className="mt-2 space-y-1.5">
                 {conflicts.slice(0, 3).map((c, i) => (
-                  <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
-                    <b className="text-terra">{i + 1}.</b> {c}
+                  <li key={i} className={`text-[12.5px] leading-relaxed ${c.hot ? "font-semibold text-[#8f1313]" : "text-olive-soft"}`}>
+                    <b className={c.hot ? "text-[#8f1313]" : "text-terra"}>{i + 1}.</b> {c.text}
                   </li>
                 ))}
               </ol>

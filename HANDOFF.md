@@ -266,3 +266,27 @@
 - 验证：tsc app 配置仍仅 3 个历史遗留错误；npm run build 通过；冒烟全过。
 - BUILD_TAG=v38-2026-09-13
 - **待办（v39）**：Q2 双心理量表——SDQ 学生自评版 25 题（4-17 岁，五维 + 保留 1 条自伤安全预警题沿用红线）+ PHQ-A 9 题/GAD-7 学生化（11 岁以上），两套可分别选做、结果都进报告、各标适用年龄；去全部「三甲医院」措辞改「国际通用筛查工具」；旧 V1/V2 结果兼容+提示重测（isMentalV2 按 length===16 判别需扩展版本识别；answerBlocks mental 块适配；测评中心 mental 入口改双量表选择页）。
+
+---
+
+## v39（2026-09-14）—— 家长报告看图反馈：去重 + 红色强化 + 对照卡 + 通俗化
+
+用户反馈（附 2 张亲子 DISC 对照截图）：① 综合报告里亲子 DISC 图表+解释在条件章和亲子章重复，只出现一次；② 家长报告冲突对比强烈处用红色标出；③ 认知差异对照着列出来一目了然；④ 家长报告更通俗易懂。
+
+### 改动
+1. **去重（承接 v39 前半）**：ReportView 条件模块 chartNode 删 DiscParentCompare（只留 mental）；combined.ts secCond 删亲子 DISC 对照卡 for-loop——图+解释只留在「亲子对照与沟通建议」章。冒烟断言：综合详版 `亲子 DISC 行为风格对照` 恰好出现 1 次。
+2. **DiscParentCompare.tsx**：
+   - 新增导出 `DISC_DIM_PLAIN`（D=谁说了算、听谁的 / I=爱热闹、爱表达 / S=求稳、怕变化 / C=重细节、讲规矩）。
+   - `FactorBars` 加 `hot?: DiscType[]`：hot 行 `bg-[#fbe3df] ring-1 ring-[#b91c1c]/50`，标签/分值红粗 `#8f1313`，bar opacity 1。主组件对每位家长算 strong dims（nv |Δ|≥6）传 hot；学生 FactorBars 传所有家长 strong dims 并集。
+   - DimDeltaBadges 白话化：「⚠ I（爱热闹、爱表达）明显顶牛：你 12 分 / 妈妈 20 分，差 8 分」「略有差异」；导语改「差 6 分以上算明显顶牛」。
+3. **ReportView.tsx**：
+   - `buildParentChildAnalysis` 返回 `conflicts: {text, hot}[]`（hot：严重亲子冲突、DISC 强冲突、高估 gap≥3、家长认为较差）；文案通俗化（「明显顶牛」「家长打 X 分、孩子只给自己 Y 分」「先把情况了解清楚，再谈怎么管」）。两个消费方（ParentReportTab 冲突清单、CombinedLite 摘要卡）同步改：hot 条目红卡 `#fbe3df`+`ring-[#b91c1c]/50` 红粗字。
+   - ③ 家长认知对照：表格 → **对照卡网格**（md:grid-cols-2）。每卡：kp + 判读徽章（差 N 分 · 家长更乐观/家长没看到，gap≥3 实底红徽章）+ 镜子题题干（`E3V37P_MIRROR_QUESTIONS` 按 b.key 查 text，「对照的事：…」）+ 并排「家长的估计 x/5 vs 孩子的实际感受 y/5」+ 白话含义句（高估→「别只夸，先问问难在哪」；低估→「值得当面肯定一次」）。gap≥3 整卡红底。
+4. **combined.ts**：删除因去重而 unused 的 `DISC_PARENT_STYLE`/`DISC_CHILD_REACT` 常量与 `DISC_REPORTS` import（tsc TS6133）；`DISC_CONFLICT` 保留（亲子章仍在用）。
+
+### 验证
+- tsc 基线外无错；build OK；`scripts/smoke-render-v39.tsx`（v38 全量 + v39 增量 9 项）全过——家长 DISC 假数据改为 V2 强冲突（I=20/D=2 对学生全 12）以触发 hot 路径。
+- BUILD_TAG=v39-2026-09-14。
+
+### 待做
+- 【v40】Q2 双心理量表：SDQ 学生自评 25 题（4-17 岁，五维+1 条自伤安全预警题沿用红线）+ PHQ-A 9 题/GAD-7 学生化措辞（11+）；两套可分别选做、结果都进报告、各标适用年龄；删全部「三甲医院」措辞改「国际通用筛查工具」（保留 12356 热线：mentalHealth.ts 4 处 + AssessmentCenter mental def + combined.ts mentalCard）；旧 V1(30题)/V2(16题) 兼容+提示重测；kind/版本识别扩展；answerBlocks 适配；测评中心 mental 入口改双量表选择页。

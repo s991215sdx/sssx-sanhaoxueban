@@ -15,12 +15,20 @@ const DISC_COLOR: Record<"D" | "I" | "S" | "C", string> = {
 };
 const MAX = 24; // 统一量尺 0–24（V2 新版原生 0–24；V1 旧版 0–12 ×2 换算）
 
+/** 四维度白话注释（家长能秒懂）。 */
+export const DISC_DIM_PLAIN: Record<DiscType, string> = {
+  D: "谁说了算、听谁的",
+  I: "爱热闹、爱表达",
+  S: "求稳、怕变化",
+  C: "重细节、讲规矩",
+};
+
 /** 统一到 0–24 量尺：新版（version=2）原值；旧版二选一结果 ×2。 */
 function nv(result: DiscResult, k: DiscType): number {
   return (result.dims[k] ?? 0) * (result.version === 2 ? 1 : 2);
 }
 
-function FactorBars({ label, tag, result }: { label: string; tag?: string; result: DiscResult }) {
+function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: string; result: DiscResult; hot?: DiscType[] }) {
   const combo = getDiscCombo(result.dims);
   return (
     <div>
@@ -34,18 +42,22 @@ function FactorBars({ label, tag, result }: { label: string; tag?: string; resul
         {(["D", "I", "S", "C"] as const).map((k) => {
           const v = nv(result, k);
           const inCombo = combo.includes(k);
+          const isHot = hot.includes(k);
           return (
-            <div key={k} className="flex items-center gap-2">
-              <span className={`w-16 shrink-0 text-[11.5px] ${inCombo ? "font-bold text-olive" : "text-olive-mute"}`}>
+            <div
+              key={k}
+              className={`flex items-center gap-2 rounded-lg px-1.5 py-0.5 -mx-1.5 ${isHot ? "bg-[#fbe3df] ring-1 ring-[#b91c1c]/50" : ""}`}
+            >
+              <span className={`w-16 shrink-0 text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : inCombo ? "font-bold text-olive" : "text-olive-mute"}`}>
                 {k} · {DISC_THEORY.find((t) => t.type === k)?.name}
               </span>
               <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
                 <div
                   className="h-full rounded-full"
-                  style={{ width: `${Math.min(100, (v / MAX) * 100)}%`, background: DISC_COLOR[k], opacity: inCombo ? 1 : 0.45 }}
+                  style={{ width: `${Math.min(100, (v / MAX) * 100)}%`, background: DISC_COLOR[k], opacity: inCombo || isHot ? 1 : 0.45 }}
                 />
               </div>
-              <span className="mono w-5 shrink-0 text-right text-[11.5px] text-olive-soft">{v}</span>
+              <span className={`mono w-5 shrink-0 text-right text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : "text-olive-soft"}`}>{v}</span>
             </div>
           );
         })}
@@ -78,7 +90,7 @@ function DimDeltaBadges({ label, parent, student }: { label: string; parent: Dis
           key={d.k}
           className="rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]"
         >
-          ⚠ {d.k} 维强烈冲突（你 {d.student} / {label} {d.parent}，差 {d.abs}）
+          ⚠ {d.k}（{DISC_DIM_PLAIN[d.k]}）明显顶牛：你 {d.student} 分 / {label} {d.parent} 分，差 {d.abs} 分
         </span>
       ))}
       {watch.map((d) => (
@@ -86,7 +98,7 @@ function DimDeltaBadges({ label, parent, student }: { label: string; parent: Dis
           key={d.k}
           className="rounded-md border border-[#c7a23a]/70 bg-[#f5e7c1] px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]"
         >
-          {d.k} 维需留意（你 {d.student} / {label} {d.parent}，差 {d.abs}）
+          {d.k}（{DISC_DIM_PLAIN[d.k]}）略有差异：你 {d.student} 分 / {label} {d.parent} 分，差 {d.abs} 分
         </span>
       ))}
     </div>
@@ -104,21 +116,37 @@ export default function DiscParentCompare({
     <div className="paper-card p-5">
       <h3 className="font-bold text-olive">亲子 DISC 行为风格对照</h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
-        同样的分数，不同的表达方式：看看你和家长各自最自然的行为模式差在哪里（类型没有好坏）。已统一换算到 0–24
-        量尺对照（旧版二选一结果 ×2）；某维度差值 ≥6 为「⚠ 强烈冲突」（日常管教最容易频道对不上），4–5 为「需留意」。
+        看看孩子和家长各自最自然的行为模式差在哪里（类型没有好坏，只有不同）。分数已统一换算到 0–24
+        量尺对照（旧版二选一结果 ×2）；同一维度两边差 6 分以上算「明显顶牛」（日常相处最容易频道对不上，红色标出），差 4–5 分「略有差异」。
       </p>
       <div className="mt-3 space-y-4">
-        <FactorBars label="学生（你）" tag={DISC_THEORY.find((t) => t.type === student.primary)?.name} result={student} />
-        {parents.map((p, i) => (
-          <div key={`${p.label}-${i}`}>
-            <FactorBars
-              label={`家长 · ${p.label}`}
-              tag={DISC_THEORY.find((t) => t.type === p.result.primary)?.name}
-              result={p.result}
-            />
-            <DimDeltaBadges label={p.label} parent={p.result} student={student} />
-          </div>
-        ))}
+        {(() => {
+          const dims = ["D", "I", "S", "C"] as DiscType[];
+          // 每位家长与学生的强烈冲突维度（|Δ|≥6），红色高亮；学生条上标出所有家长冲突维度的并集。
+          const perParent = parents.map((p) => dims.filter((k) => Math.abs(nv(p.result, k) - nv(student, k)) >= 6));
+          const unionHot = [...new Set(perParent.flat())];
+          return (
+            <>
+              <FactorBars
+                label="学生（你）"
+                tag={DISC_THEORY.find((t) => t.type === student.primary)?.name}
+                result={student}
+                hot={unionHot}
+              />
+              {parents.map((p, i) => (
+                <div key={`${p.label}-${i}`}>
+                  <FactorBars
+                    label={`家长 · ${p.label}`}
+                    tag={DISC_THEORY.find((t) => t.type === p.result.primary)?.name}
+                    result={p.result}
+                    hot={perParent[i]}
+                  />
+                  <DimDeltaBadges label={p.label} parent={p.result} student={student} />
+                </div>
+              ))}
+            </>
+          );
+        })()}
       </div>
     </div>
   );
