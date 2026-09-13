@@ -18,7 +18,7 @@ import {
   scoreE3V37Items,
   e3v37Level,
 } from "@contracts/e3v37";
-import type { E3V37Result, E3V37Stage } from "@contracts/e3v37";
+import type { E3V37Result, E3V37Stage, E3V37ItemScore } from "@contracts/e3v37";
 import { isE3V37ParentResult } from "@contracts/e3v37Parent";
 import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { AnchorResult } from "@contracts/careerAnchor";
@@ -38,7 +38,7 @@ import { RichText } from "@/components/RichText";
 import NineAbilityRadar from "@/components/reports/NineAbilityRadar";
 import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import SystemFramework from "@/components/reports/SystemFramework";
-import type { FrameworkStatus } from "@/components/reports/SystemFramework";
+import type { FrameworkStatus, FrameworkUnit, FrameworkFocus, FrameworkLink } from "@/components/reports/SystemFramework";
 import DiscParentCompare from "@/components/reports/DiscParentCompare";
 import AnchorBarChart from "@/components/reports/AnchorBarChart";
 import { E3V37_LEVEL_CLASS, E3V37_LEVEL_CAPTION, E3V37_LEVEL_STYLE, e3v37LevelTextClass } from "@/components/reports/e3v37Theme";
@@ -74,6 +74,13 @@ export type ReportAssessmentData = {
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
 type Tab = "combined" | "profile" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "discparent";
+
+/** V35 报告内深链目标（框架图 / 冰山模型 / 进步方案共用）。 */
+type RevealTarget =
+  | { kind: "tab"; tab: Tab }
+  | { kind: "answers"; tab: Tab; block: string }
+  | { kind: "assess"; start: string }
+  | { kind: "fill-academics" };
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "combined", label: "综合学习力报告" },
@@ -254,6 +261,7 @@ function RoadmapSection({
   holland,
   mental,
   charts,
+  onReveal,
 }: {
   section: CombinedSection;
   index: number;
@@ -268,6 +276,8 @@ function RoadmapSection({
   holland?: HollandResult;
   mental?: MentalResult | MentalV2Result;
   charts?: ReactNode;
+  /** V35 深链：冰山各行/层内重点项 → 答题明细；成绩未填 → 去填写。 */
+  onReveal?: (t: RevealTarget) => void;
 }) {
   /** 小数值芯片：bad=深红（需关注）；trait=琥珀显眼（性格/行为/兴趣特点，非缺点）。 */
   const Chip = ({ label, bad, trait }: { label: string; bad?: boolean; trait?: boolean }) => (
@@ -353,6 +363,26 @@ function RoadmapSection({
       <span className="text-[14px] font-bold text-olive">{title}</span>
     </div>
   );
+  /** 层 → E3 答题明细块（answerBlocks.ts 的块 key）。 */
+  const LAYER_BLOCK: Record<string, string> = {
+    学能: "e3-xueneng",
+    善学: "e3-shanxue",
+    会学: "e3-huixue",
+    乐学: "e3-lexue",
+    条件: "e3-tiaojian",
+  };
+  /** 「答题明细 →」小链接：点击展开生成该结果的那些题（onReveal 不存在时不渲染）。 */
+  const AnswersLink = ({ tab, block, label = "答题明细 →" }: { tab: Tab; block: string; label?: string }) =>
+    onReveal ? (
+      <button
+        type="button"
+        onClick={() => onReveal({ kind: "answers", tab, block })}
+        title="点击查看生成这个结果的答题明细"
+        className="mr-1.5 mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#4e7d20] transition hover:bg-lime-pale hover:shadow-sm"
+      >
+        {label}
+      </button>
+    ) : null;
   /* 冰山下各行（从上→下）：学能 → 善学 → 会学 → 乐学 → 条件 → 心理健康 → DISC 行为 → MBTI 性格 → 职业锚 → 霍兰德兴趣；
      心理健康/DISC/MBTI/职业锚/霍兰德按数据有无条件渲染，全部行共享一个「冰山下」rowSpan 单元格。 */
   const underRows: { key: string; label: string; content: ReactNode }[] = (
@@ -388,6 +418,12 @@ function RoadmapSection({
             <Chip label={`细心指数 ${multi5.carefulIndex}%`} bad={multi5.carefulIndex < 70} />
           </div>
         )}
+        {onReveal && (
+          <div className="mt-1">
+            <AnswersLink tab="e3" block={LAYER_BLOCK[layer]} />
+            {layer === "学能" && multi5 && <AnswersLink tab="combined" block="multi5" label="多元五项明细 →" />}
+          </div>
+        )}
       </>
     ),
   }));
@@ -395,26 +431,35 @@ function RoadmapSection({
     underRows.push({
       key: "mental",
       label: "心理健康",
-      content: isMentalV2(mental) ? (
+      content: (
         <>
-          <Chip label={`PHQ-9 ${mental.phq9}/27（${mental.phq9Level}）`} bad={mental.phq9Level !== "良好"} />
-          <Chip label={`GAD-7 ${mental.gad7}/21（${mental.gad7Level}）`} bad={mental.gad7Level !== "良好"} />
-          {mental.selfHarm && <Chip label="!!有自伤念头信号 · 立即求助!!" bad />}
-        </>
-      ) : (
-        <>
-          {MENTAL_FACTOR_ORDER.map((f) => {
-            const v = mental.factors[f];
-            if (v == null) return null;
-            const band = mentalBand(v);
-            return (
-              <Chip
-                key={f}
-                label={`${MENTAL_FACTOR_LABEL[f]} ${v.toFixed(1)}${band === "无" ? "" : `（${band}）`}`}
-                bad={band !== "无"}
-              />
-            );
-          })}
+          {isMentalV2(mental) ? (
+            <>
+              <Chip label={`PHQ-9 ${mental.phq9}/27（${mental.phq9Level}）`} bad={mental.phq9Level !== "良好"} />
+              <Chip label={`GAD-7 ${mental.gad7}/21（${mental.gad7Level}）`} bad={mental.gad7Level !== "良好"} />
+              {mental.selfHarm && <Chip label="!!有自伤念头信号 · 立即求助!!" bad />}
+            </>
+          ) : (
+            <>
+              {MENTAL_FACTOR_ORDER.map((f) => {
+                const v = mental.factors[f];
+                if (v == null) return null;
+                const band = mentalBand(v);
+                return (
+                  <Chip
+                    key={f}
+                    label={`${MENTAL_FACTOR_LABEL[f]} ${v.toFixed(1)}${band === "无" ? "" : `（${band}）`}`}
+                    bad={band !== "无"}
+                  />
+                );
+              })}
+            </>
+          )}
+          {onReveal && (
+            <div className="mt-1">
+              <AnswersLink tab="combined" block="mental" />
+            </div>
+          )}
         </>
       ),
     });
@@ -429,6 +474,11 @@ function RoadmapSection({
           {(["D", "I", "S", "C"] as const).map((k) => (
             <Chip key={k} label={`${k} ${disc.dims[k]}`} trait={discCombo.includes(k)} />
           ))}
+          {onReveal && (
+            <div className="mt-1">
+              <AnswersLink tab="combined" block="disc-" />
+            </div>
+          )}
         </>
       ),
     });
@@ -443,6 +493,11 @@ function RoadmapSection({
           {(["E", "I", "S", "N", "T", "F", "J", "P"] as const).map((k) => (
             <Chip key={k} label={`${k} ${mbti.dims[k as keyof typeof mbti.dims]}`} trait={mbti.type.includes(k)} />
           ))}
+          {onReveal && (
+            <div className="mt-1">
+              <AnswersLink tab="combined" block="mbti" />
+            </div>
+          )}
         </>
       ),
     });
@@ -455,6 +510,11 @@ function RoadmapSection({
         <>
           <Chip label={`第一锚 · ${ANCHOR_LABEL[anchor.top2[0]]} ${anchor.dims[anchor.top2[0]].toFixed(1)}`} trait />
           <Chip label={`第二锚 · ${ANCHOR_LABEL[anchor.top2[1]]} ${anchor.dims[anchor.top2[1]].toFixed(1)}`} trait />
+          {onReveal && (
+            <div className="mt-1">
+              <AnswersLink tab="combined" block="anchor" />
+            </div>
+          )}
         </>
       ),
     });
@@ -469,12 +529,18 @@ function RoadmapSection({
           {HOLLAND_ORDER.map((k) => (
             <Chip key={k} label={`${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)}`} trait={holland.top3.includes(k)} />
           ))}
+          {onReveal && (
+            <div className="mt-1">
+              <AnswersLink tab="combined" block="holland" />
+            </div>
+          )}
         </>
       ),
     });
   }
   /* 第三步「建议进步方案」按冰山同序倒序渲染：学能、善学、会学、乐学、条件（LAYER_PLAN_TEXT 按层名取值）。 */
   const planLayers = [layers[4], layers[2], layers[1], layers[0], layers[3]];
+
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2.5">
@@ -583,7 +649,19 @@ function RoadmapSection({
             </table>
           </div>
         ) : (
-          <p className="mt-2 text-[12.5px] text-olive-mute">成绩目标待填写；三阶现状：{layers.slice(0, 3).map((l) => `${l.layer} ${l.score}/5（${l.level}）`).join(" · ")}</p>
+          <p className="mt-2 text-[12.5px] text-olive-mute">
+            成绩目标未填写
+            {onReveal && (
+              <button
+                type="button"
+                onClick={() => onReveal({ kind: "fill-academics" })}
+                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#4e7d20] transition hover:bg-lime-pale"
+              >
+                去填写 →
+              </button>
+            )}
+            ；三阶现状：{layers.slice(0, 3).map((l) => `${l.layer} ${l.score}/5（${l.level}）`).join(" · ")}
+          </p>
         )}
       </div>
 
@@ -597,10 +675,27 @@ function RoadmapSection({
                 <td rowSpan={1} className="w-20 border border-border bg-[#dce9f5] px-2 py-1.5 text-center font-bold text-olive">冰山上</td>
                 <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 font-semibold text-olive">知识点 · 成绩</td>
                 <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
-                  {subjects.filter((x) => (x.targetScore ?? 0) - (x.lastScore ?? 0) > 0).map((x) => (
-                    <Chip key={x.name} label={`${x.name} 差 ${(x.targetScore ?? 0) - (x.lastScore ?? 0)} 分`} bad />
-                  ))}
-                  {subjects.every((x) => (x.targetScore ?? 0) - (x.lastScore ?? 0) <= 0) && <Chip label="各科均已达标" />}
+                  {subjects.length === 0 ? (
+                    <>
+                      <Chip label="未填写" bad />
+                      {onReveal && (
+                        <button
+                          type="button"
+                          onClick={() => onReveal({ kind: "fill-academics" })}
+                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#4e7d20] transition hover:bg-lime-pale hover:shadow-sm"
+                        >
+                          去填写成绩与目标 →
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {subjects.filter((x) => (x.targetScore ?? 0) - (x.lastScore ?? 0) > 0).map((x) => (
+                        <Chip key={x.name} label={`${x.name} 差 ${(x.targetScore ?? 0) - (x.lastScore ?? 0)} 分`} bad />
+                      ))}
+                      {subjects.every((x) => (x.targetScore ?? 0) - (x.lastScore ?? 0) <= 0) && <Chip label="各科均已达标" />}
+                    </>
+                  )}
                 </td>
               </tr>
               {underRows.map((row, ri) => (
@@ -640,9 +735,25 @@ function RoadmapSection({
                       {l.layer}层 {l.score}/5 · {l.level}
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
-                      {(weakDims.length > 0 ? weakDims : l.dims.slice(0, 1)).map((n) => (
-                        <Chip key={n.label} label={`${n.label} ${n.score}`} bad={n.level !== "正常"} />
-                      ))}
+                      {(weakDims.length > 0 ? weakDims : l.dims.slice(0, 1)).map((n) =>
+                        onReveal ? (
+                          <button
+                            key={n.label}
+                            type="button"
+                            onClick={() => onReveal({ kind: "answers", tab: "e3", block: LAYER_BLOCK[l.layer] })}
+                            title="点击查看生成这个结果的答题明细"
+                            className={`mr-1.5 mb-1 inline-block rounded-md border px-1.5 py-0.5 text-[11.5px] leading-tight transition hover:shadow-sm ${
+                              n.level !== "正常"
+                                ? "border-[#b91c1c]/50 bg-[#fbe3df] font-bold text-[#8f1313] hover:bg-[#f8d4ce]"
+                                : "border-border bg-cream text-olive-soft hover:bg-lime-pale/50"
+                            }`}
+                          >
+                            {n.label} {n.score} →
+                          </button>
+                        ) : (
+                          <Chip key={n.label} label={`${n.label} ${n.score}`} bad={n.level !== "正常"} />
+                        ),
+                      )}
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 leading-relaxed text-olive-soft">
                       {bad ? LAYER_PLAN_TEXT[l.layer] : "已到 3.8 正常线：保持节奏，每周对照自查一次即可。"}
@@ -653,23 +764,145 @@ function RoadmapSection({
             </tbody>
           </table>
         </div>
+        <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
+          评分原则：红 &lt;3.0（≈百分制 &lt;50）卡点 · 优先干预；黄 3.0—3.7（≈50—69）待提升；绿 ≥3.8（≈≥70）正常。点击「层内重点项」可展开生成该结果的答题明细。
+        </p>
       </div>
+
+      {/* 先抓这三件事：紧跟建议进步方案之后（详版/简版共用此处） */}
+      {e3 && <PrioritiesCard e3={e3} />}
 
       {/* 图形与图表（如九能整体雷达，诊断总览） */}
       {charts && <Fold title="图形与图表（点击展开）">{charts}</Fold>}
 
-      {/* 概要总论收尾：综合主卡点 + 红线 + 目标差距的总体性总结 */}
-      {section.closing && section.closing.length > 0 && (
-        <div className="paper-card border-lime/50 p-4">
-          <div className="text-[14px] font-bold text-olive">概要总论</div>
-          {section.closing.map((p, i) => (
-            <p key={i} className="mt-1.5 text-[13px] leading-relaxed text-olive-soft">
-              <RichText text={p} />
-            </p>
-          ))}
-        </div>
+      {/* 简要总结收尾：优势 ≥3.8（绿）/ 待提升 3.0—3.7（黄）/ 卡点 <3.0（红）三档折叠对应题目；
+          无逐题原始评分时回退为概要总论文案。 */}
+      {itemScores.length > 0 ? (
+        <BriefSummary items={itemScores} />
+      ) : (
+        section.closing &&
+        section.closing.length > 0 && (
+          <div className="paper-card border-lime/50 p-4">
+            <div className="text-[14px] font-bold text-olive">简要总结</div>
+            {section.closing.map((p, i) => (
+              <p key={i} className="mt-1.5 text-[13px] leading-relaxed text-olive-soft">
+                <RichText text={p} />
+              </p>
+            ))}
+          </div>
+        )
       )}
     </section>
+  );
+}
+
+/**
+ * V35 简要总结：把 E3 70 道评分题按三档分组折叠——
+ * 优势点（≥3.8，绿）/ 待提升（3.0—3.7，黄）/ 卡点（<3.0，红，优先干预）。
+ * 每档先给一句话总结（含 kp 聚合前三），展开可见该档所有题目与得分。
+ */
+function BriefSummary({ items }: { items: E3V37ItemScore[] }) {
+  const BANDS: {
+    key: string;
+    title: string;
+    rule: string;
+    match: (s: number) => boolean;
+    tone: { text: string; bar: string; bg: string };
+    order: "asc" | "desc";
+    summary: (kps: string[], n: number) => string;
+  }[] = [
+    {
+      key: "good",
+      title: "优势点总结",
+      rule: "≥3.8（≈百分制 ≥70）· 正常 · 标绿",
+      match: (s) => s >= 3.8,
+      tone: E3V37_LEVEL_STYLE.正常,
+      order: "desc",
+      summary: (kps, n) =>
+        `共 ${n} 题落在正常线以上${kps.length ? `，优势集中在：${kps.join("、")}` : ""}——这些是孩子的底气，继续保持。`,
+    },
+    {
+      key: "mid",
+      title: "待提升总结",
+      rule: "3.0—3.7（≈50—69）· 待提升 · 标黄",
+      match: (s) => s >= 3.0 && s < 3.8,
+      tone: E3V37_LEVEL_STYLE.待提升,
+      order: "asc",
+      summary: (kps, n) =>
+        `共 ${n} 题处于待提升区${kps.length ? `，主要是：${kps.join("、")}` : ""}——按训练方案做，最容易提上来。`,
+    },
+    {
+      key: "bad",
+      title: "卡点总结",
+      rule: "<3.0（≈百分制 <50）· 卡点 · 标红 · 优先干预",
+      match: (s) => s < 3.0,
+      tone: E3V37_LEVEL_STYLE.卡点,
+      order: "asc",
+      summary: (kps, n) =>
+        `共 ${n} 题低于 3.0${kps.length ? `，卡点集中在：${kps.join("、")}` : ""}——优先干预，从分数最低的一项做起。`,
+    },
+  ];
+  return (
+    <div className="paper-card border-lime/50 p-4">
+      <div className="text-[14px] font-bold text-olive">简要总结</div>
+      <p className="mt-1 text-[12px] leading-relaxed text-olive-mute">
+        按评分原则把 70 道诊断题分成三档：红 &lt;3.0（≈&lt;50）卡点 · 黄 3.0—3.7（≈50—69）待提升 · 绿 ≥3.8（≈≥70）正常；点击每档可展开对应的所有题目。
+      </p>
+      <div className="mt-2.5 space-y-2">
+        {BANDS.map((b) => {
+          const list = items
+            .filter((it) => b.match(it.score))
+            .sort((x, y) => (b.order === "asc" ? x.score - y.score : y.score - x.score));
+          /* 档内按 kp 聚合取前三，写进一句话总结 */
+          const kpAvg = new Map<string, { sum: number; n: number }>();
+          for (const it of list) {
+            const g = kpAvg.get(it.kp);
+            if (g) {
+              g.sum += it.score;
+              g.n += 1;
+            } else kpAvg.set(it.kp, { sum: it.score, n: 1 });
+          }
+          const topKps = [...kpAvg.entries()]
+            .map(([kp, g]) => ({ kp, avg: g.sum / g.n }))
+            .sort((x, y) => (b.order === "asc" ? x.avg - y.avg : y.avg - x.avg))
+            .slice(0, 3)
+            .map((x) => x.kp);
+          return (
+            <details
+              key={b.key}
+              className="group overflow-hidden rounded-xl border"
+              style={{ borderColor: `${b.tone.bar}55`, background: b.tone.bg }}
+            >
+              <summary className="cursor-pointer select-none px-3.5 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-bold" style={{ color: b.tone.text }}>
+                    {b.title} · {list.length} 题
+                  </span>
+                  <ChevronDown size={15} className="shrink-0 transition-transform group-open:rotate-180" style={{ color: b.tone.text }} />
+                </div>
+                <p className="mt-0.5 text-[11.5px] leading-relaxed" style={{ color: b.tone.text }}>
+                  {list.length ? b.summary(topKps, list.length) : "本档没有题目。"}
+                  <span className="ml-1 opacity-75">（{b.rule}）</span>
+                </p>
+              </summary>
+              {list.length > 0 && (
+                <ol className="space-y-1 border-t px-3.5 py-2.5" style={{ borderColor: `${b.tone.bar}33` }}>
+                  {list.map((it) => (
+                    <li key={it.no} className="flex gap-2 text-[12px] leading-relaxed" style={{ color: b.tone.text }}>
+                      <span className="mono shrink-0 opacity-70">{it.no}.</span>
+                      <span className="flex-1">
+                        [{it.kp}] {it.text}
+                      </span>
+                      <span className="mono shrink-0 font-bold">{it.score} 分</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </details>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -1439,6 +1672,56 @@ export default function ReportView({
   const setTab = (t: Tab) => setParams({ tab: t }, { replace: true });
   const goCombined = () => setTab("combined");
 
+  /**
+   * V35 报告内深链跳转：
+   * - tab：切到对应模块 tab 并滚到内容顶部（看图形与图表）；
+   * - answers：切 tab 后定位到答题明细块（id=ansblk-*），逐层强制展开祖先折叠并平滑滚动到位；
+   * - assess：未测评 → 测评中心直达对应答题；fill-academics：学生→「我的档案」填成绩，伴学师→打开成绩编辑。
+   */
+  const reveal = (t: RevealTarget) => {
+    if (t.kind === "assess") {
+      navigate(`/assessments?start=${t.start}`);
+      return;
+    }
+    if (t.kind === "fill-academics") {
+      if (viewer === "tutor") onEditAcademics?.();
+      else setTab("profile");
+      return;
+    }
+    setTab(t.tab);
+    if (t.tab === "combined" && combinedView !== "full") setCombinedView("full");
+    if (t.kind === "tab") {
+      window.setTimeout(() => {
+        document.getElementById("report-print-root")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+      return;
+    }
+    /* answers：目标块在折叠里，渲染后沿父链打开所有 <details> 再滚动；找不到时兜底滚到内容顶部 */
+    const open = (attempt: number) => {
+      let el: HTMLElement | null = document.getElementById(`ansblk-${t.block}`);
+      if (!el) el = document.querySelector(`[id^="ansblk-${t.block}"]`);
+      if (!el) {
+        if (attempt < 3) window.setTimeout(() => open(attempt + 1), 220);
+        else document.getElementById("report-print-root")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      let node: HTMLElement | null = el;
+      while (node) {
+        if (node.tagName === "DETAILS") (node as HTMLDetailsElement).open = true;
+        node = node.parentElement;
+      }
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    window.setTimeout(() => open(0), 140);
+  };
+
+  /** 框架图节点点击：已测 → 对应模块图形与图表；未测 → 直达测评；成绩未填 → 去填写。 */
+  const openFramework = (l: FrameworkLink) => {
+    if (l.kind === "assess") reveal({ kind: "assess", start: l.start });
+    else if (l.kind === "fill-academics") reveal({ kind: "fill-academics" });
+    else reveal({ kind: "tab", tab: l.tab as Tab });
+  };
+
   /** 当前 tab 是否已有可下载的数据。 */
   const canDownload = useMemo(() => {
     if (tab === "e3") return !!e3v37;
@@ -1489,13 +1772,53 @@ export default function ReportView({
   const mental = data?.mental ?? undefined;
   const academics = profile?.academics ?? undefined;
 
-  /** 学习力系统框架图的测评完成状态（全部由 props 数据计算，学生端/伴学师端口径一致）。 */
+  /** 学习力系统框架图的测评完成状态 + 二级考察点（全部由 props 数据计算，学生端/伴学师端口径一致）。 */
   const frameworkStatus = useMemo<FrameworkStatus>(() => {
     const r1 = (x: number) => Math.round(x * 10) / 10;
+    /** 逐题分按关注点（kp）聚合成二级考察点：均分 + 三档。 */
+    const groupKp = (items: { kp: string; score: number }[]): FrameworkFocus[] => {
+      const map = new Map<string, { sum: number; n: number }>();
+      for (const it of items) {
+        const g = map.get(it.kp);
+        if (g) {
+          g.sum += it.score;
+          g.n += 1;
+        } else map.set(it.kp, { sum: it.score, n: 1 });
+      }
+      return [...map.entries()].map(([kp, g]) => {
+        const score = r1(g.sum / g.n);
+        return { kp, score, level: e3v37Level(score) };
+      });
+    };
+    const itemScores = e3v37 && e3Ratings ? scoreE3V37Items(e3v37.stage, e3Ratings) : [];
+    const units: Record<string, FrameworkUnit> = {};
+    if (e3v37) {
+      for (const a of e3v37.abilities)
+        units[a.label] = {
+          score: a.score,
+          level: a.level,
+          focuses: a.focuses.map((f) => ({ kp: f.kp, score: f.score, level: f.level })),
+        };
+      for (const c of e3v37.systems.condition.cells)
+        units[c.label] = {
+          score: c.score,
+          level: c.level,
+          focuses: groupKp(itemScores.filter((it) => it.ability === c.label)),
+        };
+      for (const a of e3v37.aptitude)
+        units[a.label] = {
+          score: a.score,
+          level: a.level,
+          focuses: itemScores
+            .filter((it) => it.system === "学能" && it.ability === a.label)
+            .map((it) => ({ kp: `第${it.no}题`, score: it.score, level: it.level })),
+        };
+    }
     return {
       academics: {
         filled: !!academics && academics.subjects.length > 0,
         note: academics?.examName || undefined,
+        subjects: academics?.subjects.map((s) => ({ name: s.name, last: s.lastScore, target: s.targetScore })),
       },
       e3: e3v37
         ? {
@@ -1505,17 +1828,51 @@ export default function ReportView({
               e3v37.systems.condition.cells.reduce((s, c) => s + c.score, 0) / Math.max(1, e3v37.systems.condition.cells.length),
             ),
             aptitudeAvg: r1(e3v37.aptitude.reduce((s, a) => s + a.score, 0) / Math.max(1, e3v37.aptitude.length)),
+            units,
           }
         : { done: false },
       mental: mental ? { done: true, note: mental.level } : { done: false },
-      multi5: multi5 ? { done: true, note: `综合 ${multi5.overall} · 细心 ${multi5.carefulIndex}%` } : { done: false },
+      multi5: multi5
+        ? {
+            done: true,
+            note: `综合 ${multi5.overall} · 细心 ${multi5.carefulIndex}%`,
+            subs: MULTI5_DIM_ORDER.map((k) => `${MULTI5_DIM_LABEL[k]} ${multi5.dims[k]}`),
+          }
+        : { done: false },
       multi: multi ? { done: true, note: multi.top3.map((k) => MULTI_DIM_LABEL[k]).join("、") } : { done: false },
-      mbti: mbti ? { done: true, note: mbti.type } : { done: false },
-      disc: disc ? { done: true, note: `${getDiscCombo(disc.dims).join("")} 型` } : { done: false },
-      holland: holland ? { done: true, note: holland.code } : { done: false },
-      anchor: anchor ? { done: true, note: anchor.top2.map((k) => ANCHOR_LABEL[k]).join("、") } : { done: false },
+      mbti: mbti
+        ? {
+            done: true,
+            note: mbti.type,
+            subs: (["EI", "SN", "TF", "JP"] as const).map((p) => {
+              const [a, b] = p.split("") as [keyof typeof mbti.dims, keyof typeof mbti.dims];
+              return `${a}${mbti.dims[a]}·${b}${mbti.dims[b]}`;
+            }),
+          }
+        : { done: false },
+      disc: disc
+        ? {
+            done: true,
+            note: `${getDiscCombo(disc.dims).join("")} 型`,
+            subs: (["D", "I", "S", "C"] as const).map((k) => `${k} ${disc.dims[k]}`),
+          }
+        : { done: false },
+      holland: holland
+        ? {
+            done: true,
+            note: holland.code,
+            subs: HOLLAND_ORDER.map((k) => `${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)}`),
+          }
+        : { done: false },
+      anchor: anchor
+        ? {
+            done: true,
+            note: anchor.top2.map((k) => ANCHOR_LABEL[k]).join("、"),
+            subs: anchor.top2.map((k) => `${ANCHOR_LABEL[k]} ${anchor.dims[k].toFixed(1)}`),
+          }
+        : { done: false },
     };
-  }, [academics, e3v37, mental, multi5, multi, mbti, disc, holland, anchor]);
+  }, [academics, e3v37, e3Ratings, mental, multi5, multi, mbti, disc, holland, anchor]);
 
   return (
     <div className="space-y-4">
@@ -1877,6 +2234,7 @@ export default function ReportView({
                 holland={holland}
                 mental={mental}
                 status={frameworkStatus}
+                onOpen={openFramework}
               />
               {/* 综合结论三张图表：现状与目标 / 冰山模型 / 进步方案（与详版一致） */}
               {combined.sections[0] && (
@@ -1892,6 +2250,7 @@ export default function ReportView({
                   anchor={anchor}
                   holland={holland}
                   mental={mental}
+                  onReveal={reveal}
                 />
               )}
               {/* 一页纸附录：三阶九能逐题得分表 + 全部测评答题明细，默认折叠放最后 */}
@@ -1915,9 +2274,9 @@ export default function ReportView({
                 <h2 className="text-[17px] font-bold text-olive">{profile?.name ? `${profile.name} 的` : ""}{combined.title}</h2>
               </div>
               <p className="mt-1 text-[13px] text-olive-mute">{combined.subtitle}</p>
-              {/* 学习力系统框架图：置顶第一个元素，徽标融合各测评完成状态 */}
+              {/* 学习力系统框架图：置顶第一个元素，徽标融合各测评完成状态；点击徽章直达模块图表/测评 */}
               <div className="mt-3">
-                <SystemFramework status={frameworkStatus} />
+                <SystemFramework status={frameworkStatus} onOpen={openFramework} />
               </div>
             </div>
 
@@ -1941,6 +2300,7 @@ export default function ReportView({
                     holland={holland}
                     mental={mental}
                     charts={e3v37 ? <NineAbilityRadar e3={e3v37} /> : undefined}
+                    onReveal={reveal}
                   />
                 );
               }
@@ -2282,6 +2642,40 @@ function AssessmentChartsLite({
   );
 }
 
+/** 先抓这三件事（V3.7 九能优先级，按分数从低到高）——详版/简版共用，位于「建议进步方案」之后。 */
+function PrioritiesCard({ e3 }: { e3: E3V37Result }) {
+  const priorities = e3.priorities.slice(0, 3);
+  return (
+    <div className="paper-card p-5">
+      <h3 className="font-bold text-olive">先抓这三件事</h3>
+      {priorities.length === 0 ? (
+        <p className="mt-2 text-[13.5px] text-olive-soft">三阶九能都在正常线以上——保持现在的节奏，每 8 周复测一次就好。</p>
+      ) : (
+        <div className="mt-3 space-y-2.5">
+          {priorities.map((p, i) => (
+            <div key={p.key} className="flex gap-3 rounded-xl border border-border bg-cream/60 p-3.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-olive text-[13px] font-bold text-cream">{i + 1}</span>
+              <div>
+                <div className={`text-[14px] font-bold ${e3v37LevelTextClass(p.level)}`}>
+                  {p.label} {p.score}/5 · {p.level}
+                </div>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-olive-soft">
+                  本周只抓「{p.label}」这一能：在详版报告「九能逐项结论与本周行动」里找到它，照着本周行动做，做到再往下走。
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {priorities.length > 0 && (
+        <p className="mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] leading-relaxed text-olive">
+          <b>这个月的第一步：</b>从「{priorities[0].label}」开始——它是当前分数最低的一能，补它比刷题更划算。只做这一件，做到再往下走。
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CombinedLite({
   name,
   mbti,
@@ -2293,6 +2687,7 @@ function CombinedLite({
   holland,
   mental,
   status,
+  onOpen,
 }: {
   name: string;
   mbti: MbtiResult;
@@ -2304,15 +2699,23 @@ function CombinedLite({
   holland?: HollandResult;
   mental?: MentalResult | MentalV2Result;
   status?: FrameworkStatus;
+  /** 框架图节点点击（已测→图表 / 未测→测评 / 成绩未填→填写）。 */
+  onOpen?: (l: FrameworkLink) => void;
 }) {
   const mr = MBTI_REPORTS[mbti.type];
   const dr = DISC_REPORTS[disc.primary];
   const combo = getDiscCombo(disc.dims);
-  /** V3.7：先抓分数最低的三能（priorities 已按分数升序）。 */
-  const priorities = e3.priorities.slice(0, 3);
   const gap = academics ? summarizeLite(academics) : null;
   return (
     <div className="space-y-4">
+      {/* 学习力系统框架图：置顶（徽标融合测评完成状态；点击徽章直达模块图表/测评，含二级考察点） */}
+      <div className="paper-card p-5">
+        <h3 className="font-bold text-olive">学习力系统框架</h3>
+        <div className="mt-3">
+          <SystemFramework status={status} onOpen={onOpen} />
+        </div>
+      </div>
+
       {/* 九能雷达：先看图 */}
       <NineAbilityRadar e3={e3} />
       <div className="paper-card p-5">
@@ -2342,14 +2745,6 @@ function CombinedLite({
               <div className={`text-[10.5px] ${e3v37LevelTextClass(a.level)}`}>{a.level}</div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* 学习力系统框架图：九能九宫格下方（徽标融合测评完成状态） */}
-      <div className="paper-card p-5">
-        <h3 className="font-bold text-olive">学习力系统框架</h3>
-        <div className="mt-3">
-          <SystemFramework status={status} />
         </div>
       </div>
 
@@ -2393,35 +2788,6 @@ function CombinedLite({
         )}
       </div>
 
-      {/* 改进方案：先抓这三件事（V3.7 九能优先级，按分数从低到高） */}
-      <div className="paper-card p-5">
-        <h3 className="font-bold text-olive">先抓这三件事</h3>
-        {priorities.length === 0 ? (
-          <p className="mt-2 text-[13.5px] text-olive-soft">三阶九能都在正常线以上——保持现在的节奏，每 8 周复测一次就好。</p>
-        ) : (
-          <div className="mt-3 space-y-2.5">
-            {priorities.map((p, i) => (
-              <div key={p.key} className="flex gap-3 rounded-xl border border-border bg-cream/60 p-3.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-olive text-[13px] font-bold text-cream">{i + 1}</span>
-                <div>
-                  <div className={`text-[14px] font-bold ${e3v37LevelTextClass(p.level)}`}>
-                    {p.label} {p.score}/5 · {p.level}
-                  </div>
-                  <p className="mt-0.5 text-[13px] leading-relaxed text-olive-soft">
-                    本周只抓「{p.label}」这一能：在详版报告「九能逐项结论与本周行动」里找到它，照着本周行动做，做到再往下走。
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {priorities.length > 0 && (
-          <p className="mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] leading-relaxed text-olive">
-            <b>这个月的第一步：</b>从「{priorities[0].label}」开始——它是当前分数最低的一能，补它比刷题更划算。只做这一件，做到再往下走。
-          </p>
-        )}
-      </div>
-
       <p className="text-center text-[12.5px] text-olive-mute">想看完整分析与训练细节，切到「详版报告」。</p>
     </div>
   );
@@ -2442,7 +2808,11 @@ function AnswerBlocksView({ blocks }: { blocks: AnswerBlock[] }) {
   return (
     <div className="mt-3 space-y-2">
       {blocks.map((b) => (
-        <details key={b.key} className="rounded-xl border border-border bg-cream/60 px-4 py-2.5">
+        <details
+          key={b.key}
+          id={`ansblk-${b.key}`}
+          className="scroll-mt-24 rounded-xl border border-border bg-cream/60 px-4 py-2.5"
+        >
           <summary className="cursor-pointer text-[13.5px] font-semibold text-olive">{b.title}</summary>
           {b.note && <p className="mt-1.5 text-[11.5px] text-olive-mute">{b.note}</p>}
           <ol className="mt-2 space-y-1.5">

@@ -210,3 +210,20 @@
 13. **冒烟脚本入仓**：`scripts/smoke-render-v34.tsx`（ReportView 双模式 9 tab renderToStaticMarkup + 关键词断言）、`scripts/check-order.tsx`（冰山顺序/层内倒序/方案表倒序断言）、`scripts/check-editor.tsx`。运行方式：`TSX_TSCONFIG_PATH=tsconfig.app.json npx tsx scripts/xxx.tsx`。
 - 验证：tsc 双配置 0 错误；npm run build 通过；renderToStaticMarkup 双模式全 tab 无白屏；冰山顺序逐项断言通过。
 - BUILD_TAG=v34-2026-09-13
+
+## v34.5（2026-09-13 深夜）线上修复：环境迁移事故全记录
+- **事故**：本项目（新对话）发布后不继承旧项目的平台环境变量；旧 .env 里 DATABASE_URL 指向旧开发库（17 条 KP、users 无 phone 列）；且运行时容器读不到 db/migrations 文件（_journal.json ENOENT，原因未查明——疑似快照过滤），初始化卡死。
+- **修复**：① 迁移内容内嵌进 `api/migrationsEmbedded.ts`（由 db/migrations 生成，esbuild 打入 boot.js），initDb 不再读运行时文件；② 生产库名用一次性探针在集群层面枚举确认（722 KP + users.phone），**不是**旧 .env 里的库名；③ 真实密钥全部写入 .env（.gitignore 已排除，勿提交勿外传）。
+- **教训**：跨对话迁移项目时，.env 里的库连接串可能是历史残留，必须用数据特征（KP 数、表结构）核实目标库；密钥轮换后新值仍需写回 .env 并重新发布才生效（本项目不读平台环境变量设置）。
+
+## v35（2026-09-13）报告深链化 + 简要总结三档
+1. **SystemFramework 全量重写**（`src/components/reports/SystemFramework.tsx`）：新增 FrameworkLink（tab/assess/fill-academics）与 onOpen 回调；已测节点徽章 → 对应模块 tab 看图形与图表，未测 → `/assessments?start=X` 直达测评，成绩未填 → 学生进「我的档案」/伴学师开成绩编辑器。二级考察点全面排入：九能/条件格/学能项各挂关注点 kp 红黄绿小 chip（FrameworkStatus.e3.units，能力取 abilities[].focuses，条件格/学能由 scoreE3V37Items 逐题聚合 groupKp），成绩挂各科 现状→目标，深层特质挂各维度分（mbti 四对/disc 四值/霍兰德六维/职业锚 top2），多元五项挂五维分。
+2. **报告内深链 reveal()**（ReportView）：RevealTarget 四型（tab/answers/assess/fill-academics）；answers 型切 tab 后按 `ansblk-*` 锚点定位（AnswerBlocksView 每个 details 加了 `id={ansblk-${b.key}}`），沿父链强制 open 所有 <details> 再 scrollIntoView，最多重试 3 次兜底滚到内容顶部；tab=combined 时自动切详版。openFramework() 适配 FrameworkLink → reveal。
+3. **冰山模型**：成绩行无数据时显示「未填写」红 chip +「去填写成绩与目标 →」按钮（不再误显示「各科均已达标」）；每一行（五系统/心理/DISC/MBTI/职业锚/霍兰德）行尾新增「答题明细 →」链接——五系统 → e3 tab 段锚点（e3-lexue/huixue/shanxue/tiaojian/xueneng），心理/MBTI → combined 条件章折叠内锚点，DISC 用前缀匹配 ansblk-disc-，多元五项/职业锚/霍兰德 → combined 对应章锚点。第一步成绩缺失文案同步加「去填写 →」。
+4. **建议进步方案表**：层内重点项 chips 改为可点按钮（→ e3 tab 对应段答题明细）；表下新增评分原则备注「红 <3.0（≈<50）卡点·优先干预；黄 3.0—3.7（≈50—69）待提升；绿 ≥3.8（≈≥70）正常」。
+5. **「先抓这三件事」**：抽成 PrioritiesCard 组件，移入 RoadmapSection 第三步卡之后（详版/简版共用，一处生效）；CombinedLite 中原块删除。
+6. **一页简版**：SystemFramework 卡从中间移到最上面（NineAbilityRadar 之前）。
+7. **概要总论 → 简要总结**：RoadmapSection 尾部替换为 BriefSummary 组件——70 题按三档分组折叠：优势点（≥3.8 绿底）/ 待提升（3.0—3.7 黄底）/ 卡点（<3.0 红底），每档一句话总结（档内 kp 聚合前三）+ 展开可见全部题目与得分；itemScores 为空（无原始评分）时回退旧 closing 文案（标题也改为「简要总结」）。
+8. **冒烟**：`scripts/smoke-render-v35.tsx`（28 项断言：双模式 9 tab 白屏、三档标题、先抓位置在方案后、评分原则、各 ansblk 锚点、框架二级考察点、无成绩态「未填写」+链接、不再显示「已达标」）。运行：`npx esbuild scripts/smoke-render-v35.tsx --bundle --platform=node --format=cjs --jsx=automatic --tsconfig=tsconfig.app.json --outfile=scripts/.smoke.cjs && node scripts/.smoke.cjs`（tsx 直跑会因 jsx runtime 报 React is not defined，v34 脚本注释里的 TSX_TSCONFIG_PATH 方式也可）。
+- 验证：tsc app 配置仅剩 3 个历史遗留错误（AcademicsSubmit 科目名字面量，与本次无关）；npm run build 通过；冒烟 28 项全过。
+- BUILD_TAG=v35-2026-09-13
