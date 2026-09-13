@@ -33,7 +33,7 @@ import { MENTAL_FACTOR_ORDER, MENTAL_FACTOR_LABEL, mentalBand, isMentalV2, MENTA
 import type { AcademicsData } from "@contracts/academics";
 import { SELF_LEVELS } from "@contracts/academics";
 import { buildAnswerBlocks, answerKindsForSection } from "@/components/reports/answerBlocks";
-import type { AnswerBlock } from "@/components/reports/answerBlocks";
+import type { AnswerBlock, RawAnswer } from "@/components/reports/answerBlocks";
 import { RichText } from "@/components/RichText";
 import NineAbilityRadar from "@/components/reports/NineAbilityRadar";
 import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
@@ -75,12 +75,8 @@ export type ReportProfileInfo = { name?: string | null; grade?: string | null; a
 
 type Tab = "combined" | "profile" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "discparent";
 
-/** V35 报告内深链目标（框架图 / 冰山模型 / 进步方案共用）。 */
-type RevealTarget =
-  | { kind: "tab"; tab: Tab }
-  | { kind: "answers"; tab: Tab; block: string }
-  | { kind: "assess"; start: string }
-  | { kind: "fill-academics" };
+/** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
+type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "combined", label: "综合学习力报告" },
@@ -146,10 +142,10 @@ function SectionBullets({ bullets }: { bullets: string[] }) {
   );
 }
 
-/** 通用折叠块：默认收起，点击展开/收起；打印/导出 PDF 时会被强制展开（见 onDownload）。 */
-function Fold({ title, children }: { title: string; children: ReactNode }) {
+/** 通用折叠块：默认收起（defaultOpen 时默认展开），点击展开/收起；打印/导出 PDF 时会被强制展开（见 onDownload）。 */
+function Fold({ title, children, defaultOpen }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
   return (
-    <details className="group mt-3 overflow-hidden rounded-xl border border-border bg-cream/50">
+    <details open={defaultOpen || undefined} className="group mt-3 overflow-hidden rounded-xl border border-border bg-cream/50">
       <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
         <span>{title}</span>
         <ChevronDown size={15} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
@@ -199,7 +195,11 @@ function CollapsibleSection({
       ))}
       {itemsVisible && section.items && <SectionItems items={section.items} />}
       {bulletsVisible && section.bullets && <SectionBullets bullets={section.bullets} />}
-      {charts && <Fold title="图形与图表（点击展开）">{charts}</Fold>}
+      {charts && (
+        <Fold title="图形与图表（默认展开，点击可折叠）" defaultOpen>
+          {charts}
+        </Fold>
+      )}
       {hasDetail && (
         <Fold title="详细报告文字（点击展开）">
           {detailItems && <SectionItems items={detailItems} />}
@@ -261,6 +261,7 @@ function RoadmapSection({
   holland,
   mental,
   charts,
+  raw,
   onReveal,
 }: {
   section: CombinedSection;
@@ -276,7 +277,9 @@ function RoadmapSection({
   holland?: HollandResult;
   mental?: MentalResult | MentalV2Result;
   charts?: ReactNode;
-  /** V35 深链：冰山各行/层内重点项 → 答题明细；成绩未填 → 去填写。 */
+  /** 各测评原始作答：冰山各行/层内重点项的答题明细折叠由此构建（V36 折叠式直出）。 */
+  raw?: RawAnswer[];
+  /** V35 深链：成绩未填 → 去填写。 */
   onReveal?: (t: RevealTarget) => void;
 }) {
   /** 小数值芯片：bad=深红（需关注）；trait=琥珀显眼（性格/行为/兴趣特点，非缺点）。 */
@@ -363,26 +366,31 @@ function RoadmapSection({
       <span className="text-[14px] font-bold text-olive">{title}</span>
     </div>
   );
-  /** 层 → E3 答题明细块（answerBlocks.ts 的块 key）。 */
-  const LAYER_BLOCK: Record<string, string> = {
-    学能: "e3-xueneng",
-    善学: "e3-shanxue",
-    会学: "e3-huixue",
-    乐学: "e3-lexue",
-    条件: "e3-tiaojian",
+  /** 层 → E3 答题明细段过滤（answerBlocks 的 kinds 口径）。 */
+  const LAYER_KINDS: Record<string, string[]> = {
+    学能: ["e3:学能"],
+    善学: ["e3:善学"],
+    会学: ["e3:会学"],
+    乐学: ["e3:乐学"],
+    条件: ["e3:条件"],
   };
-  /** 「答题明细 →」小链接：点击展开生成该结果的那些题（onReveal 不存在时不渲染）。 */
-  const AnswersLink = ({ tab, block, label = "答题明细 →" }: { tab: Tab; block: string; label?: string }) =>
-    onReveal ? (
-      <button
-        type="button"
-        onClick={() => onReveal({ kind: "answers", tab, block })}
-        title="点击查看生成这个结果的答题明细"
-        className="mr-1.5 mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#4e7d20] transition hover:bg-lime-pale hover:shadow-sm"
-      >
-        {label}
-      </button>
-    ) : null;
+  /** 行内答题明细折叠（V36：折叠式直出在当前行，不再跳转到其他 tab）。 */
+  const AnswersFold = ({ kinds, title = "答题明细（点击展开）" }: { kinds: string[]; title?: string }) => {
+    if (!raw || raw.length === 0) return null;
+    const blocks = buildAnswerBlocks(raw, kinds);
+    if (blocks.length === 0) return null;
+    return (
+      <details className="group mt-1.5 overflow-hidden rounded-lg border border-border/70 bg-white/60">
+        <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
+          <span>{title}</span>
+          <ChevronDown size={13} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="border-t border-border/60 px-1 py-1">
+          <AnswerBlocksView blocks={blocks} />
+        </div>
+      </details>
+    );
+  };
   /* 冰山下各行（从上→下）：学能 → 善学 → 会学 → 乐学 → 条件 → 心理健康 → DISC 行为 → MBTI 性格 → 职业锚 → 霍兰德兴趣；
      心理健康/DISC/MBTI/职业锚/霍兰德按数据有无条件渲染，全部行共享一个「冰山下」rowSpan 单元格。 */
   const underRows: { key: string; label: string; content: ReactNode }[] = (
@@ -418,12 +426,8 @@ function RoadmapSection({
             <Chip label={`细心指数 ${multi5.carefulIndex}%`} bad={multi5.carefulIndex < 70} />
           </div>
         )}
-        {onReveal && (
-          <div className="mt-1">
-            <AnswersLink tab="e3" block={LAYER_BLOCK[layer]} />
-            {layer === "学能" && multi5 && <AnswersLink tab="combined" block="multi5" label="多元五项明细 →" />}
-          </div>
-        )}
+        <AnswersFold kinds={LAYER_KINDS[layer]} />
+        {layer === "学能" && multi5 && <AnswersFold kinds={["multi5"]} title="多元五项 · 答题明细（点击展开）" />}
       </>
     ),
   }));
@@ -455,11 +459,7 @@ function RoadmapSection({
               })}
             </>
           )}
-          {onReveal && (
-            <div className="mt-1">
-              <AnswersLink tab="combined" block="mental" />
-            </div>
-          )}
+          <AnswersFold kinds={["mental"]} />
         </>
       ),
     });
@@ -474,11 +474,7 @@ function RoadmapSection({
           {(["D", "I", "S", "C"] as const).map((k) => (
             <Chip key={k} label={`${k} ${disc.dims[k]}`} trait={discCombo.includes(k)} />
           ))}
-          {onReveal && (
-            <div className="mt-1">
-              <AnswersLink tab="combined" block="disc-" />
-            </div>
-          )}
+          <AnswersFold kinds={["disc"]} />
         </>
       ),
     });
@@ -493,11 +489,7 @@ function RoadmapSection({
           {(["E", "I", "S", "N", "T", "F", "J", "P"] as const).map((k) => (
             <Chip key={k} label={`${k} ${mbti.dims[k as keyof typeof mbti.dims]}`} trait={mbti.type.includes(k)} />
           ))}
-          {onReveal && (
-            <div className="mt-1">
-              <AnswersLink tab="combined" block="mbti" />
-            </div>
-          )}
+          <AnswersFold kinds={["mbti"]} />
         </>
       ),
     });
@@ -510,11 +502,7 @@ function RoadmapSection({
         <>
           <Chip label={`第一锚 · ${ANCHOR_LABEL[anchor.top2[0]]} ${anchor.dims[anchor.top2[0]].toFixed(1)}`} trait />
           <Chip label={`第二锚 · ${ANCHOR_LABEL[anchor.top2[1]]} ${anchor.dims[anchor.top2[1]].toFixed(1)}`} trait />
-          {onReveal && (
-            <div className="mt-1">
-              <AnswersLink tab="combined" block="anchor" />
-            </div>
-          )}
+          <AnswersFold kinds={["anchor"]} />
         </>
       ),
     });
@@ -529,11 +517,7 @@ function RoadmapSection({
           {HOLLAND_ORDER.map((k) => (
             <Chip key={k} label={`${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)}`} trait={holland.top3.includes(k)} />
           ))}
-          {onReveal && (
-            <div className="mt-1">
-              <AnswersLink tab="combined" block="holland" />
-            </div>
-          )}
+          <AnswersFold kinds={["holland"]} />
         </>
       ),
     });
@@ -735,25 +719,20 @@ function RoadmapSection({
                       {l.layer}层 {l.score}/5 · {l.level}
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
-                      {(weakDims.length > 0 ? weakDims : l.dims.slice(0, 1)).map((n) =>
-                        onReveal ? (
-                          <button
-                            key={n.label}
-                            type="button"
-                            onClick={() => onReveal({ kind: "answers", tab: "e3", block: LAYER_BLOCK[l.layer] })}
-                            title="点击查看生成这个结果的答题明细"
-                            className={`mr-1.5 mb-1 inline-block rounded-md border px-1.5 py-0.5 text-[11.5px] leading-tight transition hover:shadow-sm ${
-                              n.level !== "正常"
-                                ? "border-[#b91c1c]/50 bg-[#fbe3df] font-bold text-[#8f1313] hover:bg-[#f8d4ce]"
-                                : "border-border bg-cream text-olive-soft hover:bg-lime-pale/50"
-                            }`}
-                          >
-                            {n.label} {n.score} →
-                          </button>
-                        ) : (
-                          <Chip key={n.label} label={`${n.label} ${n.score}`} bad={n.level !== "正常"} />
-                        ),
-                      )}
+                      {(weakDims.length > 0 ? weakDims : l.dims.slice(0, 1)).map((n) => (
+                        <span
+                          key={n.label}
+                          className="mr-1.5 mb-1 inline-block rounded-md border px-1.5 py-0.5 text-[11.5px] font-bold leading-tight"
+                          style={{
+                            borderColor: `${E3V37_LEVEL_STYLE[n.level].bar}66`,
+                            color: E3V37_LEVEL_STYLE[n.level].text,
+                            background: E3V37_LEVEL_STYLE[n.level].bg,
+                          }}
+                        >
+                          {n.label} {n.score}
+                        </span>
+                      ))}
+                      <AnswersFold kinds={LAYER_KINDS[l.layer]} />
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 leading-relaxed text-olive-soft">
                       {bad ? LAYER_PLAN_TEXT[l.layer] : "已到 3.8 正常线：保持节奏，每周对照自查一次即可。"}
@@ -765,15 +744,16 @@ function RoadmapSection({
           </table>
         </div>
         <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
-          评分原则：红 &lt;3.0（≈百分制 &lt;50）卡点 · 优先干预；黄 3.0—3.7（≈50—69）待提升；绿 ≥3.8（≈≥70）正常。点击「层内重点项」可展开生成该结果的答题明细。
+          评分原则：红 &lt;3.0（≈百分制 &lt;50）卡点 · 优先干预；黄 3.0—3.7（≈50—69）待提升；绿 ≥3.8（≈≥70）正常。每层的「答题明细」折叠可展开查看生成该结果的所有题目。
         </p>
       </div>
 
-      {/* 先抓这三件事：紧跟建议进步方案之后（详版/简版共用此处） */}
-      {e3 && <PrioritiesCard e3={e3} />}
-
-      {/* 图形与图表（如九能整体雷达，诊断总览） */}
-      {charts && <Fold title="图形与图表（点击展开）">{charts}</Fold>}
+      {/* 图形与图表（如九能整体雷达，诊断总览）：默认展开，可手动折叠 */}
+      {charts && (
+        <Fold title="图形与图表（默认展开，点击可折叠）" defaultOpen>
+          {charts}
+        </Fold>
+      )}
 
       {/* 简要总结收尾：优势 ≥3.8（绿）/ 待提升 3.0—3.7（黄）/ 卡点 <3.0（红）三档折叠对应题目；
           无逐题原始评分时回退为概要总论文案。 */}
@@ -1673,53 +1653,23 @@ export default function ReportView({
   const goCombined = () => setTab("combined");
 
   /**
-   * V35 报告内深链跳转：
-   * - tab：切到对应模块 tab 并滚到内容顶部（看图形与图表）；
-   * - answers：切 tab 后定位到答题明细块（id=ansblk-*），逐层强制展开祖先折叠并平滑滚动到位；
-   * - assess：未测评 → 测评中心直达对应答题；fill-academics：学生→「我的档案」填成绩，伴学师→打开成绩编辑。
+   * V36 报告内动作：
+   * - assess：未测评 → 测评中心直达对应答题；
+   * - fill-academics：学生→「我的档案」填成绩，伴学师→打开成绩编辑。
    */
   const reveal = (t: RevealTarget) => {
     if (t.kind === "assess") {
       navigate(`/assessments?start=${t.start}`);
       return;
     }
-    if (t.kind === "fill-academics") {
-      if (viewer === "tutor") onEditAcademics?.();
-      else setTab("profile");
-      return;
-    }
-    setTab(t.tab);
-    if (t.tab === "combined" && combinedView !== "full") setCombinedView("full");
-    if (t.kind === "tab") {
-      window.setTimeout(() => {
-        document.getElementById("report-print-root")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 80);
-      return;
-    }
-    /* answers：目标块在折叠里，渲染后沿父链打开所有 <details> 再滚动；找不到时兜底滚到内容顶部 */
-    const open = (attempt: number) => {
-      let el: HTMLElement | null = document.getElementById(`ansblk-${t.block}`);
-      if (!el) el = document.querySelector(`[id^="ansblk-${t.block}"]`);
-      if (!el) {
-        if (attempt < 3) window.setTimeout(() => open(attempt + 1), 220);
-        else document.getElementById("report-print-root")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      let node: HTMLElement | null = el;
-      while (node) {
-        if (node.tagName === "DETAILS") (node as HTMLDetailsElement).open = true;
-        node = node.parentElement;
-      }
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    window.setTimeout(() => open(0), 140);
+    if (viewer === "tutor") onEditAcademics?.();
+    else setTab("profile");
   };
 
-  /** 框架图节点点击：已测 → 对应模块图形与图表；未测 → 直达测评；成绩未填 → 去填写。 */
+  /** 框架图节点点击：未测 → 直达测评；成绩未填 → 去填写（已测节点为纯展示，不可点）。 */
   const openFramework = (l: FrameworkLink) => {
     if (l.kind === "assess") reveal({ kind: "assess", start: l.start });
-    else if (l.kind === "fill-academics") reveal({ kind: "fill-academics" });
-    else reveal({ kind: "tab", tab: l.tab as Tab });
+    else reveal({ kind: "fill-academics" });
   };
 
   /** 当前 tab 是否已有可下载的数据。 */
@@ -2250,6 +2200,7 @@ export default function ReportView({
                   anchor={anchor}
                   holland={holland}
                   mental={mental}
+                  raw={data?.raw}
                   onReveal={reveal}
                 />
               )}
@@ -2300,6 +2251,7 @@ export default function ReportView({
                     holland={holland}
                     mental={mental}
                     charts={e3v37 ? <NineAbilityRadar e3={e3v37} /> : undefined}
+                    raw={data?.raw}
                     onReveal={reveal}
                   />
                 );
@@ -2637,40 +2589,6 @@ function AssessmentChartsLite({
             <b>对学习力：</b>状态是所有学习方法生效的前提——先把睡眠和情绪稳住，再谈效率和成绩目标。
           </p>
         </div>
-      )}
-    </div>
-  );
-}
-
-/** 先抓这三件事（V3.7 九能优先级，按分数从低到高）——详版/简版共用，位于「建议进步方案」之后。 */
-function PrioritiesCard({ e3 }: { e3: E3V37Result }) {
-  const priorities = e3.priorities.slice(0, 3);
-  return (
-    <div className="paper-card p-5">
-      <h3 className="font-bold text-olive">先抓这三件事</h3>
-      {priorities.length === 0 ? (
-        <p className="mt-2 text-[13.5px] text-olive-soft">三阶九能都在正常线以上——保持现在的节奏，每 8 周复测一次就好。</p>
-      ) : (
-        <div className="mt-3 space-y-2.5">
-          {priorities.map((p, i) => (
-            <div key={p.key} className="flex gap-3 rounded-xl border border-border bg-cream/60 p-3.5">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-olive text-[13px] font-bold text-cream">{i + 1}</span>
-              <div>
-                <div className={`text-[14px] font-bold ${e3v37LevelTextClass(p.level)}`}>
-                  {p.label} {p.score}/5 · {p.level}
-                </div>
-                <p className="mt-0.5 text-[13px] leading-relaxed text-olive-soft">
-                  本周只抓「{p.label}」这一能：在详版报告「九能逐项结论与本周行动」里找到它，照着本周行动做，做到再往下走。
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {priorities.length > 0 && (
-        <p className="mt-3 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-[13px] leading-relaxed text-olive">
-          <b>这个月的第一步：</b>从「{priorities[0].label}」开始——它是当前分数最低的一能，补它比刷题更划算。只做这一件，做到再往下走。
-        </p>
       )}
     </div>
   );

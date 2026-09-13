@@ -227,3 +227,16 @@
 8. **冒烟**：`scripts/smoke-render-v35.tsx`（28 项断言：双模式 9 tab 白屏、三档标题、先抓位置在方案后、评分原则、各 ansblk 锚点、框架二级考察点、无成绩态「未填写」+链接、不再显示「已达标」）。运行：`npx esbuild scripts/smoke-render-v35.tsx --bundle --platform=node --format=cjs --jsx=automatic --tsconfig=tsconfig.app.json --outfile=scripts/.smoke.cjs && node scripts/.smoke.cjs`（tsx 直跑会因 jsx runtime 报 React is not defined，v34 脚本注释里的 TSX_TSCONFIG_PATH 方式也可）。
 - 验证：tsc app 配置仅剩 3 个历史遗留错误（AcademicsSubmit 科目名字面量，与本次无关）；npm run build 通过；冒烟 28 项全过。
 - BUILD_TAG=v35-2026-09-13
+
+## v36（2026-09-13）折叠式答题明细 + 链接收敛 + 模块章瘦身
+（基于 v35 发布后用户看图反馈的五项调整）
+1. **冰山图答题明细改折叠式**：v35 的「答题明细 →」跳转链接全部删除；RoadmapSection 新增 raw prop（ReportAssessmentData.raw）与 AnswersFold 行内折叠组件（buildAnswerBlocks(raw, kinds) 直出，段过滤口径 e3:乐学/会学/善学/条件/学能），冰山每一行（五系统 + 心理/DISC/MBTI/职业锚/霍兰德 + 学能行的多元五项）行尾直接挂折叠块，点开就看，不离开当前页。
+2. **框架图取消图表链接**：SystemFramework 已测徽章/单元块全部改纯静态展示（不再有 → 与点击跳转）；FrameworkLink 只剩 assess（未测徽章→测评中心）与 fill-academics（成绩未填→去填写）两种动作；底部提示改为「灰虚线徽章可直接点击开始测评」。
+3. **层内重点项**：改回静态 chip 但按三档着色（红 #8f1313 卡点 / 黄 #8a6d1a 待提升 / 绿 #5a9326 正常，E3V37_LEVEL_STYLE），每行单元格下方挂该层答题明细折叠；备注文案同步改为折叠口径。
+4. **「先抓这三件事」整块删除**（PrioritiesCard 组件与两处使用全删，距 v35 移入仅一轮）。
+5. **模块章分项介绍删除**：combined.ts 删 abilityItemOf 及 secModules 的 items/itemsVisible——三能结论卡与「详细报告文字」折叠里的逐项详细解读重复，只保留 detailItems；条件/学能章的 items 是正文非重复内容，保留。
+6. **图形与图表默认展开**：Fold 组件加 defaultOpen；CollapsibleSection 与 RoadmapSection 的「图形与图表」折叠默认展开（标题改「默认展开，点击可折叠」），详细文字/答题明细仍默认收起；打印强制展开逻辑不受影响。
+7. **reveal 简化**：RevealTarget 只留 assess/fill-academics 两型；ansblk-* 锚点 id 保留（冒烟断言用，无跳转逻辑依赖）。
+- 冒烟：`scripts/smoke-render-v36.tsx`（26 项断言，v35 脚本已删；数据层断言三模块章 items 为空且 detailItems 保留）。
+- 验证：tsc app 配置仍仅 3 个历史遗留错误；npm run build 通过；冒烟全过。
+- BUILD_TAG=v36-2026-09-13

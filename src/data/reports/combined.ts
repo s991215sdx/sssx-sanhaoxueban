@@ -682,21 +682,8 @@ export function buildCombinedReport(
     ],
   };
 
-  /* ②③④. 乐学/会学/善学 三个模块章：各阶一两句总结论 + 该阶三能结论卡（可见区直出） */
-  const abilityItemOf = (a: (typeof abilities)[number]) => {
-    const weakestFocus = [...a.focuses].sort((x, y) => x.score - y.score)[0];
-    const tip = E3V37_ABILITY_TIP[a.label] ?? "";
-    const text = weakestFocus
-      ? weakestFocus.level === "正常"
-        ? `关注点明细：${a.focuses.map((f) => `「${f.kp}」${f.score}/5`).join("、")}——全部在正常线以上，相对最弱的是「${weakestFocus.kp}」${weakestFocus.score}/5。**保持建议**：${tip}。`
-        : `最需留意的关注点：「**${weakestFocus.kp}**」${weakestFocus.score}/5（${weakestFocus.level}，第 ${weakestFocus.items.join("、")} 题）。**一句建议**：${tip}。`
-      : tip;
-    return {
-      heading: `**${a.label}** ${a.score}/5 · ${a.level}`,
-      text,
-      level: a.level as CombinedLevel,
-    };
-  };
+  /* ②③④. 乐学/会学/善学 三个模块章：各阶一两句总结论；三能的分项介绍不再可见区直出（V36：
+     与「详细报告文字」折叠里的逐项详细解读重复，故删除，只保留 detailItems）。 */
   const SYS_MODULE_META: { sys: "乐学" | "会学" | "善学"; title: string; lead: string }[] = [
     { sys: "乐学", title: "乐学模块 · 动力系统", lead: "动力、信心、韧劲是这台学习车的**发动机**——先解决「为什么学」，再谈怎么学。" },
     { sys: "会学", title: "会学模块 · 行为系统", lead: "学懂、记住、会用是每天学习的**闭环动作**——底盘顺了，努力才不白费。" },
@@ -713,8 +700,6 @@ export function buildCombinedReport(
         `${m.sys}系统分 **${sysScore.score}/5（${sysScore.level}）**。${m.lead}`,
         `本阶最强「**${strong.label}**」${strong.score}/5，最需关注「**${weak.label}**」${weak.score}/5（${weak.level}）——补弱时可以从「${strong.label}」借力。`,
       ],
-      items: abs.map(abilityItemOf),
-      itemsVisible: true,
       /* 「详细报告文字」折叠：每能三层结构（介绍 → 数据分析 → 详细建议），末尾由页面接答题明细 */
       detailItems: abs.map((a) => ({
         heading: `**${a.label} · 详细解读** ${a.score}/5 · ${a.level}`,

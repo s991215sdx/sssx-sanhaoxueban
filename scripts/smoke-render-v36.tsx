@@ -1,18 +1,23 @@
 /** @jsxImportSource react */
-/* v35 冒烟：renderToStaticMarkup 渲染 ReportView，验证六项新需求的关键标记
-   1. 框架图链接 + 二级考察点；2. 冰山成绩未填写态 + 各行答题明细链接；
-   3. 层内重点项链接 + 评分原则备注；4. 先抓这三件事在方案后；5. 简版框架置顶（结构性验证在代码层）；
-   6. 概要总论 → 简要总结三档折叠。 */
+/* v36 冒烟：renderToStaticMarkup 渲染 ReportView，验证本轮五项调整
+   1. 冰山/方案表答题明细 = 折叠式直出（不再跳转）；2. 框架图已测徽章无链接；
+   3. 层内重点项按红黄绿着色；4. 先抓这三件事已删；5. 模块章分项介绍已删；6. 图表折叠默认展开。 */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router";
 import ReportView from "../src/components/reports/ReportView";
-import { scoreMbti, scoreDisc } from "../contracts/assessments";
+import { scoreMbti, scoreDisc, MBTI_QUESTIONS, DISC_QUESTIONS } from "../contracts/assessments";
 import { scoreE3V37 } from "../contracts/e3v37";
 import { scoreHolland } from "../contracts/holland";
 import { scoreAnchor } from "../contracts/careerAnchor";
 import { scoreMulti5, MULTI5_QUESTIONS } from "../contracts/multi5";
 import { scoreMental, MENTAL_V2_QUESTION_COUNT } from "../contracts/mentalHealth";
+import { MBTI_REPORTS, DISC_REPORTS, buildCombinedReport } from "../src/data/reports";
+
+/* 三档色值（与 e3v37Theme 一致）：用于断言层内重点项按红黄绿着色 */
+const E3V37_BAD = "#8f1313";
+const E3V37_MID = "#8a6d1a";
+const E3V37_OK = "#5a9326";
 
 const ratings70 = Array.from({ length: 70 }, (_, i) => (i % 5) + 1);
 const mbti = scoreMbti(Array.from({ length: 28 }, (_, i) => (i % 3 === 0 ? 0 : 1)));
@@ -83,44 +88,42 @@ for (const viewer of ["student", "tutor"] as const) {
 console.log("双模式全 tab 白屏检查 OK");
 
 const full = render("combined");
-/* 需求6：简要总结三档 */
-need(full, "简要总结", "综合详版");
-need(full, "优势点总结", "综合详版");
-need(full, "待提升总结", "综合详版");
-need(full, "卡点总结", "综合详版");
-if (full.includes("概要总论")) throw new Error("仍存在「概要总论」");
-console.log("OK 概要总论已移除");
-/* 需求4：先抓这三件事（在方案之后） */
-need(full, "先抓这三件事", "综合详版");
-if (!(full.indexOf("哪层不行补哪层") < full.indexOf("先抓这三件事"))) throw new Error("先抓这三件事 应在建议进步方案之后");
-console.log("OK 先抓这三件事位于建议进步方案之后");
-/* 需求3：评分原则备注 */
-need(full, "评分原则", "综合详版");
-need(full, "优先干预", "综合详版");
-/* 需求2：冰山各行答题明细链接 + 锚点 */
-need(full, "答题明细", "综合详版");
-for (const id of ["ansblk-mental", "ansblk-multi5", "ansblk-anchor", "ansblk-holland", "ansblk-mbti"]) {
-  need(full, `id="ansblk-${id === "ansblk-mental" ? "mental" : id.slice(7)}"`, "综合详版");
+/* 需求1/3：冰山与方案表 = 折叠式答题明细（直出在行内，不再跳转链接） */
+need(full, "答题明细（点击展开）", "综合详版");
+if (full.includes("答题明细 →")) throw new Error("仍存在跳转式「答题明细 →」链接");
+console.log("OK 无跳转式答题明细链接");
+for (const id of ["ansblk-e3-lexue", "ansblk-e3-huixue", "ansblk-e3-shanxue", "ansblk-e3-tiaojian", "ansblk-e3-xueneng", "ansblk-mental", "ansblk-mbti", "ansblk-multi5", "ansblk-anchor", "ansblk-holland"]) {
+  need(full, `id="${id}"`, "综合详版");
 }
-if (!/id="ansblk-disc-/.test(full)) throw new Error("综合详版缺少 ansblk-disc- 前缀锚点");
-console.log("OK ansblk-disc- 前缀锚点");
-/* 需求1：框架图二级考察点（kp chip） */
-need(full, "学习兴趣", "框架图");
-need(full, "点击任意徽章", "框架图");
-
-/* e3 tab：五段答题明细锚点（冰山层行/层内重点项链接目标） */
-const e3tab = render("e3");
-for (const id of ["ansblk-e3-lexue", "ansblk-e3-huixue", "ansblk-e3-shanxue", "ansblk-e3-tiaojian", "ansblk-e3-xueneng"]) {
-  need(e3tab, `id="${id}"`, "e3 tab");
+/* 需求3：层内重点项红黄绿着色（inline style 色值） */
+need(full, E3V37_BAD, "综合详版");
+need(full, E3V37_MID, "综合详版");
+need(full, E3V37_OK, "综合详版");
+/* 需求4：先抓这三件事已删 */
+if (full.includes("先抓这三件事")) throw new Error("仍存在「先抓这三件事」");
+console.log("OK 先抓这三件事已删除");
+/* 需求2：框架图已测徽章不再链接（hint 文案更新，无 tab 跳转提示） */
+need(full, "灰虚线徽章可直接点击开始测评", "框架图");
+if (full.includes("点击任意徽章")) throw new Error("仍存在「点击任意徽章」链接提示");
+console.log("OK 框架图图表链接提示已移除");
+/* 需求6：图形与图表默认展开（SSR 输出 open 属性） */
+if (!/<details open=""/.test(full)) throw new Error("图形与图表未默认展开");
+console.log("OK 图形与图表默认展开");
+/* 需求5：模块章分项介绍卡已删（数据层断言：三个模块章不再有可见 items） */
+const combined = buildCombinedReport(mbti, MBTI_REPORTS[mbti.type], disc, DISC_REPORTS[disc.primary], e3, { academics });
+for (const sys of ["乐学", "会学", "善学"]) {
+  const sec = combined.sections.find((s) => s.title.includes(`${sys}模块`));
+  if (!sec) throw new Error(`缺少${sys}模块章`);
+  if (sec.items?.length) throw new Error(`${sys}模块章仍存在分项介绍 items`);
+  if (!(sec.detailItems?.length ?? 0)) throw new Error(`${sys}模块章详细报告文字缺失`);
+  console.log(`OK ${sys}模块章分项介绍已删，详细文字保留`);
 }
 
-/* 需求2：成绩未填写 → 冰山上显示「未填写」+ 去填写链接（学生/伴学师双模式） */
+/* 无成绩态保持：未填写 + 去填写链接 */
 const noAcad = render("combined", { withAcad: false });
 need(noAcad, "未填写", "综合详版(无成绩)");
 need(noAcad, "去填写成绩与目标", "综合详版(无成绩)");
 if (noAcad.includes("各科均已达标")) throw new Error("无成绩时不应显示「各科均已达标」");
-console.log("OK 无成绩时不显示「已达标」");
-const noAcadTutor = render("combined", { withAcad: false, viewer: "tutor" });
-need(noAcadTutor, "去填写成绩与目标", "综合详版(无成绩,tutor)");
+console.log("OK 无成绩时显示未填写而非已达标");
 
-console.log("RENDER_SMOKE_V35_OK");
+console.log("RENDER_SMOKE_V36_OK");

@@ -3,20 +3,17 @@
  * 结构：顶部「学习目标 · 成绩」→ 三阶递进（乐学/会学/善学，绿/蓝/金，与九能雷达轴标一致）
  * → 底座两框（条件·支持系统 / 学能·能力系统，暖灰）→ 深层特质行（MBTI/DISC/霍兰德/职业锚）。
  *
- * V35：
- * - 每个节点带链接：已测评 → onOpen({kind:"tab"}) 去看对应模块的图形与图表；
- *   未测评 → onOpen({kind:"assess"}) 直达对应测评；成绩未填 → onOpen({kind:"fill-academics"})。
+ * V36：
+ * - 已测评节点为纯静态展示（不再链接到图形与图表）；未测评徽章仍可点击直达对应测评，
+ *   成绩未填仍可点击去填写（onOpen 仅这两种动作）。
  * - 每个部分排出对应的二级考察点（能力 → 关注点 kp，带红黄绿分数小 chip；深层特质 → 各维度分）。
  * - 不传 status / onOpen 时退化为纯静态图（零 props 向后兼容）。
  */
 import { E3V37_LEVEL_STYLE } from "./e3v37Theme";
 import type { E3V37Level } from "./e3v37Theme";
 
-/** 节点点击行为：tab=看模块图表；assess=去测评；fill-academics=去填成绩。 */
-export type FrameworkLink =
-  | { kind: "tab"; tab: string }
-  | { kind: "assess"; start: string }
-  | { kind: "fill-academics" };
+/** 节点点击行为：assess=去测评（未测节点）；fill-academics=去填成绩（未填节点）。 */
+export type FrameworkLink = { kind: "assess"; start: string } | { kind: "fill-academics" };
 
 /** 二级考察点（关注点 kp）：名称 + 均分 + 三档。 */
 export type FrameworkFocus = { kp: string; score: number; level: E3V37Level };
@@ -62,24 +59,16 @@ const BASES: { name: string; key: "条件" | "学能"; sub: string; abilities: s
 ];
 
 /** 深层特质行四小框。 */
-const DEEP_TRAITS: { key: "mbti" | "disc" | "holland" | "anchor"; label: string; tab: string }[] = [
-  { key: "mbti", label: "MBTI 性格", tab: "mbti" },
-  { key: "disc", label: "DISC 行为", tab: "disc" },
-  { key: "holland", label: "霍兰德兴趣", tab: "holland" },
-  { key: "anchor", label: "职业锚", tab: "anchor" },
+const DEEP_TRAITS: { key: "mbti" | "disc" | "holland" | "anchor"; label: string }[] = [
+  { key: "mbti", label: "MBTI 性格" },
+  { key: "disc", label: "DISC 行为" },
+  { key: "holland", label: "霍兰德兴趣" },
+  { key: "anchor", label: "职业锚" },
 ];
 
-/** 可点击的状态徽标按钮：done=绿底实线（去看图表）；未完成=灰虚线（去测评/去填）。 */
-function LinkChip({
-  done,
-  label,
-  onClick,
-}: {
-  done: boolean;
-  label: string;
-  onClick?: () => void;
-}) {
-  const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight transition ${
+/** 状态徽标：done=绿底实线（纯展示）；未完成=灰虚线，给了 onClick 时可点击（去测评/去填）。 */
+function LinkChip({ done, label, onClick }: { done: boolean; label: string; onClick?: () => void }) {
+  const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${
     done
       ? "border border-[#7cb83c]/60 bg-[#e9f4d2] text-[#4e7d20]"
       : "border border-dashed border-[#a8b08c]/80 text-olive-mute"
@@ -89,8 +78,8 @@ function LinkChip({
     <button
       type="button"
       onClick={onClick}
-      title={done ? "点击查看对应模块的图形与图表" : "点击直达对应测评/填写"}
-      className={`${cls} cursor-pointer hover:shadow-sm hover:brightness-95`}
+      title="点击直达对应测评/填写"
+      className={`${cls} cursor-pointer transition hover:shadow-sm hover:brightness-95`}
     >
       {label}
       <span className="ml-0.5 opacity-70">→</span>
@@ -111,22 +100,12 @@ function FocusDot({ f }: { f: FrameworkFocus }) {
   );
 }
 
-/** 一级单元块：能力名 + 均分（有色）+ 二级考察点；可点击（已测→看图表）。 */
-function UnitBlock({
-  name,
-  unit,
-  done,
-  onClick,
-}: {
-  name: string;
-  unit?: FrameworkUnit;
-  done: boolean;
-  onClick?: () => void;
-}) {
+/** 一级单元块：能力名 + 均分（有色）+ 二级考察点；纯静态展示。 */
+function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; done: boolean }) {
   const lv: E3V37Level = unit?.level ?? (done ? "正常" : "待提升");
   const st = E3V37_LEVEL_STYLE[lv];
-  const inner = (
-    <>
+  return (
+    <div className="rounded-lg border border-[#a8b08c]/40 bg-white/70 px-1.5 py-1 text-center">
       <div className="flex items-baseline justify-center gap-1">
         <span className="text-[12px] font-semibold text-olive">{name}</span>
         {done && unit?.score != null && (
@@ -142,14 +121,7 @@ function UnitBlock({
           ))}
         </div>
       )}
-    </>
-  );
-  const cls = "rounded-lg border border-[#a8b08c]/40 bg-white/70 px-1.5 py-1 text-center";
-  if (!onClick) return <div className={cls}>{inner}</div>;
-  return (
-    <button type="button" onClick={onClick} className={`${cls} cursor-pointer transition hover:border-lime hover:bg-lime-pale/40`}>
-      {inner}
-    </button>
+    </div>
   );
 }
 
@@ -162,7 +134,7 @@ export default function SystemFramework({
 }) {
   const open = (l: FrameworkLink) => onOpen?.(l);
   const e3Done = !!status?.e3?.done;
-  const e3Link = (): FrameworkLink => (e3Done ? { kind: "tab", tab: "e3" } : { kind: "assess", start: "e3" });
+  const assessE3 = onOpen ? () => open({ kind: "assess", start: "e3" }) : undefined;
   const unitOf = (label: string): FrameworkUnit | undefined => status?.e3?.units?.[label];
   const showDeep = !!(status?.mbti || status?.disc || status?.holland || status?.anchor);
   return (
@@ -180,14 +152,7 @@ export default function SystemFramework({
                 ? `成绩与目标 · 已填${status.academics.note ? ` · ${status.academics.note}` : ""}`
                 : "成绩与目标 · 未填写"
             }
-            onClick={
-              onOpen
-                ? () =>
-                    open(
-                      status.academics!.filled ? { kind: "tab", tab: "academics" } : { kind: "fill-academics" },
-                    )
-                : undefined
-            }
+            onClick={!status.academics.filled && onOpen ? () => open({ kind: "fill-academics" }) : undefined}
           />
           {/* 二级考察点：各科 现状→目标 */}
           {status.academics.filled && (status.academics.subjects?.length ?? 0) > 0 && (
@@ -222,13 +187,7 @@ export default function SystemFramework({
               <div className="mt-0.5 text-[11px] text-olive-mute">{t.sub}</div>
               <div className="mt-2 grid grid-cols-3 gap-1">
                 {t.abilities.map((a) => (
-                  <UnitBlock
-                    key={a}
-                    name={a}
-                    unit={unitOf(a)}
-                    done={e3Done}
-                    onClick={onOpen ? () => open(e3Link()) : undefined}
-                  />
+                  <UnitBlock key={a} name={a} unit={unitOf(a)} done={e3Done} />
                 ))}
               </div>
               {status?.e3 && (
@@ -236,7 +195,7 @@ export default function SystemFramework({
                   <LinkChip
                     done={e3Done && score != null}
                     label={e3Done && score != null ? `学业诊断 · ${t.key} ${score}/5` : "学业诊断 · 未测"}
-                    onClick={onOpen ? () => open(e3Link()) : undefined}
+                    onClick={!(e3Done && score != null) ? assessE3 : undefined}
                   />
                 </div>
               )}
@@ -254,13 +213,7 @@ export default function SystemFramework({
             <div className="mt-0.5 text-[11px] text-olive-mute">{b.sub}</div>
             <div className="mt-2 grid grid-cols-3 gap-1">
               {b.abilities.map((a) => (
-                <UnitBlock
-                  key={a}
-                  name={a}
-                  unit={unitOf(a)}
-                  done={e3Done}
-                  onClick={onOpen ? () => open(e3Link()) : undefined}
-                />
+                <UnitBlock key={a} name={a} unit={unitOf(a)} done={e3Done} />
               ))}
             </div>
             {/* 条件·支持系统：E3（条件均分）+ 心理健康徽标 */}
@@ -270,18 +223,14 @@ export default function SystemFramework({
                   <LinkChip
                     done={e3Done && status.e3.conditionAvg != null}
                     label={e3Done && status.e3.conditionAvg != null ? `学业诊断 · 条件 ${status.e3.conditionAvg}/5` : "学业诊断 · 未测"}
-                    onClick={onOpen ? () => open(e3Link()) : undefined}
+                    onClick={!(e3Done && status.e3.conditionAvg != null) ? assessE3 : undefined}
                   />
                 )}
                 {status?.mental && (
                   <LinkChip
                     done={status.mental.done}
                     label={status.mental.done ? `心理健康 · ${status.mental.note ?? "已测"}` : "心理健康 · 未测"}
-                    onClick={
-                      onOpen
-                        ? () => open(status.mental!.done ? { kind: "tab", tab: "mental" } : { kind: "assess", start: "mental" })
-                        : undefined
-                    }
+                    onClick={!status.mental.done && onOpen ? () => open({ kind: "assess", start: "mental" }) : undefined}
                   />
                 )}
               </div>
@@ -293,18 +242,14 @@ export default function SystemFramework({
                   <LinkChip
                     done={e3Done && status.e3.aptitudeAvg != null}
                     label={e3Done && status.e3.aptitudeAvg != null ? `学业诊断 · 学能 ${status.e3.aptitudeAvg}/5` : "学业诊断 · 未测"}
-                    onClick={onOpen ? () => open(e3Link()) : undefined}
+                    onClick={!(e3Done && status.e3.aptitudeAvg != null) ? assessE3 : undefined}
                   />
                 )}
                 {status?.multi5 && (
                   <LinkChip
                     done={status.multi5.done}
                     label={status.multi5.done ? `多元五项 · ${status.multi5.note ?? "已测"}` : "多元智能五项 · 未测"}
-                    onClick={
-                      onOpen
-                        ? () => open(status.multi5!.done ? { kind: "tab", tab: "multi5" } : { kind: "assess", start: "multi5" })
-                        : undefined
-                    }
+                    onClick={!status.multi5.done && onOpen ? () => open({ kind: "assess", start: "multi5" }) : undefined}
                   />
                 )}
                 {status?.multi && (
@@ -339,7 +284,11 @@ export default function SystemFramework({
                   <>
                     <div className="text-[11px] font-semibold text-olive">{d.label}</div>
                     <div className="mt-1">
-                      <LinkChip done={!!st?.done} label={st?.done ? (st.note ?? "已测") : "未测"} />
+                      <LinkChip
+                        done={!!st?.done}
+                        label={st?.done ? (st.note ?? "已测") : "未测"}
+                        onClick={!st?.done && onOpen ? () => open({ kind: "assess", start: d.key }) : undefined}
+                      />
                     </div>
                     {st?.done && (st.subs?.length ?? 0) > 0 && (
                       <div className="mt-1 flex flex-wrap justify-center gap-0.5">
@@ -352,18 +301,10 @@ export default function SystemFramework({
                     )}
                   </>
                 );
-                const cls = "rounded-lg border border-[#a8b08c]/50 bg-white/70 px-2 py-1.5 text-center";
-                if (!onOpen) return <div key={d.key} className={cls}>{box}</div>;
                 return (
-                  <button
-                    key={d.key}
-                    type="button"
-                    onClick={() => open(st?.done ? { kind: "tab", tab: d.tab } : { kind: "assess", start: d.key })}
-                    className={`${cls} cursor-pointer transition hover:border-lime hover:bg-lime-pale/40`}
-                    title={st?.done ? "点击查看图形与图表" : "点击直达测评"}
-                  >
+                  <div key={d.key} className="rounded-lg border border-[#a8b08c]/50 bg-white/70 px-2 py-1.5 text-center">
                     {box}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -375,7 +316,7 @@ export default function SystemFramework({
       </p>
       {onOpen && (
         <p className="mt-1 text-center text-[10.5px] text-olive-mute">
-          点击任意徽章：已测评的直达对应模块看图形与图表，未测评的直接开始测评；红 &lt;3.0 卡点 · 黄 3.0-3.7 待提升 · 绿 ≥3.8 正常。
+          灰虚线徽章可直接点击开始测评；红 &lt;3.0 卡点 · 黄 3.0-3.7 待提升 · 绿 ≥3.8 正常。
         </p>
       )}
     </div>
