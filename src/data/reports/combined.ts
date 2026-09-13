@@ -654,8 +654,10 @@ export function buildCombinedReport(
       level: "正常",
     });
   }
-  /* 概要总论：三表（现状→冰山→方案）之后的收尾总论，综合主卡点链 + 红线 + 目标差距 */
+  /* 概要总论：章首两段引导语下沉至此开头，再接主卡点链 + 红线 + 目标差距的收尾总论 */
   const closingSummary: string[] = [
+    `你是 ${mbti.type}「${mbtiReport.name}」、DISC ${discComboLabel} 型「${discReport.name}」；三阶九能体检：${coreLine}。`,
+    `**优先训练方向（前三优先）**：${priorityText}。这份报告的用法就三步：**第一步**理清现状与目标 → **第二步**用冰山模型找根因 → **第三步**按图索骥拿训练方案，**红色为需要优先干预的层**。`,
     e3.mainBlock
       ? `当前主卡点是「**${e3.mainBlock.label}**」（${e3.mainBlock.score}/5）：按优先级链 **${E3V37_CHAIN_TEXT}**，先把这一环补上来，后面的方法才真正见效。`
       : "三阶九能暂无红灯卡点，现阶段重点是保持节奏、把优势继续拉大。",
@@ -670,10 +672,6 @@ export function buildCombinedReport(
   const secConclusion: CombinedSection = {
     title: "综合结论与行动方案：现状 → 诊断 → 方案",
     closing: closingSummary,
-    paragraphs: [
-      `你是 ${mbti.type}「${mbtiReport.name}」、DISC ${discComboLabel} 型「${discReport.name}」；三阶九能体检：${coreLine}。${e3.mainBlock ? `主卡点是「**${e3.mainBlock.label}**」（${e3.mainBlock.score}/5），按优先级链 **${E3V37_CHAIN_TEXT}**，先修卡点再谈拔高。` : "九能没有红灯卡点，保持现有节奏即可。"}`,
-      `**优先训练方向（前三优先）**：${priorityText}。一张图看懂这份报告怎么用：**第一步**理清现状与目标 → **第二步**用冰山模型找根因 → **第三步**按图索骥拿训练方案。**红色为需要优先干预的层**。`,
-    ],
     items: [
       { heading: "**第一步 · 理清现状与目标**", text: roadmapStep1 },
       { heading: "**第二步 · 分析问题、痛点与特点（冰山模型）**", text: roadmapStep2 },
@@ -1053,61 +1051,6 @@ export function buildCombinedReport(
     secCareer = { title: "兴趣与方向", paragraphs: paras, items: items.length > 0 ? items : undefined };
   }
 
-  /* ⑦. 成绩现状与目标分数（可选，至少一科有分数；差距/优先级逻辑不变） */
-  let secAcad: CombinedSection | null = null;
-  let acadPriorityNames: string[] = [];
-  if (academics) {
-    const allGaps = calcGaps(academics);
-    const gaps = allGaps.filter((g) => g.gap != null);
-    /* 满分未填或分数不全的科目：不参与差距与百分比，只列出原始分 */
-    const rawOnly = allGaps.filter(
-      (g) => g.gap == null && (g.lastScore != null || g.targetScore != null),
-    );
-    if (gaps.length > 0 && gapSummary) {
-      /* 语数外三主科权重大：先提差距大的主科，再提差距大的其他科 */
-      const MAIN3 = ["语文", "数学", "英语"];
-      acadPriorityNames = gaps
-        .filter((g) => MAIN3.some((m) => g.name.includes(m)))
-        .sort((a, b) => (b.gap ?? 0) - (a.gap ?? 0))
-        .map((g) => g.name);
-      const rest = gaps
-        .filter((g) => !acadPriorityNames.includes(g.name))
-        .sort((a, b) => (b.gap ?? 0) - (a.gap ?? 0))
-        .map((g) => g.name);
-      const orderText = [...acadPriorityNames, ...rest].join(" → ");
-      secAcad = {
-        title: "成绩现状与目标分数",
-        paragraphs: [
-          `最近大考（${academics.examName || "最近一次考试"}）你填了 **${gaps.length} 科**：总分 ${gapSummary.lastTotal} 分，目标总分 ${gapSummary.targetTotal} 分，**总差距 ${gapSummary.totalGap} 分**。敢把目标写下来，本身就很了不起——差距不是用来吓自己的，是用来**拆**的。（只分析你填了分数的科目；高中选科后，未选科目的分数不用填，也不参与分析。）`,
-        ],
-        items: [
-          ...gaps.map((g) => {
-            const fullNote =
-              g.fullScore != null && g.gapRatio != null
-                ? `该科满分 ${g.fullScore} 分，差距约占**该科满分的 ${Math.round(g.gapRatio * 100)}%**——`
-                : "";
-            const gapHead = `${g.name} 最近 ${g.lastScore} 分 → 目标 ${g.targetScore} 分 · 差距 ${g.gap} 分`;
-            return {
-              heading: (g.gapRatio ?? 0) >= 0.2 ? `**!!${gapHead}（重点突破）!!**` : `**${g.name}** 最近 ${g.lastScore} 分 → 目标 ${g.targetScore} 分 · 差距 ${g.gap} 分`,
-              text: `${fullNote}${subjectStrategy(g.name, g.selfLevel, g.gap ?? 0)}`,
-            };
-          }),
-          ...rawOnly.map((g) => ({
-            heading: `**${g.name}** ${g.lastScore != null ? `最近 ${g.lastScore} 分` : ""}${g.lastScore != null && g.targetScore != null ? " → " : ""}${g.targetScore != null ? `目标 ${g.targetScore} 分` : ""}`,
-            text: `这科的信息还不完整（${g.lastScore == null ? "缺少最近大考分数" : "缺少目标分数"}），暂时不计算差距。先把缺的分数补上，再回来看这科的**提分策略**；在此之前，按现有节奏保持学习即可。`,
-          })),
-          {
-            heading: "**提分优先级建议** · 先啃哪块硬骨头",
-            text:
-              acadPriorityNames.length > 0
-                ? `语数外三主科权重大，**先提差距大的主科，再提差距大的其他科**：**${orderText}**。排在前面的科目优先保证每天的学习时间；排在后面的科目以**保持手感**为主，别平均用力。三主科的提分属性不同：**英语**是积累型学科，提分周期长但天花板高，越早补越划算；**数学**是链条型学科，先回归课本把基础题做到全对，别碰难题；**语文**靠日常保温，阅读和作文细水长流。`
-                : `语数外三主科权重大，**先提差距大的主科，再提差距大的其他科**：**${orderText}**。每周给差距最大的一科多加一次**限时练习**，其余保持节奏即可。`,
-          },
-        ],
-      };
-    }
-  }
-
   /* ⑧. 需要温柔关注的信号（心理红线 + 生活事件高风险并入） */
   const flagBullets: string[] = [...e3.redFlags];
   if (e3.motivationScore <= 2) {
@@ -1130,25 +1073,46 @@ export function buildCombinedReport(
     bullets: flagBullets,
   };
 
-  /* ⑩. 给家长的话（全篇统一用「你」指孩子；开头给家长一页纸三件事） */
+  /* ⑩. 给家长的话（分块卡片结构：一句开场引导 + 每张卡只讲一件事） */
   const tipsText = discReport.communicationTips
     .slice(0, 3)
     .map((t) => t.replace(/。+$/, ""))
     .join("；");
-  const parentParagraphs: string[] = [
-    "**这一章只记三件事**：①如果「需要温柔关注的信号」一章有内容，**优先处理那一章**，再谈成绩；②本周只盯一件事——作业**独立限时**完成；③沟通只改一个动作——私下说、先肯定再提问题。",
-    `你的行为主型是 ${d} 型「${discReport.name}」。和你沟通顺畅的关键：${tipsText}。你喜欢的老师风格也提示了家庭的沟通方向——${discReport.teacherFit}`,
-    `陪写作业的建议：你目前的阶段重点是「${e3.mainBlock?.label ?? e3.priorities[0]?.label ?? "保持现有节奏"}」。${e3.priorities.length > 0 ? `当前前三优先的训练方向：${priorityText}。` : "目前没有触发警戒的训练方向，保持现有节奏。"}陪伴时建议家长做「**安静的同路人**」而不是「监工」：你在学，家长在旁边做自己的事，需要时再出手；检查作业只看「有没有**独立完成**」和「错因有没有写」，不必逐题盯着改。`,
-    `关于动力来源：你的**外驱依赖指数 ${e3.extDrive}/5**（越高越依赖批评、奖励等外部推动${e3.extDrive >= 3.5 ? "——**!!偏高!!**，外部驱动用多了内驱就长不出来，请逐步减少批评和奖励驱动" : "，在正常范围"}），**内驱水平指数 ${e3.intDrive}/5**。家庭能做的最有力的事，是少谈分数、多聊「学会了什么」和「未来想成为什么样的人」，把学习主权慢慢还给孩子。`,
-    tf === "F"
-      ? "特别提醒：你对批评的**语气和场合**比较敏感。同样的意见，私下、先肯定再指出问题，你听得进去；当众或带着情绪的指责，可能让你关上耳朵好几天。冲突激烈时，请先照顾情绪，等双方平静后再谈学习——**关系在，教育才在**。"
-      : "特别提醒：你讲道理、重事实，沟通时可以直接谈问题本身，但请同样做到「**对事不对人**」：指出具体哪件事可以改进，而不是评价「你怎么总是这样」。就事论事的氛围里，你的**配合度**会明显更高。",
+  const parentItems: NonNullable<CombinedSection["items"]> = [
+    {
+      heading: "**这一章只记三件事**",
+      big: true,
+      level: "待提升",
+      text: "①如果「需要温柔关注的信号」一章有内容，**优先处理那一章**，再谈成绩。②本周只盯一件事——作业**独立限时**完成。③沟通只改一个动作——私下说、先肯定再提问题。",
+    },
+    {
+      heading: "**怎么和 TA 说话最听得进**",
+      text: `孩子的行为主型是 ${d} 型「${discReport.name}」。和孩子沟通顺畅的关键：${tipsText}。孩子喜欢的老师风格，也提示了家庭的沟通方向——${discReport.teacherFit}`,
+    },
+    {
+      heading: "**陪写作业怎么陪**",
+      text: `孩子目前的阶段重点是「${e3.mainBlock?.label ?? e3.priorities[0]?.label ?? "保持现有节奏"}」。${e3.priorities.length > 0 ? `当前前三优先的训练方向：${priorityText}。` : "目前没有触发警戒的训练方向，保持现有节奏。"}陪伴时做「**安静的同路人**」而不是监工：孩子在学，家长在旁边做自己的事，需要时再出手。检查作业只看「有没有**独立完成**」和「错因有没有写」，不必逐题盯着改。`,
+    },
+    {
+      heading: "**关于动力和奖励**",
+      text: `孩子的**外驱依赖指数 ${e3.extDrive}/5**（越高越依赖批评、奖励等外部推动${e3.extDrive >= 3.5 ? "——**!!偏高!!**，外部驱动用多了内驱就长不出来，请逐步减少批评和奖励驱动" : "，在正常范围"}），**内驱水平指数 ${e3.intDrive}/5**。家庭能做的最有力的事，是少谈分数、多聊「学会了什么」和「未来想成为什么样的人」。把学习主权慢慢还给孩子，动力才会从里面长出来。`,
+    },
+    ...(academics && gapSummary && gapSummary.totalGap != null
+      ? [
+          {
+            heading: "**分数差距怎么聊**",
+            text: `请先肯定孩子敢写下目标的**勇气**——很多孩子连写都不敢写。总差距 ${gapSummary.totalGap} 分听起来大，按一学年 4 次大考拆，每次大考总分只需多拿约 **${Math.ceil(gapSummary.totalGap / 4)} 分**、平均每科 ${Math.max(1, Math.round(gapSummary.totalGap / 4 / Math.max(1, gapSummary.filled)))} 分左右。建议只和孩子定「**下一次考试**」的小目标，达成先庆祝，再谈下一步。别拿差距和别人家孩子比，比较只会消耗动力。`,
+          },
+        ]
+      : []),
+    {
+      heading: "**特别提醒**",
+      text:
+        tf === "F"
+          ? "孩子对批评的**语气和场合**比较敏感。同样的意见，私下、先肯定再指出问题，孩子听得进去；当众或带着情绪的指责，可能让孩子关上耳朵好几天。冲突激烈时，请先照顾情绪，等双方平静后再谈学习——**关系在，教育才在**。"
+          : "孩子讲道理、重事实，沟通时可以直接谈问题本身，但请同样做到「**对事不对人**」：指出具体哪件事可以改进，而不是评价「你怎么总是这样」。就事论事的氛围里，孩子的**配合度**会明显更高。",
+    },
   ];
-  if (academics && gapSummary && gapSummary.totalGap != null) {
-    parentParagraphs.push(
-      `关于分数差距怎么聊：请先肯定你敢写下目标的**勇气**——很多孩子连写都不敢写。总差距 ${gapSummary.totalGap} 分听起来大，按一学年 4 次大考拆，每次大考总分只需多拿约 **${Math.ceil(gapSummary.totalGap / 4)} 分**、平均每科 ${Math.max(1, Math.round(gapSummary.totalGap / 4 / Math.max(1, gapSummary.filled)))} 分左右；建议只和你一起定「**下一次考试**」的小目标，达成先庆祝，再谈下一步。避免拿差距和别人家孩子比较，比较只会消耗动力。`,
-    );
-  }
   if (e3parent && (e3parent.severeConflict || e3parent.blindSpots.length > 0)) {
     const parts: string[] = [];
     if (e3parent.severeConflict) {
@@ -1167,25 +1131,31 @@ export function buildCombinedReport(
     if (e3parent.unknownCount > 0) {
       parts.push(`认知对照中有 ${e3parent.unknownCount} 项家长填了「不了解」（了解程度：${e3parent.unknownLevel}）——不了解的部分，正是陪跑中最值得先补的亲子对话。`);
     }
-    parentParagraphs.push(`**家长认知对照提醒**：${e3parent.summary}\n${parts.join("\n")}`);
+    parentItems.push({
+      heading: "**家长认知对照提醒**",
+      text: `${e3parent.summary}\n${parts.join("\n")}`,
+    });
   }
   if (discParents.length > 0) {
-    parentParagraphs.push(
-      `**管教风格建议摘要**：${discParents
+    parentItems.push({
+      heading: "**管教风格建议**",
+      text: discParents
         .slice(0, 2)
         .map((p) => {
           const pp = p.result.primary;
-          return `${p.label}（${pp} 型）：${DISC_CONFLICT[pp][d]}；与你沟通最有效的三个动作——${discReport.communicationTips.slice(0, 3).map((t) => t.replace(/。+$/, "")).join("；")}`;
+          return `${p.label}（${pp} 型）：${DISC_CONFLICT[pp][d]}；与孩子沟通最有效的三个动作——${discReport.communicationTips.slice(0, 3).map((t) => t.replace(/。+$/, "")).join("；")}`;
         })
-        .join("\n")}`,
-    );
+        .join("\n"),
+    });
   }
-  parentParagraphs.push(
-    "最后：你的状态和安全感，是所有学习方法生效的前提——**先照顾好状态，再谈任何成绩目标**。",
-  );
+  parentItems.push({
+    heading: "**最后一句**",
+    text: "孩子的状态和安全感，是所有学习方法生效的前提——**先照顾好状态，再谈任何成绩目标**。",
+  });
   const secParents: CombinedSection = {
     title: "给家长的话",
-    paragraphs: parentParagraphs,
+    paragraphs: ["这一章写给家长。不用全记住，每张卡只讲一件事，先从第一张做起。"],
+    items: parentItems,
   };
 
   /* ⑪. 学习力训练点子速查（只列点子不展开；训练路由改用 V3.7 能力名 + 一句话训练方向） */
@@ -1265,10 +1235,9 @@ export function buildCombinedReport(
     ],
   };
 
-  /* 章节组装：综合结论 → 乐学/会学/善学模块 → 学能模块 → 条件模块 → 兴趣与方向 → 成绩现状 → 信号 → 家长 → 训练点子速查 → 附录 */
+  /* 章节组装：综合结论 → 乐学/会学/善学模块 → 学能模块 → 条件模块 → 兴趣与方向 → 信号 → 家长 → 训练点子速查 → 附录 */
   const sections: CombinedSection[] = [secConclusion, ...secModules, secApt, secCond];
   if (secCareer) sections.push(secCareer);
-  if (secAcad) sections.push(secAcad);
   sections.push(secFlags, secParents, secIdeas, secAppendix);
 
   return {

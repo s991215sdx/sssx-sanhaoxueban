@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import ProfileStage from "@/components/welcome/ProfileStage";
+import AcademicsStage from "@/components/welcome/AcademicsStage";
 import ChoiceStage from "@/components/welcome/ChoiceStage";
 import E3Stage from "@/components/welcome/E3Stage";
 
-const STAGES = ["认识一下", "MBTI 快测", "DISC 快测", "学业诊断"];
+const STAGES = ["认识一下", "成绩与目标", "MBTI 快测", "DISC 快测", "学业诊断"];
 
 /** 首次引导向导（/welcome，全屏无侧边栏）。 */
 export default function Welcome() {
@@ -54,27 +55,28 @@ export default function Welcome() {
         </div>
 
         {stage === 0 && <ProfileStage onNext={() => setStage(1)} />}
-        {stage === 1 && (
+        {stage === 1 && <AcademicsStage onNext={() => setStage(2)} onSkip={() => setStage(2)} />}
+        {stage === 2 && (
           <ChoiceStage
             key="mbti"
             kind="mbti"
             title="MBTI 快测"
             subtitle="28 道二选一，看看你的性格能量从哪里来"
-            onNext={() => setStage(2)}
-            onSkip={() => setStage(2)}
-          />
-        )}
-        {stage === 2 && (
-          <ChoiceStage
-            key="disc"
-            kind="disc"
-            title="DISC 快测"
-            subtitle="24 道二选一，找到最适合你的带动方式"
             onNext={() => setStage(3)}
             onSkip={() => setStage(3)}
           />
         )}
         {stage === 3 && (
+          <ChoiceStage
+            key="disc"
+            kind="disc"
+            title="DISC 快测"
+            subtitle="24 道二选一，找到最适合你的带动方式"
+            onNext={() => setStage(4)}
+            onSkip={() => setStage(4)}
+          />
+        )}
+        {stage === 4 && (
           <E3Stage
             onSkip={goHome}
             renderAction={() => (
