@@ -1265,8 +1265,8 @@ function discNv(r: DiscResult, k: "D" | "I" | "S" | "C"): number {
 }
 
 /**
- * 家长报告 tab：家长版专属报告——家庭支持与环境观察（家长卷）+ 家长认知对照 +
- * 亲子 DISC 冲突对照 + 冲突点清单与改进方案 + 答题明细。
+ * 家长报告 tab：家长版专属报告——测了 DISC 先解读家长版行为详版（亲子对照 + 逐位家长），
+ * 再是家长卷内容（家庭支持与环境观察 + 家长认知对照），最后亲子冲突点清单与改进方案 + 答题明细。
  */
 function ParentReportTab({
   student,
@@ -1298,42 +1298,22 @@ function ParentReportTab({
   const { conflicts, tips } = buildParentChildAnalysis(student, parents, e3parent);
   return (
     <div className="space-y-4">
-      {/* ① 冲突点清单与改进方案（核心卡） */}
-      <div className="paper-card accent-l border-terra/50 p-5">
-        <h3 className="font-bold text-olive">亲子冲突点清单与改进方案</h3>
-        <p className="mt-1 text-[12.5px] text-olive-mute">
-          左边是家长和孩子「想不到一块」的地方（红色为最需要注意的），右边是照着就能做的改进办法。
-        </p>
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-terra/30 bg-terra/5 p-3.5">
-            <div className="text-[13px] font-bold text-terra">冲突点清单 · {conflicts.length} 条</div>
-            <ol className="mt-2 space-y-1.5">
-              {conflicts.map((c, i) => (
-                <li
-                  key={i}
-                  className={
-                    c.hot
-                      ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
-                      : "text-[12.5px] leading-relaxed text-olive-soft"
-                  }
-                >
-                  <b className={c.hot ? "text-[#8f1313]" : "text-olive"}>{i + 1}.</b> {c.text}
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div className="rounded-xl border border-lime/40 bg-lime-pale/50 p-3.5">
-            <div className="text-[13px] font-bold text-olive">改进方案 · {tips.length} 条</div>
-            <ol className="mt-2 space-y-1.5">
-              {tips.map((t, i) => (
-                <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
-                  <b className="text-olive">{i + 1}.</b> {t}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </div>
+      {/* ① 亲子 DISC 对照：先解读行为风格，再看家长卷与亲子冲突 */}
+      {parents.length === 0 ? (
+        <MissingCard
+          text="家长 DISC 还没有测评（24 组「最像我 / 最不像我」，约 4 分钟），可多位家长各测一次——对照孩子的行为风格，看沟通卡点出在哪里。"
+          actionText="去测家长 DISC →"
+          to="/assessments?start=discparent"
+        />
+      ) : (
+        <>
+          {student && <DiscParentCompare student={student} parents={parents} />}
+          {parents.map((p, i) => (
+            <DiscParentDetail key={`${p.label}-${i}`} label={p.label} result={p.result} student={student} />
+          ))}
+          <p className="text-center text-[12px] text-olive-mute">可多位家长各测一次：让家长打开「测评中心 → 家长 DISC」分别填写。</p>
+        </>
+      )}
 
       {/* ② 家庭支持与环境观察（家长卷） */}
       {e3parent ? (
@@ -1437,22 +1417,42 @@ function ParentReportTab({
         </div>
       )}
 
-      {/* ④ 亲子 DISC 对照 */}
-      {parents.length === 0 ? (
-        <MissingCard
-          text="家长 DISC 还没有测评（24 组「最像我 / 最不像我」，约 4 分钟），可多位家长各测一次——对照孩子的行为风格，看沟通卡点出在哪里。"
-          actionText="去测家长 DISC →"
-          to="/assessments?start=discparent"
-        />
-      ) : (
-        <>
-          {student && <DiscParentCompare student={student} parents={parents} />}
-          {parents.map((p, i) => (
-            <DiscParentDetail key={`${p.label}-${i}`} label={p.label} result={p.result} student={student} />
-          ))}
-          <p className="text-center text-[12px] text-olive-mute">可多位家长各测一次：让家长打开「测评中心 → 家长 DISC」分别填写。</p>
-        </>
-      )}
+      {/* ④ 亲子冲突点清单与改进方案（核心卡） */}
+      <div className="paper-card accent-l border-terra/50 p-5">
+        <h3 className="font-bold text-olive">亲子冲突点清单与改进方案</h3>
+        <p className="mt-1 text-[12.5px] text-olive-mute">
+          左边是家长和孩子「想不到一块」的地方（红色为最需要注意的），右边是照着就能做的改进办法。
+        </p>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-xl border border-terra/30 bg-terra/5 p-3.5">
+            <div className="text-[13px] font-bold text-terra">冲突点清单 · {conflicts.length} 条</div>
+            <ol className="mt-2 space-y-1.5">
+              {conflicts.map((c, i) => (
+                <li
+                  key={i}
+                  className={
+                    c.hot
+                      ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
+                      : "text-[12.5px] leading-relaxed text-olive-soft"
+                  }
+                >
+                  <b className={c.hot ? "text-[#8f1313]" : "text-olive"}>{i + 1}.</b> {c.text}
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="rounded-xl border border-lime/40 bg-lime-pale/50 p-3.5">
+            <div className="text-[13px] font-bold text-olive">改进方案 · {tips.length} 条</div>
+            <ol className="mt-2 space-y-1.5">
+              {tips.map((t, i) => (
+                <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
+                  <b className="text-olive">{i + 1}.</b> {t}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
 
       {/* ⑤ 答题明细（家长卷 + 家长 DISC） */}
       {raw && raw.length > 0 && (
@@ -1619,7 +1619,7 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
                 <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
                 <div
                   className="absolute top-0 h-full rounded-full"
-                  style={{ left: neg ? `${50 + t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR[k] }}
+                  style={{ left: t > 0 ? `${50 - t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR[k] }}
                 />
               </div>
               <span className="mono w-[88px] shrink-0 text-[12px]" style={{ color: neg ? DISC_COLOR[k] : "#c8cdb2" }}>

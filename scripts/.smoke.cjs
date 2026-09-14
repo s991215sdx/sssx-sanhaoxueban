@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v45.tsx
+// scripts/smoke-render-v46.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -110445,7 +110445,7 @@ function FactorBars({ label, tag, result, hot = [] }) {
                 {
                   className: "absolute top-0 h-full rounded-full",
                   style: {
-                    left: t < 0 ? `${50 + t / 2}%` : "50%",
+                    left: t > 0 ? `${50 - t / 2}%` : "50%",
                     width: `${Math.abs(t) / 2}%`,
                     background: DISC_COLOR[k],
                     opacity: inCombo || isHot ? 1 : 0.5
@@ -112605,48 +112605,17 @@ function ParentReportTab({
   }
   const { conflicts, tips } = buildParentChildAnalysis(student, parents, e3parent);
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card accent-l border-terra/50 p-5", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848" }),
-      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u5DE6\u8FB9\u662F\u5BB6\u957F\u548C\u5B69\u5B50\u300C\u60F3\u4E0D\u5230\u4E00\u5757\u300D\u7684\u5730\u65B9\uFF08\u7EA2\u8272\u4E3A\u6700\u9700\u8981\u6CE8\u610F\u7684\uFF09\uFF0C\u53F3\u8FB9\u662F\u7167\u7740\u5C31\u80FD\u505A\u7684\u6539\u8FDB\u529E\u6CD5\u3002" }),
-      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 grid gap-3 lg:grid-cols-2", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-terra/30 bg-terra/5 p-3.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-terra", children: [
-            "\u51B2\u7A81\u70B9\u6E05\u5355 \xB7 ",
-            conflicts.length,
-            " \u6761"
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
-            "li",
-            {
-              className: c.hot ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50" : "text-[12.5px] leading-relaxed text-olive-soft",
-              children: [
-                /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: c.hot ? "text-[#8f1313]" : "text-olive", children: [
-                  i + 1,
-                  "."
-                ] }),
-                " ",
-                c.text
-              ]
-            },
-            i
-          )) })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-lime/40 bg-lime-pale/50 p-3.5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-olive", children: [
-            "\u6539\u8FDB\u65B9\u6848 \xB7 ",
-            tips.length,
-            " \u6761"
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: tips.map((t, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
-              i + 1,
-              "."
-            ] }),
-            " ",
-            t
-          ] }, i)) })
-        ] })
-      ] })
+    parents.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+      MissingCard,
+      {
+        text: "\u5BB6\u957F DISC \u8FD8\u6CA1\u6709\u6D4B\u8BC4\uFF0824 \u7EC4\u300C\u6700\u50CF\u6211 / \u6700\u4E0D\u50CF\u6211\u300D\uFF0C\u7EA6 4 \u5206\u949F\uFF09\uFF0C\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\u2014\u2014\u5BF9\u7167\u5B69\u5B50\u7684\u884C\u4E3A\u98CE\u683C\uFF0C\u770B\u6C9F\u901A\u5361\u70B9\u51FA\u5728\u54EA\u91CC\u3002",
+        actionText: "\u53BB\u6D4B\u5BB6\u957F DISC \u2192",
+        to: "/assessments?start=discparent"
+      }
+    ) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+      student && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student, parents }),
+      parents.map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentDetail, { label: p.label, result: p.result, student }, `${p.label}-${i}`)),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "text-center text-[12px] text-olive-mute", children: "\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\uFF1A\u8BA9\u5BB6\u957F\u6253\u5F00\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5BB6\u957F DISC\u300D\u5206\u522B\u586B\u5199\u3002" })
     ] }),
     e3parent ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5BB6\u5EAD\u652F\u6301\u4E0E\u73AF\u5883\u89C2\u5BDF\uFF08\u5BB6\u957F\u5377\uFF09" }),
@@ -112743,17 +112712,48 @@ function ParentReportTab({
         );
       }) })
     ] }),
-    parents.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-      MissingCard,
-      {
-        text: "\u5BB6\u957F DISC \u8FD8\u6CA1\u6709\u6D4B\u8BC4\uFF0824 \u7EC4\u300C\u6700\u50CF\u6211 / \u6700\u4E0D\u50CF\u6211\u300D\uFF0C\u7EA6 4 \u5206\u949F\uFF09\uFF0C\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\u2014\u2014\u5BF9\u7167\u5B69\u5B50\u7684\u884C\u4E3A\u98CE\u683C\uFF0C\u770B\u6C9F\u901A\u5361\u70B9\u51FA\u5728\u54EA\u91CC\u3002",
-        actionText: "\u53BB\u6D4B\u5BB6\u957F DISC \u2192",
-        to: "/assessments?start=discparent"
-      }
-    ) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
-      student && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student, parents }),
-      parents.map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentDetail, { label: p.label, result: p.result, student }, `${p.label}-${i}`)),
-      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "text-center text-[12px] text-olive-mute", children: "\u53EF\u591A\u4F4D\u5BB6\u957F\u5404\u6D4B\u4E00\u6B21\uFF1A\u8BA9\u5BB6\u957F\u6253\u5F00\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5BB6\u957F DISC\u300D\u5206\u522B\u586B\u5199\u3002" })
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card accent-l border-terra/50 p-5", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u5DE6\u8FB9\u662F\u5BB6\u957F\u548C\u5B69\u5B50\u300C\u60F3\u4E0D\u5230\u4E00\u5757\u300D\u7684\u5730\u65B9\uFF08\u7EA2\u8272\u4E3A\u6700\u9700\u8981\u6CE8\u610F\u7684\uFF09\uFF0C\u53F3\u8FB9\u662F\u7167\u7740\u5C31\u80FD\u505A\u7684\u6539\u8FDB\u529E\u6CD5\u3002" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 grid gap-3 lg:grid-cols-2", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-terra/30 bg-terra/5 p-3.5", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-terra", children: [
+            "\u51B2\u7A81\u70B9\u6E05\u5355 \xB7 ",
+            conflicts.length,
+            " \u6761"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: conflicts.map((c, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
+            "li",
+            {
+              className: c.hot ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50" : "text-[12.5px] leading-relaxed text-olive-soft",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: c.hot ? "text-[#8f1313]" : "text-olive", children: [
+                  i + 1,
+                  "."
+                ] }),
+                " ",
+                c.text
+              ]
+            },
+            i
+          )) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-lime/40 bg-lime-pale/50 p-3.5", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "text-[13px] font-bold text-olive", children: [
+            "\u6539\u8FDB\u65B9\u6848 \xB7 ",
+            tips.length,
+            " \u6761"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ol", { className: "mt-2 space-y-1.5", children: tips.map((t, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
+              i + 1,
+              "."
+            ] }),
+            " ",
+            t
+          ] }, i)) })
+        ] })
+      ] })
     ] }),
     raw && raw.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Fold, { title: "\u7B54\u9898\u660E\u7EC6 \xB7 \u5BB6\u957F\u5377\uFF08\u70B9\u51FB\u5C55\u5F00\uFF09", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswerDetailsByKind, { raw, kinds: ["e3parent"] }) }),
@@ -112886,7 +112886,7 @@ function DiscBipolarAxis({ tendency }) {
             "div",
             {
               className: "absolute top-0 h-full rounded-full",
-              style: { left: neg ? `${50 + t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR2[k] }
+              style: { left: t > 0 ? `${50 - t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR2[k] }
             }
           )
         ] }),
@@ -114719,7 +114719,7 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v45.tsx
+// scripts/smoke-render-v46.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -115100,7 +115100,20 @@ for (const kw of ["\u5FC3\u7406\u5065\u5EB7 \xB7 \u6DF1\u5EA6\u8BC4\u4F30\uFF08S
 if (/三甲医院/.test(sclTab + combinedS)) throw new Error("\u4ECD\u6709\u300C\u4E09\u7532\u533B\u9662\u300D\u63AA\u8F9E");
 need(sclTab, "12356", "\u70ED\u7EBF\u4FDD\u7559");
 console.log("OK v45 SCL-90 \u8BC4\u4F30\u62A5\u544A + \u7EFC\u5408\u96C6\u6210");
-console.log("RENDER_SMOKE_V45_OK");
+var axisSeg = discHtml.slice(discHtml.indexOf("\u884C\u4E3A\u7279\u5F81\u8F74 \xB7 \u53CC\u6781\u503E\u5411\u5EA6"));
+if (!axisSeg.includes("left:0%;width:50%")) throw new Error("\u7279\u5F81\u8F74 D +100% \u6761\u5E94\u6EE1\u4F38\u5DE6\u534A\uFF08left:0%;width:50%\uFF09");
+if (!axisSeg.includes("left:50%;width:50%")) throw new Error("\u7279\u5F81\u8F74 C -100% \u6761\u5E94\u6EE1\u4F38\u53F3\u534A\uFF08left:50%;width:50%\uFF09");
+if (!axisSeg.includes("left:50%;width:0%")) throw new Error("\u7279\u5F81\u8F74 0% \u6761\u5E94\u7F29\u5728\u4E2D\u7EBF\uFF08left:50%;width:0%\uFF09");
+if (!parentHtml.includes("left:16.5%")) throw new Error("+67% \u6761\u5E94\u843D\u5728\u5DE6\u534A\uFF08left:16.5%\uFF09\uFF0C\u65B9\u5411\u4ECD\u53CD");
+var idxDiscCmp = parentHtml.indexOf("\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167");
+var idxParentDetail = parentHtml.indexOf("\u5BB6\u957F\u7248 \xB7 \u5988\u5988");
+var idxE3 = parentHtml.indexOf("\u5BB6\u5EAD\u652F\u6301\u4E0E\u73AF\u5883\u89C2\u5BDF\uFF08\u5BB6\u957F\u5377\uFF09");
+var idxBlind = parentHtml.indexOf("\u5BB6\u957F\u8BA4\u77E5\u5BF9\u7167");
+var idxConflict = parentHtml.indexOf("\u4EB2\u5B50\u51B2\u7A81\u70B9\u6E05\u5355\u4E0E\u6539\u8FDB\u65B9\u6848");
+if (!(idxDiscCmp > -1 && idxParentDetail > idxDiscCmp && idxE3 > idxParentDetail && idxBlind > idxE3 && idxConflict > idxBlind))
+  throw new Error(`\u5BB6\u957F tab \u987A\u5E8F\u5E94\u4E3A DISC\u2192\u5BB6\u957F\u5377\u2192\u8BA4\u77E5\u5BF9\u7167\u2192\u4EB2\u5B50\u51B2\u7A81\uFF0C\u5B9E\u9645 ${[idxDiscCmp, idxParentDetail, idxE3, idxBlind, idxConflict].join(",")}`);
+console.log("OK v46 \u6761\u65B9\u5411\u53CD\u8F6C\uFF08+\u671D\u5DE6/-\u671D\u53F3\uFF09+ \u5BB6\u957F tab \u5148 DISC \u89E3\u8BFB");
+console.log("RENDER_SMOKE_V46_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

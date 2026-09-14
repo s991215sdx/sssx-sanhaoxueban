@@ -57,7 +57,7 @@ function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: str
                 <div
                   className="absolute top-0 h-full rounded-full"
                   style={{
-                    left: t < 0 ? `${50 + t / 2}%` : "50%",
+                    left: t > 0 ? `${50 - t / 2}%` : "50%",
                     width: `${Math.abs(t) / 2}%`,
                     background: DISC_COLOR[k],
                     opacity: inCombo || isHot ? 1 : 0.5,
