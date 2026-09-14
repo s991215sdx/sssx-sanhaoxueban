@@ -339,3 +339,42 @@
 4. 综合报告条件章心理三套明细：answerKindsForSection 条件模块 kinds 已含 mentalsdq/mentalpa（v40 已加），冒烟确认 ansblk- 存在。
 
 验证：tsc 干净；build OK；smoke-v41（v37-v40 全量 + v41 增量 12 项）全过。BUILD_TAG=v41-2026-09-14。
+
+
+---
+
+## v42（2026-09-14，版本 27cae34，commit c557569）
+
+用户四项指示（带附件：SCL-90 报告 PDF + DISC 报告 PDF/截图）：
+1. SDQ 低龄不做家长版 → 标注「11 岁以下请家长引导填写」。
+2. 学生版 B 的 GAD-7：信效度不能保证就删 → **恢复原版标准措辞保留**（PHQ-A 本身是青少年改编版有依据；GAD-7 改回 Spitzer 2006 原版，学生化措辞信效度证据无法继承）。
+3. 心理健康加入附件一式「心理健康评估表+评估报告」→ 新增第四套 **SCL-90 深度评估**（90 题原版标准译本、10 因子、中国常模口径、附件式报告）。
+4. DISC 图参考附件：竖线折线图 + 顶部灰色**反弹区**（≥80%，物极必反）。
+
+### 改动清单
+
+- **contracts/mentalHealth.ts**
+  - MENTAL_SDQ_AGE →「11 岁以下请家长引导填写（陪同读题、帮助理解题意，答案仍由孩子自己选）」。
+  - GAD7_STUDENT_TEXTS → GAD7_STANDARD_TEXTS（原版 7 条）；MENTAL_PA_SECTIONS 第二部分标题/描述更新；文件头注释改 V40/V42。
+  - GAD7_ITEM_EXPLAIN text 对齐原版措辞（observe 不变）。
+  - **SCL-90 全套**：Scl90FactorKey/SCL90_FACTOR_ORDER/SCL90_FACTOR_LABEL/SCL90_FACTOR_ITEMS（题号归属按标准手册）/SCL90_NORM（中国成人常模）/SCL90_OPTIONS(1-5)/SCL90_QUESTIONS(90 题，q15 safety)/MENTAL_SCL90_INTRO/MENTAL_SCL90_AGE/scoreScl90（总分/gsi/阳性项目/阴性/PSDI/10 因子均分/分级/筛选阳性 selfHarm=answers[14]>=2/level 映射/summary）/scl90FactorLevel（<2 正常，2-2.9 轻，3-3.9 中，4-4.9 偏重，≈5 严重——与附件口径一致）/isMentalScl90/MENTAL_SCL90_DISCLAIMER/SCL90_FACTOR_EXPLAIN(10 因子 meaning+low/mid/high+advice)/MENTAL_SCL90_RULES。
+- **DB 迁移三处**（kind 加 'scl90'）：db/schema.ts mysqlEnum、db/migrations/0014_scl90_kind.sql + meta/_journal.json(idx 14, when 1789400000000)、api/migrationsEmbedded.ts。**发布前必须确认 0014 已执行**。
+- **api/profileRouter.ts**：import/kindSchema/questions case/submit schema(90×1-5)/scoreScl90 分支/latest(mentalScl90 字段+early-break 三元+赋值)/profile 同步豁免。api/studentDetail.ts OPTIONAL_KINDS 加 scl90。
+- **src/components/companion/MentalScl90Quiz.tsx（新）**：分页作答（10 题×9 页）、第 15 题红线卡、草稿 key "scl90"、结果卡（总分/阳性/总均分+10 因子表+红线+免责）。
+- **AssessmentCenter**：MentalChooser 加第四卡（深度评估 SCL-90，xl 四列）；TESTS 描述/聚合 summary/doneOf 更新。
+- **ReportView**：data 类型+声明+combined memo 传参；mental tab 空态条件含 scl90（四套）、深链补深度评估；SCL90 区块=Scl90ReportCard（附件式：评估背景→计分与标准说明→综合评估表(总分/总均分/阳性/PSDI+10 因子表含常模列)→逐因子 Fold 解读(在看什么/你的得分解读/改善建议)→免责）+明细 Fold；冰山 chips/canDownload/框架 status note 聚合四套。
+- **combined.ts**：CombinedReportOptions+overviewCards+belowIce+scl90Card（条件章，selfHarm→卡点）+secCondItems 插入（sdq/pa/scl90/mental 顺序）。
+- **answerBlocks.ts**：条件章 kinds 加 scl90；新增 scl90 明细块（[因子]/[生命安全] 标注，≥3 红）。
+- **StudentDetailDrawer**：已测清单加「心理健康·深度评估(SCL-90)」+透传 mentalScl90。
+- **DISC**：contracts/assessments.ts 加 discV2Counts（most/least 各维度计数 0-24）；ReportView 新增 DISC_REBOUND_HINT；DiscTendencyChart 重写为 SVG 竖线折线图（D/I/S/C 竖线+落点连线+顶部灰带反弹区≥80%+底部「xx 型（名称）」标签+反弹因子灰圈提示+反弹提示条）；DiscDetail V2 双图（校园中的我 MOST / 被压在身后的我 LEAST，口径诚实标注）+反弹区说明卡；DiscDetail props 加 v2Counts；主组件 discV2Split useMemo（raw 倒序找最近 V2 作答）。删 DISC_TRAIT_WORDS（unused）。
+- **MentalPaQuiz**：标题/结果卡「学生版 B（PHQ-A + GAD-7 学生版）」→「（PHQ-A + GAD-7）」，GAD-7 焦虑筛查（标准版）。
+
+### 验证
+- tsc 无新增错误（基线 3 个历史 Academics 错误仍在）。
+- smoke-render-v42（v37-v41 全量 + v42 增量）全过：SCL-90 计分手工核对（全 1/全 3/第 15 题红线/敌对 6 题全 5 因子隔离/分级边界 2.5=轻 3.0=中）、GAD-7 原版措辞、SDQ 家长引导、DISC MOST/LEAST 计数+双线图+反弹提示（D=24→专断）、SCL-90 评估报告+综合卡+ansblk-scl90。
+- BUILD_TAG=v42-2026-09-14。发布顺序：确认 0013+0014 迁移已执行 → 发布。
+
+### 遗留/备注
+- DISC 第三张「压力下的我」未做独立图（净分 dims 图即 MOST−LEAST 口径，主卡头部已展示）；如要三图并列可后续加。
+- SCL-90 适用 16 岁以上（常模成人），界面已标注；低龄学生仍走 SDQ。
+- 简版报告心理图仍只画通用版（v41 遗留）。
