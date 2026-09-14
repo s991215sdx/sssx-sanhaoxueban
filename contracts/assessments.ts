@@ -502,6 +502,20 @@ export function discTendencyText(t: number): string {
   return `${t > 0 ? "+" : ""}${Math.round(t)}%`;
 }
 
+/** 四因子动物象徽（落点正值标注用）：D 老虎、I 孔雀、S 考拉、C 猫头鹰（单字用于图形徽章）。 */
+export const DISC_ANIMAL_FULL: Record<DiscType, string> = {
+  D: "老虎",
+  I: "孔雀",
+  S: "考拉",
+  C: "猫头鹰",
+};
+export const DISC_ANIMAL_BADGE: Record<DiscType, string> = {
+  D: "虎",
+  I: "孔",
+  S: "考",
+  C: "枭",
+};
+
 /* ----------------------------------- E3 ---------------------------------- */
 /* E3 学业诊断已升级为 V2.7 五维优化版，题库与计分见 ./e3v27。 */
 

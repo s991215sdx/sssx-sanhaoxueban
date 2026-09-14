@@ -12,7 +12,7 @@ import ProfileCard from "@/components/companion/ProfileCard";
 import AcademicsForm from "@/components/companion/AcademicsForm";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
-import { DISC_BIPOLAR, DISC_REBOUND_PCT, discBand, discTendencyFromDims, discTendencyText } from "@contracts/assessments";
+import { DISC_BIPOLAR, DISC_REBOUND_PCT, DISC_ANIMAL_BADGE, DISC_ANIMAL_FULL, discBand, discTendencyFromDims, discTendencyText } from "@contracts/assessments";
 import {
   isE3V37Result,
   E3V37_RATING_COUNT,
@@ -1089,64 +1089,13 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
             </p>
           </div>
         )}
-        {/* 行为特征轴（双极倾向度，与下方竖线图为同一份分数） */}
-        <div className="mt-4">
-          <div className="text-[12.5px] font-bold text-olive">行为特征轴 · 双极倾向度</div>
-          <div className="mt-2 space-y-2.5">
-            {(["D", "I", "S", "C"] as const).map((k) => {
-              const t = tendency[k];
-              const isMain = k === primary;
-              return (
-                <div key={k} className="flex items-center gap-2">
-                  <span className={`w-[64px] shrink-0 text-right text-[12px] ${t > 0 ? "font-bold text-olive" : "text-olive-mute/70"}`}>
-                    {DISC_BIPOLAR[k].plus} {k}+
-                  </span>
-                  <div className="relative h-3 flex-1 rounded-full bg-cream-deep">
-                    <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
-                    <div
-                      className="absolute top-0 h-full rounded-full"
-                      style={{
-                        left: t < 0 ? `${50 + t / 2}%` : "50%",
-                        width: `${Math.abs(t) / 2}%`,
-                        background: DISC_COLOR[k],
-                        opacity: isMain ? 1 : 0.7,
-                      }}
-                    />
-                  </div>
-                  <span className={`w-[64px] shrink-0 text-[12px] ${t < 0 ? "font-bold text-olive" : "text-olive-mute/70"}`}>
-                    {k}- {DISC_BIPOLAR[k].minus}
-                  </span>
-                  <span className="mono w-[86px] shrink-0 text-right text-[12px] text-olive-soft">
-                    {discTendencyText(t)} · {discBand(t)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-1 flex justify-between px-[72px] text-[10.5px] text-olive-mute">
-            <span>强</span>
-            <span>明显</span>
-            <span>中等</span>
-            <span>轻微</span>
-            <span>中等</span>
-            <span>明显</span>
-            <span>强</span>
-          </div>
-        </div>
+        {/* 行为特征轴（双极倾向度，与下方竖线图为同一份分数；值跟轴走：正值标左轴、负值标右轴） */}
+        <DiscBipolarAxis tendency={tendency} />
         {/* 四因子双极倾向度图（与上方行为特征轴为同一份分数） */}
         <div className="mt-4 -mx-5">
           <DiscTendencyChart dims={dims} version={version} />
         </div>
-        {/* 反弹区说明卡 */}
-        <div className="mt-4 rounded-xl border border-border bg-cream/70 px-4 py-3">
-          <div className="text-[12.5px] font-bold text-olive">上下两个灰色「反弹区」怎么看</div>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">
-            每个行为因子都有一个「甜蜜区间」。倾向度进入顶部高反弹区（≥+80%），说明这个特质被拉到了极端——物极必反：
-            D 的果敢可能变成专断、I 的热情可能变成浮躁、S 的沉稳可能变成僵化、C 的严谨可能变成挑剔。
-            而跌入底部低反弹区（≤-80%），说明它的对立面（配合/内向/急迫/灵活）走到了极端——长期压着这一面，消耗大，同样可能以反面形式反弹。
-            反弹区不是缺点，是「用力过猛」或「压得太狠」的提醒：强项留三分力，弱项不必硬藏，反而更稳。
-          </p>
-        </div>
+        <DiscReboundExplain />
         <div className="mt-3 flex flex-wrap gap-1.5">
           {report.keywords.map((k) => (
             <span key={k} className="chip">
@@ -1498,67 +1447,9 @@ function ParentReportTab({
       ) : (
         <>
           {student && <DiscParentCompare student={student} parents={parents} />}
-          {parents.map((p, i) => {
-        const combo = getDiscCombo(p.result.dims);
-        const report = DISC_REPORTS[p.result.primary];
-        const style = PARENT_DISC_STYLE[p.result.primary];
-        return (
-          <div key={`${p.label}-${i}`} className="paper-card p-5">
-            <div className="flex flex-wrap items-baseline gap-3">
-              <span className="text-lg font-bold text-olive">{p.label}</span>
-              <span className="text-[14px] font-bold text-olive">
-                {combo.join("")} 型{report ? ` · ${report.name}` : ""}
-              </span>
-              <span className="text-[12px] text-olive-mute">{combo.map((k) => DISC_ANIMAL[k]).join(" + ")}</span>
-              {p.result.version !== 2 && (
-                <a
-                  href="/assessments?start=discparent"
-                  className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60"
-                >
-                  旧版题目 · 建议重测 →
-                </a>
-              )}
-            </div>
-            <div className="mt-3 space-y-1.5">
-              {(["D", "I", "S", "C"] as const).map((k) => {
-                const t = discTendencyFromDims(p.result.dims, p.result.version)[k];
-                return (
-                  <div key={k} className="flex items-center gap-2">
-                    <span className={`w-10 shrink-0 text-[12px] ${combo.includes(k) ? "font-bold text-olive" : "text-olive-mute"}`}>{k}</span>
-                    <div className="relative h-2.5 flex-1 rounded-full bg-cream-deep">
-                      <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
-                      <div
-                        className="absolute top-0 h-full rounded-full"
-                        style={{
-                          left: t < 0 ? `${50 + t / 2}%` : "50%",
-                          width: `${Math.abs(t) / 2}%`,
-                          background: combo.includes(k) ? "#c7a23a" : "#7cb83c",
-                          opacity: combo.includes(k) ? 1 : 0.55,
-                        }}
-                      />
-                    </div>
-                    <span className="mono w-11 shrink-0 text-right text-[12px] text-olive-soft">{discTendencyText(t)}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-3 space-y-2 text-[13px] leading-relaxed text-olive-soft">
-              <p>
-                <b className="text-olive">管教风格：</b>{p.label}偏 {p.result.primary} 型（{style.style}）。
-              </p>
-              {student && (
-                <p>
-                  <b className="text-olive">可能的冲突点：</b>孩子是 {getDiscCombo(student.dims).join("")} 型
-                  {DISC_REPORTS[student.primary] ? `「${DISC_REPORTS[student.primary].name}」` : ""}——{style.risk[student.primary]}。
-                </p>
-              )}
-              <p>
-                <b className="text-olive">管教建议：</b>{style.tip}
-              </p>
-            </div>
-          </div>
-        );
-          })}
+          {parents.map((p, i) => (
+            <DiscParentDetail key={`${p.label}-${i}`} label={p.label} result={p.result} student={student} />
+          ))}
           <p className="text-center text-[12px] text-olive-mute">可多位家长各测一次：让家长打开「测评中心 → 家长 DISC」分别填写。</p>
         </>
       )}
@@ -1702,6 +1593,132 @@ const DISC_REBOUND_LOW: Record<"D" | "I" | "S" | "C", string> = {
 };
 
 /**
+ * 行为特征轴（双极倾向度，学生/家长详版共用）：
+ * 每行 = +端标签 ｜ 左数值列 ｜ 中心条（从 0% 向对应侧伸展）｜ 右数值列 ｜ -端标签。
+ * 值跟轴走：正值 +N%（含 0%）标在左轴侧、负值 -N% 标在右轴侧。
+ */
+function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
+  const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
+  return (
+    <div className="mt-4">
+      <div className="text-[12.5px] font-bold text-olive">行为特征轴 · 双极倾向度</div>
+      <div className="mt-2 space-y-2.5">
+        {keys.map((k) => {
+          const t = tendency[k];
+          const neg = t < 0;
+          const val = `${discTendencyText(t)} · ${discBand(t)}`;
+          return (
+            <div key={k} className="flex items-center gap-2">
+              <span className={`w-[64px] shrink-0 text-right text-[12px] ${!neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
+                {DISC_BIPOLAR[k].plus} {k}+
+              </span>
+              <span className="mono w-[88px] shrink-0 text-right text-[12px]" style={{ color: !neg ? DISC_COLOR[k] : "#c8cdb2" }}>
+                {!neg ? val : ""}
+              </span>
+              <div className="relative h-3 flex-1 rounded-full bg-cream-deep">
+                <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
+                <div
+                  className="absolute top-0 h-full rounded-full"
+                  style={{ left: neg ? `${50 + t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR[k] }}
+                />
+              </div>
+              <span className="mono w-[88px] shrink-0 text-[12px]" style={{ color: neg ? DISC_COLOR[k] : "#c8cdb2" }}>
+                {neg ? val : ""}
+              </span>
+              <span className={`w-[64px] shrink-0 text-[12px] ${neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
+                {k}- {DISC_BIPOLAR[k].minus}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-1 flex justify-between text-[10.5px] text-olive-mute" style={{ paddingLeft: 160, paddingRight: 160 }}>
+        <span>强</span>
+        <span>明显</span>
+        <span>中等</span>
+        <span>轻微</span>
+        <span>中等</span>
+        <span>明显</span>
+        <span>强</span>
+      </div>
+    </div>
+  );
+}
+
+/** 上下反弹区说明卡（学生/家长详版共用）。 */
+function DiscReboundExplain() {
+  return (
+    <div className="mt-4 rounded-xl border border-border bg-cream/70 px-4 py-3">
+      <div className="text-[12.5px] font-bold text-olive">上下两个灰色「反弹区」怎么看</div>
+      <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">
+        每个行为因子都有一个「甜蜜区间」。倾向度进入顶部高反弹区（≥+80%），说明这个特质被拉到了极端——物极必反：
+        D 的果敢可能变成专断、I 的热情可能变成浮躁、S 的沉稳可能变成僵化、C 的严谨可能变成挑剔。
+        而跌入底部低反弹区（≤-80%），说明它的对立面（配合/内向/急迫/灵活）走到了极端——长期压着这一面，消耗大，同样可能以反面形式反弹。
+        反弹区不是缺点，是「用力过猛」或「压得太狠」的提醒：强项留三分力，弱项不必硬藏，反而更稳。
+      </p>
+    </div>
+  );
+}
+
+/**
+ * 家长版 DISC 行为详版（与学生详版同构，标注清楚是家长版）：
+ * 头卡（家长版徽章 + 类型）→ 管教风格一句话 → 行为特征轴 → 双极倾向度图 → 反弹区说明 → 管教风格/冲突点/建议。
+ * 有几位家长就渲染几份（调用方 parents.map）。
+ */
+function DiscParentDetail({ label, result, student }: { label: string; result: DiscResult; student?: DiscResult | null }) {
+  const combo = getDiscCombo(result.dims);
+  const report = DISC_REPORTS[result.primary];
+  const style = PARENT_DISC_STYLE[result.primary];
+  const tendency = discTendencyFromDims(result.dims, result.version);
+  return (
+    <div className="paper-card p-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-[#c7a23a]/70 bg-[#c7a23a]/15 px-2.5 py-0.5 text-[11.5px] font-bold text-[#8a6d1a]">
+          家长版 · {label}
+        </span>
+        <span className="text-xl font-bold text-olive">
+          {combo.join("")} 型{report ? ` · ${report.name}` : ""}
+        </span>
+        <span className="text-[12px] text-olive-mute">{combo.map((k) => DISC_ANIMAL[k]).join(" + ")}</span>
+        {result.version !== 2 && (
+          <a
+            href="/assessments?start=discparent"
+            className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60"
+          >
+            旧版题目 · 建议重测 →
+          </a>
+        )}
+      </div>
+      <p className="mt-1.5 text-[13.5px] text-olive-soft">
+        <b className="text-olive">管教风格：</b>
+        {label}偏 {result.primary} 型（{style.style}）。这份是<b className="text-olive">家长版</b> DISC 行为详版，与上方「亲子 DISC
+        行为风格对照」互为参照。
+      </p>
+      {/* 行为特征轴（与学生详版同一份口径） */}
+      <DiscBipolarAxis tendency={tendency} />
+      {/* 双极倾向度图（家长版） */}
+      <div className="mt-4 -mx-5">
+        <DiscTendencyChart dims={result.dims} version={result.version} title={`${label} 的行为之镜 · DISC 四因子倾向度（家长版）`} />
+      </div>
+      <DiscReboundExplain />
+      <div className="mt-3 space-y-2 text-[13px] leading-relaxed text-olive-soft">
+        {student && (
+          <p>
+            <b className="text-olive">与孩子（{getDiscCombo(student.dims).join("")} 型
+            {DISC_REPORTS[student.primary] ? `「${DISC_REPORTS[student.primary].name}」` : ""}）可能的冲突点：</b>
+            {style.risk[student.primary]}
+          </p>
+        )}
+        <p>
+          <b className="text-olive">管教建议：</b>
+          {style.tip}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
  * DISC 四因子双极倾向度图（国际通行口径，对标专业 DISC 报告样式）：
  * Y 轴 -100%…+100% 倾向度（净分÷24），中线 0% 加粗；顶部「高反弹区」（≥+80%）
  * 与底部「低反弹区」（≤-80%）双灰色带；D/I/S/C 四条竖线、落点连线、底部类型标签。
@@ -1797,22 +1814,36 @@ function DiscTendencyChart({
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-        {/* 落点 + 倾向度标签 */}
+        {/* 落点 + 倾向度标签（正值落点用动物象徽：虎=D 老虎、孔=I 孔雀、考=S 考拉、枭=C 猫头鹰） */}
         {keys.map((k, i) => {
           const t = tendency[k];
+          const positive = t > 0;
           const inRebound = Math.abs(t) >= DISC_REBOUND_PCT;
           const y = yOf(t);
           return (
             <g key={`dot-${k}`}>
-              <circle cx={xs[i]} cy={y} r={11} fill={inRebound ? "#6b7280" : "none"} opacity={inRebound ? 0.3 : 0} />
-              <circle cx={xs[i]} cy={y} r={7} fill={DISC_COLOR[k]} stroke="#ffffff" strokeWidth={2.5} />
-              <text x={xs[i]} y={y + (y > TOP + 26 ? -12 : 22)} fontSize={10.5} fontWeight={700} fill={DISC_COLOR[k]} textAnchor="middle">
+              {inRebound && <circle cx={xs[i]} cy={y} r={13} fill="#6b7280" opacity={0.3} />}
+              {positive ? (
+                <>
+                  <circle cx={xs[i]} cy={y} r={12} fill={DISC_COLOR[k]} stroke="#ffffff" strokeWidth={2.5} />
+                  <text x={xs[i]} y={y + 4.2} fontSize={11} fontWeight={800} fill="#ffffff" textAnchor="middle">
+                    {DISC_ANIMAL_BADGE[k]}
+                  </text>
+                </>
+              ) : (
+                <circle cx={xs[i]} cy={y} r={7} fill={DISC_COLOR[k]} stroke="#ffffff" strokeWidth={2.5} />
+              )}
+              <text x={xs[i]} y={y + (y > TOP + 30 ? -18 : 24)} fontSize={10.5} fontWeight={700} fill={DISC_COLOR[k]} textAnchor="middle">
                 {discTendencyText(t)}
               </text>
             </g>
           );
         })}
       </svg>
+      {/* 动物象徽图例 */}
+      <p className="mt-1 text-center text-[11px] text-olive-mute">
+        正值落点的动物象徽：虎 = D（{DISC_ANIMAL_FULL.D}）｜孔 = I（{DISC_ANIMAL_FULL.I}）｜考 = S（{DISC_ANIMAL_FULL.S}）｜枭 = C（{DISC_ANIMAL_FULL.C}）
+      </p>
       {/* 底部类型标签（对标「ID（说服型）」样式） */}
       <div className="mx-auto -mt-1 w-fit rounded-lg border border-border bg-cream px-4 py-1 text-[13px] font-bold text-olive">
         {combo.join("")} 型{primaryReport ? `（${primaryReport.name}）` : ""}
