@@ -10,6 +10,7 @@ import HollandQuiz from "@/components/companion/HollandQuiz";
 import MentalQuiz from "@/components/companion/MentalQuiz";
 import MentalSdqQuiz from "@/components/companion/MentalSdqQuiz";
 import MentalPaQuiz from "@/components/companion/MentalPaQuiz";
+import MentalScl90Quiz from "@/components/companion/MentalScl90Quiz";
 import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
 import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
@@ -114,8 +115,8 @@ const TESTS: TestDef[] = [
   },
   {
     kind: "mental",
-    name: "心理健康筛查（三套量表 · 选一套做）",
-    desc: "学生版 A（SDQ 长处与困难，4—17 岁）/ 学生版 B（PHQ-A + GAD-7 学生版，11 岁以上）/ 通用版（PHQ-9 + GAD-7）· 三套均可选做，可分开多次做 · 选做",
+    name: "心理健康筛查（四套量表 · 选一套做）",
+    desc: "学生版 A（SDQ 长处与困难，4—17 岁）/ 学生版 B（PHQ-A + GAD-7，11 岁以上）/ 通用版（PHQ-9 + GAD-7）/ 深度评估（SCL-90，16 岁以上 90 题）· 均为选做，可分开多次做 · 选做",
     required: false,
     tab: "mental",
     summary: (l) => {
@@ -124,9 +125,10 @@ const TESTS: TestDef[] = [
       if (l.mentalPa) parts.push(`B·PHQ-A ${l.mentalPa.phq9}（${l.mentalPa.phq9Level}）`);
       if (l.mental)
         parts.push(isMentalV2(l.mental) ? `通用·PHQ-9 ${l.mental.phq9}（${l.mental.phq9Level}）` : "通用·旧版结果保留");
+      if (l.mentalScl90) parts.push(`深度·SCL-90 ${l.mentalScl90.total} 分（${l.mentalScl90.level}）`);
       return parts.length > 0 ? parts.join(" · ") : null;
     },
-    doneOf: (l) => !!(l.mental || l.mentalSdq || l.mentalPa),
+    doneOf: (l) => !!(l.mental || l.mentalSdq || l.mentalPa || l.mentalScl90),
   },
 ];
 
@@ -172,20 +174,21 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   return <MentalChooser onDone={onDone} />;
 }
 
-/** 心理健康三套量表自选页：孩子自己挑一套做（三套可分开多次做）。 */
+/** 心理健康四套量表自选页：孩子自己挑一套做（四套可分开多次做）。 */
 function MentalChooser({ onDone }: { onDone: () => void }) {
   const { data } = trpc.assessment.latest.useQuery();
-  const [picked, setPicked] = useState<"mentalsdq" | "mentalpa" | "mental" | null>(null);
+  const [picked, setPicked] = useState<"mentalsdq" | "mentalpa" | "scl90" | "mental" | null>(null);
   if (picked === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
   if (picked === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
+  if (picked === "scl90") return <MentalScl90Quiz onDone={onDone} />;
   if (picked === "mental") return <MentalQuiz onDone={onDone} />;
   const l: any = data ?? {};
-  const OPTIONS: { key: "mentalsdq" | "mentalpa" | "mental"; badge: string; title: string; age: string; desc: string; done: null | { label: string; note: string } }[] = [
+  const OPTIONS: { key: "mentalsdq" | "mentalpa" | "scl90" | "mental"; badge: string; title: string; age: string; desc: string; done: null | { label: string; note: string } }[] = [
     {
       key: "mentalsdq",
       badge: "学生版 A",
       title: "SDQ 长处与困难问卷",
-      age: "4—17 岁（11 岁以下可家长陪读）",
+      age: "4—17 岁（11 岁以下由家长引导填写）",
       desc: "国际通用的儿童青少年行为筛查：把状态拆成情绪、行为、注意力、同伴关系、亲社会优势五个观察面，还含 1 条安全预警题。25+1 题约 4 分钟。",
       done: l.mentalSdq
         ? { label: "已测", note: `困难总分 ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）· 综合「${l.mentalSdq.level}」${l.mentalSdq.selfHarm ? " · ⚠有安全预警信号" : ""}` }
@@ -194,11 +197,21 @@ function MentalChooser({ onDone }: { onDone: () => void }) {
     {
       key: "mentalpa",
       badge: "学生版 B",
-      title: "PHQ-A + GAD-7 学生版",
+      title: "PHQ-A + GAD-7",
       age: "11 岁以上",
-      desc: "国际通用的青少年抑郁 + 焦虑筛查，题干按学生日常语境改写（学习、考试、和同学相处）。16 题约 3 分钟，含 1 道自伤念头红线题。",
+      desc: "国际通用的青少年抑郁 + 焦虑筛查：PHQ-A 是 PHQ-9 的青少年改编版，GAD-7 为原版标准措辞，信效度依据充分。16 题约 3 分钟，含 1 道自伤念头红线题。",
       done: l.mentalPa
         ? { label: "已测", note: `PHQ-A ${l.mentalPa.phq9}/27（${l.mentalPa.phq9Level}）· GAD-7 ${l.mentalPa.gad7}/21（${l.mentalPa.gad7Level}）${l.mentalPa.selfHarm ? " · ⚠有安全预警信号" : ""}` }
+        : null,
+    },
+    {
+      key: "scl90",
+      badge: "深度评估",
+      title: "SCL-90 症状自评量表",
+      age: "16 岁以上 · 约 15—20 分钟",
+      desc: "国际应用最广泛的心理症状自评量表（原版标准 90 题、一字未改）：10 因子全面扫描近一周状态，按中国常模口径给出筛选结论，含 1 道生命安全题。适合想做一次完整深度评估的同学。",
+      done: l.mentalScl90
+        ? { label: "已测", note: `总分 ${l.mentalScl90.total}/450（${l.mentalScl90.level}）${l.mentalScl90.selfHarm ? " · ⚠有安全预警信号" : ""}` }
         : null,
     },
     {
@@ -218,16 +231,16 @@ function MentalChooser({ onDone }: { onDone: () => void }) {
     <div className="paper-card p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-olive">心理健康筛查 · 选一套做</h2>
+          <h2 className="text-lg font-bold text-olive">心理健康测评 · 选一套做</h2>
           <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">
-            三套都是国际通用筛查工具（选做），观察的侧重点不同，可以挑一套，也可以分几次各做一套——做过的结果都会进报告。如实作答，结果只有你自己看到。
+            四套都是国际通用筛查工具（选做），观察的侧重点和深度不同，可以挑一套，也可以分几次各做一套——做过的结果都会进报告。如实作答，结果只有你自己看到。
           </p>
         </div>
         <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
           返回
         </button>
       </div>
-      <div className="mt-5 grid gap-3 lg:grid-cols-3">
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {OPTIONS.map((o) => (
           <div key={o.key} className="flex flex-col rounded-xl border border-lime/40 bg-lime-pale/40 p-4">
             <div className="flex items-center justify-between gap-2">

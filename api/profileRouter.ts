@@ -60,11 +60,17 @@ import {
   MENTAL_PA_QUESTION_COUNT,
   scoreMentalPa,
   type MentalPaResult,
+  SCL90_QUESTIONS,
+  MENTAL_SCL90_INTRO,
+  SCL90_OPTIONS,
+  MENTAL_SCL90_QUESTION_COUNT,
+  scoreScl90,
+  type Scl90Result,
 } from "@contracts/mentalHealth";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import type { E3V27ParentResult } from "@contracts/e3v27Parent";
 
-const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "discparent"]);
+const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent"]);
 
 /** questions 接口返回：V3.7 学生卷题包。 */
 type E3V37QuestionSet = {
@@ -127,6 +133,14 @@ type MentalSdqQuestionSet = {
   questions: typeof MENTAL_SDQ_QUESTIONS;
 };
 
+/** questions 接口返回：深度评估 SCL-90（90 题平铺 + 五级选项）。 */
+type Scl90QuestionSet = {
+  kind: "scl90";
+  intro: string;
+  options: typeof SCL90_OPTIONS;
+  questions: typeof SCL90_QUESTIONS;
+};
+
 type AssessmentQuestions =
   | { kind: "mbti"; questions: typeof MBTI_QUESTIONS }
   | { kind: "disc"; groups: typeof DISC_V2_GROUPS }
@@ -139,7 +153,8 @@ type AssessmentQuestions =
   | { kind: "holland"; ratings: typeof HOLLAND_RATINGS }
   | MentalQuestionSet
   | MentalPaQuestionSet
-  | MentalSdqQuestionSet;
+  | MentalSdqQuestionSet
+  | Scl90QuestionSet;
 
 /** submit 接口返回。 */
 type AssessmentSubmitOutcome =
@@ -154,7 +169,8 @@ type AssessmentSubmitOutcome =
   | { kind: "holland"; result: HollandResult }
   | { kind: "mental"; result: MentalV2Result }
   | { kind: "mentalsdq"; result: MentalSdqResult }
-  | { kind: "mentalpa"; result: MentalPaResult };
+  | { kind: "mentalpa"; result: MentalPaResult }
+  | { kind: "scl90"; result: Scl90Result };
 
 /** 当前用户的档案；没有则返回 null（前端跳 /welcome）。 */
 async function getProfile(userId: number): Promise<StudentProfile | null> {
@@ -303,6 +319,9 @@ export const assessmentRouter = createRouter({
         case "mentalsdq":
           // 学生版 A：SDQ 学生自评（25 题 + 1 条安全预警题，平铺）
           return { kind: "mentalsdq", intro: MENTAL_SDQ_INTRO, options: MENTAL_SDQ_OPTIONS, questions: MENTAL_SDQ_QUESTIONS };
+        case "scl90":
+          // 深度评估：SCL-90 症状自评（90 题，5 级评分）
+          return { kind: "scl90", intro: MENTAL_SCL90_INTRO, options: SCL90_OPTIONS, questions: SCL90_QUESTIONS };
         case "e3parent": {
           // V3.7 家长卷：三版一致；studentDone 标记孩子是否已完成 e3 诊断（决定能否生成认知对照）
           const db = getDb();
@@ -412,6 +431,11 @@ export const assessmentRouter = createRouter({
           // 学生版 A：SDQ 25 题 + 1 条安全预警题，每题 0-2 整数
           answers: z.array(z.number().int().min(0).max(2)).length(MENTAL_SDQ_QUESTION_COUNT),
         }),
+        z.object({
+          kind: z.literal("scl90"),
+          // 深度评估 SCL-90：90 题，每题 1-5 整数（1 没有 … 5 严重）
+          answers: z.array(z.number().int().min(1).max(5)).length(MENTAL_SCL90_QUESTION_COUNT),
+        }),
       ]),
     )
     .mutation(
@@ -471,6 +495,10 @@ export const assessmentRouter = createRouter({
         // 学生版 A：SDQ 学生自评（0-2 × 26 题，末题为安全预警不计分）
         const result: MentalSdqResult = scoreMentalSdq(input.answers);
         outcome = { kind: "mentalsdq", result };
+      } else if (input.kind === "scl90") {
+        // 深度评估 SCL-90：90 题 1-5 级评分，10 因子 + 中国常模筛选口径
+        const result: Scl90Result = scoreScl90(input.answers);
+        outcome = { kind: "scl90", result };
       } else {
         const result: E3V37Result = scoreE3V37(input.answers);
         outcome = { kind: "e3", result };
@@ -503,9 +531,10 @@ export const assessmentRouter = createRouter({
           outcome.kind === "mental" ||
           outcome.kind === "mentalsdq" ||
           outcome.kind === "mentalpa" ||
+          outcome.kind === "scl90" ||
           outcome.kind === "discparent"
         ) {
-          // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（三套）、家长版 DISC 均为选做，不同步档案字段、不影响 onboarding
+          // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（四套）、家长版 DISC 均为选做，不同步档案字段、不影响 onboarding
         } else {
           await db
             .update(studentProfile)
@@ -551,8 +580,10 @@ export const assessmentRouter = createRouter({
       mental?: MentalV2Result | MentalResult;
       /** 最新一条 mentalsdq 结果：学生版 A（SDQ 学生自评）。 */
       mentalSdq?: MentalSdqResult;
-      /** 最新一条 mentalpa 结果：学生版 B（PHQ-A + GAD-7 学生化）。 */
+      /** 最新一条 mentalpa 结果：学生版 B（PHQ-A + GAD-7 标准版）。 */
       mentalPa?: MentalPaResult;
+      /** 最新一条 scl90 结果：深度评估（SCL-90 症状自评，10 因子）。 */
+      mentalScl90?: Scl90Result;
       raw: { kind: string; answers: unknown; createdAt: Date }[];
     } = { raw: [], discParents: [] };
     for (const row of rows) {
@@ -567,8 +598,8 @@ export const assessmentRouter = createRouter({
         latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
         continue;
       }
-      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa";
-      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : latest[key]) continue;
+      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa" | "scl90";
+      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : key === "scl90" ? latest.mentalScl90 : latest[key]) continue;
       if (key === "e3parent") latest.e3parent = row.result as unknown as E3V37ParentResult | E3V27ParentResult;
       else if (key === "mbti") latest.mbti = row.result as unknown as MbtiResult;
       else if (key === "disc") latest.disc = row.result as unknown as DiscResult;
@@ -579,6 +610,7 @@ export const assessmentRouter = createRouter({
       else if (key === "mental") latest.mental = row.result as unknown as MentalV2Result | MentalResult;
       else if (key === "mentalsdq") latest.mentalSdq = row.result as unknown as MentalSdqResult;
       else if (key === "mentalpa") latest.mentalPa = row.result as unknown as MentalPaResult;
+      else if (key === "scl90") latest.mentalScl90 = row.result as unknown as Scl90Result;
       else latest.multi = row.result as unknown as MultiResult;
       latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
       if (latest.mbti && latest.disc && latest.e3 && latest.multi && latest.multi5 && latest.anchor && latest.holland && latest.mental) break;

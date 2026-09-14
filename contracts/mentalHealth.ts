@@ -9,7 +9,7 @@
  * 【V40 · 学生版 A】SDQ 长处与困难问卷学生自评版（25 题 + 1 条安全预警题），
  * 五维度：情绪/品行/多动注意/同伴交往/亲社会。见 MENTAL_SDQ_* 与 scoreMentalSdq。
  *
- * 【V40 · 学生版 B】PHQ-A（青少年抑郁筛查 9 题）+ GAD-7 学生化措辞（7 题），
+ * 【V40/V42 · 学生版 B】PHQ-A（青少年抑郁筛查 9 题）+ GAD-7（V42 起恢复原版标准措辞），
  * 共 16 题，四级评分同 V2。见 MENTAL_PA_* 与 scoreMentalPa。
  *
  * 【V1 · 旧版（保留兼容）】SCL-90 式中学生适配版，30 题 10 因子 5 级评分。
@@ -445,7 +445,7 @@ export const SDQ_DIM_LABEL: Record<SdqDim, string> = {
 };
 
 /** SDQ 适用年龄说明（答题页与报告展示）。 */
-export const MENTAL_SDQ_AGE = "适用 4—17 岁：学生自己填写（11 岁以下建议家长陪同读题）";
+export const MENTAL_SDQ_AGE = "适用 4—17 岁：学生自己填写；11 岁以下请家长引导填写（陪同读题、帮助理解题意，答案仍由孩子自己选）";
 
 /** SDQ 作答引导语。 */
 export const MENTAL_SDQ_INTRO = "请根据你过去六个月的实际情况，选择最符合你的一项——没有对错，如实就好。";
@@ -587,10 +587,12 @@ export const MENTAL_SDQ_DISCLAIMER =
   "免责声明：SDQ（长处与困难问卷）是国际通用的儿童青少年行为筛查工具，结果仅供筛查参考，不构成医学诊断，也不能替代专业医生或心理咨询师的评估。若得分偏高，或最后一题不是「不符合」，请尽快告诉家长或老师，必要时前往专业心理/医疗机构评估，或拨打全国心理援助热线 12356。主动求助是勇敢，不是软弱。";
 
 /* ============================================================================
- * V40 · 学生版 B：PHQ-A（青少年抑郁筛查 9 题）+ GAD-7 学生化措辞（7 题）
+ * V40/V42 · 学生版 B：PHQ-A（青少年抑郁筛查 9 题）+ GAD-7 焦虑筛查（7 题）
  * ============================================================================
  * - PHQ-A（Patient Health Questionnaire for Adolescents）是 PHQ-9 的青少年
- *   版本，国际通用；GAD-7 题干按学生日常语境改写（学习、考试、同伴）。
+ *   改编版本，国际通用、有青少年群体信效度研究支持，保留原版措辞。
+ * - V42 起 GAD-7 恢复原版标准措辞（Spitzer 2006 验证版本，国内通行译本），
+ *   不再做学生化改写——改写版偏离已验证文本，信效度证据无法继承。
  * - 结构、评分、分级与 V2 相同：16 题 0-3 四级评分；PHQ-A 0-27 / GAD-7 0-21；
  *   0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险；第 9 题（自伤念头）≥1 红线。
  * - 适用 11 岁以上自评。
@@ -613,31 +615,32 @@ const PHQA_TEXTS = [
   "有过「不如死了算了」或想伤害自己的念头",
 ];
 
-const GAD7_STUDENT_TEXTS = [
-  "感到紧张、焦虑或着急",
-  "停不下来地担心，或控制不住自己的担心",
-  "对各种各样的事情担心太多（学习、考试、和同学相处等）",
+/** GAD-7 原版标准措辞（Spitzer 2006 验证版本，国内通行译本，V42 恢复）。 */
+const GAD7_STANDARD_TEXTS = [
+  "感到紧张、焦虑或急切",
+  "不能够停止或控制担忧",
+  "对各种各样的事情担忧过多",
   "很难放松下来",
-  "坐不住，很难安静地待着",
-  "容易心烦，或爱发脾气",
-  "感到害怕，好像会有什么可怕的事情发生",
+  "感到不安而难以静坐",
+  "变得容易烦恼或急躁",
+  "感到似乎将有可怕的事情发生而害怕",
 ];
 
-/** 学生版 B 题库：两段结构（PHQ-A 九题 + GAD-7 学生化七题），题号全局 1-16。 */
+/** 学生版 B 题库：两段结构（PHQ-A 九题 + GAD-7 标准七题），题号全局 1-16。 */
 export const MENTAL_PA_SECTIONS: MentalV2Section[] = [
   {
     key: "phq9",
     title: "第一部分 · PHQ-A 青少年抑郁筛查（9 题）",
-    description: "PHQ-A 是国际通用的青少年抑郁筛查量表（PHQ-9 的青少年版），看最近两周情绪与状态方面的困扰。",
+    description: "PHQ-A 是国际通用的青少年抑郁筛查量表（PHQ-9 的青少年改编版），看最近两周情绪与状态方面的困扰。",
     intro: MENTAL_V2_INTRO,
     questions: PHQA_TEXTS.map((text, i) => ({ no: i + 1, text })),
   },
   {
     key: "gad7",
-    title: "第二部分 · GAD-7 焦虑筛查 · 学生版（7 题）",
-    description: "GAD-7 是国际通用的焦虑筛查量表，这里按学生日常语境表述，看最近两周紧张、担忧方面的困扰。",
+    title: "第二部分 · GAD-7 焦虑筛查（7 题 · 标准版）",
+    description: "GAD-7 是国际通用的焦虑筛查量表（原版标准措辞，青少年群体同样有信效度研究支持），看最近两周紧张、担忧方面的困扰。",
     intro: MENTAL_V2_INTRO,
-    questions: GAD7_STUDENT_TEXTS.map((text, i) => ({ no: i + 10, text })),
+    questions: GAD7_STANDARD_TEXTS.map((text, i) => ({ no: i + 10, text })),
   },
 ];
 
@@ -743,13 +746,13 @@ export const PHQ9_ITEM_EXPLAIN: MentalItemExplain[] = [
 
 /** GAD-7 七个观测点逐项说明。 */
 export const GAD7_ITEM_EXPLAIN: MentalItemExplain[] = [
-  { text: "紧张、焦虑或着急", observe: "观察「紧绷程度」——身体和心理是不是经常处在备战状态。" },
-  { text: "无法停止或控制担忧", observe: "观察「担忧的可控性」——担心的开关能不能自己关上，关不上最耗人。" },
-  { text: "对各种事情过度担忧", observe: "观察「担忧的泛化」——是否从小事担心到大事、从学习担心到生活，无处不在。" },
+  { text: "紧张、焦虑或急切", observe: "观察「紧绷程度」——身体和心理是不是经常处在备战状态。" },
+  { text: "不能够停止或控制担忧", observe: "观察「担忧的可控性」——担心的开关能不能自己关上，关不上最耗人。" },
+  { text: "对各种各样的事情担忧过多", observe: "观察「担忧的泛化」——是否从小事担心到大事、从学习担心到生活，无处不在。" },
   { text: "很难放松下来", observe: "观察「放松能力」——休息时是不是脑子还在转，「不会放松」本身就是一种负担。" },
-  { text: "坐立不安、静不下来", observe: "观察「躯体化表现」——焦虑常常以坐不住、来回走动的方式跑出来。" },
-  { text: "容易烦恼或易怒", observe: "观察「情绪阈值」——是不是一点小事就烦，易怒往往是焦虑或压力的副产品。" },
-  { text: "感到害怕、仿佛有可怕的事要发生", observe: "观察「不祥预感」——没来由的心慌和不安，是焦虑程度偏高的典型感受。" },
+  { text: "不安而难以静坐", observe: "观察「躯体化表现」——焦虑常常以坐不住、来回走动的方式跑出来。" },
+  { text: "容易烦恼或急躁", observe: "观察「情绪阈值」——是不是一点小事就烦，易怒往往是焦虑或压力的副产品。" },
+  { text: "似乎将有可怕的事情发生而害怕", observe: "观察「不祥预感」——没来由的心慌和不安，是焦虑程度偏高的典型感受。" },
 ];
 
 /* ---------------- 分级总表 ---------------- */
@@ -766,3 +769,434 @@ export const MENTAL_SDQ_BAND_GUIDE: { band: SdqBand; meaning: string }[] = [
   { band: "边缘", meaning: "得分接近需要关注的边界，不算异常，但值得留个心眼——留意它是否在复测中继续走高。" },
   { band: "明显", meaning: "得分明显偏离常见范围，这个方面的困扰出现得相当频繁，建议认真对待并考虑专业评估。" },
 ];
+
+
+/* ============================================================================
+ * V42 · 深度评估：SCL-90 症状自评量表（90 题 · 10 因子 · 5 级评分）
+ * ============================================================================
+ * - SCL-90（Symptom Checklist-90，Derogatis 编制）是国际应用最广泛的心理
+ *   症状自评量表之一，20 世纪 80 年代引入中国，建立了中国常模；筛选阳性
+ *   的通行标准：总分 >160 分、或阳性项目数 >43 项、或任一因子均分 >2 分。
+ * - 题目为原版标准中文译本（一字未改），计分与因子归属按通行手册
+ *   （F1—F9 各因子 + F10 附加项「睡眠及饮食」），信效度依据充分。
+ * - 第 15 题（想结束自己的生命）为安全风险题：选「很轻」及以上（≥2）即
+ *   触发红线，优先级高于一切分数解读。
+ * - 适用 16 岁以上学生自评（常模为成人常模，结果按筛查口径解释），
+ *   约 15—20 分钟完成。作为前三套量表之外的「深度评估」选做项。
+ */
+
+export const MENTAL_SCL90_QUESTION_COUNT = 90;
+
+/** SCL-90 适用年龄说明。 */
+export const MENTAL_SCL90_AGE = "适用 16 岁以上学生自评（约 15—20 分钟）";
+
+/** SCL-90 十因子键。 */
+export type Scl90FactorKey =
+  | "somatization"
+  | "compulsive"
+  | "interpersonal"
+  | "depression"
+  | "anxiety"
+  | "hostility"
+  | "phobic"
+  | "paranoid"
+  | "psychotic"
+  | "additional";
+
+export const SCL90_FACTOR_ORDER: Scl90FactorKey[] = [
+  "somatization",
+  "compulsive",
+  "interpersonal",
+  "depression",
+  "anxiety",
+  "hostility",
+  "phobic",
+  "paranoid",
+  "psychotic",
+  "additional",
+];
+
+export const SCL90_FACTOR_LABEL: Record<Scl90FactorKey, string> = {
+  somatization: "躯体化",
+  compulsive: "强迫症状",
+  interpersonal: "人际关系敏感",
+  depression: "抑郁",
+  anxiety: "焦虑",
+  hostility: "敌对",
+  phobic: "恐怖",
+  paranoid: "偏执",
+  psychotic: "急性症状",
+  additional: "睡眠及饮食",
+};
+
+/** 因子 → 题号（1 起始，与标准手册一致；F10 为未归入前九因子的附加 7 项）。 */
+export const SCL90_FACTOR_ITEMS: Record<Scl90FactorKey, number[]> = {
+  somatization: [1, 4, 12, 27, 40, 42, 48, 49, 52, 53, 56, 58],
+  compulsive: [3, 9, 10, 28, 38, 45, 46, 51, 55, 65],
+  interpersonal: [6, 21, 34, 36, 37, 41, 61, 69, 73],
+  depression: [5, 14, 15, 20, 22, 26, 29, 30, 31, 32, 54, 71, 79],
+  anxiety: [2, 17, 23, 33, 39, 57, 72, 78, 80, 86],
+  hostility: [11, 24, 63, 67, 74, 81],
+  phobic: [13, 25, 47, 50, 70, 75, 82],
+  paranoid: [8, 18, 43, 68, 76, 83],
+  psychotic: [7, 16, 35, 62, 77, 84, 85, 87, 88, 90],
+  additional: [19, 44, 59, 60, 64, 66, 89],
+};
+
+/** 中国成人常模均分（各因子参考值，报告展示用；来源为国内通行手册常引数据）。 */
+export const SCL90_NORM: Record<Scl90FactorKey, number> = {
+  somatization: 1.37,
+  compulsive: 1.62,
+  interpersonal: 1.65,
+  depression: 1.5,
+  anxiety: 1.39,
+  hostility: 1.46,
+  phobic: 1.23,
+  paranoid: 1.43,
+  psychotic: 1.29,
+  additional: 1.5,
+};
+
+/** 5 级评分选项（1—5）。 */
+export const SCL90_OPTIONS = [
+  { value: 1, label: "没有" },
+  { value: 2, label: "很轻" },
+  { value: 3, label: "中等" },
+  { value: 4, label: "偏重" },
+  { value: 5, label: "严重" },
+] as const;
+
+export type Scl90Question = { no: number; text: string; factor: Scl90FactorKey; safety?: boolean };
+
+/** SCL-90 题库（90 题，原版标准译本，逐题标注因子；第 15 题为安全风险题）。 */
+export const SCL90_QUESTIONS: Scl90Question[] = [
+  { no: 1, text: "头痛", factor: "somatization" },
+  { no: 2, text: "神经过敏，心中不踏实", factor: "anxiety" },
+  { no: 3, text: "头脑中有不必要的想法或字句盘旋", factor: "compulsive" },
+  { no: 4, text: "头昏或昏倒", factor: "somatization" },
+  { no: 5, text: "对异性的兴趣减退", factor: "depression" },
+  { no: 6, text: "对旁人责备求全", factor: "interpersonal" },
+  { no: 7, text: "感到别人能控制你的思想", factor: "psychotic" },
+  { no: 8, text: "责怪别人制造麻烦", factor: "paranoid" },
+  { no: 9, text: "忘性大", factor: "compulsive" },
+  { no: 10, text: "担心自己的衣饰整齐及仪态的端正", factor: "compulsive" },
+  { no: 11, text: "容易烦恼和激动", factor: "hostility" },
+  { no: 12, text: "胸痛", factor: "somatization" },
+  { no: 13, text: "害怕空旷的场所或街道", factor: "phobic" },
+  { no: 14, text: "感到自己的精力下降，活动减慢", factor: "depression" },
+  { no: 15, text: "想结束自己的生命", factor: "depression", safety: true },
+  { no: 16, text: "听到旁人听不到的声音", factor: "psychotic" },
+  { no: 17, text: "发抖", factor: "anxiety" },
+  { no: 18, text: "感到大多数人都不可信任", factor: "paranoid" },
+  { no: 19, text: "胃口不好", factor: "additional" },
+  { no: 20, text: "容易哭泣", factor: "depression" },
+  { no: 21, text: "同异性相处时感到害羞不自在", factor: "interpersonal" },
+  { no: 22, text: "感到受骗，中了圈套或有人想抓住你", factor: "depression" },
+  { no: 23, text: "无缘无故地突然感到害怕", factor: "anxiety" },
+  { no: 24, text: "自己不能控制地大发脾气", factor: "hostility" },
+  { no: 25, text: "怕单独出门", factor: "phobic" },
+  { no: 26, text: "经常责怪自己", factor: "depression" },
+  { no: 27, text: "腰痛", factor: "somatization" },
+  { no: 28, text: "感到难以完成任务", factor: "compulsive" },
+  { no: 29, text: "感到孤独", factor: "depression" },
+  { no: 30, text: "感到苦闷", factor: "depression" },
+  { no: 31, text: "过分担忧", factor: "depression" },
+  { no: 32, text: "对事物不感兴趣", factor: "depression" },
+  { no: 33, text: "感到害怕", factor: "anxiety" },
+  { no: 34, text: "我的感情容易受到伤害", factor: "interpersonal" },
+  { no: 35, text: "旁人能知道你的私下想法", factor: "psychotic" },
+  { no: 36, text: "感到别人不理解你不同情你", factor: "interpersonal" },
+  { no: 37, text: "感到人们对你不友好，不喜欢你", factor: "interpersonal" },
+  { no: 38, text: "做事必须做得很慢以保证做得正确", factor: "compulsive" },
+  { no: 39, text: "心跳得很厉害", factor: "anxiety" },
+  { no: 40, text: "恶心或胃部不舒服", factor: "somatization" },
+  { no: 41, text: "感到比不上他人", factor: "interpersonal" },
+  { no: 42, text: "肌肉酸痛", factor: "somatization" },
+  { no: 43, text: "感到有人在监视你、谈论你", factor: "paranoid" },
+  { no: 44, text: "难以入睡", factor: "additional" },
+  { no: 45, text: "做事必须反复检查", factor: "compulsive" },
+  { no: 46, text: "难以做出决定", factor: "compulsive" },
+  { no: 47, text: "怕乘电车、公共汽车、地铁或火车", factor: "phobic" },
+  { no: 48, text: "呼吸有困难", factor: "somatization" },
+  { no: 49, text: "一阵阵发冷或发热", factor: "somatization" },
+  { no: 50, text: "因为感到害怕而避开某些东西、场合或活动", factor: "phobic" },
+  { no: 51, text: "脑子变空了", factor: "compulsive" },
+  { no: 52, text: "身体发麻或刺痛", factor: "somatization" },
+  { no: 53, text: "喉咙有梗塞感", factor: "somatization" },
+  { no: 54, text: "感到前途没有希望", factor: "depression" },
+  { no: 55, text: "不能集中注意力", factor: "compulsive" },
+  { no: 56, text: "感到身体的某一部分软弱无力", factor: "somatization" },
+  { no: 57, text: "感到紧张或容易紧张", factor: "anxiety" },
+  { no: 58, text: "感到手或脚发重", factor: "somatization" },
+  { no: 59, text: "想到死亡的事", factor: "additional" },
+  { no: 60, text: "吃得太多", factor: "additional" },
+  { no: 61, text: "当别人看着你或谈论你时感到不自在", factor: "interpersonal" },
+  { no: 62, text: "有一些不属于你自己的想法", factor: "psychotic" },
+  { no: 63, text: "有想打人或伤害他人的冲动", factor: "hostility" },
+  { no: 64, text: "醒得太早", factor: "additional" },
+  { no: 65, text: "必须反复洗手、点数", factor: "compulsive" },
+  { no: 66, text: "睡得不稳不深", factor: "additional" },
+  { no: 67, text: "有想摔坏或破坏东西的冲动", factor: "hostility" },
+  { no: 68, text: "有一些别人没有的想法或念头", factor: "psychotic" },
+  { no: 69, text: "感到对别人神经过敏", factor: "interpersonal" },
+  { no: 70, text: "在商店或电影院等人多的地方感到不自在", factor: "phobic" },
+  { no: 71, text: "感到任何事情都很困难", factor: "depression" },
+  { no: 72, text: "一阵阵恐惧或惊恐", factor: "anxiety" },
+  { no: 73, text: "感到在公共场合吃东西很不舒服", factor: "interpersonal" },
+  { no: 74, text: "经常与人争论", factor: "hostility" },
+  { no: 75, text: "单独一人时神经很紧张", factor: "phobic" },
+  { no: 76, text: "别人对你的成绩没有做出恰当的评价", factor: "paranoid" },
+  { no: 77, text: "即使和别人在一起也感到孤单", factor: "psychotic" },
+  { no: 78, text: "感到坐立不安心神不定", factor: "anxiety" },
+  { no: 79, text: "感到自己没有什么价值", factor: "depression" },
+  { no: 80, text: "感到熟悉的东西变成陌生或不像是真的", factor: "anxiety" },
+  { no: 81, text: "大叫或摔东西", factor: "hostility" },
+  { no: 82, text: "害怕会在公共场合昏倒", factor: "phobic" },
+  { no: 83, text: "感到别人想占你的便宜", factor: "paranoid" },
+  { no: 84, text: "为一些有关性的想法而很苦恼", factor: "psychotic" },
+  { no: 85, text: "你认为应该因为自己的过错而受到惩罚", factor: "psychotic" },
+  { no: 86, text: "感到要很快把事情做完", factor: "anxiety" },
+  { no: 87, text: "感到自己的身体有严重问题", factor: "psychotic" },
+  { no: 88, text: "从未感到和其他人很亲近", factor: "psychotic" },
+  { no: 89, text: "感到自己有罪", factor: "additional" },
+  { no: 90, text: "感到自己的脑子有毛病", factor: "psychotic" },
+];
+
+/** SCL-90 指导语。 */
+export const MENTAL_SCL90_INTRO =
+  "以下列出了有些人可能会有的问题。请仔细阅读每一条，根据最近一星期内这些情况影响你或让你感到苦恼的程度，选择最符合的答案。答案没有对错，凭第一感觉作答即可，请不要漏题。";
+
+export type Scl90FactorLevel = "正常" | "轻度" | "中度" | "偏重" | "严重";
+
+/** 因子均分 → 程度分级（与附件报告口径一致：<2 正常，2—2.9 轻度，3—3.9 中度，4—4.9 偏重，5 严重）。 */
+export function scl90FactorLevel(avg: number): Scl90FactorLevel {
+  if (avg >= 4.95) return "严重";
+  if (avg >= 3.95) return "偏重";
+  if (avg >= 2.95) return "中度";
+  if (avg >= 2) return "轻度";
+  return "正常";
+}
+
+/** SCL-90 计分结果。 */
+export type Scl90Result = {
+  version: "scl90";
+  /** 总分（90—450）。 */
+  total: number;
+  /** 总均分（总分/90，1—5）。 */
+  gsi: number;
+  /** 阳性项目数（单项分 ≥2 的项目数）。 */
+  positiveCount: number;
+  /** 阴性项目数（单项分 =1 的项目数）。 */
+  negativeCount: number;
+  /** 阳性症状均分 =（总分 − 阴性项目数）/ 阳性项目数。 */
+  psdi: number;
+  /** 十因子均分（保留 2 位小数）。 */
+  factors: Record<Scl90FactorKey, number>;
+  factorLevels: Record<Scl90FactorKey, Scl90FactorLevel>;
+  /** 筛选阳性（总分>160 或 阳性项目>43 或 任一因子均分>2）。 */
+  screeningPositive: boolean;
+  /** 第 15 题（想结束自己的生命）≥2，安全红线。 */
+  selfHarm: boolean;
+  level: MentalV2Band;
+  summary: string;
+};
+
+/** SCL-90 计分（题目、因子归属、常模口径均为标准手册版本）。 */
+export function scoreScl90(answers: number[]): Scl90Result {
+  if (answers.length !== MENTAL_SCL90_QUESTION_COUNT) {
+    throw new Error(`SCL-90 题数应为 ${MENTAL_SCL90_QUESTION_COUNT}，实际 ${answers.length}`);
+  }
+  answers.forEach((raw, i) => {
+    if (!Number.isInteger(raw) || raw < 1 || raw > 5) {
+      throw new Error(`SCL-90 第 ${i + 1} 题分值应为 1-5，实际 ${raw}`);
+    }
+  });
+  const total = answers.reduce((s, v) => s + v, 0);
+  const gsi = total / 90;
+  const positiveCount = answers.filter((v) => v >= 2).length;
+  const negativeCount = 90 - positiveCount;
+  const psdi = positiveCount > 0 ? (total - negativeCount) / positiveCount : 0;
+  const factors = {} as Record<Scl90FactorKey, number>;
+  const factorLevels = {} as Record<Scl90FactorKey, Scl90FactorLevel>;
+  for (const key of SCL90_FACTOR_ORDER) {
+    const items = SCL90_FACTOR_ITEMS[key];
+    const avg = items.reduce((s, no) => s + answers[no - 1], 0) / items.length;
+    factors[key] = Math.round(avg * 100) / 100;
+    factorLevels[key] = scl90FactorLevel(avg);
+  }
+  const anyFactorOver2 = SCL90_FACTOR_ORDER.some((k) => factors[k] > 2);
+  const anyFactorOver3 = SCL90_FACTOR_ORDER.some((k) => factors[k] >= 3);
+  const screeningPositive = total > 160 || positiveCount > 43 || anyFactorOver2;
+  const selfHarm = answers[14] >= 2;
+  const level: MentalV2Band = selfHarm || anyFactorOver3 ? "高风险" : screeningPositive ? "预警" : "良好";
+  const over2 = SCL90_FACTOR_ORDER.filter((k) => factors[k] > 2).map((k) => SCL90_FACTOR_LABEL[k]);
+  const over2WithScore = SCL90_FACTOR_ORDER.filter((k) => factors[k] > 2).map((k) => `${SCL90_FACTOR_LABEL[k]} ${factors[k]}`);
+  const summary = selfHarm
+    ? "你在第 15 题「想结束自己的生命」上的选择需要被认真对待——请一定告诉家长或信任的老师，必要时拨打心理援助热线 12356 或前往专业机构。这不是矫情，是对自己负责。"
+    : level === "良好"
+      ? `本次评估总分 ${total} 分，未达筛选阳性线（>160 分），10 个因子均在中国常模常见范围内。近一周的心理状态总体平稳，继续保持规律作息和运动就好。`
+      : level === "预警"
+        ? `本次评估达到筛选阳性标准（总分 ${total} 分${total > 160 ? " >160" : ""}，阳性项目 ${positiveCount} 项${positiveCount > 43 ? " >43" : ""}${over2.length > 0 ? `；超出常模的因子：${over2.join("、")}` : ""}）。这提示近期有一些症状值得认真对待，建议把结果告诉家长，找学校心理老师聊一聊，必要时到专业机构做进一步评估。`
+        : `本次评估中 ${over2WithScore.join("、")} 的得分明显偏高，提示近期困扰程度较重。请把结果告诉家长或信任的老师，尽快寻求专业心理/医疗机构的评估——主动求助是勇敢，不是软弱。`;
+  return {
+    version: "scl90",
+    total,
+    gsi: Math.round(gsi * 100) / 100,
+    positiveCount,
+    negativeCount,
+    psdi: Math.round(psdi * 100) / 100,
+    factors,
+    factorLevels,
+    screeningPositive,
+    selfHarm,
+    level,
+    summary,
+  };
+}
+
+/** 判断是否为 SCL-90 结果（类型守卫）。 */
+export function isMentalScl90(x: unknown): x is Scl90Result {
+  return !!x && typeof x === "object" && (x as { version?: string }).version === "scl90";
+}
+
+/** SCL-90 免责声明（答题末尾与报告必须展示）。 */
+export const MENTAL_SCL90_DISCLAIMER =
+  "免责声明：SCL-90（症状自评量表）是国际通用的心理症状筛查工具，结果仅供筛查参考，不构成医学诊断，也不能替代专业医生或心理咨询师的评估。本量表适用 16 岁以上人群，按中国常模口径解释。若筛选阳性、或第 15 题选了「很轻」及以上，请尽快告诉家长或老师，必要时前往专业心理/医疗机构评估，或拨打全国心理援助热线 12356。主动求助是勇敢，不是软弱。";
+
+
+/* ---------------- SCL-90 逐因子解读（附件式「风险指标解读」素材） ---------------- */
+
+export type Scl90FactorExplain = {
+  /** 本指标主要反映什么（指标含义）。 */
+  meaning: string;
+  /** 低风险（均分 <2）解读。 */
+  low: string;
+  /** 一般风险（均分 ≥2）解读。 */
+  mid: string;
+  /** 较高风险（均分 ≥3）解读。 */
+  high: string;
+  /** 改善建议。 */
+  advice: string[];
+};
+
+export const SCL90_FACTOR_EXPLAIN: Record<Scl90FactorKey, Scl90FactorExplain> = {
+  somatization: {
+    meaning:
+      "本指标主要反映身体上的不适感，包括肠胃、呼吸系统的不适，头痛、肌肉酸痛，以及焦虑紧张的其他躯体表现（心跳、发抖、发冷发热等）。它是心理健康的外在体现——身体常常以躯体症状的方式替心理压力「喊痛」。",
+    low: "你的躯体化指标为低风险：几乎不存在困扰自己的躯体不适，日常生活几乎没有受到影响；即使情绪波动较大时，也基本不会出现明显的身体反应。",
+    mid: "你的躯体化指标值得关注：近期身体较常出现不适感（如头痛、肠胃不适、心慌等）。先排查生理原因（如睡眠不足、用眼过度）；若查不出原因且反复出现，要意识到这可能是心理压力在身体上的表达。",
+    high: "你的躯体化指标偏高：身体不适感出现得相当频繁。建议先做体检排除生理疾病，同时认真对待心理压力——身体已经在用症状「报警」，请把结果告诉家长并考虑专业评估。",
+    advice: [
+      "先排查生理因素：保证睡眠时长、规律三餐、适量运动，观察症状是否缓解",
+      "记录「症状日记」：什么时候不舒服、当时在想什么，帮自己发现身体与情绪的关联",
+    ],
+  },
+  compulsive: {
+    meaning:
+      "本指标主要反映明知没有必要、却难以摆脱的思想、冲动和行为，比如反复检查、反复回想、脑子停不下来的杂念，以及「必须做到完美才安心」的紧绷感。适度的认真是优点，过度则会消耗大量精力。",
+    low: "你的强迫症状指标为低风险：处理事情时较为灵活，基本没有停不下来的杂念或重复行为；偶尔出现的小纠结，对日常生活几乎没有影响。",
+    mid: "你的强迫症状指标值得关注：近期可能有一些「明知没必要却控制不住」的想法或行为（反复检查、反复琢磨、难以开始做事）。这不等于强迫症，但提示大脑处在紧绷状态，需要松绑。",
+    high: "你的强迫症状指标偏高：重复思维或行为已经比较频繁，可能明显占用时间和精力。建议把结果告诉家长，寻求学校心理老师或专业机构的支持——早期干预效果最好。",
+    advice: [
+      "给「完美主义」松绑：允许自己「先完成、再完善」，把检查次数设定上限",
+      "杂念来袭时先接纳再转移：不跟念头较劲，起身活动、换一件具体的事做",
+    ],
+  },
+  interpersonal: {
+    meaning:
+      "本指标主要反映人际交往中的不自在感和自卑感，尤其是在与他人比较时更突出，也包括交流时的不安、戒备和对他人态度的敏感。它反映的是社交中的消极自我期待。",
+    low: "你的人际关系敏感指标为低风险：在人际交往中能较好地应对他人、清楚传达自己的意图，群体相处较为融洽，基本没有明显的人际困扰。",
+    mid: "你的人际关系敏感指标值得关注：近期在与人相处时可能不太自在，容易觉得别人对自己不友好、或拿自己和别人比较。多数时候这是压力下的正常波动，值得留意但不必焦虑。",
+    high: "你的人际关系敏感指标偏高：社交中的不安和自我否定感比较频繁，可能已经影响正常交往。建议告诉家长或信任的老师，找学校心理老师聊一聊，学习调整社交中的自我评价。",
+    advice: [
+      "练习「事实—想法」分家：「他没理我」是事实，「他讨厌我」是想法，先验证再下结论",
+      "减少向上比较：和「上周的自己」比，而不是和别人的高光时刻比",
+    ],
+  },
+  depression: {
+    meaning:
+      "本指标主要反映苦闷的情感与心境：愉悦感下降、对事情提不起兴趣、动力缺乏、容易哭泣，也包括悲观失望等认知感受。注意：这个因子包含第 15 题（想结束自己的生命），该题有任何阳性选择都单独触发红线。",
+    low: "你的抑郁指标为低风险：几乎不存在持续的情绪低落或兴趣减退，对日常生活抱有相对积极的态度，有足够的精力应对学习和生活。",
+    mid: "你的抑郁指标值得关注：近期情绪有些低沉、动力不足或容易落泪。先别急着给自己贴标签——这更像「需要休息和照顾」的信号。把感受告诉信任的人，规律作息、晒晒太阳、动起来，通常都会有改善。",
+    high: "你的抑郁指标偏高：低落的情绪已经比较频繁，可能正在影响睡眠、食欲和专注力。请务必把结果告诉家长或信任的老师，尽快寻求专业评估——心理状态和感冒发烧一样，需要专业帮助，这不是软弱。",
+    advice: [
+      "情绪低落时先照顾好身体：睡够、吃饱、出门晒 15 分钟太阳，情绪会跟着生理状态走",
+      "把「我不行」换成「我现在状态不好」——状态是会变的，你不是情绪的奴隶",
+    ],
+  },
+  anxiety: {
+    meaning:
+      "本指标主要反映紧张、担忧、害怕的情感体验：心中不踏实、容易紧张发抖、无缘由地突然害怕、坐立不安，以及由此产生的躯体表现。它既包括对未发生之事的担心，也包括突然的惊恐感。",
+    low: "你的焦虑指标为低风险：能够较好地专注于当前的事务，偶尔出现的紧张情绪没有对日常生活产生太大影响。",
+    mid: "你的焦虑指标值得关注：近期较常感到紧张、心里不踏实或坐不住。先找压力源（考试？人际？睡眠不足？），把担心具体化写下来，往往就会发现「可解决的部分」比想象中多。",
+    high: "你的焦虑指标偏高：紧张和担忧出现得相当频繁，可能已经影响睡眠和专注力。建议告诉家长或老师，学习放松训练（深呼吸、渐进式肌肉放松），必要时寻求专业评估。",
+    advice: [
+      "4-7-8 呼吸法：吸气 4 秒、屏息 7 秒、呼气 8 秒，重复几轮，能快速平复生理紧张",
+      "把担心写成清单，分成「能做的」和「控制不了的」——只管能做的那部分",
+    ],
+  },
+  hostility: {
+    meaning:
+      "本指标主要反映对他人的敌视与易怒：容易烦恼激动、控制不住地发脾气、想摔东西、想与人争论。敌对常常是压力、委屈或疲惫的外溢，不一定真的针对别人。",
+    low: "你的敌对指标为低风险：情绪总体平稳，能较好地处理人际矛盾，基本没有冲动发火或与人争执的困扰。",
+    mid: "你的敌对指标值得关注：近期比较容易烦、容易激动或想发火。这通常是压力大、休息不够或心里有委屈的信号——先照顾自己的状态，而不是责怪自己「脾气差」。若其他指标正常，这一项可暂时忽略。",
+    high: "你的敌对指标偏高：易怒和冲突感比较频繁，可能已经影响人际关系。建议告诉家长或信任的老师，一起找找背后的压力源，学习更健康的情绪出口。",
+    advice: [
+      "发火前先「暂停 6 秒」：深呼吸，离开现场一下，再回来处理——多数冲突不值得用最大音量解决",
+      "事后复盘而不是自责：记录「刚才为什么炸」，下次同类场景就能提前预警",
+    ],
+  },
+  phobic: {
+    meaning:
+      "本指标主要反映对特定场合或事物的恐惧与回避：害怕空旷场所、害怕单独出门、怕乘车、在人多的地方不自在、害怕在公共场合吃东西等。回避会让恐惧范围越扩越大，是这一指标的核心关注点。",
+    low: "你的恐怖指标为低风险：即使有一些害怕的事物，也不会产生强烈而不必要的恐惧，基本没有因为恐惧而回避正常活动的困扰。",
+    mid: "你的恐怖指标值得关注：近期对某些场合（人多、单独出门、乘车等）有明显的紧张或回避。先判断回避是否已经影响正常生活；轻度时可以从「小剂量接触」开始练习适应。",
+    high: "你的恐怖指标偏高：恐惧和回避已经比较频繁，可能限制了正常的学习和生活范围。建议告诉家长，寻求学校心理老师或专业机构的支持——这类困扰通过专业方法改善效果很好。",
+    advice: [
+      "从小剂量开始：害怕的场合拆成几个小步骤，逐级适应，每完成一级给自己一个小奖励",
+      "回避前问自己「最坏的结果是什么」——多数时候，想象中的危险远大于实际",
+    ],
+  },
+  paranoid: {
+    meaning:
+      "本指标主要反映猜疑与偏执性思维：觉得别人不可信、别人在监视或议论自己、别人想占自己便宜、别人对自己成绩的评判不公正等。适度的警觉是自我保护，过度则会加重人际戒备。",
+    low: "你的偏执指标为低风险：能相对客观地看待事物和他人，不会固守明显不正确的认知；偶尔的多疑也很快能自行调整。",
+    mid: "你的偏执指标值得关注：近期较常猜疑他人的动机，或觉得别人对自己不公正。先暂停「下结论」，主动验证：直接问一句、多收集信息，常常会发现事实没有想象中糟。",
+    high: "你的偏执指标偏高：猜疑和戒备感比较频繁，可能正在影响你对他人的信任和正常交往。建议把感受告诉家长或信任的老师，寻求专业心理支持来调整认知模式。",
+    advice: [
+      "给善意一个机会：列出三个「别人可能只是好心」的解释，再决定怎么回应",
+      "感到被针对时先核实事实，再表达感受——「我觉得不公平」比「你们是故意的」更容易被听见",
+    ],
+  },
+  psychotic: {
+    meaning:
+      "本指标主要反映一些少见的感知与思维体验（如听到别人听不到的声音、觉得别人能知道自己的私下想法等），以及无法归入其他指标的急性心理困扰。青少年在过度疲劳、极度压力下偶发的类似体验并不少见，频繁出现才需要重视。",
+    low: "你的急性症状指标为低风险：基本不存在这类罕见的感知与思维体验，偶尔的一些过度反应对日常生活没有负面影响。",
+    mid: "你的急性症状指标值得关注：近期出现过一些少见的感知或思维体验。请先检查睡眠——长期缺觉会产生大量类似体验；保证睡眠、减少熬夜后仍频繁出现，请一定告诉家长并寻求专业评估。",
+    high: "你的急性症状指标偏高：这类体验出现得较频繁。请务必把结果告诉家长，尽快到专业机构做进一步评估——及早评估、明确原因，是对自己最好的保护。",
+    advice: [
+      "优先排查睡眠：连续两周睡够 8 小时后再观察这类体验是否减少",
+      "不独处硬扛：把体验如实告诉家长或信任的老师，有人分担时症状往往会减轻",
+    ],
+  },
+  additional: {
+    meaning:
+      "本指标反映睡眠与饮食状况：入睡困难、睡不稳、醒太早、胃口不好、吃得太多、反复想到死亡等。它是身心状态的晴雨表——睡和吃的变化，往往比情绪更早发出信号。",
+    low: "你的睡眠及饮食指标为低风险：睡眠和饮食基本正常，偶尔的小波动没有对日常生活产生较大影响。",
+    mid: "你的睡眠及饮食指标值得关注：近期入睡困难、睡不稳或食欲异常。睡眠是心理状态的地基——先固定起床时间、睡前 1 小时远离屏幕，多数睡眠问题会随之改善。",
+    high: "你的睡眠及饮食指标偏高：睡眠/饮食问题已经比较频繁，正在透支白天的精力和情绪。建议告诉家长，先从作息规律做起；持续两周无改善请寻求专业评估。",
+    advice: [
+      "固定起床时间比固定入睡时间更管用——生物钟先稳「起」，「睡」会跟着稳",
+      "晚餐七分饱、睡前不刷短视频；躺 20 分钟睡不着就起来做点无聊的事，有困意再回床",
+    ],
+  },
+};
+
+/** SCL-90 阳性筛选规则说明（报告「总体与标准说明」卡）。 */
+export const MENTAL_SCL90_RULES = {
+  scoring:
+    "本量表采用 10 个因子分别反映 10 个方面的心理症状。每个项目均采用 5 级评分：1 没有（自觉无该项问题）；2 很轻（有该症状，但影响轻微）；3 中等（有一定影响）；4 偏重（有相当程度的影响）；5 严重（频度和强度都十分严重）。",
+  positive:
+    "按中国常模口径，符合以下任一条件可考虑筛选阳性，建议进一步检查：① 总分超过 160 分；② 阳性项目数（单项分 ≥2）超过 43 项；③ 任一因子均分超过 2 分。因子均分程度参考：<2 正常，2—2.9 轻度，3—3.9 中度，4—4.9 偏重。",
+  note: "指标之间常存在并发关系：例如情绪困扰（抑郁、焦虑）常伴随躯体化不适与睡眠饮食问题。解读时先看整体画像，再看单项高低，避免孤立地看某一个因子。",
+};

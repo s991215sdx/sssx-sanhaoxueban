@@ -412,6 +412,26 @@ function discSummaryFromDims(dims: DiscDims): { primary: DiscType; summary: stri
 }
 
 /**
+ * DISC V2 most/least 原始计数：分别统计 24 组里各维度被「最像 / 最不像」
+ * 选中的次数（0—24，most 合计 = least 合计 = 24）。用于报告画
+ * 「校园中的我（MOST 图）/ 真实的我（LEAST 图）」双线图。
+ */
+export function discV2Counts(ans: DiscV2Answers, groups: DiscWordGroup[] = DISC_V2_GROUPS): { most: DiscDims; least: DiscDims } {
+  const most: DiscDims = { D: 0, I: 0, S: 0, C: 0 };
+  const least: DiscDims = { D: 0, I: 0, S: 0, C: 0 };
+  groups.forEach((g, i) => {
+    const m = ans.most[i];
+    const l = ans.least[i];
+    if (m == null || l == null || m < 0 || m > 3 || l < 0 || l > 3 || m === l) {
+      throw new Error(`DISC V2 第 ${i + 1} 组作答无效（最像与最不像须为不同的词）`);
+    }
+    most[g.types[m]] += 1;
+    least[g.types[l]] += 1;
+  });
+  return { most, least };
+}
+
+/**
  * DISC V2 计分：每组「最像」维度 +1、「最不像」维度 -1（净分 -24..+24），
  * 再归一到 0–24 量尺（12 + 净分/2，可能出现 .5），与旧版报告图表同尺展示。
  * groups 传家长版词组即可对家长作答计分（维度映射一致）。

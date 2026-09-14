@@ -100,7 +100,7 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
     return (
       <div className="paper-card p-6 text-center">
         <HeartHandshake className="mx-auto text-lime" size={30} />
-        <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">心理健康筛查 · 学生版 B（PHQ-A + GAD-7 学生版）· 结果</p>
+        <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">心理健康筛查 · 学生版 B（PHQ-A + GAD-7）· 结果</p>
         <div className={`mx-auto mt-3 inline-block rounded-full border px-4 py-1.5 text-[14px] font-bold ${LEVEL_STYLE[result.level]}`}>
           综合状态：{result.level}
         </div>
@@ -111,7 +111,7 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
             <div className={`mt-0.5 text-[11.5px] ${result.phq9Level === "良好" ? "text-olive-mute" : "text-terra"}`}>{result.phq9Level}</div>
           </div>
           <div className="rounded-xl bg-cream px-2 py-2.5">
-            <div className="text-[11.5px] text-olive-mute">GAD-7 焦虑筛查 · 学生版</div>
+            <div className="text-[11.5px] text-olive-mute">GAD-7 焦虑筛查（标准版）</div>
             <div className="mt-0.5 text-[18px] font-bold text-olive">{result.gad7}<span className="text-[12px] font-normal text-olive-mute">/21</span></div>
             <div className={`mt-0.5 text-[11.5px] ${result.gad7Level === "良好" ? "text-olive-mute" : "text-terra"}`}>{result.gad7Level}</div>
           </div>
@@ -161,7 +161,7 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
     <div className="paper-card p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-olive">心理健康筛查 · 学生版 B（PHQ-A + GAD-7 学生版）</h2>
+          <h2 className="text-lg font-bold text-olive">心理健康筛查 · 学生版 B（PHQ-A + GAD-7）</h2>
           <p className="mt-0.5 text-[13px] text-olive-soft">国际通用筛查工具 · 适用 11 岁以上 · 16 题约 3 分钟 · 结果仅供筛查参考</p>
         </div>
         <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">

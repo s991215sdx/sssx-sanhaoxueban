@@ -12,6 +12,7 @@ import ProfileCard from "@/components/companion/ProfileCard";
 import AcademicsForm from "@/components/companion/AcademicsForm";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
+import { isDiscV2Answers, discV2Counts } from "@contracts/assessments";
 import {
   isE3V37Result,
   E3V37_RATING_COUNT,
@@ -29,7 +30,7 @@ import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_THEORY_NOTE, MULTI5_DIM_ORDER, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { HollandResult } from "@contracts/holland";
 import { HOLLAND_ORDER, HOLLAND_LABEL } from "@contracts/holland";
-import type { MentalResult, MentalV2Result, MentalSdqResult, MentalPaResult } from "@contracts/mentalHealth";
+import type { MentalResult, MentalV2Result, MentalSdqResult, MentalPaResult, Scl90Result, Scl90FactorKey } from "@contracts/mentalHealth";
 import {
   MENTAL_FACTOR_ORDER,
   MENTAL_FACTOR_LABEL,
@@ -49,6 +50,12 @@ import {
   SDQ_DIM_EXPLAIN,
   PHQ9_ITEM_EXPLAIN,
   GAD7_ITEM_EXPLAIN,
+  SCL90_FACTOR_ORDER,
+  SCL90_FACTOR_LABEL,
+  SCL90_FACTOR_EXPLAIN,
+  SCL90_NORM,
+  MENTAL_SCL90_RULES,
+  MENTAL_SCL90_DISCLAIMER,
 } from "@contracts/mentalHealth";
 import type { AcademicsData } from "@contracts/academics";
 import { SELF_LEVELS } from "@contracts/academics";
@@ -76,7 +83,7 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { ArrowLeft, BookOpen, ChevronDown, Compass, Download, Sparkles, Puzzle, Target } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import MentalDetail from "@/components/reports/MentalDetail";
@@ -91,6 +98,7 @@ export type ReportAssessmentData = {
   mental?: MentalResult | MentalV2Result | null;
   mentalSdq?: MentalSdqResult | null;
   mentalPa?: MentalPaResult | null;
+  mentalScl90?: Scl90Result | null;
   raw?: { kind: string; answers: unknown; createdAt: Date | string }[];
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
@@ -284,6 +292,7 @@ function RoadmapSection({
   mental,
   mentalSdq,
   mentalPa,
+  mentalScl90,
   charts,
   raw,
   onReveal,
@@ -302,6 +311,7 @@ function RoadmapSection({
   mental?: MentalResult | MentalV2Result;
   mentalSdq?: MentalSdqResult;
   mentalPa?: MentalPaResult;
+  mentalScl90?: Scl90Result;
   charts?: ReactNode;
   /** 各测评原始作答：冰山各行/层内重点项的答题明细折叠由此构建（V36 折叠式直出）。 */
   raw?: RawAnswer[];
@@ -457,7 +467,7 @@ function RoadmapSection({
       </>
     ),
   }));
-  if (mental || mentalSdq || mentalPa) {
+  if (mental || mentalSdq || mentalPa || mentalScl90) {
     underRows.push({
       key: "mental",
       label: "心理健康",
@@ -474,6 +484,12 @@ function RoadmapSection({
               <Chip label={`学生版B · PHQ-A ${mentalPa.phq9}/27（${mentalPa.phq9Level}）`} bad={mentalPa.phq9Level !== "良好"} />
               <Chip label={`GAD-7 ${mentalPa.gad7}/21（${mentalPa.gad7Level}）`} bad={mentalPa.gad7Level !== "良好"} />
               {mentalPa.selfHarm && <Chip label="!!有自伤念头信号 · 立即求助!!" bad />}
+            </>
+          )}
+          {mentalScl90 && (
+            <>
+              <Chip label={`深度评估 · SCL-90 总分 ${mentalScl90.total}/450（${mentalScl90.screeningPositive ? "筛选阳性" : "筛选阴性"}）`} bad={mentalScl90.level !== "良好"} />
+              {mentalScl90.selfHarm && <Chip label="!!第 15 题生命安全信号 · 立即求助!!" bad />}
             </>
           )}
           {mental && (isMentalV2(mental) ? (
@@ -1036,7 +1052,7 @@ function MbtiDetail({ result, onGoCombined }: { result: MbtiResult; onGoCombined
   );
 }
 
-function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "I" | "S" | "C"; dims: Record<"D" | "I" | "S" | "C", number>; version?: 2; onGoCombined: () => void }) {
+function DiscDetail({ primary, dims, version, v2Counts, onGoCombined }: { primary: "D" | "I" | "S" | "C"; dims: Record<"D" | "I" | "S" | "C", number>; version?: 2; v2Counts?: { most: Record<"D" | "I" | "S" | "C", number>; least: Record<"D" | "I" | "S" | "C", number> } | null; onGoCombined: () => void }) {
   const report = DISC_REPORTS[primary];
   const combo = getDiscCombo(dims);
   const blend = buildDiscComboBlend(combo);
@@ -1091,9 +1107,35 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
             );
           })}
         </div>
-        {/* 四因子倾向度曲线（与综合报告共用组件） */}
-        <div className="mt-4 -mx-5">
-          <DiscTendencyChart dims={dims} max={version === 2 ? 24 : 12} />
+        {/* 四因子竖线折线图（V2 出双图：校园中的我 MOST / 被压在身后的我 LEAST；V1 单图综合倾向） */}
+        {v2Counts ? (
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <DiscTendencyChart
+              dims={v2Counts.most}
+              max={24}
+              title="校园中的我 · 最像选择（MOST）"
+              note="24 组里各维度被「最像我」选中的次数（0—24）——你在校园里最常展示、别人最容易看到的行为。顶部灰色为反弹区：进入极端高区时物极必反。"
+            />
+            <DiscTendencyChart
+              dims={v2Counts.least}
+              max={24}
+              title="被压在身后的我 · 最不像选择（LEAST）"
+              note="24 组里各维度被「最不像我」选中的次数（0—24）——被你刻意收起来、最不愿意那样做的行为，勾勒出内在的安全边界；长期被迫与它相处，消耗最大。"
+            />
+          </div>
+        ) : (
+          <div className="mt-4 -mx-5">
+            <DiscTendencyChart dims={dims} max={version === 2 ? 24 : 12} />
+          </div>
+        )}
+        {/* 反弹区说明卡 */}
+        <div className="mt-4 rounded-xl border border-border bg-cream/70 px-4 py-3">
+          <div className="text-[12.5px] font-bold text-olive">灰色「反弹区」怎么看</div>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">
+            每个行为因子都有一个「甜蜜区间」。得分进入灰色反弹区（量表 80% 以上）说明这个特质被拉到了极端——物极必反，行为有时会反过来走向它的背面：
+            D 的果敢可能变成专断、I 的热情可能变成浮躁、S 的沉稳可能变成僵化、C 的严谨可能变成挑剔。
+            反弹区不是缺点，是「用力过猛」的提醒：强项保留，力度收一收，反而更稳。
+          </p>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {report.keywords.map((k) => (
@@ -1616,12 +1658,6 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
 }
 
 /** DISC 四因子纵向标尺图（参考专业 DISC 图示：四色纵列 + 分值落点 + 特征词）。 */
-const DISC_TRAIT_WORDS: Record<"D" | "I" | "S" | "C", string[]> = {
-  D: ["勇敢果断", "敢于冒险", "直截了当", "严格要求", "独立自主", "敏捷迅速", "自信满满", "勇于挑战"],
-  I: ["热情奔放", "乐观开朗", "善于社交", "深具影响", "自我激励", "情感流露", "和蔼可亲", "自信自然"],
-  S: ["忠诚可靠", "有始有终", "稳健安定", "合作无间", "含蓄稳重", "平静安详", "友善可亲", "积极主动"],
-  C: ["追求完美", "细致完备", "系统逻辑", "有条不紊", "善于分析", "关注细节", "较高标准", "坚持己见"],
-};
 /** DISC 全量特征词表（对标专业词选式报告的 4×24 词阵）。 */
 const DISC_WORD_GRID: Record<"D" | "I" | "S" | "C", string[]> = {
   D: ["自我中心", "强硬独断", "直截了当", "勇敢果断", "敢于冒险", "严格要求", "争先恐后", "身先士卒", "自信满满", "勇于挑战", "敏捷迅速", "独立自主", "精于计算", "深思熟虑", "理性客观", "谦恭有礼", "内向保守", "安静平和", "自制被动", "缺乏信心", "拘谨内敛", "易受控制", "谨小慎微", "自我怀疑"],
@@ -1635,57 +1671,113 @@ const DISC_COLOR: Record<"D" | "I" | "S" | "C", string> = {
   S: "#4e9e5f",
   C: "#3d8ec4",
 };
-function DiscTendencyChart({ dims, max = 12 }: { dims: Record<"D" | "I" | "S" | "C", number>; max?: number }) {
+/** 因子进入反弹区（得分 ≥ 量表 80%）时的「物极必反」提示。 */
+const DISC_REBOUND_HINT: Record<"D" | "I" | "S" | "C", string> = {
+  D: "果敢可能反成专断",
+  I: "热情可能反成浮躁",
+  S: "沉稳可能反成僵化",
+  C: "严谨可能反成挑剔",
+};
+
+/**
+ * DISC 四因子竖线折线图（对标专业 DISC 报告样式）：
+ * D/I/S/C 四条竖线、落点连线、顶部灰色「反弹区」（≥80%，物极必反）、底部类型标签。
+ * V2 用户可分别渲染 MOST（校园中的我）/ LEAST（被压在身后的我）两张图。
+ */
+function DiscTendencyChart({
+  dims,
+  max = 12,
+  title,
+  note,
+}: {
+  dims: Record<"D" | "I" | "S" | "C", number>;
+  max?: number;
+  title?: string;
+  note?: string;
+}) {
   const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
   const combo = getDiscCombo(dims);
-  const MAX = max; // 单因子满分：V1 旧版 12（24 题 ÷ 4 因子 × 2）；V2 新版 24
+  const MAX = max; // 单维量尺：V1 旧版 12；V2 新版 24
+  const REBOUND = 0.8; // 反弹区：得分进入量表 80% 以上的极端高区
+  const W = 460;
+  const H = 235;
+  const PAD_X = 56;
+  const TOP = 42;
+  const BOTTOM = 38;
+  const plotH = H - TOP - BOTTOM;
+  const xs = keys.map((_, i) => PAD_X + (i * (W - PAD_X * 2)) / 3);
+  const yOf = (v: number) => TOP + plotH - (v / MAX) * plotH;
+  const reboundY = yOf(MAX * REBOUND);
+  const reboundDims = keys.filter((k) => (dims[k] ?? 0) >= MAX * REBOUND);
+  const primaryReport = DISC_REPORTS[combo[0]];
   return (
     <div className="paper-card p-5">
-      <h3 className="font-bold text-olive">行为之镜 · DISC 四因子倾向</h3>
+      <h3 className="font-bold text-olive">{title ?? "行为之镜 · DISC 四因子倾向"}</h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
-        落点越高，该行为因子越明显；彩色徽章为你的主因子组合（{combo.join("")} 型）。每列下方是该因子的典型特征词。
+        {note ??
+          "落点越高，该行为因子越明显；彩色徽章为这张图的主因子组合。顶部灰色区域是「反弹区」——得分进入极端高区时物极必反，行为可能走向该因子的反面。"}
       </p>
-      <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
-        {keys.map((k) => {
-          const v = dims[k] ?? 0;
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="DISC 四因子竖线图">
+        {/* 反弹区灰带（全图顶部贯通） */}
+        <rect x={PAD_X - 34} y={TOP} width={W - (PAD_X - 34) * 2} height={Math.max(0, reboundY - TOP)} rx={8} fill="#6b7280" opacity={0.15} />
+        <text x={W - PAD_X + 30} y={TOP + 13} fontSize={10.5} fill="#6b7280" textAnchor="end">
+          反弹区 ≥{Math.round(REBOUND * 100)}%
+        </text>
+        <line x1={PAD_X - 34} y1={reboundY} x2={W - PAD_X + 34} y2={reboundY} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+        {/* 中线（50%）参考 */}
+        <line x1={PAD_X - 34} y1={yOf(MAX / 2)} x2={W - PAD_X + 34} y2={yOf(MAX / 2)} stroke="#a8b08c" strokeWidth={0.8} strokeDasharray="2 4" opacity={0.7} />
+        {/* 竖线 */}
+        {keys.map((k, i) => (
+          <line key={`line-${k}`} x1={xs[i]} y1={TOP} x2={xs[i]} y2={TOP + plotH} stroke={DISC_COLOR[k]} strokeWidth={3} opacity={0.28} strokeLinecap="round" />
+        ))}
+        {/* 底部基线 */}
+        <line x1={PAD_X - 34} y1={TOP + plotH} x2={W - PAD_X + 34} y2={TOP + plotH} stroke="#a8b08c" strokeWidth={1} />
+        {/* 顶部维度徽章 */}
+        {keys.map((k, i) => {
           const inCombo = combo.includes(k);
-          const color = DISC_COLOR[k];
-          const name = DISC_THEORY.find((t) => t.type === k)?.name ?? "";
           return (
-            <div key={k} className="flex flex-col items-center">
-              <span
-                className={`mb-2 rounded-full px-2 py-0.5 text-[11.5px] font-bold text-white ${inCombo ? "" : "opacity-45"}`}
-                style={{ background: color }}
-              >
-                {k} · {name} {v}
-              </span>
-              <div className="relative h-36 w-full max-w-[72px] overflow-hidden rounded-lg border border-border bg-cream-deep/50">
-                {[25, 50, 75].map((g) => (
-                  <div key={g} className="absolute left-0 right-0 border-t border-dashed border-olive-mute/25" style={{ bottom: `${g}%` }} />
-                ))}
-                <div className="absolute bottom-0 left-1/2 h-full w-[3px] -translate-x-1/2 rounded" style={{ background: `${color}33` }} />
-                <div
-                  className="absolute left-1/2 h-4 w-4 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-white shadow"
-                  style={{ bottom: `${(v / MAX) * 100}%`, background: color }}
-                  title={`${k} ${v} 分`}
-                />
-              </div>
-              <div
-                className={`mt-2 w-full rounded-lg border p-1.5 text-center text-[10.5px] leading-[1.7] ${
-                  inCombo ? "border-border bg-cream text-olive-soft" : "border-border/60 bg-cream/60 text-olive-mute"
-                }`}
-              >
-                {DISC_TRAIT_WORDS[k].map((w, i) => (
-                  <span key={w}>
-                    {w}
-                    {i < DISC_TRAIT_WORDS[k].length - 1 && <span className="text-olive-mute/50"> · </span>}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <g key={`badge-${k}`} opacity={inCombo ? 1 : 0.55}>
+              <rect x={xs[i] - 21} y={TOP - 30} width={42} height={20} rx={6} fill={DISC_COLOR[k]} />
+              <text x={xs[i]} y={TOP - 16} fontSize={11.5} fontWeight={700} fill="#ffffff" textAnchor="middle">
+                {k}
+              </text>
+            </g>
           );
         })}
+        {/* 落点连线 */}
+        <polyline
+          points={keys.map((k, i) => `${xs[i]},${yOf(dims[k] ?? 0)}`).join(" ")}
+          fill="none"
+          stroke="#556339"
+          strokeWidth={2}
+          opacity={0.55}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {/* 落点 */}
+        {keys.map((k, i) => {
+          const v = dims[k] ?? 0;
+          const inRebound = v >= MAX * REBOUND;
+          return (
+            <g key={`dot-${k}`}>
+              <circle cx={xs[i]} cy={yOf(v)} r={11} fill={inRebound ? "#6b7280" : "none"} opacity={inRebound ? 0.25 : 0} />
+              <circle cx={xs[i]} cy={yOf(v)} r={7} fill={DISC_COLOR[k]} stroke="#ffffff" strokeWidth={2.5} />
+              <text x={xs[i]} y={yOf(v) + (yOf(v) > TOP + 24 ? -12 : 22)} fontSize={11} fontWeight={700} fill={DISC_COLOR[k]} textAnchor="middle">
+                {v}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      {/* 底部类型标签（对标「ID（说服型）」样式） */}
+      <div className="mx-auto -mt-1 w-fit rounded-lg border border-border bg-cream px-4 py-1 text-[13px] font-bold text-olive">
+        {combo.join("")} 型{primaryReport ? `（${primaryReport.name}）` : ""}
       </div>
+      {reboundDims.length > 0 && (
+        <p className="mt-2 rounded-lg bg-[#6b7280]/10 px-3 py-1.5 text-[11.5px] leading-relaxed text-olive-soft">
+          ⚠ {reboundDims.map((k) => `${k}（${DISC_REBOUND_HINT[k]}）`).join("、")}——已进入反弹区：得分高不等于无限好，物极必反，越是强项越要留意别用过头。
+        </p>
+      )}
       {/* 全量特征词阵：四个因子列各按本色高亮最典型的 5 个特征词（主因子组合列颜色更深） */}
       <div className="mt-4 overflow-hidden rounded-xl border border-border">
         <div className="grid grid-cols-4">
@@ -1731,7 +1823,7 @@ function DiscTendencyChart({ dims, max = 12 }: { dims: Record<"D" | "I" | "S" | 
         每列词从上到下按该因子最强到最弱排列；高亮的 5 个词按你的实际得分定位（得分越高越靠上），主因子组合（{combo.join("")} 型）对应列底色更深。仅供对照理解，不代表逐词实测。
       </p>
       <p className="mt-3 text-[12px] text-olive-mute">
-        四因子得分：D {dims.D} ｜ I {dims.I} ｜ S {dims.S} ｜ C {dims.C}（各 0-12 分，总分 24）。类型没有好坏，只代表当前状态下的行为倾向。
+        四因子得分：D {dims.D} ｜ I {dims.I} ｜ S {dims.S} ｜ C {dims.C}（各 0—{MAX} 分）。类型没有好坏，只代表当前状态下的行为倾向。
       </p>
     </div>
   );
@@ -1795,7 +1887,7 @@ function MentalV2Bars({
   variant = "v2",
 }: {
   mental: MentalV2Result | MentalPaResult;
-  /** v2=通用版（PHQ-9）；pa=学生版 B（PHQ-A + GAD-7 学生化）。 */
+  /** v2=通用版（PHQ-9）；pa=学生版 B（PHQ-A + GAD-7 标准版）。 */
   variant?: "v2" | "pa";
 }) {
   const BAND_COLOR: Record<string, string> = { 良好: "#7cb83c", 关注: "#c7a23a", 预警: "#cf6a3c", 高风险: "#b91c1c" };
@@ -2009,6 +2101,152 @@ function PhqGadExplainCard({ variant, selfHarm }: { variant: "v2" | "pa"; selfHa
   );
 }
 
+/** SCL-90 因子程度徽章配色。 */
+const SCL90_LEVEL_BADGE: Record<string, string> = {
+  正常: "border-lime/50 bg-lime-pale text-[#5a9326]",
+  轻度: "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]",
+  中度: "border-[#c77b3a]/60 bg-[#f8e3d1] text-[#9a4d17]",
+  偏重: "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]",
+  严重: "border-[#b91c1c] bg-[#f6d4ce] text-[#8f1313]",
+};
+
+/** 深度评估（SCL-90）附件式完整评估报告：评估背景 → 计分与常模说明 → 综合评估表 → 逐因子风险指标解读。 */
+function Scl90ReportCard({ result }: { result: Scl90Result }) {
+  const overNorm = (k: Scl90FactorKey) => result.factors[k] > 2;
+  return (
+    <div className="space-y-4">
+      {/* 1 评估背景的介绍 */}
+      <div className="paper-card p-5">
+        <h3 className="font-bold text-olive">深度评估 · SCL-90 症状自评量表</h3>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
+          SCL-90 是国际应用最广泛的心理症状自评量表，从感觉、情感、思维、意识、行为直到生活习惯、人际关系、饮食睡眠等多种角度，评估<b>最近一周</b>的心理症状状态。本测评采用原版标准 90 题（一字未改），按中国常模口径给出筛选结论。假如发现得分较高、阳性症状较为明显，建议前往医院相关科室或心理咨询机构等更专业的地方做进一步评估，或使用其他量表进一步筛查。
+        </p>
+      </div>
+      {/* 2 计分与标准说明 */}
+      <div className="paper-card p-5">
+        <h3 className="font-bold text-olive">计分与标准说明</h3>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{MENTAL_SCL90_RULES.scoring}</p>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-olive-soft">{MENTAL_SCL90_RULES.positive}</p>
+      </div>
+      {/* 3 心理健康综合评估 */}
+      <div className="paper-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-bold text-olive">心理健康综合评估</h3>
+          <span className={`rounded-full border px-3 py-1 text-[12.5px] font-bold ${result.screeningPositive ? "border-terra/60 bg-terra/10 text-terra" : "border-lime/60 bg-lime-pale text-[#5a9326]"}`}>
+            {result.screeningPositive ? "筛选阳性 · 建议进一步评估" : "筛选阴性 · 未达阳性线"}
+          </span>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="rounded-xl bg-cream px-3 py-2.5 text-center">
+            <div className="text-[11px] text-olive-mute">总分（阳性线 &gt;160）</div>
+            <div className={`mt-0.5 text-[19px] font-bold ${result.total > 160 ? "text-terra" : "text-olive"}`}>{result.total}</div>
+          </div>
+          <div className="rounded-xl bg-cream px-3 py-2.5 text-center">
+            <div className="text-[11px] text-olive-mute">总均分（1—5）</div>
+            <div className="mt-0.5 text-[19px] font-bold text-olive">{result.gsi}</div>
+          </div>
+          <div className="rounded-xl bg-cream px-3 py-2.5 text-center">
+            <div className="text-[11px] text-olive-mute">阳性项目（&gt;43）</div>
+            <div className={`mt-0.5 text-[19px] font-bold ${result.positiveCount > 43 ? "text-terra" : "text-olive"}`}>{result.positiveCount}</div>
+          </div>
+          <div className="rounded-xl bg-cream px-3 py-2.5 text-center">
+            <div className="text-[11px] text-olive-mute">阳性症状均分</div>
+            <div className="mt-0.5 text-[19px] font-bold text-olive">{result.psdi}</div>
+          </div>
+        </div>
+        {/* 10 因子表：你的均分 vs 中国成人常模 vs 程度 */}
+        <div className="mt-3 overflow-hidden rounded-xl border border-border">
+          <div className="grid grid-cols-[1.4fr_3fr_auto_auto_auto] items-center gap-x-2 bg-cream-deep/60 px-3 py-1.5 text-[11px] font-semibold text-olive-mute">
+            <span>指标</span>
+            <span>得分（相对常模）</span>
+            <span className="w-12 text-right">均分</span>
+            <span className="w-12 text-right">常模</span>
+            <span className="w-12 text-right">程度</span>
+          </div>
+          {SCL90_FACTOR_ORDER.map((k) => (
+            <div key={k} className="grid grid-cols-[1.4fr_3fr_auto_auto_auto] items-center gap-x-2 border-t border-border/60 px-3 py-1.5 text-[12.5px]">
+              <span className="text-olive-soft">{SCL90_FACTOR_LABEL[k]}</span>
+              <span className="relative h-2 overflow-hidden rounded-full bg-cream-deep/60">
+                <span
+                  className={`absolute inset-y-0 left-0 rounded-full ${overNorm(k) ? "bg-terra/80" : "bg-lime/80"}`}
+                  style={{ width: `${Math.min(100, (result.factors[k] / 5) * 100)}%` }}
+                />
+                <span className="absolute inset-y-0 w-px bg-olive/40" style={{ left: `${(SCL90_NORM[k] / 5) * 100}%` }} />
+              </span>
+              <span className={`mono w-12 text-right font-semibold ${overNorm(k) ? "text-terra" : "text-olive"}`}>{result.factors[k].toFixed(2)}</span>
+              <span className="mono w-12 text-right text-olive-mute">{SCL90_NORM[k].toFixed(2)}</span>
+              <span className="w-12 text-right">
+                <span className={`inline-block rounded-full border px-1.5 py-px text-[10.5px] font-semibold ${SCL90_LEVEL_BADGE[result.factorLevels[k]]}`}>
+                  {result.factorLevels[k]}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[11.5px] leading-relaxed text-olive-mute">{MENTAL_SCL90_RULES.note}</p>
+        {result.selfHarm && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-terra/60 bg-terra/10 p-3.5">
+            <PhoneCall size={16} className="mt-0.5 shrink-0 text-terra" />
+            <p className="text-[12.5px] leading-relaxed text-terra">
+              <b>第 15 题（想结束自己的生命）选择了「很轻」或以上</b>——这一项的优先级高于所有分数：请一定告诉家长或信任的老师，必要时拨打全国心理援助热线 12356 或前往专业机构。这不是矫情，是对自己负责。
+            </p>
+          </div>
+        )}
+        <p className="mt-3 text-[13.5px] leading-relaxed text-olive-soft">{result.summary}</p>
+      </div>
+      {/* 4 风险指标解读（逐因子折叠） */}
+      <div className="paper-card p-5">
+        <h3 className="font-bold text-olive">风险指标解读</h3>
+        <p className="mt-1 text-[12.5px] text-olive-mute">
+          以下逐因子说明「这个指标在看什么」和「你的得分意味着什么」。得分 ≥2 的因子建议重点阅读，并参照改善建议试一试。
+        </p>
+        <div className="mt-3 space-y-2">
+          {SCL90_FACTOR_ORDER.map((k, i) => {
+            const ex = SCL90_FACTOR_EXPLAIN[k];
+            const avg = result.factors[k];
+            const lv = result.factorLevels[k];
+            const verdict = avg >= 3 ? ex.high : avg >= 2 ? ex.mid : ex.low;
+            return (
+              <Fold
+                key={k}
+                title={`F${i + 1} ${SCL90_FACTOR_LABEL[k]}　本次 ${avg.toFixed(2)} 分（${lv} · 常模 ${SCL90_NORM[k].toFixed(2)}）`}
+              >
+                <div className="space-y-2.5">
+                  <div>
+                    <div className="text-[12px] font-bold text-olive">这个指标在看什么</div>
+                    <p className="mt-0.5 text-[12.5px] leading-relaxed text-olive-soft">{ex.meaning}</p>
+                  </div>
+                  <div>
+                    <div className="text-[12px] font-bold text-olive">你的得分解读</div>
+                    <p className="mt-0.5 text-[12.5px] leading-relaxed text-olive-soft">{verdict}</p>
+                  </div>
+                  {(lv === "中度" || lv === "偏重" || lv === "严重" || lv === "轻度") && (
+                    <div>
+                      <div className="text-[12px] font-bold text-olive">改善建议</div>
+                      <ol className="mt-0.5 list-decimal space-y-1 pl-4 text-[12.5px] leading-relaxed text-olive-soft">
+                        {ex.advice.map((a, j) => (
+                          <li key={j}>{a}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              </Fold>
+            );
+          })}
+        </div>
+      </div>
+      {/* 声明 */}
+      <div className="paper-card border-butter bg-butter/20 p-5">
+        <div className="flex items-start gap-2">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-terra" />
+          <p className="text-[12px] leading-relaxed text-olive-soft">{MENTAL_SCL90_DISCLAIMER}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 旧版 V1 心理健康十因子条形图（历史数据兼容展示）。 */
 function MentalBar({ mental }: { mental: MentalResult }) {
   return (
@@ -2097,8 +2335,25 @@ export default function ReportView({
     const v = (data as any)?.discParents;
     return Array.isArray(v) ? v.filter((p) => p && p.result && p.result.dims) : [];
   }, [data]);
+  /** DISC V2 原始作答的 MOST/LEAST 维度计数（画「校园中的我 / 被压在身后的我」双线图用）。
+   *  历史 raw 里可能同时存在旧版（数组）与 V2（{most,least}）两条 disc 记录，取最近一条 V2 结构。 */
+  const discV2Split = useMemo(() => {
+    const raws = data?.raw ?? [];
+    for (let i = raws.length - 1; i >= 0; i--) {
+      const r = raws[i];
+      if (r.kind === "disc" && isDiscV2Answers(r.answers)) {
+        try {
+          return discV2Counts(r.answers);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }, [data]);
   const mentalSdq = data?.mentalSdq ?? undefined;
   const mentalPa = data?.mentalPa ?? undefined;
+  const mentalScl90 = data?.mentalScl90 ?? undefined;
   const combined = useMemo<CombinedReport | null>(() => {
     if (!data?.mbti || !data?.disc || !e3v37) return null;
     const mr = MBTI_REPORTS[data.mbti.type];
@@ -2112,6 +2367,7 @@ export default function ReportView({
       mental: data.mental ?? undefined,
       mentalSdq: mentalSdq ?? undefined,
       mentalPa: mentalPa ?? undefined,
+      mentalScl90: mentalScl90 ?? undefined,
       e3parent: parentResult ?? undefined,
       discParents,
     });
@@ -2159,7 +2415,7 @@ export default function ReportView({
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
     if (tab === "academics" || tab === "profile") return false; // 档案/成绩 tab 不提供下载
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
-    if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa);
+    if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);
     return !!combined;
   }, [tab, data, combined, e3v37, discParents]);
 
@@ -2262,12 +2518,13 @@ export default function ReportView({
           }
         : { done: false },
       mental:
-        mental || mentalSdq || mentalPa
+        mental || mentalSdq || mentalPa || mentalScl90
           ? {
               done: true,
               note: [
                 mentalSdq ? `SDQ「${mentalSdq.level}」` : "",
                 mentalPa ? `学生版B「${mentalPa.level}」` : "",
+                mentalScl90 ? `SCL-90「${mentalScl90.level}」` : "",
                 mental ? `通用版「${mental.level}」` : "",
               ]
                 .filter(Boolean)
@@ -2567,7 +2824,7 @@ export default function ReportView({
         (!disc ? (
           <MissingCard text="还没有 DISC 测评结果，24 道二选一，约 4 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=disc" />
         ) : (
-          <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
+          <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} v2Counts={discV2Split} onGoCombined={goCombined} />
         ))}
 
       {tab === "multi5" &&
@@ -2604,16 +2861,19 @@ export default function ReportView({
         ))}
 
       {tab === "mental" &&
-        (!mental && !mentalSdq && !mentalPa ? (
+        (!mental && !mentalSdq && !mentalPa && !mentalScl90 ? (
           <div className="space-y-4">
             <MissingCard
-              text="心理健康筛查全部为选做，有三套可挑着做：学生版 A（SDQ 长处与困难问卷，25 题，4—17 岁，11 岁以下可家长陪读）、学生版 B（PHQ-A + GAD-7 学生版，16 题，11 岁以上）、通用版（PHQ-9 + GAD-7，16 题）。做了哪套，结果都会出现在这里和综合报告里。"
+              text="心理健康测评全部为选做，有四套可挑着做：学生版 A（SDQ 长处与困难问卷，25 题，4—17 岁，11 岁以下由家长引导填写）、学生版 B（PHQ-A + GAD-7，16 题，11 岁以上）、深度评估（SCL-90 症状自评，90 题，16 岁以上）、通用版（PHQ-9 + GAD-7，16 题）。做了哪套，结果都会出现在这里和综合报告里。"
               actionText="去测学生版 A（SDQ）→"
               to="/assessments?start=mental"
             />
             <div className="flex flex-wrap gap-2">
               <a href="/assessments?start=mental" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
                 去测学生版 B（PHQ-A，11 岁以上）→
+              </a>
+              <a href="/assessments?start=mental" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
+                去测深度评估（SCL-90，90 题）→
               </a>
               <a href="/assessments?start=mental" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
                 去测通用版（PHQ-9 + GAD-7）→
@@ -2700,7 +2960,7 @@ export default function ReportView({
                 <>
                   <div className="paper-card border-butter bg-butter/20 p-4">
                     <p className="text-[12.5px] leading-relaxed text-olive">
-                      你上次完成的是旧版十因子筛查（通用版前身）。现在有新版可用：<b>学生版 A（SDQ）</b>、<b>学生版 B（PHQ-A + GAD-7 学生版）</b>或<b>通用版（PHQ-9 + GAD-7）</b>——旧结果保留可查，
+                      你上次完成的是旧版十因子筛查（通用版前身）。现在有新版可用：<b>学生版 A（SDQ）</b>、<b>学生版 B（PHQ-A + GAD-7）</b>、<b>深度评估（SCL-90）</b>或<b>通用版（PHQ-9 + GAD-7）</b>——旧结果保留可查，
                       <button className="font-bold underline" onClick={() => navigate("/assessments?start=mental")}>点这里测通用版 →</button>
                     </p>
                   </div>
@@ -2711,6 +2971,23 @@ export default function ReportView({
               <MissingCard
                 text="通用版（PHQ-9 + GAD-7）还没测：16 题约 3 分钟。"
                 actionText="去测通用版 →"
+                to="/assessments?start=mental"
+              />
+            )}
+            {/* 深度评估（SCL-90）：附件式完整评估报告 */}
+            {mentalScl90 ? (
+              <>
+                <Scl90ReportCard result={mentalScl90} />
+                {data?.raw && data.raw.length > 0 && (
+                  <Fold title="答题明细 · 深度评估（SCL-90，点击展开）">
+                    <AnswerDetailsByKind raw={data.raw} kinds={["scl90"]} />
+                  </Fold>
+                )}
+              </>
+            ) : (
+              <MissingCard
+                text="深度评估（SCL-90 症状自评量表）还没测：原版标准 90 题约 15—20 分钟，10 因子全面扫描，适合想做一次完整评估的同学（16 岁以上）。"
+                actionText="去测深度评估 →"
                 to="/assessments?start=mental"
               />
             )}
@@ -2780,6 +3057,7 @@ export default function ReportView({
                   mental={mental}
                   mentalSdq={mentalSdq}
                   mentalPa={mentalPa}
+                  mentalScl90={mentalScl90}
                   raw={data?.raw}
                   onReveal={reveal}
                 />

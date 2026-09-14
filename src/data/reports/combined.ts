@@ -29,7 +29,8 @@ import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { HollandResult } from "@contracts/holland";
 import { HOLLAND_LABEL, buildHollandReport } from "@contracts/holland";
-import type { MentalResult, MentalV2Result, MentalV2Band, MentalSdqResult, MentalPaResult } from "@contracts/mentalHealth";
+import type { MentalResult, MentalV2Result, MentalV2Band, MentalSdqResult, MentalPaResult, Scl90Result } from "@contracts/mentalHealth";
+import { SCL90_FACTOR_LABEL, SCL90_FACTOR_ORDER } from "@contracts/mentalHealth";
 import { MENTAL_FACTOR_LABEL, isMentalV2, SDQ_DIM_LABEL } from "@contracts/mentalHealth";
 import type {
   CombinedReport,
@@ -442,6 +443,8 @@ export type CombinedReportOptions = {
   mentalSdq?: MentalSdqResult;
   /** 心理健康 · 学生版 B（PHQ-A + GAD-7 学生化）。 */
   mentalPa?: MentalPaResult;
+  /** 心理健康 · 深度评估（SCL-90 症状自评，10 因子）。 */
+  mentalScl90?: Scl90Result;
   academics?: AcademicsData;
   /** E3 V3.7 家长卷结果（选做）。 */
   e3parent?: E3V37ParentResult;
@@ -553,6 +556,7 @@ export function buildCombinedReport(
   const mentalLegacy = mental && !isMentalV2(mental) ? mental : null;
   const mentalSdq = opts?.mentalSdq ?? null;
   const mentalPa = opts?.mentalPa ?? null;
+  const mentalScl90 = opts?.mentalScl90 ?? null;
   const mentalTone = (lv: MentalV2Band, selfHarm?: boolean) =>
     lv === "高风险" || lv === "预警" || selfHarm ? ("red" as const) : lv === "关注" ? ("amber" as const) : ("green" as const);
   if (mentalV2) {
@@ -585,6 +589,14 @@ export function buildCombinedReport(
       value: `PHQ-A ${mentalPa.phq9}/27 · GAD-7 ${mentalPa.gad7}/21`,
       note: `分级「${mentalPa.level}」${mentalPa.selfHarm ? " · !!有自伤念头信号，请立即告诉家长/老师或拨打 12356!!" : "（筛查参考，非诊断）"}`,
       tone: mentalTone(mentalPa.level, mentalPa.selfHarm),
+    });
+  }
+  if (mentalScl90) {
+    overviewCards.push({
+      label: "心理健康 · 深度评估（SCL-90）",
+      value: `总分 ${mentalScl90.total}/450（${mentalScl90.screeningPositive ? "筛选阳性" : "筛选阴性"}）`,
+      note: `分级「${mentalScl90.level}」${mentalScl90.selfHarm ? " · !!第 15 题安全信号，请立即告诉家长/老师或拨打 12356!!" : "（中国常模口径，筛查参考非诊断）"}`,
+      tone: mentalTone(mentalScl90.level, mentalScl90.selfHarm),
     });
   }
   const gapSummary = academics ? summarizeGaps(academics) : null;
@@ -656,6 +668,13 @@ export function buildCombinedReport(
       mentalPa.selfHarm
         ? `**!!心理状态（PHQ-A）：PHQ-A ${mentalPa.phq9}/27 · GAD-7 ${mentalPa.gad7}/21（${mentalPa.level}），有自伤念头信号——先求助、先陪伴，成绩目标全部让路!!**`
         : `心理状态（PHQ-A）：PHQ-A ${mentalPa.phq9}/27 · GAD-7 ${mentalPa.gad7}/21（${mentalPa.level}，先稳状态再抓学习）`,
+    );
+  }
+  if (mentalScl90 && mentalScl90.level !== "良好") {
+    belowIce.push(
+      mentalScl90.selfHarm
+        ? `**!!心理状态（SCL-90）：总分 ${mentalScl90.total}/450（${mentalScl90.level}），第 15 题安全信号——先求助、先陪伴，成绩目标全部让路!!**`
+        : `心理状态（SCL-90）：总分 ${mentalScl90.total}/450（${mentalScl90.level}，先稳状态再抓学习）`,
     );
   }
   const roadmapStep2 =
@@ -854,18 +873,34 @@ export function buildCombinedReport(
           `（SDQ 为国际通用的儿童青少年行为筛查工具，结果仅供筛查参考，不构成医学诊断。）`,
       }
     : null;
-  /* 学生版 B（PHQ-A + GAD-7 学生化）卡 */
+  /* 学生版 B（PHQ-A + GAD-7 标准版）卡 */
   const paCard: NonNullable<CombinedSection["items"]>[number] | null = mentalPa
     ? {
-        heading: `**心理健康 · 学生版 B（PHQ-A + GAD-7 学生版）** 「${mentalPa.level}」${mentalPa.selfHarm ? " · !!有自伤念头信号!!" : ""}`,
+        heading: `**心理健康 · 学生版 B（PHQ-A + GAD-7）** 「${mentalPa.level}」${mentalPa.selfHarm ? " · !!有自伤念头信号!!" : ""}`,
         level: mentalPa.selfHarm ? "卡点" : mentalV2LevelToCombined(mentalPa.level),
         text:
-          `**② 数据分析**：PHQ-A 青少年抑郁筛查 **${mentalPa.phq9}/27 分 · 「${mentalPa.phq9Level}」**；GAD-7 焦虑筛查（学生版）**${mentalPa.gad7}/21 分 · 「${mentalPa.gad7Level}」**；综合分级「**${mentalPa.level}**」（取两表较重者）；得分 ≥2 的题共 ${mentalPa.positives}/16 项。分级口径：0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险。\n` +
+          `**② 数据分析**：PHQ-A 青少年抑郁筛查 **${mentalPa.phq9}/27 分 · 「${mentalPa.phq9Level}」**；GAD-7 焦虑筛查（原版标准）**${mentalPa.gad7}/21 分 · 「${mentalPa.gad7Level}」**；综合分级「**${mentalPa.level}**」（取两表较重者）；得分 ≥2 的题共 ${mentalPa.positives}/16 项。分级口径：0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险。\n` +
           (mentalPa.selfHarm
             ? `**!!最重要的求助提示!!**：这次筛查中，「有不如死掉或伤害自己的念头」一题不是「完全不会」——请**一定**告诉家长或信任的老师，必要时拨打全国心理援助热线 **12356** 或前往专业心理/医疗机构。这不是矫情，是对自己负责；成绩目标在这件事面前全部让路。\n`
             : "") +
           `**分级解释与建议**：${mentalPa.summary}\n` +
           `（本量表为国际通用筛查工具，结果仅供筛查参考，不构成医学诊断。）`,
+      }
+    : null;
+  /* 深度评估（SCL-90）卡 */
+  const scl90Card: NonNullable<CombinedSection["items"]>[number] | null = mentalScl90
+    ? {
+        heading: `**心理健康 · 深度评估（SCL-90 症状自评）** 「${mentalScl90.level}」${mentalScl90.selfHarm ? " · !!第 15 题安全信号!!" : ""}`,
+        level: mentalScl90.selfHarm ? "卡点" : mentalV2LevelToCombined(mentalScl90.level),
+        text:
+          `**② 数据分析**：总分 **${mentalScl90.total}/450 分**（阳性线 >160）· 总均分 ${mentalScl90.gsi}；阳性项目 **${mentalScl90.positiveCount}/90 项**（阳性线 >43）；阳性症状均分 ${mentalScl90.psdi}。10 因子均分：` +
+          SCL90_FACTOR_ORDER.map((k) => `${SCL90_FACTOR_LABEL[k]} ${mentalScl90.factors[k]}「${mentalScl90.factorLevels[k]}」`).join("、") +
+          `。筛选结论：**${mentalScl90.screeningPositive ? "筛选阳性（建议进一步评估）" : "筛选阴性（未达阳性线）"}**。\n` +
+          (mentalScl90.selfHarm
+            ? `**!!最重要的求助提示!!**：第 15 题「想结束自己的生命」选了「很轻」或以上——请**一定**告诉家长或信任的老师，必要时拨打全国心理援助热线 **12356** 或前往专业心理/医疗机构。成绩目标在这件事面前全部让路。\n`
+            : "") +
+          `**分级解释与建议**：${mentalScl90.summary}\n` +
+          `（SCL-90 为国际通用症状筛查工具，按中国常模口径解释，结果仅供筛查参考，不构成医学诊断。）`,
       }
     : null;
   const condViewOf = (keys: string[]) =>
@@ -895,9 +930,10 @@ export function buildCombinedReport(
           (e3parent && condViewOf(["state"]) ? `。**家长对照**：\n${condViewOf(["state"])}` : ""),
       }),
     },
-    /* 心理健康卡：学生版 A（SDQ）/ 学生版 B（PHQ-A）/ 通用版（V2）各出分数与分级解释；旧版提示升级重测 */
+    /* 心理健康卡：学生版 A（SDQ）/ 学生版 B（PHQ-A）/ 深度评估（SCL-90）/ 通用版（V2）各出分数与分级解释；旧版提示升级重测 */
     ...(sdqCard ? [sdqCard] : []),
     ...(paCard ? [paCard] : []),
+    ...(scl90Card ? [scl90Card] : []),
     ...(mentalCard ? [mentalCard] : []),
     /* MBTI / DISC 自我认知素材：作为状态分析素材并入状态部分 */
     mbtiStateCard,

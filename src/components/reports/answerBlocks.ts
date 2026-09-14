@@ -42,6 +42,9 @@ import {
   MENTAL_PA_SECTIONS,
   MENTAL_SDQ_QUESTIONS,
   MENTAL_SDQ_OPTIONS,
+  SCL90_QUESTIONS,
+  SCL90_OPTIONS,
+  SCL90_FACTOR_LABEL,
 } from "@contracts/mentalHealth";
 
 export type AnswerRow = { no: number | string; text: string; ans: string; bad?: boolean };
@@ -57,7 +60,7 @@ export function answerKindsForSection(title: string, hasAcadSec: boolean): strin
   const modSys = (["乐学", "会学", "善学"] as const).find((k) => title.includes(`${k}模块`));
   if (modSys) return [`e3:${modSys}`];
   if (title.includes("条件模块")) {
-    return ["mental", "mentalsdq", "mentalpa", "e3parent", "discparent", "mbti", "disc", "e3:条件", ...(hasAcadSec ? [] : ["e3:快扫"])];
+    return ["mental", "mentalsdq", "mentalpa", "scl90", "e3parent", "discparent", "mbti", "disc", "e3:条件", ...(hasAcadSec ? [] : ["e3:快扫"])];
   }
   if (title.includes("亲子对照")) return ["e3parent", "discparent"];
   if (title.includes("成绩现状")) return ["e3:快扫"];
@@ -285,12 +288,12 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
         })),
       });
     } else if (r.kind === "mentalpa" && Array.isArray(r.answers)) {
-      /* 学生版 B：PHQ-A（1-9 题）+ GAD-7 学生化（10-16 题），0-3 四级评分 */
+      /* 学生版 B：PHQ-A（1-9 题）+ GAD-7 标准版（10-16 题），0-3 四级评分 */
       const a = r.answers as number[];
       const paQuestions = MENTAL_PA_SECTIONS.flatMap((s) => s.questions);
       blocks.push({
         key: "mentalpa",
-        title: `心理健康筛查 · 学生版 B（PHQ-A + GAD-7 学生版）· ${a.length} 题（${date}）`,
+        title: `心理健康筛查 · 学生版 B（PHQ-A + GAD-7）· ${a.length} 题（${date}）`,
         note: "0=完全不会 / 1=好几天 / 2=超过一半的天数 / 3=几乎天天；红色为 ≥2 分的题（达到中度）。第 9 题不是「完全不会」时请务必告诉家长或老师。",
         rows: paQuestions.map((q, i) => ({
           no: q.no,
@@ -311,6 +314,20 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
           text: `${q.safety ? "[安全预警] " : ""}${q.text}`,
           ans: a[i] != null ? `${a[i]} · ${MENTAL_SDQ_OPTIONS[a[i]]?.label ?? a[i]}` : "未答",
           bad: (a[i] ?? 0) >= 2,
+        })),
+      });
+    } else if (r.kind === "scl90" && Array.isArray(r.answers)) {
+      /* 深度评估：SCL-90 症状自评 90 题，1-5 五级评分 */
+      const a = r.answers as number[];
+      blocks.push({
+        key: "scl90",
+        title: `心理健康深度评估 · SCL-90 症状自评量表 · ${a.length} 题（${date}）`,
+        note: "1=没有 / 2=很轻 / 3=中等 / 4=偏重 / 5=严重（最近一周）；红色为 ≥3 分的题（中等及以上）。第 15 题选了「很轻」或以上时，请务必告诉家长或老师。",
+        rows: SCL90_QUESTIONS.map((q, i) => ({
+          no: q.no,
+          text: `${q.safety ? "[生命安全] " : `[${SCL90_FACTOR_LABEL[q.factor]}] `}${q.text}`,
+          ans: a[i] != null ? `${a[i]} · ${SCL90_OPTIONS[a[i] - 1]?.label ?? a[i]}` : "未答",
+          bad: (a[i] ?? 1) >= 3,
         })),
       });
     } else if (r.kind === "mental" && Array.isArray(r.answers)) {
