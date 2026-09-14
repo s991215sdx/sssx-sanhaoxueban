@@ -12,7 +12,6 @@ import ProfileCard from "@/components/companion/ProfileCard";
 import AcademicsForm from "@/components/companion/AcademicsForm";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
-import { isDiscV2Answers, discV2Counts } from "@contracts/assessments";
 import {
   isE3V37Result,
   E3V37_RATING_COUNT,
@@ -1052,7 +1051,7 @@ function MbtiDetail({ result, onGoCombined }: { result: MbtiResult; onGoCombined
   );
 }
 
-function DiscDetail({ primary, dims, version, v2Counts, onGoCombined }: { primary: "D" | "I" | "S" | "C"; dims: Record<"D" | "I" | "S" | "C", number>; version?: 2; v2Counts?: { most: Record<"D" | "I" | "S" | "C", number>; least: Record<"D" | "I" | "S" | "C", number> } | null; onGoCombined: () => void }) {
+function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "I" | "S" | "C"; dims: Record<"D" | "I" | "S" | "C", number>; version?: 2; onGoCombined: () => void }) {
   const report = DISC_REPORTS[primary];
   const combo = getDiscCombo(dims);
   const blend = buildDiscComboBlend(combo);
@@ -1107,27 +1106,10 @@ function DiscDetail({ primary, dims, version, v2Counts, onGoCombined }: { primar
             );
           })}
         </div>
-        {/* 四因子竖线折线图（V2 出双图：校园中的我 MOST / 被压在身后的我 LEAST；V1 单图综合倾向） */}
-        {v2Counts ? (
-          <div className="mt-4 grid gap-4 xl:grid-cols-2">
-            <DiscTendencyChart
-              dims={v2Counts.most}
-              max={24}
-              title="校园中的我 · 最像选择（MOST）"
-              note="24 组里各维度被「最像我」选中的次数（0—24）——你在校园里最常展示、别人最容易看到的行为。顶部灰色为反弹区：进入极端高区时物极必反。"
-            />
-            <DiscTendencyChart
-              dims={v2Counts.least}
-              max={24}
-              title="被压在身后的我 · 最不像选择（LEAST）"
-              note="24 组里各维度被「最不像我」选中的次数（0—24）——被你刻意收起来、最不愿意那样做的行为，勾勒出内在的安全边界；长期被迫与它相处，消耗最大。"
-            />
-          </div>
-        ) : (
-          <div className="mt-4 -mx-5">
-            <DiscTendencyChart dims={dims} max={version === 2 ? 24 : 12} />
-          </div>
-        )}
+        {/* 四因子竖线折线图（与上方条形图为同一份分数：净分 0—24 量尺） */}
+        <div className="mt-4 -mx-5">
+          <DiscTendencyChart dims={dims} max={version === 2 ? 24 : 12} />
+        </div>
         {/* 反弹区说明卡 */}
         <div className="mt-4 rounded-xl border border-border bg-cream/70 px-4 py-3">
           <div className="text-[12.5px] font-bold text-olive">灰色「反弹区」怎么看</div>
@@ -1715,7 +1697,9 @@ function DiscTendencyChart({
       <h3 className="font-bold text-olive">{title ?? "行为之镜 · DISC 四因子倾向"}</h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
         {note ??
-          "落点越高，该行为因子越明显；彩色徽章为这张图的主因子组合。顶部灰色区域是「反弹区」——得分进入极端高区时物极必反，行为可能走向该因子的反面。"}
+          (MAX === 24
+            ? "得分口径：该因子被「最像我」选中的次数 −「最不像我」选中的次数，归一到 0—24 量尺（12 分为中性，与上方条形图为同一份分数）。落点越高，该行为因子越明显。顶部灰色区域是「反弹区」——得分进入极端高区时物极必反，行为可能走向该因子的反面。"
+            : "落点越高，该行为因子越明显；彩色徽章为主因子组合。顶部灰色区域是「反弹区」——得分进入极端高区时物极必反，行为可能走向该因子的反面。")}
       </p>
       <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="DISC 四因子竖线图">
         {/* 反弹区灰带（全图顶部贯通） */}
@@ -2335,22 +2319,7 @@ export default function ReportView({
     const v = (data as any)?.discParents;
     return Array.isArray(v) ? v.filter((p) => p && p.result && p.result.dims) : [];
   }, [data]);
-  /** DISC V2 原始作答的 MOST/LEAST 维度计数（画「校园中的我 / 被压在身后的我」双线图用）。
-   *  历史 raw 里可能同时存在旧版（数组）与 V2（{most,least}）两条 disc 记录，取最近一条 V2 结构。 */
-  const discV2Split = useMemo(() => {
-    const raws = data?.raw ?? [];
-    for (let i = raws.length - 1; i >= 0; i--) {
-      const r = raws[i];
-      if (r.kind === "disc" && isDiscV2Answers(r.answers)) {
-        try {
-          return discV2Counts(r.answers);
-        } catch {
-          return null;
-        }
-      }
-    }
-    return null;
-  }, [data]);
+
   const mentalSdq = data?.mentalSdq ?? undefined;
   const mentalPa = data?.mentalPa ?? undefined;
   const mentalScl90 = data?.mentalScl90 ?? undefined;
@@ -2824,7 +2793,7 @@ export default function ReportView({
         (!disc ? (
           <MissingCard text="还没有 DISC 测评结果，24 道二选一，约 4 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=disc" />
         ) : (
-          <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} v2Counts={discV2Split} onGoCombined={goCombined} />
+          <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
         ))}
 
       {tab === "multi5" &&

@@ -63659,24 +63659,24 @@ var require_mode = __commonJS({
     exports2.default = mode;
     var _index = require_src3();
     function mode(values, valueof) {
-      const counts2 = new _index.InternMap();
+      const counts = new _index.InternMap();
       if (valueof === void 0) {
         for (let value of values) {
           if (value != null && value >= value) {
-            counts2.set(value, (counts2.get(value) || 0) + 1);
+            counts.set(value, (counts.get(value) || 0) + 1);
           }
         }
       } else {
         let index = -1;
         for (let value of values) {
           if ((value = valueof(value, ++index, values)) != null && value >= value) {
-            counts2.set(value, (counts2.get(value) || 0) + 1);
+            counts.set(value, (counts.get(value) || 0) + 1);
           }
         }
       }
       let modeValue;
       let modeCount = 0;
-      for (const [value, count] of counts2) {
+      for (const [value, count] of counts) {
         if (count > modeCount) {
           modeCount = count;
           modeValue = value;
@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v42.tsx
+// scripts/smoke-render-v43.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -109986,6 +109986,292 @@ function isE3V37ParentResult(r) {
   return !!r && typeof r === "object" && r.version === "3.7";
 }
 
+// src/components/reports/DiscParentCompare.tsx
+var import_jsx_runtime8 = __toESM(require_jsx_runtime(), 1);
+var DISC_COLOR = {
+  D: "#d44f3a",
+  I: "#e8a33d",
+  S: "#4e9e5f",
+  C: "#3d8ec4"
+};
+var MAX = 24;
+var DISC_DIM_PLAIN = {
+  D: "\u8C01\u8BF4\u4E86\u7B97\u3001\u542C\u8C01\u7684",
+  I: "\u7231\u70ED\u95F9\u3001\u7231\u8868\u8FBE",
+  S: "\u6C42\u7A33\u3001\u6015\u53D8\u5316",
+  C: "\u91CD\u7EC6\u8282\u3001\u8BB2\u89C4\u77E9"
+};
+function nv(result, k) {
+  return (result.dims[k] ?? 0) * (result.version === 2 ? 1 : 2);
+}
+function FactorBars({ label, tag, result, hot = [] }) {
+  const combo = getDiscCombo(result.dims);
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "flex items-baseline gap-2", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "text-[13px] font-bold text-olive", children: label }),
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "text-[11.5px] text-olive-mute", children: [
+        combo.join(""),
+        " \u578B",
+        tag ? ` \xB7 ${tag}` : ""
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "mt-1.5 space-y-1.5", children: ["D", "I", "S", "C"].map((k) => {
+      const v = nv(result, k);
+      const inCombo = combo.includes(k);
+      const isHot = hot.includes(k);
+      return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+        "div",
+        {
+          className: `flex items-center gap-2 rounded-lg px-1.5 py-0.5 -mx-1.5 ${isHot ? "bg-[#fbe3df] ring-1 ring-[#b91c1c]/50" : ""}`,
+          children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: `w-16 shrink-0 text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : inCombo ? "font-bold text-olive" : "text-olive-mute"}`, children: [
+              k,
+              " \xB7 ",
+              DISC_THEORY.find((t) => t.type === k)?.name
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+              "div",
+              {
+                className: "h-full rounded-full",
+                style: { width: `${Math.min(100, v / MAX * 100)}%`, background: DISC_COLOR[k], opacity: inCombo || isHot ? 1 : 0.45 }
+              }
+            ) }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: `mono w-5 shrink-0 text-right text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : "text-olive-soft"}`, children: v })
+          ]
+        },
+        k
+      );
+    }) })
+  ] });
+}
+function DimDeltaBadges({ label, parent, student }) {
+  const deltas = ["D", "I", "S", "C"].map((k) => ({
+    k,
+    student: nv(student, k),
+    parent: nv(parent, k),
+    abs: Math.abs(nv(student, k) - nv(parent, k))
+  }));
+  const strong = deltas.filter((d) => d.abs >= 6).sort((a, b) => b.abs - a.abs);
+  const watch = deltas.filter((d) => d.abs >= 4 && d.abs < 6);
+  if (strong.length === 0 && watch.length === 0) {
+    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { className: "mt-1.5 text-[11.5px] text-olive-mute", children: [
+      "\u4E0E",
+      label,
+      "\u56DB\u4E2A\u7EF4\u5EA6\u5DEE\u503C\u90FD\u5F88\u5C0F\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\u3002"
+    ] });
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "mt-2 flex flex-wrap gap-1.5", children: [
+    strong.map((d) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+      "span",
+      {
+        className: "rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]",
+        children: [
+          "\u26A0 ",
+          d.k,
+          "\uFF08",
+          DISC_DIM_PLAIN[d.k],
+          "\uFF09\u660E\u663E\u9876\u725B\uFF1A\u4F60 ",
+          d.student,
+          " \u5206 / ",
+          label,
+          " ",
+          d.parent,
+          " \u5206\uFF0C\u5DEE ",
+          d.abs,
+          " \u5206"
+        ]
+      },
+      d.k
+    )),
+    watch.map((d) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+      "span",
+      {
+        className: "rounded-md border border-[#c7a23a]/70 bg-[#f5e7c1] px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]",
+        children: [
+          d.k,
+          "\uFF08",
+          DISC_DIM_PLAIN[d.k],
+          "\uFF09\u7565\u6709\u5DEE\u5F02\uFF1A\u4F60 ",
+          d.student,
+          " \u5206 / ",
+          label,
+          " ",
+          d.parent,
+          " \u5206\uFF0C\u5DEE ",
+          d.abs,
+          " \u5206"
+        ]
+      },
+      d.k
+    ))
+  ] });
+}
+function DiscParentCompare({
+  student,
+  parents
+}) {
+  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167" }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u770B\u770B\u5B69\u5B50\u548C\u5BB6\u957F\u5404\u81EA\u6700\u81EA\u7136\u7684\u884C\u4E3A\u6A21\u5F0F\u5DEE\u5728\u54EA\u91CC\uFF08\u7C7B\u578B\u6CA1\u6709\u597D\u574F\uFF0C\u53EA\u6709\u4E0D\u540C\uFF09\u3002\u5206\u6570\u5DF2\u7EDF\u4E00\u6362\u7B97\u5230 0\u201324 \u91CF\u5C3A\u5BF9\u7167\uFF08\u65E7\u7248\u4E8C\u9009\u4E00\u7ED3\u679C \xD72\uFF09\uFF1B\u540C\u4E00\u7EF4\u5EA6\u4E24\u8FB9\u5DEE 6 \u5206\u4EE5\u4E0A\u7B97\u300C\u660E\u663E\u9876\u725B\u300D\uFF08\u65E5\u5E38\u76F8\u5904\u6700\u5BB9\u6613\u9891\u9053\u5BF9\u4E0D\u4E0A\uFF0C\u7EA2\u8272\u6807\u51FA\uFF09\uFF0C\u5DEE 4\u20135 \u5206\u300C\u7565\u6709\u5DEE\u5F02\u300D\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "mt-3 space-y-4", children: (() => {
+      const dims = ["D", "I", "S", "C"];
+      const perParent = parents.map((p) => dims.filter((k) => Math.abs(nv(p.result, k) - nv(student, k)) >= 6));
+      const unionHot = [...new Set(perParent.flat())];
+      return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+          FactorBars,
+          {
+            label: "\u5B66\u751F\uFF08\u4F60\uFF09",
+            tag: DISC_THEORY.find((t) => t.type === student.primary)?.name,
+            result: student,
+            hot: unionHot
+          }
+        ),
+        parents.map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+            FactorBars,
+            {
+              label: `\u5BB6\u957F \xB7 ${p.label}`,
+              tag: DISC_THEORY.find((t) => t.type === p.result.primary)?.name,
+              result: p.result,
+              hot: perParent[i]
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(DimDeltaBadges, { label: p.label, parent: p.result, student })
+        ] }, `${p.label}-${i}`))
+      ] });
+    })() })
+  ] });
+}
+
+// contracts/multi.ts
+var MULTI_DIM_LABEL = {
+  linguistic: "\u8BED\u8A00\u667A\u80FD",
+  logicalMath: "\u903B\u8F91\u6570\u5B66",
+  spatial: "\u7A7A\u95F4\u667A\u80FD",
+  musical: "\u97F3\u4E50\u667A\u80FD",
+  bodily: "\u8EAB\u4F53\u52A8\u89C9",
+  interpersonal: "\u4EBA\u9645\u6C9F\u901A",
+  intrapersonal: "\u81EA\u6211\u8BA4\u77E5",
+  naturalist: "\u81EA\u7136\u89C2\u5BDF"
+};
+var MULTI_BANK = {
+  linguistic: [
+    { text: "\u6211\u8BB2\u6545\u4E8B\u6216\u8F6C\u8FF0\u4E8B\u60C5\u65F6\uFF0C\u522B\u4EBA\u5F88\u5BB9\u6613\u542C\u660E\u767D" },
+    { text: "\u5199\u4F5C\u6587\u6216\u53D1\u8A00\u65F6\uFF0C\u6211\u5E38\u5E38\u60F3\u534A\u5929\u4E5F\u627E\u4E0D\u51FA\u5408\u9002\u7684\u8BCD", reverse: true },
+    { text: "\u8BFB\u5B8C\u4E00\u7BC7\u8BFE\u6587\u6216\u8BFE\u5916\u4E66\uFF0C\u6211\u80FD\u8BF4\u51FA\u5B83\u7684\u4E3B\u8981\u5185\u5BB9" },
+    { text: "\u8001\u5E08\u53E3\u5934\u5E03\u7F6E\u7684\u4E8B\u60C5\uFF0C\u6211\u542C\u4E00\u904D\u5C31\u80FD\u8BB0\u4F4F" },
+    { text: "\u548C\u540C\u5B66\u804A\u5929\u65F6\uFF0C\u6211\u603B\u80FD\u628A\u81EA\u5DF1\u7684\u610F\u601D\u8868\u8FBE\u6E05\u695A" }
+  ],
+  logicalMath: [
+    { text: "\u6211\u559C\u6B22\u7422\u78E8\u6570\u72EC\u3001\u63A8\u7406\u9898\u6216\u627E\u89C4\u5F8B\u7684\u6E38\u620F" },
+    { text: "\u505A\u6570\u5B66\u9898\u65F6\uFF0C\u6211\u80FD\u8BF4\u51FA\u6BCF\u4E00\u6B65\u300C\u4E3A\u4EC0\u4E48\u8FD9\u6837\u7B97\u300D" },
+    { text: "\u770B\u5230\u4E00\u4E32\u6570\u5B57\u6216\u56FE\u5F62\uFF0C\u6211\u5E38\u4F1A\u4E0B\u610F\u8BC6\u53BB\u627E\u89C4\u5F8B" },
+    { text: "\u4E70\u4E1C\u897F\u7B97\u94B1\u3001\u7B97\u6298\u6263\u65F6\uFF0C\u6211\u5F88\u5FEB\u5C31\u80FD\u7B97\u6E05\u695A" },
+    { text: "\u542C\u5230\u4E00\u4E2A\u8BF4\u6CD5\u65F6\uFF0C\u6211\u4F1A\u60F3\u300C\u8FD9\u4E2A\u9053\u7406\u7AD9\u5F97\u4F4F\u811A\u5417\u300D" }
+  ],
+  spatial: [
+    { text: "\u770B\u5730\u56FE\u6216\u793A\u610F\u56FE\u627E\u5730\u65B9\uFF0C\u5BF9\u6211\u6765\u8BF4\u4E0D\u96BE" },
+    { text: "\u73A9\u62FC\u56FE\u3001\u642D\u79EF\u6728\u6216\u6298\u7EB8\u65F6\uFF0C\u6211\u4E0A\u624B\u5F88\u5FEB" },
+    { text: "\u6211\u80FD\u5728\u8111\u5B50\u91CC\u300C\u8F6C\u52A8\u300D\u4E00\u4E2A\u7ACB\u4F53\u56FE\u5F62\uFF0C\u60F3\u8C61\u5B83\u7684\u53E6\u4E00\u9762" },
+    { text: "\u505A\u9898\u65F6\u914D\u4E0A\u56FE\u5F62\u8F85\u52A9\uFF08\u5982\u753B\u7EBF\u6BB5\u56FE\uFF09\uFF0C\u6211\u4F1A\u89E3\u5F97\u66F4\u987A" },
+    { text: "\u8D70\u8FC7\u4E00\u904D\u7684\u8DEF\u7EBF\uFF0C\u6211\u901A\u5E38\u80FD\u8BB0\u4F4F\u600E\u4E48\u8D70\u56DE\u53BB" }
+  ],
+  musical: [
+    { text: "\u4E00\u9996\u6B4C\u542C\u51E0\u904D\uFF0C\u6211\u5C31\u80FD\u8DDF\u7740\u54FC\u51FA\u65CB\u5F8B" },
+    { text: "\u6211\u5F88\u5C11\u6CE8\u610F\u5230\u5468\u56F4\u73AF\u5883\u91CC\u7684\u58F0\u97F3\u548C\u8282\u594F", reverse: true },
+    { text: "\u522B\u4EBA\u5531\u6B4C\u6216\u6F14\u594F\u8DD1\u8C03\u65F6\uFF0C\u6211\u80FD\u542C\u5F97\u51FA\u6765" },
+    { text: "\u8D70\u8DEF\u6216\u505A\u4E8B\u65F6\uFF0C\u6211\u5E38\u5E38\u4E0D\u81EA\u89C9\u5730\u6253\u62CD\u5B50" },
+    { text: "\u80CC\u4E1C\u897F\u65F6\uFF0C\u6211\u559C\u6B22\u7F16\u6210\u987A\u53E3\u6E9C\u6216\u6709\u8282\u594F\u7684\u5FF5\u6CD5" }
+  ],
+  bodily: [
+    { text: "\u4F53\u80B2\u8BFE\u4E0A\u7684\u65B0\u52A8\u4F5C\uFF0C\u6211\u770B\u51E0\u904D\u5C31\u80FD\u5B66\u4F1A" },
+    { text: "\u505A\u624B\u5DE5\u3001\u5B9E\u9A8C\u64CD\u4F5C\u6216\u4F7F\u7528\u5DE5\u5177\u65F6\uFF0C\u6211\u7684\u624B\u5F88\u7075\u5DE7" },
+    { text: "\u5750\u7740\u4E0D\u52A8\u592A\u4E45\u6211\u4F1A\u96BE\u53D7\uFF0C\u603B\u60F3\u8D77\u6765\u6D3B\u52A8\u4E00\u4E0B" },
+    { text: "\u5B66\u4E60\u65B0\u52A8\u4F5C\uFF08\u6BD4\u5982\u65B0\u7684\u64CD\u3001\u65B0\u7684\u821E\u8E48\uFF09\u65F6\uFF0C\u6211\u5E38\u5E38\u8DDF\u4E0D\u4E0A\u522B\u4EBA", reverse: true },
+    { text: "\u6211\u559C\u6B22\u7528\u6BD4\u5212\u3001\u624B\u52BF\u6765\u5E2E\u52A9\u81EA\u5DF1\u8868\u8FBE\u6216\u8BB0\u4E1C\u897F" }
+  ],
+  interpersonal: [
+    { text: "\u540C\u5B66\u6709\u5FC3\u4E8B\u65F6\uFF0C\u5E38\u5E38\u613F\u610F\u6765\u627E\u6211\u804A" },
+    { text: "\u5C0F\u7EC4\u5408\u4F5C\u65F6\uFF0C\u6211\u80FD\u5BDF\u89C9\u8C01\u88AB\u51B7\u843D\u4E86\uFF0C\u5E76\u7167\u987E\u5230\u4ED6" },
+    { text: "\u8BA8\u8BBA\u95EE\u9898\u65F6\uFF0C\u6211\u5E38\u5E38\u542C\u4E0D\u8FDB\u522B\u4EBA\u7684\u610F\u89C1", reverse: true },
+    { text: "\u6211\u6BD4\u8F83\u5BB9\u6613\u770B\u51FA\u522B\u4EBA\u662F\u9AD8\u5174\u8FD8\u662F\u4E0D\u9AD8\u5174" },
+    { text: "\u6BD4\u8D77\u4E00\u4E2A\u4EBA\u505A\uFF0C\u6211\u66F4\u559C\u6B22\u548C\u522B\u4EBA\u4E00\u8D77\u5B8C\u6210\u4EFB\u52A1" }
+  ],
+  intrapersonal: [
+    { text: "\u8003\u5B8C\u8BD5\u6211\u4F1A\u60F3\u300C\u8FD9\u6B21\u54EA\u91CC\u505A\u5F97\u597D\u3001\u54EA\u91CC\u8981\u6539\u300D" },
+    { text: "\u6211\u6E05\u695A\u81EA\u5DF1\u64C5\u957F\u4EC0\u4E48\u3001\u4E0D\u64C5\u957F\u4EC0\u4E48" },
+    { text: "\u60C5\u7EEA\u4E0D\u597D\u7684\u65F6\u5019\uFF0C\u6211\u80FD\u8BF4\u51FA\u81EA\u5DF1\u4E3A\u4EC0\u4E48\u4E0D\u5F00\u5FC3" },
+    { text: "\u6211\u4F1A\u7ED9\u81EA\u5DF1\u5B9A\u5C0F\u76EE\u6807\uFF0C\u5E76\u68C0\u67E5\u6709\u6CA1\u6709\u505A\u5230" },
+    { text: "\u88AB\u95EE\u5230\u300C\u4F60\u4E3A\u4EC0\u4E48\u8FD9\u6837\u505A\u300D\u65F6\uFF0C\u6211\u5E38\u5E38\u7B54\u4E0D\u4E0A\u6765", reverse: true }
+  ],
+  naturalist: [
+    { text: "\u6211\u80FD\u8BF4\u51FA\u597D\u51E0\u79CD\u5E38\u89C1\u52A8\u690D\u7269\u7684\u540D\u5B57\u548C\u7279\u70B9" },
+    { text: "\u6211\u4F1A\u6CE8\u610F\u5230\u5929\u6C14\u3001\u5B63\u8282\u53D8\u5316\u5E26\u6765\u7684\u7EC6\u5FAE\u4E0D\u540C" },
+    { text: "\u517B\u690D\u7269\u6216\u5C0F\u52A8\u7269\u65F6\uFF0C\u6211\u80FD\u53D1\u73B0\u5B83\u4EEC\u7684\u72B6\u6001\u53D8\u5316" },
+    { text: "\u8D70\u5728\u719F\u6089\u7684\u8DEF\u4E0A\uFF0C\u6211\u5F88\u5C11\u7559\u610F\u5468\u56F4\u82B1\u8349\u6811\u6728\u7684\u53D8\u5316", reverse: true },
+    { text: "\u6211\u559C\u6B22\u89C2\u5BDF\u6606\u866B\u3001\u661F\u7A7A\u6216\u81EA\u7136\u73B0\u8C61\uFF0C\u5E76\u60F3\u77E5\u9053\u4E3A\u4EC0\u4E48" }
+  ]
+};
+var MULTI_DIM_SEQUENCE = [
+  "linguistic",
+  "logicalMath",
+  "spatial",
+  "musical",
+  "bodily",
+  "interpersonal",
+  "intrapersonal",
+  "naturalist",
+  "spatial",
+  "bodily",
+  "linguistic",
+  "naturalist",
+  "logicalMath",
+  "interpersonal",
+  "musical",
+  "intrapersonal",
+  "musical",
+  "intrapersonal",
+  "bodily",
+  "logicalMath",
+  "naturalist",
+  "linguistic",
+  "interpersonal",
+  "spatial",
+  "interpersonal",
+  "naturalist",
+  "intrapersonal",
+  "spatial",
+  "musical",
+  "bodily",
+  "logicalMath",
+  "linguistic",
+  "bodily",
+  "musical",
+  "naturalist",
+  "intrapersonal",
+  "spatial",
+  "interpersonal",
+  "linguistic",
+  "logicalMath"
+];
+var MULTI_RATINGS = (() => {
+  const cursor = {
+    linguistic: 0,
+    logicalMath: 0,
+    spatial: 0,
+    musical: 0,
+    bodily: 0,
+    interpersonal: 0,
+    intrapersonal: 0,
+    naturalist: 0
+  };
+  return MULTI_DIM_SEQUENCE.map((dim, i) => {
+    const item = MULTI_BANK[dim][cursor[dim]++];
+    return { no: i + 1, text: item.text, reverse: item.reverse ?? false, dim };
+  });
+})();
+
 // contracts/assessments.ts
 var EI_QUESTIONS = [
   { text: "\u8BFE\u95F4\u5341\u5206\u949F\uFF0C\u4F60\u66F4\u5E38\u5728\u2014\u2014", a: "\u548C\u540C\u5B66\u804A\u5929\u3001\u6253\u95F9\uFF0C\u8D8A\u804A\u8D8A\u7CBE\u795E", b: "\u81EA\u5DF1\u5B89\u9759\u5F85\u7740\uFF0C\u770B\u770B\u4E66\u6216\u53D1\u53D1\u5446", dim: "EI", aPole: "E" },
@@ -110321,20 +110607,6 @@ function discSummaryFromDims(dims) {
   const summary = combo ? `\u5B69\u5B50\u662F\u300C${head}\u300D\u7684\u6027\u683C\u7EC4\u5408\u3002${DISC_TYPE_TEXT[primary]}\uFF1B\u540C\u65F6\u4E5F\u6709\u660E\u663E\u7684 ${second} \u7279\u8D28\uFF1A${DISC_TYPE_TEXT[second]}\u3002` : `\u5B69\u5B50\u662F\u300C${head}\u300D\u3002${DISC_TYPE_TEXT[primary]}\u3002`;
   return { primary, summary };
 }
-function discV2Counts(ans, groups = DISC_V2_GROUPS) {
-  const most = { D: 0, I: 0, S: 0, C: 0 };
-  const least = { D: 0, I: 0, S: 0, C: 0 };
-  groups.forEach((g, i) => {
-    const m = ans.most[i];
-    const l = ans.least[i];
-    if (m == null || l == null || m < 0 || m > 3 || l < 0 || l > 3 || m === l) {
-      throw new Error(`DISC V2 \u7B2C ${i + 1} \u7EC4\u4F5C\u7B54\u65E0\u6548\uFF08\u6700\u50CF\u4E0E\u6700\u4E0D\u50CF\u987B\u4E3A\u4E0D\u540C\u7684\u8BCD\uFF09`);
-    }
-    most[g.types[m]] += 1;
-    least[g.types[l]] += 1;
-  });
-  return { most, least };
-}
 function scoreDiscV2(ans, groups = DISC_V2_GROUPS) {
   if (ans.most.length !== groups.length || ans.least.length !== groups.length) {
     throw new Error(`DISC V2 \u7B54\u6848\u6570\u91CF\u5E94\u4E3A ${groups.length} \u7EC4`);
@@ -110353,292 +110625,6 @@ function scoreDiscV2(ans, groups = DISC_V2_GROUPS) {
   const { primary, summary } = discSummaryFromDims(dims);
   return { primary, dims, summary, version: 2 };
 }
-
-// src/components/reports/DiscParentCompare.tsx
-var import_jsx_runtime8 = __toESM(require_jsx_runtime(), 1);
-var DISC_COLOR = {
-  D: "#d44f3a",
-  I: "#e8a33d",
-  S: "#4e9e5f",
-  C: "#3d8ec4"
-};
-var MAX = 24;
-var DISC_DIM_PLAIN = {
-  D: "\u8C01\u8BF4\u4E86\u7B97\u3001\u542C\u8C01\u7684",
-  I: "\u7231\u70ED\u95F9\u3001\u7231\u8868\u8FBE",
-  S: "\u6C42\u7A33\u3001\u6015\u53D8\u5316",
-  C: "\u91CD\u7EC6\u8282\u3001\u8BB2\u89C4\u77E9"
-};
-function nv(result, k) {
-  return (result.dims[k] ?? 0) * (result.version === 2 ? 1 : 2);
-}
-function FactorBars({ label, tag, result, hot = [] }) {
-  const combo = getDiscCombo(result.dims);
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "flex items-baseline gap-2", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "text-[13px] font-bold text-olive", children: label }),
-      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "text-[11.5px] text-olive-mute", children: [
-        combo.join(""),
-        " \u578B",
-        tag ? ` \xB7 ${tag}` : ""
-      ] })
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "mt-1.5 space-y-1.5", children: ["D", "I", "S", "C"].map((k) => {
-      const v = nv(result, k);
-      const inCombo = combo.includes(k);
-      const isHot = hot.includes(k);
-      return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-        "div",
-        {
-          className: `flex items-center gap-2 rounded-lg px-1.5 py-0.5 -mx-1.5 ${isHot ? "bg-[#fbe3df] ring-1 ring-[#b91c1c]/50" : ""}`,
-          children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: `w-16 shrink-0 text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : inCombo ? "font-bold text-olive" : "text-olive-mute"}`, children: [
-              k,
-              " \xB7 ",
-              DISC_THEORY.find((t) => t.type === k)?.name
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-              "div",
-              {
-                className: "h-full rounded-full",
-                style: { width: `${Math.min(100, v / MAX * 100)}%`, background: DISC_COLOR[k], opacity: inCombo || isHot ? 1 : 0.45 }
-              }
-            ) }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: `mono w-5 shrink-0 text-right text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : "text-olive-soft"}`, children: v })
-          ]
-        },
-        k
-      );
-    }) })
-  ] });
-}
-function DimDeltaBadges({ label, parent, student }) {
-  const deltas = ["D", "I", "S", "C"].map((k) => ({
-    k,
-    student: nv(student, k),
-    parent: nv(parent, k),
-    abs: Math.abs(nv(student, k) - nv(parent, k))
-  }));
-  const strong = deltas.filter((d) => d.abs >= 6).sort((a, b) => b.abs - a.abs);
-  const watch = deltas.filter((d) => d.abs >= 4 && d.abs < 6);
-  if (strong.length === 0 && watch.length === 0) {
-    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { className: "mt-1.5 text-[11.5px] text-olive-mute", children: [
-      "\u4E0E",
-      label,
-      "\u56DB\u4E2A\u7EF4\u5EA6\u5DEE\u503C\u90FD\u5F88\u5C0F\uFF0C\u884C\u4E3A\u9891\u9053\u603B\u4F53\u63A5\u8FD1\u3002"
-    ] });
-  }
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "mt-2 flex flex-wrap gap-1.5", children: [
-    strong.map((d) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-      "span",
-      {
-        className: "rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]",
-        children: [
-          "\u26A0 ",
-          d.k,
-          "\uFF08",
-          DISC_DIM_PLAIN[d.k],
-          "\uFF09\u660E\u663E\u9876\u725B\uFF1A\u4F60 ",
-          d.student,
-          " \u5206 / ",
-          label,
-          " ",
-          d.parent,
-          " \u5206\uFF0C\u5DEE ",
-          d.abs,
-          " \u5206"
-        ]
-      },
-      d.k
-    )),
-    watch.map((d) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-      "span",
-      {
-        className: "rounded-md border border-[#c7a23a]/70 bg-[#f5e7c1] px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]",
-        children: [
-          d.k,
-          "\uFF08",
-          DISC_DIM_PLAIN[d.k],
-          "\uFF09\u7565\u6709\u5DEE\u5F02\uFF1A\u4F60 ",
-          d.student,
-          " \u5206 / ",
-          label,
-          " ",
-          d.parent,
-          " \u5206\uFF0C\u5DEE ",
-          d.abs,
-          " \u5206"
-        ]
-      },
-      d.k
-    ))
-  ] });
-}
-function DiscParentCompare({
-  student,
-  parents
-}) {
-  return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "paper-card p-5", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h3", { className: "font-bold text-olive", children: "\u4EB2\u5B50 DISC \u884C\u4E3A\u98CE\u683C\u5BF9\u7167" }),
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "\u770B\u770B\u5B69\u5B50\u548C\u5BB6\u957F\u5404\u81EA\u6700\u81EA\u7136\u7684\u884C\u4E3A\u6A21\u5F0F\u5DEE\u5728\u54EA\u91CC\uFF08\u7C7B\u578B\u6CA1\u6709\u597D\u574F\uFF0C\u53EA\u6709\u4E0D\u540C\uFF09\u3002\u5206\u6570\u5DF2\u7EDF\u4E00\u6362\u7B97\u5230 0\u201324 \u91CF\u5C3A\u5BF9\u7167\uFF08\u65E7\u7248\u4E8C\u9009\u4E00\u7ED3\u679C \xD72\uFF09\uFF1B\u540C\u4E00\u7EF4\u5EA6\u4E24\u8FB9\u5DEE 6 \u5206\u4EE5\u4E0A\u7B97\u300C\u660E\u663E\u9876\u725B\u300D\uFF08\u65E5\u5E38\u76F8\u5904\u6700\u5BB9\u6613\u9891\u9053\u5BF9\u4E0D\u4E0A\uFF0C\u7EA2\u8272\u6807\u51FA\uFF09\uFF0C\u5DEE 4\u20135 \u5206\u300C\u7565\u6709\u5DEE\u5F02\u300D\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "mt-3 space-y-4", children: (() => {
-      const dims = ["D", "I", "S", "C"];
-      const perParent = parents.map((p) => dims.filter((k) => Math.abs(nv(p.result, k) - nv(student, k)) >= 6));
-      const unionHot = [...new Set(perParent.flat())];
-      return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-          FactorBars,
-          {
-            label: "\u5B66\u751F\uFF08\u4F60\uFF09",
-            tag: DISC_THEORY.find((t) => t.type === student.primary)?.name,
-            result: student,
-            hot: unionHot
-          }
-        ),
-        parents.map((p, i) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-            FactorBars,
-            {
-              label: `\u5BB6\u957F \xB7 ${p.label}`,
-              tag: DISC_THEORY.find((t) => t.type === p.result.primary)?.name,
-              result: p.result,
-              hot: perParent[i]
-            }
-          ),
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(DimDeltaBadges, { label: p.label, parent: p.result, student })
-        ] }, `${p.label}-${i}`))
-      ] });
-    })() })
-  ] });
-}
-
-// contracts/multi.ts
-var MULTI_DIM_LABEL = {
-  linguistic: "\u8BED\u8A00\u667A\u80FD",
-  logicalMath: "\u903B\u8F91\u6570\u5B66",
-  spatial: "\u7A7A\u95F4\u667A\u80FD",
-  musical: "\u97F3\u4E50\u667A\u80FD",
-  bodily: "\u8EAB\u4F53\u52A8\u89C9",
-  interpersonal: "\u4EBA\u9645\u6C9F\u901A",
-  intrapersonal: "\u81EA\u6211\u8BA4\u77E5",
-  naturalist: "\u81EA\u7136\u89C2\u5BDF"
-};
-var MULTI_BANK = {
-  linguistic: [
-    { text: "\u6211\u8BB2\u6545\u4E8B\u6216\u8F6C\u8FF0\u4E8B\u60C5\u65F6\uFF0C\u522B\u4EBA\u5F88\u5BB9\u6613\u542C\u660E\u767D" },
-    { text: "\u5199\u4F5C\u6587\u6216\u53D1\u8A00\u65F6\uFF0C\u6211\u5E38\u5E38\u60F3\u534A\u5929\u4E5F\u627E\u4E0D\u51FA\u5408\u9002\u7684\u8BCD", reverse: true },
-    { text: "\u8BFB\u5B8C\u4E00\u7BC7\u8BFE\u6587\u6216\u8BFE\u5916\u4E66\uFF0C\u6211\u80FD\u8BF4\u51FA\u5B83\u7684\u4E3B\u8981\u5185\u5BB9" },
-    { text: "\u8001\u5E08\u53E3\u5934\u5E03\u7F6E\u7684\u4E8B\u60C5\uFF0C\u6211\u542C\u4E00\u904D\u5C31\u80FD\u8BB0\u4F4F" },
-    { text: "\u548C\u540C\u5B66\u804A\u5929\u65F6\uFF0C\u6211\u603B\u80FD\u628A\u81EA\u5DF1\u7684\u610F\u601D\u8868\u8FBE\u6E05\u695A" }
-  ],
-  logicalMath: [
-    { text: "\u6211\u559C\u6B22\u7422\u78E8\u6570\u72EC\u3001\u63A8\u7406\u9898\u6216\u627E\u89C4\u5F8B\u7684\u6E38\u620F" },
-    { text: "\u505A\u6570\u5B66\u9898\u65F6\uFF0C\u6211\u80FD\u8BF4\u51FA\u6BCF\u4E00\u6B65\u300C\u4E3A\u4EC0\u4E48\u8FD9\u6837\u7B97\u300D" },
-    { text: "\u770B\u5230\u4E00\u4E32\u6570\u5B57\u6216\u56FE\u5F62\uFF0C\u6211\u5E38\u4F1A\u4E0B\u610F\u8BC6\u53BB\u627E\u89C4\u5F8B" },
-    { text: "\u4E70\u4E1C\u897F\u7B97\u94B1\u3001\u7B97\u6298\u6263\u65F6\uFF0C\u6211\u5F88\u5FEB\u5C31\u80FD\u7B97\u6E05\u695A" },
-    { text: "\u542C\u5230\u4E00\u4E2A\u8BF4\u6CD5\u65F6\uFF0C\u6211\u4F1A\u60F3\u300C\u8FD9\u4E2A\u9053\u7406\u7AD9\u5F97\u4F4F\u811A\u5417\u300D" }
-  ],
-  spatial: [
-    { text: "\u770B\u5730\u56FE\u6216\u793A\u610F\u56FE\u627E\u5730\u65B9\uFF0C\u5BF9\u6211\u6765\u8BF4\u4E0D\u96BE" },
-    { text: "\u73A9\u62FC\u56FE\u3001\u642D\u79EF\u6728\u6216\u6298\u7EB8\u65F6\uFF0C\u6211\u4E0A\u624B\u5F88\u5FEB" },
-    { text: "\u6211\u80FD\u5728\u8111\u5B50\u91CC\u300C\u8F6C\u52A8\u300D\u4E00\u4E2A\u7ACB\u4F53\u56FE\u5F62\uFF0C\u60F3\u8C61\u5B83\u7684\u53E6\u4E00\u9762" },
-    { text: "\u505A\u9898\u65F6\u914D\u4E0A\u56FE\u5F62\u8F85\u52A9\uFF08\u5982\u753B\u7EBF\u6BB5\u56FE\uFF09\uFF0C\u6211\u4F1A\u89E3\u5F97\u66F4\u987A" },
-    { text: "\u8D70\u8FC7\u4E00\u904D\u7684\u8DEF\u7EBF\uFF0C\u6211\u901A\u5E38\u80FD\u8BB0\u4F4F\u600E\u4E48\u8D70\u56DE\u53BB" }
-  ],
-  musical: [
-    { text: "\u4E00\u9996\u6B4C\u542C\u51E0\u904D\uFF0C\u6211\u5C31\u80FD\u8DDF\u7740\u54FC\u51FA\u65CB\u5F8B" },
-    { text: "\u6211\u5F88\u5C11\u6CE8\u610F\u5230\u5468\u56F4\u73AF\u5883\u91CC\u7684\u58F0\u97F3\u548C\u8282\u594F", reverse: true },
-    { text: "\u522B\u4EBA\u5531\u6B4C\u6216\u6F14\u594F\u8DD1\u8C03\u65F6\uFF0C\u6211\u80FD\u542C\u5F97\u51FA\u6765" },
-    { text: "\u8D70\u8DEF\u6216\u505A\u4E8B\u65F6\uFF0C\u6211\u5E38\u5E38\u4E0D\u81EA\u89C9\u5730\u6253\u62CD\u5B50" },
-    { text: "\u80CC\u4E1C\u897F\u65F6\uFF0C\u6211\u559C\u6B22\u7F16\u6210\u987A\u53E3\u6E9C\u6216\u6709\u8282\u594F\u7684\u5FF5\u6CD5" }
-  ],
-  bodily: [
-    { text: "\u4F53\u80B2\u8BFE\u4E0A\u7684\u65B0\u52A8\u4F5C\uFF0C\u6211\u770B\u51E0\u904D\u5C31\u80FD\u5B66\u4F1A" },
-    { text: "\u505A\u624B\u5DE5\u3001\u5B9E\u9A8C\u64CD\u4F5C\u6216\u4F7F\u7528\u5DE5\u5177\u65F6\uFF0C\u6211\u7684\u624B\u5F88\u7075\u5DE7" },
-    { text: "\u5750\u7740\u4E0D\u52A8\u592A\u4E45\u6211\u4F1A\u96BE\u53D7\uFF0C\u603B\u60F3\u8D77\u6765\u6D3B\u52A8\u4E00\u4E0B" },
-    { text: "\u5B66\u4E60\u65B0\u52A8\u4F5C\uFF08\u6BD4\u5982\u65B0\u7684\u64CD\u3001\u65B0\u7684\u821E\u8E48\uFF09\u65F6\uFF0C\u6211\u5E38\u5E38\u8DDF\u4E0D\u4E0A\u522B\u4EBA", reverse: true },
-    { text: "\u6211\u559C\u6B22\u7528\u6BD4\u5212\u3001\u624B\u52BF\u6765\u5E2E\u52A9\u81EA\u5DF1\u8868\u8FBE\u6216\u8BB0\u4E1C\u897F" }
-  ],
-  interpersonal: [
-    { text: "\u540C\u5B66\u6709\u5FC3\u4E8B\u65F6\uFF0C\u5E38\u5E38\u613F\u610F\u6765\u627E\u6211\u804A" },
-    { text: "\u5C0F\u7EC4\u5408\u4F5C\u65F6\uFF0C\u6211\u80FD\u5BDF\u89C9\u8C01\u88AB\u51B7\u843D\u4E86\uFF0C\u5E76\u7167\u987E\u5230\u4ED6" },
-    { text: "\u8BA8\u8BBA\u95EE\u9898\u65F6\uFF0C\u6211\u5E38\u5E38\u542C\u4E0D\u8FDB\u522B\u4EBA\u7684\u610F\u89C1", reverse: true },
-    { text: "\u6211\u6BD4\u8F83\u5BB9\u6613\u770B\u51FA\u522B\u4EBA\u662F\u9AD8\u5174\u8FD8\u662F\u4E0D\u9AD8\u5174" },
-    { text: "\u6BD4\u8D77\u4E00\u4E2A\u4EBA\u505A\uFF0C\u6211\u66F4\u559C\u6B22\u548C\u522B\u4EBA\u4E00\u8D77\u5B8C\u6210\u4EFB\u52A1" }
-  ],
-  intrapersonal: [
-    { text: "\u8003\u5B8C\u8BD5\u6211\u4F1A\u60F3\u300C\u8FD9\u6B21\u54EA\u91CC\u505A\u5F97\u597D\u3001\u54EA\u91CC\u8981\u6539\u300D" },
-    { text: "\u6211\u6E05\u695A\u81EA\u5DF1\u64C5\u957F\u4EC0\u4E48\u3001\u4E0D\u64C5\u957F\u4EC0\u4E48" },
-    { text: "\u60C5\u7EEA\u4E0D\u597D\u7684\u65F6\u5019\uFF0C\u6211\u80FD\u8BF4\u51FA\u81EA\u5DF1\u4E3A\u4EC0\u4E48\u4E0D\u5F00\u5FC3" },
-    { text: "\u6211\u4F1A\u7ED9\u81EA\u5DF1\u5B9A\u5C0F\u76EE\u6807\uFF0C\u5E76\u68C0\u67E5\u6709\u6CA1\u6709\u505A\u5230" },
-    { text: "\u88AB\u95EE\u5230\u300C\u4F60\u4E3A\u4EC0\u4E48\u8FD9\u6837\u505A\u300D\u65F6\uFF0C\u6211\u5E38\u5E38\u7B54\u4E0D\u4E0A\u6765", reverse: true }
-  ],
-  naturalist: [
-    { text: "\u6211\u80FD\u8BF4\u51FA\u597D\u51E0\u79CD\u5E38\u89C1\u52A8\u690D\u7269\u7684\u540D\u5B57\u548C\u7279\u70B9" },
-    { text: "\u6211\u4F1A\u6CE8\u610F\u5230\u5929\u6C14\u3001\u5B63\u8282\u53D8\u5316\u5E26\u6765\u7684\u7EC6\u5FAE\u4E0D\u540C" },
-    { text: "\u517B\u690D\u7269\u6216\u5C0F\u52A8\u7269\u65F6\uFF0C\u6211\u80FD\u53D1\u73B0\u5B83\u4EEC\u7684\u72B6\u6001\u53D8\u5316" },
-    { text: "\u8D70\u5728\u719F\u6089\u7684\u8DEF\u4E0A\uFF0C\u6211\u5F88\u5C11\u7559\u610F\u5468\u56F4\u82B1\u8349\u6811\u6728\u7684\u53D8\u5316", reverse: true },
-    { text: "\u6211\u559C\u6B22\u89C2\u5BDF\u6606\u866B\u3001\u661F\u7A7A\u6216\u81EA\u7136\u73B0\u8C61\uFF0C\u5E76\u60F3\u77E5\u9053\u4E3A\u4EC0\u4E48" }
-  ]
-};
-var MULTI_DIM_SEQUENCE = [
-  "linguistic",
-  "logicalMath",
-  "spatial",
-  "musical",
-  "bodily",
-  "interpersonal",
-  "intrapersonal",
-  "naturalist",
-  "spatial",
-  "bodily",
-  "linguistic",
-  "naturalist",
-  "logicalMath",
-  "interpersonal",
-  "musical",
-  "intrapersonal",
-  "musical",
-  "intrapersonal",
-  "bodily",
-  "logicalMath",
-  "naturalist",
-  "linguistic",
-  "interpersonal",
-  "spatial",
-  "interpersonal",
-  "naturalist",
-  "intrapersonal",
-  "spatial",
-  "musical",
-  "bodily",
-  "logicalMath",
-  "linguistic",
-  "bodily",
-  "musical",
-  "naturalist",
-  "intrapersonal",
-  "spatial",
-  "interpersonal",
-  "linguistic",
-  "logicalMath"
-];
-var MULTI_RATINGS = (() => {
-  const cursor = {
-    linguistic: 0,
-    logicalMath: 0,
-    spatial: 0,
-    musical: 0,
-    bodily: 0,
-    interpersonal: 0,
-    intrapersonal: 0,
-    naturalist: 0
-  };
-  return MULTI_DIM_SEQUENCE.map((dim, i) => {
-    const item = MULTI_BANK[dim][cursor[dim]++];
-    return { no: i + 1, text: item.text, reverse: item.reverse ?? false, dim };
-  });
-})();
 
 // src/components/reports/answerBlocks.ts
 function answerKindsForSection(title, hasAcadSec) {
@@ -112358,7 +112344,7 @@ function MbtiDetail({ result, onGoCombined }) {
     )
   ] });
 }
-function DiscDetail({ primary, dims, version, v2Counts, onGoCombined }) {
+function DiscDetail({ primary, dims, version, onGoCombined }) {
   const report = DISC_REPORTS[primary];
   const combo = getDiscCombo(dims);
   const blend = buildDiscComboBlend(combo);
@@ -112410,26 +112396,7 @@ function DiscDetail({ primary, dims, version, v2Counts, onGoCombined }) {
           ] })
         ] }, k);
       }) }),
-      v2Counts ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-4 grid gap-4 xl:grid-cols-2", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-          DiscTendencyChart,
-          {
-            dims: v2Counts.most,
-            max: 24,
-            title: "\u6821\u56ED\u4E2D\u7684\u6211 \xB7 \u6700\u50CF\u9009\u62E9\uFF08MOST\uFF09",
-            note: "24 \u7EC4\u91CC\u5404\u7EF4\u5EA6\u88AB\u300C\u6700\u50CF\u6211\u300D\u9009\u4E2D\u7684\u6B21\u6570\uFF080\u201424\uFF09\u2014\u2014\u4F60\u5728\u6821\u56ED\u91CC\u6700\u5E38\u5C55\u793A\u3001\u522B\u4EBA\u6700\u5BB9\u6613\u770B\u5230\u7684\u884C\u4E3A\u3002\u9876\u90E8\u7070\u8272\u4E3A\u53CD\u5F39\u533A\uFF1A\u8FDB\u5165\u6781\u7AEF\u9AD8\u533A\u65F6\u7269\u6781\u5FC5\u53CD\u3002"
-          }
-        ),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-          DiscTendencyChart,
-          {
-            dims: v2Counts.least,
-            max: 24,
-            title: "\u88AB\u538B\u5728\u8EAB\u540E\u7684\u6211 \xB7 \u6700\u4E0D\u50CF\u9009\u62E9\uFF08LEAST\uFF09",
-            note: "24 \u7EC4\u91CC\u5404\u7EF4\u5EA6\u88AB\u300C\u6700\u4E0D\u50CF\u6211\u300D\u9009\u4E2D\u7684\u6B21\u6570\uFF080\u201424\uFF09\u2014\u2014\u88AB\u4F60\u523B\u610F\u6536\u8D77\u6765\u3001\u6700\u4E0D\u613F\u610F\u90A3\u6837\u505A\u7684\u884C\u4E3A\uFF0C\u52FE\u52D2\u51FA\u5185\u5728\u7684\u5B89\u5168\u8FB9\u754C\uFF1B\u957F\u671F\u88AB\u8FEB\u4E0E\u5B83\u76F8\u5904\uFF0C\u6D88\u8017\u6700\u5927\u3002"
-          }
-        )
-      ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-4 -mx-5", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscTendencyChart, { dims, max: version === 2 ? 24 : 12 }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-4 -mx-5", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscTendencyChart, { dims, max: version === 2 ? 24 : 12 }) }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-4 rounded-xl border border-border bg-cream/70 px-4 py-3", children: [
         /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[12.5px] font-bold text-olive", children: "\u7070\u8272\u300C\u53CD\u5F39\u533A\u300D\u600E\u4E48\u770B" }),
         /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] leading-relaxed text-olive-soft", children: "\u6BCF\u4E2A\u884C\u4E3A\u56E0\u5B50\u90FD\u6709\u4E00\u4E2A\u300C\u751C\u871C\u533A\u95F4\u300D\u3002\u5F97\u5206\u8FDB\u5165\u7070\u8272\u53CD\u5F39\u533A\uFF08\u91CF\u8868 80% \u4EE5\u4E0A\uFF09\u8BF4\u660E\u8FD9\u4E2A\u7279\u8D28\u88AB\u62C9\u5230\u4E86\u6781\u7AEF\u2014\u2014\u7269\u6781\u5FC5\u53CD\uFF0C\u884C\u4E3A\u6709\u65F6\u4F1A\u53CD\u8FC7\u6765\u8D70\u5411\u5B83\u7684\u80CC\u9762\uFF1A D \u7684\u679C\u6562\u53EF\u80FD\u53D8\u6210\u4E13\u65AD\u3001I \u7684\u70ED\u60C5\u53EF\u80FD\u53D8\u6210\u6D6E\u8E81\u3001S \u7684\u6C89\u7A33\u53EF\u80FD\u53D8\u6210\u50F5\u5316\u3001C \u7684\u4E25\u8C28\u53EF\u80FD\u53D8\u6210\u6311\u5254\u3002 \u53CD\u5F39\u533A\u4E0D\u662F\u7F3A\u70B9\uFF0C\u662F\u300C\u7528\u529B\u8FC7\u731B\u300D\u7684\u63D0\u9192\uFF1A\u5F3A\u9879\u4FDD\u7559\uFF0C\u529B\u5EA6\u6536\u4E00\u6536\uFF0C\u53CD\u800C\u66F4\u7A33\u3002" })
@@ -112936,7 +112903,7 @@ function DiscTendencyChart({
   const primaryReport = DISC_REPORTS[combo[0]];
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
     /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: title ?? "\u884C\u4E3A\u4E4B\u955C \xB7 DISC \u56DB\u56E0\u5B50\u503E\u5411" }),
-    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: note ?? "\u843D\u70B9\u8D8A\u9AD8\uFF0C\u8BE5\u884C\u4E3A\u56E0\u5B50\u8D8A\u660E\u663E\uFF1B\u5F69\u8272\u5FBD\u7AE0\u4E3A\u8FD9\u5F20\u56FE\u7684\u4E3B\u56E0\u5B50\u7EC4\u5408\u3002\u9876\u90E8\u7070\u8272\u533A\u57DF\u662F\u300C\u53CD\u5F39\u533A\u300D\u2014\u2014\u5F97\u5206\u8FDB\u5165\u6781\u7AEF\u9AD8\u533A\u65F6\u7269\u6781\u5FC5\u53CD\uFF0C\u884C\u4E3A\u53EF\u80FD\u8D70\u5411\u8BE5\u56E0\u5B50\u7684\u53CD\u9762\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: note ?? (MAX2 === 24 ? "\u5F97\u5206\u53E3\u5F84\uFF1A\u8BE5\u56E0\u5B50\u88AB\u300C\u6700\u50CF\u6211\u300D\u9009\u4E2D\u7684\u6B21\u6570 \u2212\u300C\u6700\u4E0D\u50CF\u6211\u300D\u9009\u4E2D\u7684\u6B21\u6570\uFF0C\u5F52\u4E00\u5230 0\u201424 \u91CF\u5C3A\uFF0812 \u5206\u4E3A\u4E2D\u6027\uFF0C\u4E0E\u4E0A\u65B9\u6761\u5F62\u56FE\u4E3A\u540C\u4E00\u4EFD\u5206\u6570\uFF09\u3002\u843D\u70B9\u8D8A\u9AD8\uFF0C\u8BE5\u884C\u4E3A\u56E0\u5B50\u8D8A\u660E\u663E\u3002\u9876\u90E8\u7070\u8272\u533A\u57DF\u662F\u300C\u53CD\u5F39\u533A\u300D\u2014\u2014\u5F97\u5206\u8FDB\u5165\u6781\u7AEF\u9AD8\u533A\u65F6\u7269\u6781\u5FC5\u53CD\uFF0C\u884C\u4E3A\u53EF\u80FD\u8D70\u5411\u8BE5\u56E0\u5B50\u7684\u53CD\u9762\u3002" : "\u843D\u70B9\u8D8A\u9AD8\uFF0C\u8BE5\u884C\u4E3A\u56E0\u5B50\u8D8A\u660E\u663E\uFF1B\u5F69\u8272\u5FBD\u7AE0\u4E3A\u4E3B\u56E0\u5B50\u7EC4\u5408\u3002\u9876\u90E8\u7070\u8272\u533A\u57DF\u662F\u300C\u53CD\u5F39\u533A\u300D\u2014\u2014\u5F97\u5206\u8FDB\u5165\u6781\u7AEF\u9AD8\u533A\u65F6\u7269\u6781\u5FC5\u53CD\uFF0C\u884C\u4E3A\u53EF\u80FD\u8D70\u5411\u8BE5\u56E0\u5B50\u7684\u53CD\u9762\u3002") }),
     /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("svg", { viewBox: `0 0 ${W} ${H}`, className: "mt-3 w-full", role: "img", "aria-label": "DISC \u56DB\u56E0\u5B50\u7AD6\u7EBF\u56FE", children: [
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("rect", { x: PAD_X - 34, y: TOP, width: W - (PAD_X - 34) * 2, height: Math.max(0, reboundY - TOP), rx: 8, fill: "#6b7280", opacity: 0.15 }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("text", { x: W - PAD_X + 30, y: TOP + 13, fontSize: 10.5, fill: "#6b7280", textAnchor: "end", children: [
@@ -113464,20 +113431,6 @@ function ReportView({
     const v = data3?.discParents;
     return Array.isArray(v) ? v.filter((p) => p && p.result && p.result.dims) : [];
   }, [data3]);
-  const discV2Split = (0, import_react4.useMemo)(() => {
-    const raws = data3?.raw ?? [];
-    for (let i = raws.length - 1; i >= 0; i--) {
-      const r = raws[i];
-      if (r.kind === "disc" && isDiscV2Answers(r.answers)) {
-        try {
-          return discV2Counts(r.answers);
-        } catch {
-          return null;
-        }
-      }
-    }
-    return null;
-  }, [data3]);
   const mentalSdq = data3?.mentalSdq ?? void 0;
   const mentalPa = data3?.mentalPa ?? void 0;
   const mentalScl90 = data3?.mentalScl90 ?? void 0;
@@ -113874,7 +113827,7 @@ function ReportView({
         ] })
       ] })),
       tab === "mbti" && (!mbti2 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MissingCard, { text: "\u8FD8\u6CA1\u6709 MBTI \u6D4B\u8BC4\u7ED3\u679C\uFF0C28 \u9053\u4E8C\u9009\u4E00\uFF0C\u7EA6 5 \u5206\u949F\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=mbti" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MbtiDetail, { result: mbti2, onGoCombined: goCombined })),
-      tab === "disc" && (!disc2 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MissingCard, { text: "\u8FD8\u6CA1\u6709 DISC \u6D4B\u8BC4\u7ED3\u679C\uFF0C24 \u9053\u4E8C\u9009\u4E00\uFF0C\u7EA6 4 \u5206\u949F\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=disc" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscDetail, { primary: disc2.primary, dims: disc2.dims, version: disc2.version, v2Counts: discV2Split, onGoCombined: goCombined })),
+      tab === "disc" && (!disc2 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MissingCard, { text: "\u8FD8\u6CA1\u6709 DISC \u6D4B\u8BC4\u7ED3\u679C\uFF0C24 \u9053\u4E8C\u9009\u4E00\uFF0C\u7EA6 4 \u5206\u949F\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=disc" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscDetail, { primary: disc2.primary, dims: disc2.dims, version: disc2.version, onGoCombined: goCombined })),
       tab === "multi5" && (!multi5 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MissingCard, { text: "\u591A\u5143\u667A\u80FD\u4E94\u9879\u4E3A\u5BA2\u89C2\u9898\u6D4B\u8BC4\uFF08\u9009\u505A\uFF09\uFF0C40 \u9898\u7EA6 8 \u5206\u949F\uFF0C\u6BD4\u81EA\u8BC4\u66F4\u80FD\u53CD\u6620\u771F\u5B9E\u80FD\u529B\u5E95\u5B50\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=multi5" }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Multi5Detail, { result: multi5 })),
       (tab === "parent" || tab === "discparent") && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(ParentReportTab, { student: disc2 ?? null, parents: discParents, e3parent: parentResult, raw: data3?.raw }),
       tab === "anchor" && (!anchor ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
@@ -114638,7 +114591,7 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v42.tsx
+// scripts/smoke-render-v43.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -114942,9 +114895,6 @@ if (MENTAL_PA_SECTIONS[1].description.includes("\u6309\u5B66\u751F\u65E5\u5E38\u
 console.log("OK v42 GAD-7 \u539F\u7248\u63AA\u8F9E");
 if (!MENTAL_SDQ_AGE.includes("11 \u5C81\u4EE5\u4E0B\u8BF7\u5BB6\u957F\u5F15\u5BFC\u586B\u5199")) throw new Error("SDQ \u5E74\u9F84\u53E3\u5F84\u672A\u66F4\u65B0");
 console.log("OK v42 SDQ \u5BB6\u957F\u5F15\u5BFC\u586B\u5199");
-var discV2Ans = { most: DISC_V2_GROUPS.map((g) => g.types.indexOf("D")), least: DISC_V2_GROUPS.map((g) => g.types.indexOf("S")) };
-var counts = discV2Counts(discV2Ans);
-if (counts.most.D !== 24 || counts.most.I !== 0 || counts.least.S !== 24 || counts.least.C !== 0) throw new Error("DISC MOST/LEAST \u8BA1\u6570\u9519\u8BEF");
 var discTab = (0, import_server.renderToStaticMarkup)(
   import_react5.default.createElement(
     MemoryRouter,
@@ -114953,9 +114903,10 @@ var discTab = (0, import_server.renderToStaticMarkup)(
     } })
   )
 );
-for (const kw of ["\u53CD\u5F39\u533A", "\u7269\u6781\u5FC5\u53CD", "\u6821\u56ED\u4E2D\u7684\u6211 \xB7 \u6700\u50CF\u9009\u62E9\uFF08MOST\uFF09", "\u88AB\u538B\u5728\u8EAB\u540E\u7684\u6211 \xB7 \u6700\u4E0D\u50CF\u9009\u62E9\uFF08LEAST\uFF09"]) need(discTab, kw, "DISC \u53CC\u7EBF\u56FE+\u53CD\u5F39\u533A");
+for (const kw of ["\u53CD\u5F39\u533A", "\u7269\u6781\u5FC5\u53CD", "\u5F97\u5206\u53E3\u5F84", "\u4E0E\u4E0A\u65B9\u6761\u5F62\u56FE\u4E3A\u540C\u4E00\u4EFD\u5206\u6570", "D \u578B\uFF08\u638C\u63A7\u578B\uFF09"]) need(discTab, kw, "DISC \u5355\u56FE+\u53CD\u5F39\u533A+\u53E3\u5F84");
+if (/校园中的我|被压在身后|MOST|LEAST/.test(discTab)) throw new Error("DISC \u53CC\u56FE/\u81EA\u521B\u6982\u5FF5\u4ECD\u5728");
 if (!discTab.includes("\u679C\u6562\u53EF\u80FD\u53CD\u6210\u4E13\u65AD")) throw new Error("DISC \u53CD\u5F39\u533A\u63D0\u793A\u7F3A\u5931");
-console.log("OK v42 DISC \u53CD\u5F39\u533A+\u53CC\u7EBF\u56FE");
+console.log("OK v43 DISC \u5355\u56FE\u53CD\u5F39\u533A+\u53E3\u5F84");
 var dataScl90 = {
   ...dataMental,
   mentalScl90: sclAll3,
@@ -114976,8 +114927,8 @@ var combinedS = renderS("combined");
 for (const kw of ["\u5FC3\u7406\u5065\u5EB7 \xB7 \u6DF1\u5EA6\u8BC4\u4F30\uFF08SCL-90 \u75C7\u72B6\u81EA\u8BC4\uFF09", "ansblk-scl90", "270/450", "SCL-90 \u75C7\u72B6\u81EA\u8BC4\u91CF\u8868 \xB7 90 \u9898"]) need(combinedS, kw, "\u7EFC\u5408\u62A5\u544A SCL-90 \u5361+\u660E\u7EC6");
 if (/三甲医院/.test(sclTab + combinedS)) throw new Error("\u4ECD\u6709\u300C\u4E09\u7532\u533B\u9662\u300D\u63AA\u8F9E");
 need(sclTab, "12356", "\u70ED\u7EBF\u4FDD\u7559");
-console.log("OK v42 SCL-90 \u8BC4\u4F30\u62A5\u544A + \u7EFC\u5408\u96C6\u6210");
-console.log("RENDER_SMOKE_V42_OK");
+console.log("OK v43 SCL-90 \u8BC4\u4F30\u62A5\u544A + \u7EFC\u5408\u96C6\u6210");
+console.log("RENDER_SMOKE_V43_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:
