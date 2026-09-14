@@ -54939,7 +54939,7 @@ var require_pie = __commonJS({
     function _default() {
       var value = _identity.default, sortValues = _descending.default, sort = null, startAngle = (0, _constant.default)(0), endAngle = (0, _constant.default)(_math.tau), padAngle = (0, _constant.default)(0);
       function pie(data3) {
-        var i, n = (data3 = (0, _array.default)(data3)).length, j, k, sum = 0, index = new Array(n), arcs = new Array(n), a0 = +startAngle.apply(this, arguments), da = Math.min(_math.tau, Math.max(-_math.tau, endAngle.apply(this, arguments) - a0)), a1, p = Math.min(Math.abs(da) / n, padAngle.apply(this, arguments)), pa = p * (da < 0 ? -1 : 1), v;
+        var i, n = (data3 = (0, _array.default)(data3)).length, j, k, sum = 0, index = new Array(n), arcs = new Array(n), a0 = +startAngle.apply(this, arguments), da = Math.min(_math.tau, Math.max(-_math.tau, endAngle.apply(this, arguments) - a0)), a1, p = Math.min(Math.abs(da) / n, padAngle.apply(this, arguments)), pa2 = p * (da < 0 ? -1 : 1), v;
         for (i = 0; i < n; ++i) {
           if ((v = arcs[index[i] = i] = +value(data3[i], i, data3)) > 0) {
             sum += v;
@@ -54951,8 +54951,8 @@ var require_pie = __commonJS({
         else if (sort != null) index.sort(function(i2, j2) {
           return sort(data3[i2], data3[j2]);
         });
-        for (i = 0, k = sum ? (da - n * pa) / sum : 0; i < n; ++i, a0 = a1) {
-          j = index[i], v = arcs[j], a1 = a0 + (v > 0 ? v * k : 0) + pa, arcs[j] = {
+        for (i = 0, k = sum ? (da - n * pa2) / sum : 0; i < n; ++i, a0 = a1) {
+          j = index[i], v = arcs[j], a1 = a0 + (v > 0 ? v * k : 0) + pa2, arcs[j] = {
             data: data3[j],
             index: i,
             value: v,
@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v39.tsx
+// scripts/smoke-render-v40.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -101686,7 +101686,7 @@ var MENTAL_V2_OPTIONS = [
   { value: 2, label: "\u8D85\u8FC7\u4E00\u534A\u7684\u5929\u6570" },
   { value: 3, label: "\u51E0\u4E4E\u5929\u5929" }
 ];
-var MENTAL_V2_DISCLAIMER = "\u514D\u8D23\u58F0\u660E\uFF1A\u672C\u91CF\u8868\u4E3A\u4E09\u7532\u533B\u9662\u5E38\u7528\u7B5B\u67E5\u5DE5\u5177\uFF08PHQ-9 / GAD-7\uFF09\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\uFF0C\u4E5F\u4E0D\u80FD\u66FF\u4EE3\u4E13\u4E1A\u533B\u751F\u6216\u5FC3\u7406\u54A8\u8BE2\u5E08\u7684\u8BC4\u4F30\u3002\u82E5\u5F97\u5206\u504F\u9AD8\uFF0C\u6216 PHQ-9 \u7B2C 9 \u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\uFF0C\u8BF7\u5C3D\u5FEB\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u8BC4\u4F30\uFF0C\u6216\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002\u4E3B\u52A8\u6C42\u52A9\u662F\u52C7\u6562\uFF0C\u4E0D\u662F\u8F6F\u5F31\u3002";
+var MENTAL_V2_DISCLAIMER = "\u514D\u8D23\u58F0\u660E\uFF1A\u672C\u91CF\u8868\u4E3A\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u5DE5\u5177\uFF08PHQ-9 / GAD-7\uFF09\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\uFF0C\u4E5F\u4E0D\u80FD\u66FF\u4EE3\u4E13\u4E1A\u533B\u751F\u6216\u5FC3\u7406\u54A8\u8BE2\u5E08\u7684\u8BC4\u4F30\u3002\u82E5\u5F97\u5206\u504F\u9AD8\uFF0C\u6216 PHQ-9 \u7B2C 9 \u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\uFF0C\u8BF7\u5C3D\u5FEB\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u8BC4\u4F30\uFF0C\u6216\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002\u4E3B\u52A8\u6C42\u52A9\u662F\u52C7\u6562\uFF0C\u4E0D\u662F\u8F6F\u5F31\u3002";
 var MENTAL_V2_ITEM9_NOTICE = "\u5982\u679C\u8FD9\u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\uFF0C\u5EFA\u8BAE\u5C3D\u5FEB\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u62E8\u6253\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002";
 var PHQ9_TEXTS = [
   "\u505A\u4E8B\u65F6\u63D0\u4E0D\u8D77\u52B2\u6216\u6CA1\u6709\u4E50\u8DA3",
@@ -101712,14 +101712,14 @@ var MENTAL_V2_SECTIONS = [
   {
     key: "phq9",
     title: "\u7B2C\u4E00\u90E8\u5206 \xB7 PHQ-9 \u6291\u90C1\u7B5B\u67E5\uFF089 \u9898\uFF09",
-    description: "PHQ-9 \u662F\u4E09\u7532\u533B\u9662\u5FC3\u7406\u79D1\u5E38\u7528\u7684\u6291\u90C1\u7B5B\u67E5\u91CF\u8868\uFF0C\u770B\u6700\u8FD1\u4E24\u5468\u60C5\u7EEA\u4E0E\u72B6\u6001\u65B9\u9762\u7684\u56F0\u6270\u3002",
+    description: "PHQ-9 \u662F\u56FD\u9645\u901A\u7528\u7684\u6291\u90C1\u7B5B\u67E5\u91CF\u8868\uFF0C\u770B\u6700\u8FD1\u4E24\u5468\u60C5\u7EEA\u4E0E\u72B6\u6001\u65B9\u9762\u7684\u56F0\u6270\u3002",
     intro: MENTAL_V2_INTRO,
     questions: PHQ9_TEXTS.map((text, i) => ({ no: i + 1, text }))
   },
   {
     key: "gad7",
     title: "\u7B2C\u4E8C\u90E8\u5206 \xB7 GAD-7 \u7126\u8651\u7B5B\u67E5\uFF087 \u9898\uFF09",
-    description: "GAD-7 \u662F\u4E09\u7532\u533B\u9662\u5FC3\u7406\u79D1\u5E38\u7528\u7684\u7126\u8651\u7B5B\u67E5\u91CF\u8868\uFF0C\u770B\u6700\u8FD1\u4E24\u5468\u7D27\u5F20\u3001\u62C5\u5FE7\u65B9\u9762\u7684\u56F0\u6270\u3002",
+    description: "GAD-7 \u662F\u56FD\u9645\u901A\u7528\u7684\u7126\u8651\u7B5B\u67E5\u91CF\u8868\uFF0C\u770B\u6700\u8FD1\u4E24\u5468\u7D27\u5F20\u3001\u62C5\u5FE7\u65B9\u9762\u7684\u56F0\u6270\u3002",
     intro: MENTAL_V2_INTRO,
     questions: GAD7_TEXTS.map((text, i) => ({ no: i + 10, text }))
   }
@@ -101757,6 +101757,136 @@ function scoreMental(answers) {
 function isMentalV2(x) {
   return !!x && typeof x === "object" && x.version === "v2";
 }
+var SDQ_DIM_LABEL = {
+  emotion: "\u60C5\u7EEA\u75C7\u72B6",
+  conduct: "\u54C1\u884C\u95EE\u9898",
+  hyper: "\u591A\u52A8\u4E0E\u6CE8\u610F",
+  peer: "\u540C\u4F34\u4EA4\u5F80",
+  prosocial: "\u4EB2\u793E\u4F1A\u884C\u4E3A"
+};
+var MENTAL_SDQ_AGE = "\u9002\u7528 4\u201417 \u5C81\uFF1A\u5B66\u751F\u81EA\u5DF1\u586B\u5199\uFF0811 \u5C81\u4EE5\u4E0B\u5EFA\u8BAE\u5BB6\u957F\u966A\u540C\u8BFB\u9898\uFF09";
+var MENTAL_SDQ_OPTIONS = [
+  { value: 0, label: "\u4E0D\u7B26\u5408" },
+  { value: 1, label: "\u6709\u70B9\u7B26\u5408" },
+  { value: 2, label: "\u5B8C\u5168\u7B26\u5408" }
+];
+var MENTAL_SDQ_QUESTIONS = [
+  { no: 1, text: "\u6211\u5C1D\u8BD5\u5BF9\u522B\u4EBA\u53CB\u5584\uFF0C\u6211\u5173\u5FC3\u522B\u4EBA\u7684\u611F\u53D7", dim: "prosocial" },
+  { no: 2, text: "\u6211\u4E0D\u80FD\u5B89\u5B9A\u4E0B\u6765\uFF0C\u4E0D\u80FD\u957F\u65F6\u95F4\u5B89\u9759\u5730\u5750\u7740", dim: "hyper" },
+  { no: 3, text: "\u6211\u7ECF\u5E38\u5934\u75DB\u3001\u809A\u5B50\u75DB\u6216\u8EAB\u4F53\u4E0D\u8212\u670D", dim: "emotion" },
+  { no: 4, text: "\u6211\u5E38\u4E0E\u522B\u4EBA\u5206\u4EAB\u4E1C\u897F\uFF08\u98DF\u7269\u3001\u73A9\u5177\u3001\u7B14\u7B49\uFF09", dim: "prosocial" },
+  { no: 5, text: "\u6211\u89C9\u5F97\u975E\u5E38\u6124\u6012\uFF0C\u5E38\u53D1\u813E\u6C14", dim: "conduct" },
+  { no: 6, text: "\u6211\u7ECF\u5E38\u72EC\u5904\uFF0C\u901A\u5E38\u4E00\u4E2A\u4EBA\u73A9", dim: "peer" },
+  { no: 7, text: "\u6211\u901A\u5E38\u6309\u7167\u5429\u5490\u505A\u4E8B", dim: "conduct", reverse: true },
+  { no: 8, text: "\u6211\u7ECF\u5E38\u62C5\u5FE7\uFF0C\u5FC3\u4E8B\u91CD\u91CD", dim: "emotion" },
+  { no: 9, text: "\u5982\u679C\u6709\u4EBA\u53D7\u4F24\u3001\u96BE\u8FC7\u6216\u4E0D\u8212\u670D\uFF0C\u6211\u90FD\u4E50\u610F\u5E2E\u5FD9", dim: "prosocial" },
+  { no: 10, text: "\u6211\u7ECF\u5E38\u5750\u7ACB\u4E0D\u5B89\u6216\u611F\u5230\u4E0D\u8010\u70E6", dim: "hyper" },
+  { no: 11, text: "\u6211\u6709\u4E00\u4E2A\u6216\u51E0\u4E2A\u597D\u670B\u53CB", dim: "peer", reverse: true },
+  { no: 12, text: "\u6211\u7ECF\u5E38\u4E0E\u4EBA\u4E89\u6267\uFF0C\u6211\u80FD\u4F7F\u522B\u4EBA\u7167\u6211\u7684\u60F3\u6CD5\u505A", dim: "conduct" },
+  { no: 13, text: "\u6211\u7ECF\u5E38\u4E0D\u5FEB\u4E50\u3001\u5FC3\u60C5\u6C89\u91CD\u6216\u60F3\u54ED", dim: "emotion" },
+  { no: 14, text: "\u4E00\u822C\u6765\u8BF4\uFF0C\u5176\u4ED6\u548C\u6211\u5E74\u7EAA\u5DEE\u4E0D\u591A\u7684\u4EBA\u90FD\u559C\u6B22\u6211", dim: "peer", reverse: true },
+  { no: 15, text: "\u6211\u5BB9\u6613\u5206\u5FC3\uFF0C\u89C9\u5F97\u96BE\u4EE5\u96C6\u4E2D\u7CBE\u795E", dim: "hyper" },
+  { no: 16, text: "\u5728\u65B0\u7684\u73AF\u5883\u4E2D\u6211\u4F1A\u7D27\u5F20\uFF0C\u5BB9\u6613\u5931\u53BB\u81EA\u4FE1", dim: "emotion" },
+  { no: 17, text: "\u6211\u4F1A\u53CB\u5584\u5730\u5BF9\u5F85\u6BD4\u6211\u5C0F\u7684\u5B69\u5B50", dim: "prosocial" },
+  { no: 18, text: "\u6211\u5E38\u88AB\u6307\u8D23\u6492\u8C0E\u6216\u4E0D\u8001\u5B9E", dim: "conduct" },
+  { no: 19, text: "\u5176\u4ED6\u540C\u5B66\u6216\u9752\u5C11\u5E74\u5E38\u6349\u5F04\u6216\u6B3A\u8D1F\u6211", dim: "peer" },
+  { no: 20, text: "\u6211\u5E38\u81EA\u613F\u5E2E\u52A9\u522B\u4EBA\uFF08\u5BB6\u4EBA\u3001\u8001\u5E08\u3001\u540C\u5B66\uFF09", dim: "prosocial" },
+  { no: 21, text: "\u6211\u505A\u4E8B\u524D\u4F1A\u5148\u60F3\u6E05\u695A", dim: "hyper", reverse: true },
+  { no: 22, text: "\u6211\u66FE\u4ECE\u5BB6\u91CC\u3001\u5B66\u6821\u6216\u522B\u5904\u62FF\u8FC7\u4E0D\u5C5E\u4E8E\u6211\u7684\u4E1C\u897F", dim: "conduct" },
+  { no: 23, text: "\u6211\u548C\u5927\u4EBA\u76F8\u5904\uFF0C\u6BD4\u548C\u540C\u8F88\u76F8\u5904\u66F4\u878D\u6D3D", dim: "peer" },
+  { no: 24, text: "\u6211\u5FC3\u4E2D\u6709\u5F88\u591A\u6050\u60E7\uFF0C\u5BB9\u6613\u53D7\u60CA\u5413", dim: "emotion" },
+  { no: 25, text: "\u6211\u603B\u80FD\u628A\u4E8B\u60C5\u505A\u5B8C\uFF0C\u6CE8\u610F\u529B\u80FD\u4FDD\u6301\u5F97\u4F4F", dim: "hyper", reverse: true },
+  { no: 26, text: "\u6211\u6709\u8FC7\u300C\u4E0D\u60F3\u6D3B\u4E86\u300D\u6216\u8005\u60F3\u4F24\u5BB3\u81EA\u5DF1\u7684\u5FF5\u5934", safety: true }
+];
+var MENTAL_SDQ_QUESTION_COUNT = MENTAL_SDQ_QUESTIONS.length;
+var MENTAL_SDQ_SAFETY_NOTICE = "\u5982\u679C\u8FD9\u9898\u4E0D\u662F\u300C\u4E0D\u7B26\u5408\u300D\uFF0C\u8BF7\u5C3D\u5FEB\u544A\u8BC9\u5BB6\u957F\u6216\u4FE1\u4EFB\u7684\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u62E8\u6253\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002\u4F60\u4E0D\u9700\u8981\u4E00\u4E2A\u4EBA\u625B\u3002";
+var SDQ_BANDS = {
+  emotion: (v) => v >= 7 ? "\u660E\u663E" : v >= 6 ? "\u8FB9\u7F18" : "\u6B63\u5E38",
+  conduct: (v) => v >= 5 ? "\u660E\u663E" : v >= 4 ? "\u8FB9\u7F18" : "\u6B63\u5E38",
+  hyper: (v) => v >= 7 ? "\u660E\u663E" : v >= 6 ? "\u8FB9\u7F18" : "\u6B63\u5E38",
+  peer: (v) => v >= 6 ? "\u660E\u663E" : v >= 4 ? "\u8FB9\u7F18" : "\u6B63\u5E38",
+  // 亲社会为优势维度：分低才需要关注
+  prosocial: (v) => v <= 4 ? "\u660E\u663E" : v === 5 ? "\u8FB9\u7F18" : "\u6B63\u5E38"
+};
+function sdqBand(dim, v) {
+  return SDQ_BANDS[dim](v);
+}
+function scoreMentalSdq(answers) {
+  if (answers.length !== MENTAL_SDQ_QUESTION_COUNT) {
+    throw new Error(`SDQ \u6D4B\u8BC4\u9898\u6570\u5E94\u4E3A ${MENTAL_SDQ_QUESTION_COUNT}\uFF0C\u5B9E\u9645 ${answers.length}`);
+  }
+  answers.forEach((raw, i) => {
+    if (!Number.isInteger(raw) || raw < 0 || raw > 2) {
+      throw new Error(`\u7B2C ${i + 1} \u9898\u5206\u503C\u5E94\u4E3A 0-2\uFF0C\u5B9E\u9645 ${raw}`);
+    }
+  });
+  const dims = { emotion: 0, conduct: 0, hyper: 0, peer: 0, prosocial: 0 };
+  MENTAL_SDQ_QUESTIONS.forEach((q, i) => {
+    if (!q.dim) return;
+    dims[q.dim] += q.reverse ? 2 - answers[i] : answers[i];
+  });
+  const totalDiff = dims.emotion + dims.conduct + dims.hyper + dims.peer;
+  const totalBand = totalDiff >= 20 ? "\u660E\u663E" : totalDiff >= 16 ? "\u8FB9\u7F18" : "\u6B63\u5E38";
+  const dimBands = Object.fromEntries(
+    Object.keys(dims).map((k) => [k, sdqBand(k, dims[k])])
+  );
+  const selfHarm = answers[25] >= 1;
+  const dimIssue = Object.keys(dims).filter((k) => dimBands[k] !== "\u6B63\u5E38");
+  const level = selfHarm ? "\u9AD8\u98CE\u9669" : totalBand === "\u660E\u663E" ? "\u9884\u8B66" : totalBand === "\u8FB9\u7F18" || dimIssue.length > 0 ? "\u5173\u6CE8" : "\u826F\u597D";
+  const issueText = dimIssue.map((k) => `${SDQ_DIM_LABEL[k]}\u300C${dimBands[k]}\u300D`).join("\u3001");
+  const summary = selfHarm ? "\u8FD9\u6B21\u95EE\u5377\u4E2D\uFF0C\u4F60\u5728\u6700\u540E\u4E00\u9898\uFF08\u300C\u4E0D\u60F3\u6D3B\u4E86\u6216\u60F3\u4F24\u5BB3\u81EA\u5DF1\u300D\uFF09\u4E0A\u7684\u9009\u62E9\u9700\u8981\u88AB\u8BA4\u771F\u5BF9\u5F85\u2014\u2014\u8BF7\u4E00\u5B9A\u544A\u8BC9\u5BB6\u957F\u6216\u4FE1\u4EFB\u7684\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u62E8\u6253\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356 \u6216\u524D\u5F80\u4E13\u4E1A\u673A\u6784\u3002\u8FD9\u4E0D\u662F\u77EB\u60C5\uFF0C\u662F\u5BF9\u81EA\u5DF1\u8D1F\u8D23\u3002" : level === "\u826F\u597D" ? "\u8FC7\u53BB\u516D\u4E2A\u6708\u4F60\u7684\u72B6\u6001\u603B\u4F53\u5E73\u7A33\uFF0C\u4EB2\u793E\u4F1A\u884C\u4E3A\uFF08\u4E50\u4E8E\u52A9\u4EBA\u3001\u5173\u5FC3\u522B\u4EBA\uFF09\u662F\u4F60\u7684\u95EA\u5149\u70B9\u3002\u7EE7\u7EED\u4FDD\u6301\u89C4\u5F8B\u4F5C\u606F\u5C31\u597D\u3002" : level === "\u5173\u6CE8" ? `\u8FC7\u53BB\u516D\u4E2A\u6708\u6709\u4E9B\u65B9\u9762\u9700\u8981\u7559\u610F\uFF08\u56F0\u96BE\u603B\u5206 ${totalDiff}/40\u300C${totalBand}\u300D${issueText ? `\uFF0C${issueText}` : ""}\uFF09\u3002\u5148\u522B\u7D27\u5F20\u2014\u2014\u8FD9\u66F4\u50CF\u300C\u9700\u8981\u4F11\u606F\u548C\u7167\u987E\u300D\u7684\u4FE1\u53F7\uFF0C\u4E00\u4E24\u4E2A\u6708\u540E\u53EF\u4EE5\u518D\u6D4B\u4E00\u6B21\u5BF9\u6BD4\u3002` : `\u8FC7\u53BB\u516D\u4E2A\u6708\u7684\u56F0\u96BE\u4FE1\u53F7\u6BD4\u8F83\u660E\u663E\uFF08\u56F0\u96BE\u603B\u5206 ${totalDiff}/40\u300C\u660E\u663E\u300D${issueText ? `\uFF0C${issueText}` : ""}\uFF09\u3002\u5EFA\u8BAE\u628A\u7ED3\u679C\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u627E\u5B66\u6821\u5FC3\u7406\u8001\u5E08\u804A\u4E00\u804A\uFF0C\u5FC5\u8981\u65F6\u524D\u5F80\u4E13\u4E1A\u673A\u6784\u8FDB\u4E00\u6B65\u8BC4\u4F30\u3002`;
+  return { version: "sdq", dims, dimBands, totalDiff, totalBand, level, selfHarm, summary };
+}
+function isMentalSdq(x) {
+  return !!x && typeof x === "object" && x.version === "sdq";
+}
+var MENTAL_SDQ_DISCLAIMER = "\u514D\u8D23\u58F0\u660E\uFF1ASDQ\uFF08\u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09\u662F\u56FD\u9645\u901A\u7528\u7684\u513F\u7AE5\u9752\u5C11\u5E74\u884C\u4E3A\u7B5B\u67E5\u5DE5\u5177\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\uFF0C\u4E5F\u4E0D\u80FD\u66FF\u4EE3\u4E13\u4E1A\u533B\u751F\u6216\u5FC3\u7406\u54A8\u8BE2\u5E08\u7684\u8BC4\u4F30\u3002\u82E5\u5F97\u5206\u504F\u9AD8\uFF0C\u6216\u6700\u540E\u4E00\u9898\u4E0D\u662F\u300C\u4E0D\u7B26\u5408\u300D\uFF0C\u8BF7\u5C3D\u5FEB\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u8BC4\u4F30\uFF0C\u6216\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002\u4E3B\u52A8\u6C42\u52A9\u662F\u52C7\u6562\uFF0C\u4E0D\u662F\u8F6F\u5F31\u3002";
+var MENTAL_PA_QUESTION_COUNT = 16;
+var MENTAL_PA_AGE = "\u9002\u7528 11 \u5C81\u4EE5\u4E0A\u5B66\u751F\u81EA\u8BC4";
+var PHQA_TEXTS = [
+  "\u505A\u4E8B\u65F6\u63D0\u4E0D\u8D77\u52B2\uFF0C\u6216\u89C9\u5F97\u4EC0\u4E48\u90FD\u6CA1\u610F\u601D",
+  "\u611F\u5230\u5FC3\u60C5\u4F4E\u843D\u3001\u6CAE\u4E27\u6216\u7EDD\u671B",
+  "\u5165\u7761\u56F0\u96BE\u3001\u7761\u4E0D\u5B89\u7A33\uFF0C\u6216\u7761\u5F97\u592A\u591A",
+  "\u611F\u89C9\u75B2\u5026\uFF0C\u6CA1\u6709\u6D3B\u529B",
+  "\u80C3\u53E3\u4E0D\u597D\uFF0C\u6216\u5403\u5F97\u592A\u591A",
+  "\u89C9\u5F97\u81EA\u5DF1\u5F88\u7CDF\u3001\u5F88\u5931\u8D25\uFF0C\u6216\u8BA9\u5BB6\u4EBA\u5931\u671B",
+  "\u5F88\u96BE\u96C6\u4E2D\u6CE8\u610F\u529B\uFF0C\u6BD4\u5982\u4E0A\u8BFE\u3001\u770B\u4E66\u6216\u770B\u7535\u89C6\u65F6",
+  "\u52A8\u4F5C\u6216\u8BF4\u8BDD\u6162\u5230\u522B\u4EBA\u80FD\u5BDF\u89C9\uFF1B\u6216\u6B63\u597D\u76F8\u53CD\u2014\u2014\u5750\u4E0D\u4F4F\u3001\u52A8\u6765\u52A8\u53BB\u6BD4\u5E73\u65F6\u591A",
+  "\u6709\u8FC7\u300C\u4E0D\u5982\u6B7B\u4E86\u7B97\u4E86\u300D\u6216\u60F3\u4F24\u5BB3\u81EA\u5DF1\u7684\u5FF5\u5934"
+];
+var GAD7_STUDENT_TEXTS = [
+  "\u611F\u5230\u7D27\u5F20\u3001\u7126\u8651\u6216\u7740\u6025",
+  "\u505C\u4E0D\u4E0B\u6765\u5730\u62C5\u5FC3\uFF0C\u6216\u63A7\u5236\u4E0D\u4F4F\u81EA\u5DF1\u7684\u62C5\u5FC3",
+  "\u5BF9\u5404\u79CD\u5404\u6837\u7684\u4E8B\u60C5\u62C5\u5FC3\u592A\u591A\uFF08\u5B66\u4E60\u3001\u8003\u8BD5\u3001\u548C\u540C\u5B66\u76F8\u5904\u7B49\uFF09",
+  "\u5F88\u96BE\u653E\u677E\u4E0B\u6765",
+  "\u5750\u4E0D\u4F4F\uFF0C\u5F88\u96BE\u5B89\u9759\u5730\u5F85\u7740",
+  "\u5BB9\u6613\u5FC3\u70E6\uFF0C\u6216\u7231\u53D1\u813E\u6C14",
+  "\u611F\u5230\u5BB3\u6015\uFF0C\u597D\u50CF\u4F1A\u6709\u4EC0\u4E48\u53EF\u6015\u7684\u4E8B\u60C5\u53D1\u751F"
+];
+var MENTAL_PA_SECTIONS = [
+  {
+    key: "phq9",
+    title: "\u7B2C\u4E00\u90E8\u5206 \xB7 PHQ-A \u9752\u5C11\u5E74\u6291\u90C1\u7B5B\u67E5\uFF089 \u9898\uFF09",
+    description: "PHQ-A \u662F\u56FD\u9645\u901A\u7528\u7684\u9752\u5C11\u5E74\u6291\u90C1\u7B5B\u67E5\u91CF\u8868\uFF08PHQ-9 \u7684\u9752\u5C11\u5E74\u7248\uFF09\uFF0C\u770B\u6700\u8FD1\u4E24\u5468\u60C5\u7EEA\u4E0E\u72B6\u6001\u65B9\u9762\u7684\u56F0\u6270\u3002",
+    intro: MENTAL_V2_INTRO,
+    questions: PHQA_TEXTS.map((text, i) => ({ no: i + 1, text }))
+  },
+  {
+    key: "gad7",
+    title: "\u7B2C\u4E8C\u90E8\u5206 \xB7 GAD-7 \u7126\u8651\u7B5B\u67E5 \xB7 \u5B66\u751F\u7248\uFF087 \u9898\uFF09",
+    description: "GAD-7 \u662F\u56FD\u9645\u901A\u7528\u7684\u7126\u8651\u7B5B\u67E5\u91CF\u8868\uFF0C\u8FD9\u91CC\u6309\u5B66\u751F\u65E5\u5E38\u8BED\u5883\u8868\u8FF0\uFF0C\u770B\u6700\u8FD1\u4E24\u5468\u7D27\u5F20\u3001\u62C5\u5FE7\u65B9\u9762\u7684\u56F0\u6270\u3002",
+    intro: MENTAL_V2_INTRO,
+    questions: GAD7_STUDENT_TEXTS.map((text, i) => ({ no: i + 10, text }))
+  }
+];
+function scoreMentalPa(answers) {
+  const r = scoreMental(answers);
+  return { ...r, version: "pa" };
+}
+function isMentalPa(x) {
+  return !!x && typeof x === "object" && x.version === "pa";
+}
+var MENTAL_PA_DISCLAIMER = "\u514D\u8D23\u58F0\u660E\uFF1A\u672C\u91CF\u8868\u4E3A\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u5DE5\u5177\uFF08PHQ-A / GAD-7\uFF09\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\uFF0C\u4E5F\u4E0D\u80FD\u66FF\u4EE3\u4E13\u4E1A\u533B\u751F\u6216\u5FC3\u7406\u54A8\u8BE2\u5E08\u7684\u8BC4\u4F30\u3002\u82E5\u5F97\u5206\u504F\u9AD8\uFF0C\u6216\u7B2C 9 \u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\uFF0C\u8BF7\u5C3D\u5FEB\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u8BC4\u4F30\uFF0C\u6216\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002\u4E3B\u52A8\u6C42\u52A9\u662F\u52C7\u6562\uFF0C\u4E0D\u662F\u8F6F\u5F31\u3002";
 
 // src/data/reports/combined.ts
 var LEVEL_TONE = {
@@ -102139,12 +102269,15 @@ function buildCombinedReport(mbti2, mbtiReport, disc2, discReport, e32, opts) {
   const mental = opts?.mental;
   const mentalV2 = mental && isMentalV2(mental) ? mental : null;
   const mentalLegacy = mental && !isMentalV2(mental) ? mental : null;
+  const mentalSdq = opts?.mentalSdq ?? null;
+  const mentalPa = opts?.mentalPa ?? null;
+  const mentalTone = (lv, selfHarm) => lv === "\u9AD8\u98CE\u9669" || lv === "\u9884\u8B66" || selfHarm ? "red" : lv === "\u5173\u6CE8" ? "amber" : "green";
   if (mentalV2) {
     overviewCards.push({
-      label: "\u5FC3\u7406\u5065\u5EB7",
+      label: "\u5FC3\u7406\u5065\u5EB7 \xB7 \u901A\u7528\u7248",
       value: `PHQ-9 ${mentalV2.phq9}/27 \xB7 GAD-7 ${mentalV2.gad7}/21`,
       note: `\u5206\u7EA7\u300C${mentalV2.level}\u300D${mentalV2.selfHarm ? " \xB7 !!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7\uFF0C\u8BF7\u7ACB\u5373\u544A\u8BC9\u5BB6\u957F/\u8001\u5E08\u6216\u62E8\u6253 12356!!" : "\uFF08\u7B5B\u67E5\u53C2\u8003\uFF0C\u975E\u8BCA\u65AD\uFF09"}`,
-      tone: mentalV2.level === "\u9AD8\u98CE\u9669" || mentalV2.level === "\u9884\u8B66" || mentalV2.selfHarm ? "red" : mentalV2.level === "\u5173\u6CE8" ? "amber" : "green"
+      tone: mentalTone(mentalV2.level, mentalV2.selfHarm)
     });
   } else if (mentalLegacy) {
     overviewCards.push({
@@ -102152,6 +102285,22 @@ function buildCombinedReport(mbti2, mbtiReport, disc2, discReport, e32, opts) {
       value: "\u91CF\u8868\u5DF2\u5347\u7EA7",
       note: "\u5DF2\u5347\u7EA7\u4E3A PHQ-9 + GAD-7 \u4E13\u4E1A\u7248\uFF0816 \u9898\uFF09\uFF0C\u8BF7\u5230\u6D4B\u8BC4\u4E2D\u5FC3\u91CD\u65B0\u6D4B\u8BC4",
       tone: "amber"
+    });
+  }
+  if (mentalSdq) {
+    overviewCards.push({
+      label: "\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 A\uFF08SDQ\uFF09",
+      value: `\u56F0\u96BE\u603B\u5206 ${mentalSdq.totalDiff}/40\uFF08${mentalSdq.totalBand}\uFF09`,
+      note: `\u5206\u7EA7\u300C${mentalSdq.level}\u300D${mentalSdq.selfHarm ? " \xB7 !!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7\uFF0C\u8BF7\u7ACB\u5373\u544A\u8BC9\u5BB6\u957F/\u8001\u5E08\u6216\u62E8\u6253 12356!!" : "\uFF08\u7B5B\u67E5\u53C2\u8003\uFF0C\u975E\u8BCA\u65AD\uFF09"}`,
+      tone: mentalTone(mentalSdq.level, mentalSdq.selfHarm)
+    });
+  }
+  if (mentalPa) {
+    overviewCards.push({
+      label: "\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 B\uFF08PHQ-A\uFF09",
+      value: `PHQ-A ${mentalPa.phq9}/27 \xB7 GAD-7 ${mentalPa.gad7}/21`,
+      note: `\u5206\u7EA7\u300C${mentalPa.level}\u300D${mentalPa.selfHarm ? " \xB7 !!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7\uFF0C\u8BF7\u7ACB\u5373\u544A\u8BC9\u5BB6\u957F/\u8001\u5E08\u6216\u62E8\u6253 12356!!" : "\uFF08\u7B5B\u67E5\u53C2\u8003\uFF0C\u975E\u8BCA\u65AD\uFF09"}`,
+      tone: mentalTone(mentalPa.level, mentalPa.selfHarm)
     });
   }
   const gapSummary = academics2 ? summarizeGaps(academics2) : null;
@@ -102191,6 +102340,16 @@ function buildCombinedReport(mbti2, mbtiReport, disc2, discReport, e32, opts) {
     );
   } else if (mentalLegacy && mentalLegacy.positiveFactors.length > 0) {
     belowIce.push(`\u5FC3\u7406\u72B6\u6001\uFF1A${mentalLegacy.positiveFactors.slice(0, 2).map((f) => MENTAL_FACTOR_LABEL[f]).join("\u3001")}\u7565\u9AD8\uFF08\u5148\u7A33\u72B6\u6001\u518D\u6293\u5B66\u4E60\uFF09`);
+  }
+  if (mentalSdq && mentalSdq.level !== "\u826F\u597D") {
+    belowIce.push(
+      mentalSdq.selfHarm ? `**!!\u5FC3\u7406\u72B6\u6001\uFF08SDQ\uFF09\uFF1A\u56F0\u96BE\u603B\u5206 ${mentalSdq.totalDiff}/40\uFF08${mentalSdq.level}\uFF09\uFF0C\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7\u2014\u2014\u5148\u6C42\u52A9\u3001\u5148\u966A\u4F34\uFF0C\u6210\u7EE9\u76EE\u6807\u5168\u90E8\u8BA9\u8DEF!!**` : `\u5FC3\u7406\u72B6\u6001\uFF08SDQ\uFF09\uFF1A\u56F0\u96BE\u603B\u5206 ${mentalSdq.totalDiff}/40\uFF08${mentalSdq.level}\uFF0C\u5148\u7A33\u72B6\u6001\u518D\u6293\u5B66\u4E60\uFF09`
+    );
+  }
+  if (mentalPa && mentalPa.level !== "\u826F\u597D") {
+    belowIce.push(
+      mentalPa.selfHarm ? `**!!\u5FC3\u7406\u72B6\u6001\uFF08PHQ-A\uFF09\uFF1APHQ-A ${mentalPa.phq9}/27 \xB7 GAD-7 ${mentalPa.gad7}/21\uFF08${mentalPa.level}\uFF09\uFF0C\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7\u2014\u2014\u5148\u6C42\u52A9\u3001\u5148\u966A\u4F34\uFF0C\u6210\u7EE9\u76EE\u6807\u5168\u90E8\u8BA9\u8DEF!!**` : `\u5FC3\u7406\u72B6\u6001\uFF08PHQ-A\uFF09\uFF1APHQ-A ${mentalPa.phq9}/27 \xB7 GAD-7 ${mentalPa.gad7}/21\uFF08${mentalPa.level}\uFF0C\u5148\u7A33\u72B6\u6001\u518D\u6293\u5B66\u4E60\uFF09`
+    );
   }
   const roadmapStep2 = `**\u51B0\u5C71\u4E0A\uFF08\u770B\u5F97\u89C1\u7684\uFF09**\uFF1A${gapTop3 ? `\u6210\u7EE9\u5DEE\u8DDD\u6700\u5927\u7684\u662F ${gapTop3}` : "\u6210\u7EE9\u5DEE\u8DDD\u5F85\u586B\u5199\u540E\u5448\u73B0"}\u3002**\u51B0\u5C71\u4E0B\uFF08\u770B\u4E0D\u89C1\u7684\u6839\uFF09**\uFF1A${belowIce.join("\uFF1B")}\u3002\u6210\u7EE9\u53EA\u662F\u51B0\u5C71\u4E00\u89D2\uFF0C\u6839\u5B50\u5728\u6C34\u9762\u4E0B\u7684\u52A8\u529B\u3001\u65B9\u6CD5\u3001\u7BA1\u7406\u3001\u6761\u4EF6\u4E0E\u6027\u683C\u3002`;
   const roadmapPlanItems = chainNodes.filter((n) => n.level !== "\u6B63\u5E38").map((n) => ({
@@ -102319,16 +102478,32 @@ ${TF_IMPACT[tfL]}
     })()
   };
   const mentalCard = mentalV2 ? {
-    heading: `**\u5FC3\u7406\u5065\u5EB7 \xB7 PHQ-9 + GAD-7 \u4E13\u4E1A\u7B5B\u67E5** \u300C${mentalV2.level}\u300D${mentalV2.selfHarm ? " \xB7 !!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7!!" : ""}`,
+    heading: `**\u5FC3\u7406\u5065\u5EB7 \xB7 \u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF09** \u300C${mentalV2.level}\u300D${mentalV2.selfHarm ? " \xB7 !!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7!!" : ""}`,
     level: mentalV2.selfHarm ? "\u5361\u70B9" : mentalV2LevelToCombined(mentalV2.level),
     text: `**\u2461 \u6570\u636E\u5206\u6790**\uFF1APHQ-9 \u6291\u90C1\u7B5B\u67E5 **${mentalV2.phq9}/27 \u5206 \xB7 \u300C${mentalV2.phq9Level}\u300D**\uFF1BGAD-7 \u7126\u8651\u7B5B\u67E5 **${mentalV2.gad7}/21 \u5206 \xB7 \u300C${mentalV2.gad7Level}\u300D**\uFF1B\u7EFC\u5408\u5206\u7EA7\u300C**${mentalV2.level}**\u300D\uFF08\u53D6\u4E24\u8868\u8F83\u91CD\u8005\uFF09\uFF1B\u5F97\u5206 \u22652 \u7684\u9898\u5171 ${mentalV2.positives}/16 \u9879\u3002\u5206\u7EA7\u53E3\u5F84\uFF1A0-4 \u826F\u597D / 5-9 \u5173\u6CE8 / 10-14 \u9884\u8B66 / \u226515 \u9AD8\u98CE\u9669\u3002
 ` + (mentalV2.selfHarm ? `**!!\u6700\u91CD\u8981\u7684\u6C42\u52A9\u63D0\u793A!!**\uFF1A\u8FD9\u6B21\u7B5B\u67E5\u4E2D\uFF0C\u300C\u6709\u4E0D\u5982\u6B7B\u6389\u6216\u4F24\u5BB3\u81EA\u5DF1\u7684\u5FF5\u5934\u300D\u4E00\u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\u2014\u2014\u8BF7**\u4E00\u5B9A**\u544A\u8BC9\u5BB6\u957F\u6216\u4FE1\u4EFB\u7684\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF **12356** \u6216\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u3002\u8FD9\u4E0D\u662F\u77EB\u60C5\uFF0C\u662F\u5BF9\u81EA\u5DF1\u8D1F\u8D23\uFF1B\u6210\u7EE9\u76EE\u6807\u5728\u8FD9\u4EF6\u4E8B\u9762\u524D\u5168\u90E8\u8BA9\u8DEF\u3002
 ` : "") + `**\u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE**\uFF1A${mentalV2.summary}
-\uFF08\u672C\u91CF\u8868\u4E3A\u4E09\u7532\u533B\u9662\u5E38\u7528\u7B5B\u67E5\u5DE5\u5177\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\u3002\uFF09`
+\uFF08\u672C\u91CF\u8868\u4E3A\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u5DE5\u5177\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\u3002\uFF09`
   } : mentalLegacy ? {
     heading: "**\u5FC3\u7406\u5065\u5EB7 \xB7 \u91CF\u8868\u5DF2\u5347\u7EA7\uFF0C\u8BF7\u91CD\u65B0\u6D4B\u8BC4**",
     level: "\u5F85\u63D0\u5347",
-    text: `\u4F60\u4E0A\u6B21\u5B8C\u6210\u7684\u662F\u65E7\u7248\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5\uFF0830 \u9898\u5341\u56E0\u5B50\u7248\uFF0C\u7ED3\u679C\u4E3A\u300C${mentalLegacy.level}\u300D\uFF09\u3002\u91CF\u8868\u5DF2\u5347\u7EA7\u4E3A **PHQ-9 + GAD-7 \u4E13\u4E1A\u7248**\uFF08\u4E09\u7532\u533B\u9662\u5FC3\u7406\u79D1\u901A\u7528\u7B5B\u67E5\u5DE5\u5177\uFF0C16 \u9898\uFF0C\u7EA6 3 \u5206\u949F\uFF09\u2014\u2014\u65E7\u7ED3\u679C\u4E0D\u518D\u89E3\u8BFB\uFF0C\u8BF7\u5230\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5FC3\u7406\u5065\u5EB7\u300D\u91CD\u65B0\u5B8C\u6210\u4E00\u6B21\uFF0C\u8FD9\u91CC\u4F1A\u7ED9\u51FA PHQ-9 / GAD-7 \u7684\u5206\u6570\u4E0E\u5206\u7EA7\u89E3\u91CA\u3002`
+    text: `\u4F60\u4E0A\u6B21\u5B8C\u6210\u7684\u662F\u65E7\u7248\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5\uFF0830 \u9898\u5341\u56E0\u5B50\u7248\uFF0C\u7ED3\u679C\u4E3A\u300C${mentalLegacy.level}\u300D\uFF09\u3002\u73B0\u5728\u6709\u65B0\u7248\u53EF\u7528\uFF1A**\u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF0C25 \u9898\uFF09**\u3001**\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF0C16 \u9898\uFF09**\u6216**\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF0C16 \u9898\uFF09**\u2014\u2014\u65E7\u7ED3\u679C\u4FDD\u7559\u53EF\u67E5\uFF0C\u5EFA\u8BAE\u5230\u300C\u6D4B\u8BC4\u4E2D\u5FC3 \u2192 \u5FC3\u7406\u5065\u5EB7\u300D\u8865\u6D4B\u4E00\u5957\u65B0\u7248\uFF0C\u8FD9\u91CC\u4F1A\u7ED9\u51FA\u5206\u6570\u4E0E\u5206\u7EA7\u89E3\u91CA\u3002`
+  } : null;
+  const sdqCard = mentalSdq ? {
+    heading: `**\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09** \u300C${mentalSdq.level}\u300D${mentalSdq.selfHarm ? " \xB7 !!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7!!" : ""}`,
+    level: mentalSdq.selfHarm ? "\u5361\u70B9" : mentalV2LevelToCombined(mentalSdq.level),
+    text: `**\u2461 \u6570\u636E\u5206\u6790**\uFF1A\u56F0\u96BE\u603B\u5206 **${mentalSdq.totalDiff}/40 \u5206 \xB7 \u300C${mentalSdq.totalBand}\u300D**\uFF080-15 \u6B63\u5E38 / 16-19 \u8FB9\u7F18 / 20-40 \u660E\u663E\uFF09\uFF1B\u4E94\u7EF4\u5EA6\uFF1A` + Object.keys(mentalSdq.dims).map((k) => `${SDQ_DIM_LABEL[k]} ${mentalSdq.dims[k]}/10\u300C${mentalSdq.dimBands[k]}\u300D`).join("\u3001") + `\u3002\u4EB2\u793E\u4F1A\u884C\u4E3A\u4E3A\u4F18\u52BF\u7EF4\u5EA6\uFF08\u5206\u8D8A\u9AD8\u8D8A\u597D\uFF09\uFF0C\u5176\u4F59\u56DB\u7EF4\u8D8A\u4F4E\u8D8A\u597D\u3002
+` + (mentalSdq.selfHarm ? `**!!\u6700\u91CD\u8981\u7684\u6C42\u52A9\u63D0\u793A!!**\uFF1A\u8FD9\u6B21\u95EE\u5377\u4E2D\uFF0C\u6700\u540E\u4E00\u9898\uFF08\u300C\u4E0D\u60F3\u6D3B\u4E86\u6216\u60F3\u4F24\u5BB3\u81EA\u5DF1\u300D\uFF09\u4E0D\u662F\u300C\u4E0D\u7B26\u5408\u300D\u2014\u2014\u8BF7**\u4E00\u5B9A**\u544A\u8BC9\u5BB6\u957F\u6216\u4FE1\u4EFB\u7684\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF **12356** \u6216\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u3002\u8FD9\u4E0D\u662F\u77EB\u60C5\uFF0C\u662F\u5BF9\u81EA\u5DF1\u8D1F\u8D23\uFF1B\u6210\u7EE9\u76EE\u6807\u5728\u8FD9\u4EF6\u4E8B\u9762\u524D\u5168\u90E8\u8BA9\u8DEF\u3002
+` : "") + `**\u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE**\uFF1A${mentalSdq.summary}
+\uFF08SDQ \u4E3A\u56FD\u9645\u901A\u7528\u7684\u513F\u7AE5\u9752\u5C11\u5E74\u884C\u4E3A\u7B5B\u67E5\u5DE5\u5177\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\u3002\uFF09`
+  } : null;
+  const paCard = mentalPa ? {
+    heading: `**\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09** \u300C${mentalPa.level}\u300D${mentalPa.selfHarm ? " \xB7 !!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7!!" : ""}`,
+    level: mentalPa.selfHarm ? "\u5361\u70B9" : mentalV2LevelToCombined(mentalPa.level),
+    text: `**\u2461 \u6570\u636E\u5206\u6790**\uFF1APHQ-A \u9752\u5C11\u5E74\u6291\u90C1\u7B5B\u67E5 **${mentalPa.phq9}/27 \u5206 \xB7 \u300C${mentalPa.phq9Level}\u300D**\uFF1BGAD-7 \u7126\u8651\u7B5B\u67E5\uFF08\u5B66\u751F\u7248\uFF09**${mentalPa.gad7}/21 \u5206 \xB7 \u300C${mentalPa.gad7Level}\u300D**\uFF1B\u7EFC\u5408\u5206\u7EA7\u300C**${mentalPa.level}**\u300D\uFF08\u53D6\u4E24\u8868\u8F83\u91CD\u8005\uFF09\uFF1B\u5F97\u5206 \u22652 \u7684\u9898\u5171 ${mentalPa.positives}/16 \u9879\u3002\u5206\u7EA7\u53E3\u5F84\uFF1A0-4 \u826F\u597D / 5-9 \u5173\u6CE8 / 10-14 \u9884\u8B66 / \u226515 \u9AD8\u98CE\u9669\u3002
+` + (mentalPa.selfHarm ? `**!!\u6700\u91CD\u8981\u7684\u6C42\u52A9\u63D0\u793A!!**\uFF1A\u8FD9\u6B21\u7B5B\u67E5\u4E2D\uFF0C\u300C\u6709\u4E0D\u5982\u6B7B\u6389\u6216\u4F24\u5BB3\u81EA\u5DF1\u7684\u5FF5\u5934\u300D\u4E00\u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\u2014\u2014\u8BF7**\u4E00\u5B9A**\u544A\u8BC9\u5BB6\u957F\u6216\u4FE1\u4EFB\u7684\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF **12356** \u6216\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u3002\u8FD9\u4E0D\u662F\u77EB\u60C5\uFF0C\u662F\u5BF9\u81EA\u5DF1\u8D1F\u8D23\uFF1B\u6210\u7EE9\u76EE\u6807\u5728\u8FD9\u4EF6\u4E8B\u9762\u524D\u5168\u90E8\u8BA9\u8DEF\u3002
+` : "") + `**\u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE**\uFF1A${mentalPa.summary}
+\uFF08\u672C\u91CF\u8868\u4E3A\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u5DE5\u5177\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\u3002\uFF09`
   } : null;
   const condViewOf = (keys) => (e3parent?.condView ?? []).filter((cv) => keys.includes(cv.key)).map(
     (cv) => `\xB7 \u5BB6\u957F\u89C2\u5BDF\u300C${cv.label}\u300D\uFF1A${cv.parentView}${cv.studentScore != null ? `\uFF1B\u4F60\u7684\u81EA\u8BC4\u5BF9\u5E94\u9898\u5747\u5206 ${cv.studentScore}/5\uFF08${cv.studentLevel}\uFF09` : ""}\u3002${cv.note}`
@@ -102350,7 +102525,9 @@ ${TF_IMPACT[tfL]}
 ${condViewOf(["state"])}` : "")
       })
     },
-    /* 心理健康卡：V2 出 PHQ-9/GAD-7 分数与分级解释；旧版提示升级重测 */
+    /* 心理健康卡：学生版 A（SDQ）/ 学生版 B（PHQ-A）/ 通用版（V2）各出分数与分级解释；旧版提示升级重测 */
+    ...sdqCard ? [sdqCard] : [],
+    ...paCard ? [paCard] : [],
     ...mentalCard ? [mentalCard] : [],
     /* MBTI / DISC 自我认知素材：作为状态分析素材并入状态部分 */
     mbtiStateCard,
@@ -110049,7 +110226,7 @@ function answerKindsForSection(title, hasAcadSec) {
   const modSys = ["\u4E50\u5B66", "\u4F1A\u5B66", "\u5584\u5B66"].find((k) => title.includes(`${k}\u6A21\u5757`));
   if (modSys) return [`e3:${modSys}`];
   if (title.includes("\u6761\u4EF6\u6A21\u5757")) {
-    return ["mental", "e3parent", "discparent", "mbti", "disc", "e3:\u6761\u4EF6", ...hasAcadSec ? [] : ["e3:\u5FEB\u626B"]];
+    return ["mental", "mentalsdq", "mentalpa", "e3parent", "discparent", "mbti", "disc", "e3:\u6761\u4EF6", ...hasAcadSec ? [] : ["e3:\u5FEB\u626B"]];
   }
   if (title.includes("\u4EB2\u5B50\u5BF9\u7167")) return ["e3parent", "discparent"];
   if (title.includes("\u6210\u7EE9\u73B0\u72B6")) return ["e3:\u5FEB\u626B"];
@@ -110240,6 +110417,33 @@ function buildAnswerBlocks(raw, kinds) {
           text: q.text,
           ans: `${a[i] ?? 0} \u5206`,
           bad: (a[i] ?? 0) <= 2
+        }))
+      });
+    } else if (r.kind === "mentalpa" && Array.isArray(r.answers)) {
+      const a = r.answers;
+      const paQuestions = MENTAL_PA_SECTIONS.flatMap((s) => s.questions);
+      blocks.push({
+        key: "mentalpa",
+        title: `\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5 \xB7 \u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09\xB7 ${a.length} \u9898\uFF08${date}\uFF09`,
+        note: "0=\u5B8C\u5168\u4E0D\u4F1A / 1=\u597D\u51E0\u5929 / 2=\u8D85\u8FC7\u4E00\u534A\u7684\u5929\u6570 / 3=\u51E0\u4E4E\u5929\u5929\uFF1B\u7EA2\u8272\u4E3A \u22652 \u5206\u7684\u9898\uFF08\u8FBE\u5230\u4E2D\u5EA6\uFF09\u3002\u7B2C 9 \u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\u65F6\u8BF7\u52A1\u5FC5\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\u3002",
+        rows: paQuestions.map((q, i) => ({
+          no: q.no,
+          text: `${q.no <= 9 ? "[PHQ-A] " : "[GAD-7] "}${q.text}`,
+          ans: a[i] != null ? `${a[i]} \xB7 ${MENTAL_V2_OPTIONS[a[i]]?.label ?? a[i]}` : "\u672A\u7B54",
+          bad: (a[i] ?? 0) >= 2
+        }))
+      });
+    } else if (r.kind === "mentalsdq" && Array.isArray(r.answers)) {
+      const a = r.answers;
+      blocks.push({
+        key: "mentalsdq",
+        title: `\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5 \xB7 \u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09\xB7 ${a.length} \u9898\uFF08${date}\uFF09`,
+        note: "0=\u4E0D\u7B26\u5408 / 1=\u6709\u70B9\u7B26\u5408 / 2=\u5B8C\u5168\u7B26\u5408\uFF08\u8FC7\u53BB\u516D\u4E2A\u6708\uFF09\uFF1B\u7EA2\u8272\u4E3A =2 \u5206\u7684\u9898\uFF08\u5B8C\u5168\u7B26\u5408\uFF09\u3002\u7B2C 26 \u9898\u4E3A\u5B89\u5168\u9884\u8B66\u9898\uFF0C\u4E0D\u662F\u300C\u4E0D\u7B26\u5408\u300D\u65F6\u8BF7\u52A1\u5FC5\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\u3002",
+        rows: MENTAL_SDQ_QUESTIONS.map((q, i) => ({
+          no: q.no,
+          text: `${q.safety ? "[\u5B89\u5168\u9884\u8B66] " : ""}${q.text}`,
+          ans: a[i] != null ? `${a[i]} \xB7 ${MENTAL_SDQ_OPTIONS[a[i]]?.label ?? a[i]}` : "\u672A\u7B54",
+          bad: (a[i] ?? 0) >= 2
         }))
       });
     } else if (r.kind === "mental" && Array.isArray(r.answers)) {
@@ -110510,6 +110714,29 @@ function LinkChip({ done, label, onClick }) {
     }
   );
 }
+function frameworkScoreLevel(score) {
+  if (score < 3) return "\u5361\u70B9";
+  if (score < 3.8) return "\u5F85\u63D0\u5347";
+  return "\u6B63\u5E38";
+}
+function ScoreChip({ name, score }) {
+  const lv = frameworkScoreLevel(score);
+  const st = E3V37_LEVEL_STYLE[lv];
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
+    "span",
+    {
+      className: "inline-block rounded-full border px-2 py-0.5 text-[10.5px] font-semibold leading-tight",
+      style: { borderColor: `${st.bar}99`, color: st.text, background: st.bg },
+      children: [
+        name,
+        " ",
+        score,
+        "/5 \xB7 ",
+        lv
+      ]
+    }
+  );
+}
 function FocusDot({ f }) {
   const st = E3V37_LEVEL_STYLE[f.level];
   return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
@@ -110587,14 +110814,7 @@ function SystemFramework({
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-0.5 text-[11px] text-olive-mute", children: t.sub }),
             /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2 grid grid-cols-3 gap-1", children: t.abilities.map((a) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(UnitBlock, { name: a, unit: unitOf(a), done: e3Done }, a)) }),
-            status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-              LinkChip,
-              {
-                done: e3Done && score != null,
-                label: e3Done && score != null ? `\u5B66\u4E1A\u8BCA\u65AD \xB7 ${t.key} ${score}/5` : "\u5B66\u4E1A\u8BCA\u65AD \xB7 \u672A\u6D4B",
-                onClick: !(e3Done && score != null) ? assessE3 : void 0
-              }
-            ) })
+            status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2", children: e3Done && score != null ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(ScoreChip, { name: t.key, score }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(LinkChip, { done: false, label: "\u5B66\u4E1A\u8BCA\u65AD \xB7 \u672A\u6D4B", onClick: assessE3 }) })
           ]
         },
         t.name
@@ -110606,14 +110826,7 @@ function SystemFramework({
       /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-0.5 text-[11px] text-olive-mute", children: b.sub }),
       /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-2 grid grid-cols-3 gap-1", children: b.abilities.map((a) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(UnitBlock, { name: a, unit: unitOf(a), done: e3Done }, a)) }),
       b.key === "\u6761\u4EF6" && (status?.e3 || status?.mental) && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-2 flex flex-wrap justify-center gap-1.5", children: [
-        status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-          LinkChip,
-          {
-            done: e3Done && status.e3.conditionAvg != null,
-            label: e3Done && status.e3.conditionAvg != null ? `\u5B66\u4E1A\u8BCA\u65AD \xB7 \u6761\u4EF6 ${status.e3.conditionAvg}/5` : "\u5B66\u4E1A\u8BCA\u65AD \xB7 \u672A\u6D4B",
-            onClick: !(e3Done && status.e3.conditionAvg != null) ? assessE3 : void 0
-          }
-        ),
+        status?.e3 && (e3Done && status.e3.conditionAvg != null ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(ScoreChip, { name: "\u6761\u4EF6", score: status.e3.conditionAvg }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(LinkChip, { done: false, label: "\u5B66\u4E1A\u8BCA\u65AD \xB7 \u672A\u6D4B", onClick: assessE3 })),
         status?.mental && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           LinkChip,
           {
@@ -110624,14 +110837,7 @@ function SystemFramework({
         )
       ] }),
       b.key === "\u5B66\u80FD" && (status?.e3 || status?.multi5 || status?.multi) && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-2 flex flex-wrap justify-center gap-1.5", children: [
-        status?.e3 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-          LinkChip,
-          {
-            done: e3Done && status.e3.aptitudeAvg != null,
-            label: e3Done && status.e3.aptitudeAvg != null ? `\u5B66\u4E1A\u8BCA\u65AD \xB7 \u5B66\u80FD ${status.e3.aptitudeAvg}/5` : "\u5B66\u4E1A\u8BCA\u65AD \xB7 \u672A\u6D4B",
-            onClick: !(e3Done && status.e3.aptitudeAvg != null) ? assessE3 : void 0
-          }
-        ),
+        status?.e3 && (e3Done && status.e3.aptitudeAvg != null ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(ScoreChip, { name: "\u5B66\u80FD", score: status.e3.aptitudeAvg }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(LinkChip, { done: false, label: "\u5B66\u4E1A\u8BCA\u65AD \xB7 \u672A\u6D4B", onClick: assessE3 })),
         status?.multi5 && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           LinkChip,
           {
@@ -111164,6 +111370,8 @@ function RoadmapSection({
   anchor,
   holland,
   mental,
+  mentalSdq,
+  mentalPa,
   charts,
   raw,
   onReveal
@@ -111273,13 +111481,22 @@ function RoadmapSection({
       layer === "\u5B66\u80FD" && multi5 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswersFold, { kinds: ["multi5"], title: "\u591A\u5143\u4E94\u9879 \xB7 \u7B54\u9898\u660E\u7EC6\uFF08\u70B9\u51FB\u5C55\u5F00\uFF09" })
     ] })
   }));
-  if (mental) {
+  if (mental || mentalSdq || mentalPa) {
     underRows.push({
       key: "mental",
       label: "\u5FC3\u7406\u5065\u5EB7",
       content: /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
-        isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: `PHQ-9 ${mental.phq9}/27\uFF08${mental.phq9Level}\uFF09`, bad: mental.phq9Level !== "\u826F\u597D" }),
+        mentalSdq && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: `\u5B66\u751F\u7248A \xB7 SDQ \u56F0\u96BE\u603B\u5206 ${mentalSdq.totalDiff}/40\uFF08${mentalSdq.totalBand}\uFF09`, bad: mentalSdq.level !== "\u826F\u597D" }),
+          mentalSdq.selfHarm && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: "!!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7 \xB7 \u7ACB\u5373\u6C42\u52A9!!", bad: true })
+        ] }),
+        mentalPa && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: `\u5B66\u751F\u7248B \xB7 PHQ-A ${mentalPa.phq9}/27\uFF08${mentalPa.phq9Level}\uFF09`, bad: mentalPa.phq9Level !== "\u826F\u597D" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: `GAD-7 ${mentalPa.gad7}/21\uFF08${mentalPa.gad7Level}\uFF09`, bad: mentalPa.gad7Level !== "\u826F\u597D" }),
+          mentalPa.selfHarm && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: "!!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7 \xB7 \u7ACB\u5373\u6C42\u52A9!!", bad: true })
+        ] }),
+        mental && (isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: `\u901A\u7528\u7248 \xB7 PHQ-9 ${mental.phq9}/27\uFF08${mental.phq9Level}\uFF09`, bad: mental.phq9Level !== "\u826F\u597D" }),
           /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: `GAD-7 ${mental.gad7}/21\uFF08${mental.gad7Level}\uFF09`, bad: mental.gad7Level !== "\u826F\u597D" }),
           mental.selfHarm && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Chip, { label: "!!\u6709\u81EA\u4F24\u5FF5\u5934\u4FE1\u53F7 \xB7 \u7ACB\u5373\u6C42\u52A9!!", bad: true })
         ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_jsx_runtime17.Fragment, { children: MENTAL_FACTOR_ORDER.map((f) => {
@@ -111294,8 +111511,8 @@ function RoadmapSection({
             },
             f
           );
-        }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswersFold, { kinds: ["mental"] })
+        }) })),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswersFold, { kinds: ["mental", "mentalsdq", "mentalpa"] })
       ] })
     });
   }
@@ -112370,16 +112587,22 @@ function HollandRadar({ holland }) {
     ] }) }) })
   ] });
 }
-function MentalV2Bars({ mental }) {
+function MentalV2Bars({
+  mental,
+  variant = "v2"
+}) {
   const BAND_COLOR = { \u826F\u597D: "#7cb83c", \u5173\u6CE8: "#c7a23a", \u9884\u8B66: "#cf6a3c", \u9AD8\u98CE\u9669: "#b91c1c" };
+  const isPa = variant === "pa";
   const rows = [
-    { label: "PHQ-9 \u6291\u90C1\u7B5B\u67E5", value: mental.phq9, max: 27, band: mental.phq9Level },
-    { label: "GAD-7 \u7126\u8651\u7B5B\u67E5", value: mental.gad7, max: 21, band: mental.gad7Level }
+    { label: isPa ? "PHQ-A \u9752\u5C11\u5E74\u6291\u90C1\u7B5B\u67E5" : "PHQ-9 \u6291\u90C1\u7B5B\u67E5", value: mental.phq9, max: 27, band: mental.phq9Level },
+    { label: isPa ? "GAD-7 \u7126\u8651\u7B5B\u67E5 \xB7 \u5B66\u751F\u7248" : "GAD-7 \u7126\u8651\u7B5B\u67E5", value: mental.gad7, max: 21, band: mental.gad7Level }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5FC3\u7406\u5065\u5EB7 \xB7 PHQ-9 + GAD-7 \u4E13\u4E1A\u7B5B\u67E5" }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: isPa ? "\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09" : "\u5FC3\u7406\u5065\u5EB7 \xB7 \u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF09" }),
     /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
-      "\u4E09\u7532\u533B\u9662\u5FC3\u7406\u79D1\u5E38\u7528\u7B5B\u67E5\u91CF\u8868\uFF080-4 \u826F\u597D / 5-9 \u5173\u6CE8 / 10-14 \u9884\u8B66 / \u226515 \u9AD8\u98CE\u9669\uFF09\uFF1B\u7EFC\u5408\u5206\u7EA7\uFF1A",
+      "\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u91CF\u8868",
+      isPa ? `\uFF08${MENTAL_PA_AGE}\uFF09` : "",
+      "\uFF080-4 \u826F\u597D / 5-9 \u5173\u6CE8 / 10-14 \u9884\u8B66 / \u226515 \u9AD8\u98CE\u9669\uFF09\uFF1B\u7EFC\u5408\u5206\u7EA7\uFF1A",
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: mental.level }),
       "\uFF08\u7B5B\u67E5\u53C2\u8003\uFF0C\u975E\u8BCA\u65AD\uFF09\u3002"
     ] }),
@@ -112407,7 +112630,55 @@ function MentalV2Bars({ mental }) {
         "\u4E3B\u52A8\u6C42\u52A9\u662F\u52C7\u6562\uFF0C\u4E0D\u662F\u8F6F\u5F31\u3002"
       ] })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-3 text-[11.5px] leading-relaxed text-olive-mute", children: MENTAL_V2_DISCLAIMER })
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-3 text-[11.5px] leading-relaxed text-olive-mute", children: isPa ? MENTAL_PA_DISCLAIMER : MENTAL_V2_DISCLAIMER })
+  ] });
+}
+function MentalSdqBars({ mental }) {
+  const BAND_COLOR = { \u6B63\u5E38: "#7cb83c", \u8FB9\u7F18: "#c7a23a", \u660E\u663E: "#b91c1c" };
+  const dims = ["emotion", "conduct", "hyper", "peer", "prosocial"];
+  return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09" }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
+      "\u56FD\u9645\u901A\u7528\u7684\u513F\u7AE5\u9752\u5C11\u5E74\u884C\u4E3A\u7B5B\u67E5\uFF08",
+      MENTAL_SDQ_AGE,
+      "\uFF09\uFF1B\u56F0\u96BE\u603B\u5206\uFF1A",
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
+        mental.totalDiff,
+        "/40\u300C",
+        mental.totalBand,
+        "\u300D"
+      ] }),
+      "\uFF080-15 \u6B63\u5E38 / 16-19 \u8FB9\u7F18 / 20-40 \u660E\u663E\uFF09\uFF0C\u7EFC\u5408\u5206\u7EA7\uFF1A",
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: mental.level }),
+      "\uFF08\u7B5B\u67E5\u53C2\u8003\uFF0C\u975E\u8BCA\u65AD\uFF09\u3002"
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-3 space-y-2.5", children: dims.map((k) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex items-center gap-2", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("span", { className: "w-32 shrink-0 text-[12.5px] font-medium text-olive", children: [
+        SDQ_DIM_LABEL[k],
+        k === "prosocial" && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "ml-1 text-[10.5px] text-olive-mute", children: "\uFF08\u4F18\u52BF\uFF09" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+        "div",
+        {
+          className: "h-full rounded-full",
+          style: { width: `${Math.max(3, mental.dims[k] / 10 * 100)}%`, background: BAND_COLOR[mental.dimBands[k]] }
+        }
+      ) }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("span", { className: "mono w-24 shrink-0 text-right text-[12px] font-bold", style: { color: BAND_COLOR[mental.dimBands[k]] }, children: [
+        mental.dims[k],
+        "/10 \xB7 ",
+        mental.dimBands[k]
+      ] })
+    ] }, k)) }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[11.5px] text-olive-mute", children: "\u4EB2\u793E\u4F1A\u884C\u4E3A\u662F\u4F18\u52BF\u7EF4\u5EA6\uFF08\u5206\u8D8A\u9AD8\u8D8A\u597D\uFF09\uFF1B\u5176\u4F59\u56DB\u7EF4\u4E0E\u56F0\u96BE\u603B\u5206\u8D8A\u4F4E\u8D8A\u597D\u3002" }),
+    mental.selfHarm && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[12.5px] font-bold text-[#8f1313]", children: "\u26A0 \u9700\u8981\u7ACB\u5373\u5173\u6CE8\u7684\u4FE1\u53F7" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12.5px] leading-relaxed text-[#8f1313]", children: [
+        MENTAL_SDQ_SAFETY_NOTICE,
+        "\u4E3B\u52A8\u6C42\u52A9\u662F\u52C7\u6562\uFF0C\u4E0D\u662F\u8F6F\u5F31\u3002"
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-3 text-[11.5px] leading-relaxed text-olive-mute", children: MENTAL_SDQ_DISCLAIMER })
   ] });
 }
 function MentalBar({ mental }) {
@@ -112484,6 +112755,8 @@ function ReportView({
     const v = data3?.discParents;
     return Array.isArray(v) ? v.filter((p) => p && p.result && p.result.dims) : [];
   }, [data3]);
+  const mentalSdq = data3?.mentalSdq ?? void 0;
+  const mentalPa = data3?.mentalPa ?? void 0;
   const combined2 = (0, import_react4.useMemo)(() => {
     if (!data3?.mbti || !data3?.disc || !e3v37) return null;
     const mr = MBTI_REPORTS[data3.mbti.type];
@@ -112495,6 +112768,8 @@ function ReportView({
       anchor: data3.anchor ?? void 0,
       holland: data3.holland ?? void 0,
       mental: data3.mental ?? void 0,
+      mentalSdq: mentalSdq ?? void 0,
+      mentalPa: mentalPa ?? void 0,
       e3parent: parentResult ?? void 0,
       discParents
     });
@@ -112525,7 +112800,8 @@ function ReportView({
     if (tab === "multi5") return !!data3?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult;
     if (tab === "academics" || tab === "profile") return false;
-    if (tab === "anchor" || tab === "holland" || tab === "mental") return !!data3?.[tab];
+    if (tab === "anchor" || tab === "holland") return !!data3?.[tab];
+    if (tab === "mental") return !!(data3?.mental || data3?.mentalSdq || data3?.mentalPa);
     return !!combined2;
   }, [tab, data3, combined2, e3v37, discParents]);
   const onDownload = () => {
@@ -112617,7 +112893,14 @@ function ReportView({
         aptitudeAvg: r1(e3v37.aptitude.reduce((s, a) => s + a.score, 0) / Math.max(1, e3v37.aptitude.length)),
         units
       } : { done: false },
-      mental: mental ? { done: true, note: mental.level } : { done: false },
+      mental: mental || mentalSdq || mentalPa ? {
+        done: true,
+        note: [
+          mentalSdq ? `SDQ\u300C${mentalSdq.level}\u300D` : "",
+          mentalPa ? `\u5B66\u751F\u7248B\u300C${mentalPa.level}\u300D` : "",
+          mental ? `\u901A\u7528\u7248\u300C${mental.level}\u300D` : ""
+        ].filter(Boolean).join(" \xB7 ")
+      } : { done: false },
       multi5: multi5 ? {
         done: true,
         note: `\u7EFC\u5408 ${multi5.overall} \xB7 \u7EC6\u5FC3 ${multi5.carefulIndex}%`,
@@ -112884,32 +113167,85 @@ function ReportView({
           to: "/assessments?start=holland"
         }
       ) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(HollandDetail, { result: holland })),
-      tab === "mental" && (!mental ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-        MissingCard,
-        {
-          text: "\u5FC3\u7406\u5065\u5EB7\u8BC4\u4F30\u4E3A\u9009\u505A\uFF08PHQ-9 + GAD-7 \u4E13\u4E1A\u7248\uFF0C16 \u9898\u7EA6 3 \u5206\u949F\uFF09\uFF0C\u5173\u7167\u4E00\u4E0B\u81EA\u5DF1\u7684\u60C5\u7EEA\u72B6\u6001\u3002",
-          actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192",
-          to: "/assessments?start=mental"
-        }
-      ) : isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental }),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE" }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[13.5px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(RichText, { text: mental.summary }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-2 text-[12.5px] leading-relaxed text-olive-mute", children: [
-            "\u7EFC\u5408\u5206\u7EA7\u53D6 PHQ-9 \u4E0E GAD-7 \u4E2D\u8F83\u91CD\u8005\uFF1B\u5F97\u5206 \u22652 \u7684\u9898\u5171 ",
-            mental.positives,
-            "/16 \u9879\u3002\u4E24\u5468\u540E\u53EF\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u3002"
-          ] })
+      tab === "mental" && (!mental && !mentalSdq && !mentalPa ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+          MissingCard,
+          {
+            text: "\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5\u5168\u90E8\u4E3A\u9009\u505A\uFF0C\u6709\u4E09\u5957\u53EF\u6311\u7740\u505A\uFF1A\u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF0C25 \u9898\uFF0C4\u201417 \u5C81\uFF0C11 \u5C81\u4EE5\u4E0B\u53EF\u5BB6\u957F\u966A\u8BFB\uFF09\u3001\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF0C16 \u9898\uFF0C11 \u5C81\u4EE5\u4E0A\uFF09\u3001\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF0C16 \u9898\uFF09\u3002\u505A\u4E86\u54EA\u5957\uFF0C\u7ED3\u679C\u90FD\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u548C\u7EFC\u5408\u62A5\u544A\u91CC\u3002",
+            actionText: "\u53BB\u6D4B\u5B66\u751F\u7248 A\uFF08SDQ\uFF09\u2192",
+            to: "/assessments?start=mentalsdq"
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("a", { href: "/assessments?start=mentalpa", className: "rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime", children: "\u53BB\u6D4B\u5B66\u751F\u7248 B\uFF08PHQ-A\uFF0C11 \u5C81\u4EE5\u4E0A\uFF09\u2192" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("a", { href: "/assessments?start=mental", className: "rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime", children: "\u53BB\u6D4B\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF09\u2192" })
         ] })
-      ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "paper-card border-butter bg-butter/20 p-4", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "text-[12.5px] leading-relaxed text-olive", children: [
-          "\u4F60\u4E0A\u6B21\u5B8C\u6210\u7684\u662F\u65E7\u7248\u5341\u56E0\u5B50\u7B5B\u67E5\u3002\u91CF\u8868\u5DF2\u5347\u7EA7\u4E3A ",
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { children: "PHQ-9 + GAD-7 \u4E13\u4E1A\u7248" }),
-          "\uFF08\u4E09\u7532\u533B\u9662\u5FC3\u7406\u79D1\u901A\u7528\uFF0C16 \u9898\u7EA6 3 \u5206\u949F\uFF09\u2014\u2014",
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("button", { className: "font-bold underline", onClick: () => navigate("/assessments?start=mental"), children: "\u70B9\u8FD9\u91CC\u91CD\u65B0\u6D4B\u8BC4 \u2192" })
-        ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalDetail, { result: mental })
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
+        mentalSdq ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalSdqBars, { mental: mentalSdq }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5B66\u751F\u7248 A \xB7 \u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE" }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[13.5px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(RichText, { text: mentalSdq.summary }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[12.5px] leading-relaxed text-olive-mute", children: "\u4E00\u4E24\u4E2A\u6708\u540E\u53EF\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u3002" })
+          ] })
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+          MissingCard,
+          {
+            text: "\u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09\u8FD8\u6CA1\u6D4B\uFF1A25 \u9898\u7EA6 4 \u5206\u949F\uFF0C\u9002\u7528 4\u201417 \u5C81\uFF0811 \u5C81\u4EE5\u4E0B\u53EF\u5BB6\u957F\u966A\u8BFB\uFF09\u3002",
+            actionText: "\u53BB\u6D4B\u5B66\u751F\u7248 A \u2192",
+            to: "/assessments?start=mentalsdq"
+          }
+        ),
+        mentalPa ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental: mentalPa, variant: "pa" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5B66\u751F\u7248 B \xB7 \u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE" }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[13.5px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(RichText, { text: mentalPa.summary }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-2 text-[12.5px] leading-relaxed text-olive-mute", children: [
+              "\u7EFC\u5408\u5206\u7EA7\u53D6 PHQ-A \u4E0E GAD-7 \u4E2D\u8F83\u91CD\u8005\uFF1B\u5F97\u5206 \u22652 \u7684\u9898\u5171 ",
+              mentalPa.positives,
+              "/16 \u9879\u3002\u4E24\u5468\u540E\u53EF\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u3002"
+            ] })
+          ] })
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+          MissingCard,
+          {
+            text: "\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09\u8FD8\u6CA1\u6D4B\uFF1A16 \u9898\u7EA6 3 \u5206\u949F\uFF0C\u9002\u7528 11 \u5C81\u4EE5\u4E0A\u3002",
+            actionText: "\u53BB\u6D4B\u5B66\u751F\u7248 B \u2192",
+            to: "/assessments?start=mentalpa"
+          }
+        ),
+        mental ? isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u901A\u7528\u7248 \xB7 \u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE" }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[13.5px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(RichText, { text: mental.summary }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-2 text-[12.5px] leading-relaxed text-olive-mute", children: [
+              "\u7EFC\u5408\u5206\u7EA7\u53D6 PHQ-9 \u4E0E GAD-7 \u4E2D\u8F83\u91CD\u8005\uFF1B\u5F97\u5206 \u22652 \u7684\u9898\u5171 ",
+              mental.positives,
+              "/16 \u9879\u3002\u4E24\u5468\u540E\u53EF\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u3002"
+            ] })
+          ] })
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "paper-card border-butter bg-butter/20 p-4", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "text-[12.5px] leading-relaxed text-olive", children: [
+            "\u4F60\u4E0A\u6B21\u5B8C\u6210\u7684\u662F\u65E7\u7248\u5341\u56E0\u5B50\u7B5B\u67E5\uFF08\u901A\u7528\u7248\u524D\u8EAB\uFF09\u3002\u73B0\u5728\u6709\u65B0\u7248\u53EF\u7528\uFF1A",
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { children: "\u5B66\u751F\u7248 A\uFF08SDQ\uFF09" }),
+            "\u3001",
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { children: "\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09" }),
+            "\u6216",
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { children: "\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF09" }),
+            "\u2014\u2014\u65E7\u7ED3\u679C\u4FDD\u7559\u53EF\u67E5\uFF0C",
+            /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("button", { className: "font-bold underline", onClick: () => navigate("/assessments?start=mental"), children: "\u70B9\u8FD9\u91CC\u6D4B\u901A\u7528\u7248 \u2192" })
+          ] }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalDetail, { result: mental })
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
+          MissingCard,
+          {
+            text: "\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF09\u8FD8\u6CA1\u6D4B\uFF1A16 \u9898\u7EA6 3 \u5206\u949F\u3002",
+            actionText: "\u53BB\u6D4B\u901A\u7528\u7248 \u2192",
+            to: "/assessments?start=mental"
+          }
+        )
       ] })),
       tab === "combined" && (e3Legacy ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
         MissingCard,
@@ -112963,6 +113299,8 @@ function ReportView({
               anchor,
               holland,
               mental,
+              mentalSdq,
+              mentalPa,
               raw: data3?.raw,
               onReveal: reveal
             }
@@ -113000,6 +113338,8 @@ function ReportView({
                     anchor,
                     holland,
                     mental,
+                    mentalSdq,
+                    mentalPa,
                     charts: e3v37 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(NineAbilityRadar, { e3: e3v37 }) : void 0,
                     raw: data3?.raw,
                     onReveal: reveal
@@ -113020,7 +113360,7 @@ function ReportView({
                   }
                 ) : void 0;
               } else if (s.title.includes("\u6761\u4EF6\u6A21\u5757")) {
-                chartNode = mental ? isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalBar, { mental }) : void 0;
+                chartNode = mentalSdq ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalSdqBars, { mental: mentalSdq }) : mentalPa ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental: mentalPa, variant: "pa" }) : mental ? isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalV2Bars, { mental }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalBar, { mental }) : void 0;
               } else if (s.title.includes("\u4EB2\u5B50\u5BF9\u7167")) {
                 chartNode = disc2 && discParents.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(DiscParentCompare, { student: disc2, parents: discParents }) : void 0;
               } else if (s.title.includes("\u5B66\u80FD\u6A21\u5757")) {
@@ -113550,7 +113890,7 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v39.tsx
+// scripts/smoke-render-v40.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -113766,7 +114106,54 @@ need(parentHtml, "\u5BF9\u7167\u7684\u4E8B\uFF1A", "\u8BA4\u77E5\u5BF9\u7167\u53
 need(parentHtml, "\u5BB6\u957F\u4EE5\u4E3A\u6CA1\u95EE\u9898\uFF0C\u5176\u5B9E\u5B69\u5B50\u89C9\u5F97\u96BE", "\u8BA4\u77E5\u5BF9\u7167\u5361\u767D\u8BDD");
 need(parentHtml, "ring-[#b91c1c]/50", "\u51B2\u7A81\u6E05\u5355\u7EA2\u8272\u5F3A\u5316");
 console.log("OK v39 \u53BB\u91CD/\u7EA2\u8272\u5F3A\u5316/\u5BF9\u7167\u5361/\u901A\u4FD7\u5316");
-console.log("RENDER_SMOKE_V39_OK");
+var sdqCalm = scoreMentalSdq(Array.from({ length: MENTAL_SDQ_QUESTION_COUNT }, () => 0));
+if (sdqCalm.totalDiff !== 0 + 0 + 0 + 0 + 5) {
+}
+if (sdqCalm.dims.conduct !== 2 || sdqCalm.dims.peer !== 4 || sdqCalm.dims.hyper !== 4 || sdqCalm.dims.emotion !== 0 || sdqCalm.dims.prosocial !== 0 || sdqCalm.totalDiff !== 10) {
+  throw new Error(`SDQ \u53CD\u5411\u8BA1\u5206\u9519\u8BEF ${JSON.stringify(sdqCalm.dims)} total=${sdqCalm.totalDiff}`);
+}
+var sdqRed = scoreMentalSdq(Array.from({ length: MENTAL_SDQ_QUESTION_COUNT }, (_, i) => i === 25 ? 1 : 0));
+if (!sdqRed.selfHarm || sdqRed.level !== "\u9AD8\u98CE\u9669") throw new Error("SDQ \u5B89\u5168\u9884\u8B66\u7EA2\u7EBF\u672A\u89E6\u53D1");
+var pa = scoreMentalPa(Array.from({ length: MENTAL_PA_QUESTION_COUNT }, () => 0));
+if (pa.version !== "pa" || pa.level !== "\u826F\u597D") throw new Error("PHQ-A \u8BA1\u5206\u9519\u8BEF");
+var paRed = scoreMentalPa(Array.from({ length: MENTAL_PA_QUESTION_COUNT }, (_, i) => i === 8 ? 1 : 0));
+if (!paRed.selfHarm || paRed.level !== "\u9AD8\u98CE\u9669") throw new Error("PHQ-A \u7B2C 9 \u9898\u7EA2\u7EBF\u672A\u89E6\u53D1");
+if (!isMentalSdq(sdqCalm) || !isMentalPa(pa)) throw new Error("\u7C7B\u578B\u5B88\u536B\u9519\u8BEF");
+console.log("OK v40 \u53CC\u91CF\u8868\u8BA1\u5206\u4E0E\u7EA2\u7EBF");
+var profileHtml = render("combined");
+for (const kw of ["\u4E50\u5B66 3.1/5 \xB7 \u5F85\u63D0\u5347", "\u4F1A\u5B66 3.3/5 \xB7 \u5F85\u63D0\u5347", "\u5584\u5B66 2.7/5 \xB7 \u5361\u70B9", "\u6761\u4EF6 2.8/5 \xB7 \u5361\u70B9", "\u5B66\u80FD 2/5 \xB7 \u5361\u70B9"]) need(profileHtml, kw, "\u6846\u67B6\u56FE\u5206\u6570\u5FBD\u7AE0");
+if (/学业诊断 · (乐学|会学|善学|条件|学能) \d/.test(profileHtml)) throw new Error("\u6846\u67B6\u56FE\u4ECD\u6709\u300C\u5B66\u4E1A\u8BCA\u65AD \xB7\u300D\u5206\u6570\u524D\u7F00");
+if (!profileHtml.includes("#fbe3df")) throw new Error("\u6846\u67B6\u56FE\u5361\u70B9\u7EA2\u8272\u7F3A\u5931");
+console.log("OK \u6846\u67B6\u56FE\u5206\u6570\u5FBD\u7AE0\uFF08\u53BB\u524D\u7F00+\u7EA2\u9EC4\u7EFF+\u6863\u4F4D\uFF09");
+var dataMental = {
+  ...data2,
+  mentalSdq: sdqRed,
+  mentalPa: pa,
+  raw: [
+    ...data2.raw,
+    { kind: "mentalsdq", answers: Array.from({ length: MENTAL_SDQ_QUESTION_COUNT }, (_, i) => i === 25 ? 1 : 0), createdAt: /* @__PURE__ */ new Date() },
+    { kind: "mentalpa", answers: Array.from({ length: MENTAL_PA_QUESTION_COUNT }, () => 0), createdAt: /* @__PURE__ */ new Date() }
+  ]
+};
+var renderM = (tab) => (0, import_server.renderToStaticMarkup)(
+  import_react5.default.createElement(
+    MemoryRouter,
+    { initialEntries: [`/report-detail?tab=${tab}`] },
+    import_react5.default.createElement(ReportView, { data: dataMental, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    } })
+  )
+);
+var mentalTab = renderM("mental");
+for (const kw of ["\u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09", "\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09", "\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF09", "\u56F0\u96BE\u603B\u5206", "PHQ-A \u9752\u5C11\u5E74\u6291\u90C1\u7B5B\u67E5"]) need(mentalTab, kw, "mental tab \u4E09\u91CF\u8868");
+var combinedM = renderM("combined");
+for (const kw of ["\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09", "\u5FC3\u7406\u5065\u5EB7 \xB7 \u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09", "\u5FC3\u7406\u5065\u5EB7 \xB7 \u901A\u7528\u7248"]) need(combinedM, kw, "\u7EFC\u5408\u62A5\u544A\u5FC3\u7406\u4E09\u5361");
+need(combinedM, "SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09\xB7 26 \u9898", "SDQ \u7B54\u9898\u660E\u7EC6");
+need(combinedM, "\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09\xB7 16 \u9898", "PHQ-A \u7B54\u9898\u660E\u7EC6");
+if (/三甲医院/.test(mentalTab + combinedM)) throw new Error("\u4ECD\u6709\u300C\u4E09\u7532\u533B\u9662\u300D\u63AA\u8F9E");
+need(mentalTab + combinedM, "\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u5DE5\u5177", "\u56FD\u9645\u901A\u7528\u63AA\u8F9E");
+need(mentalTab + combinedM, "12356", "\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF\u4FDD\u7559");
+console.log("OK v40 \u4E09\u91CF\u8868\u8FDB\u62A5\u544A + \u63AA\u8F9E");
+console.log("RENDER_SMOKE_V40_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

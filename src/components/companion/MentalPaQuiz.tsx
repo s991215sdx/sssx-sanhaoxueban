@@ -3,11 +3,11 @@ import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
-  MENTAL_V2_SECTIONS,
+  MENTAL_PA_SECTIONS,
   MENTAL_V2_OPTIONS,
-  MENTAL_V2_DISCLAIMER,
+  MENTAL_PA_DISCLAIMER,
   MENTAL_V2_ITEM9_NOTICE,
-  MENTAL_V2_QUESTION_COUNT,
+  MENTAL_PA_QUESTION_COUNT,
 } from "@contracts/mentalHealth";
 import type { MentalV2Band, MentalV2Result, MentalV2Section } from "@contracts/mentalHealth";
 import { ChevronLeft, HeartHandshake, AlertTriangle, PhoneCall } from "lucide-react";
@@ -28,38 +28,38 @@ const flatten = (sections: MentalV2Section[]): FlatItem[] =>
  * 心理健康筛查（选做）V2：PHQ-9（抑郁筛查 9 题）+ GAD-7（焦虑筛查 7 题），
  * 国际通用筛查量表，四级评分 0-3，两段式逐题作答。
  */
-export default function MentalQuiz({ onDone }: { onDone: () => void }) {
+export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "mental" });
+  const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "mentalpa" });
 
   /* 旧版草稿（30 题、1-5 分）与 V2（16 题、0-3 分）不兼容：
      首个 state 初始化时校验，题数越界或分值越界直接清草稿从头开始。 */
   const [draftValid] = useState(() => {
-    const d = loadQuizDraft("mental");
+    const d = loadQuizDraft("mentalpa");
     if (!d) return true;
     const a = d.answers as unknown[] | undefined;
     const i = d.idx as number | undefined;
     const bad =
       (Array.isArray(a) &&
-        (a.length > MENTAL_V2_QUESTION_COUNT ||
+        (a.length > MENTAL_PA_QUESTION_COUNT ||
           a.some((v) => !Number.isInteger(v) || (v as number) < 0 || (v as number) > 3))) ||
-      (typeof i === "number" && i > MENTAL_V2_QUESTION_COUNT - 1);
+      (typeof i === "number" && i > MENTAL_PA_QUESTION_COUNT - 1);
     if (bad) {
-      clearQuizDraft("mental");
+      clearQuizDraft("mentalpa");
       return false;
     }
     return true;
   });
 
   // 作答进度挂草稿：误退出/刷新后回来接着答，不用重测
-  const [idx, setIdx] = useDraftState<number>("mental", "idx", 0);
-  const [answers, setAnswers] = useDraftState<number[]>("mental", "answers", []);
+  const [idx, setIdx] = useDraftState<number>("mentalpa", "idx", 0);
+  const [answers, setAnswers] = useDraftState<number[]>("mentalpa", "answers", []);
   const [resumed, setResumed] = useState(
-    () => draftValid && ((loadQuizDraft("mental")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => draftValid && ((loadQuizDraft("mentalpa")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft("mental");
+    clearQuizDraft("mentalpa");
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -67,17 +67,17 @@ export default function MentalQuiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft("mental"); // 提交成功，清除草稿
+      clearQuizDraft("mentalpa"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
     },
   });
 
   const sections =
-    data?.kind === "mental" && Array.isArray(data.sections) && data.sections.length > 0
+    data?.kind === "mentalpa" && Array.isArray(data.sections) && data.sections.length > 0
       ? (data.sections as MentalV2Section[])
-      : MENTAL_V2_SECTIONS;
+      : MENTAL_PA_SECTIONS;
   const options =
-    data?.kind === "mental" && Array.isArray(data.options) && data.options.length > 0
+    data?.kind === "mentalpa" && Array.isArray(data.options) && data.options.length > 0
       ? (data.options as unknown as typeof MENTAL_V2_OPTIONS)
       : MENTAL_V2_OPTIONS;
   const items = flatten(sections);
@@ -90,28 +90,28 @@ export default function MentalQuiz({ onDone }: { onDone: () => void }) {
     if (idx + 1 < total) {
       setIdx(idx + 1);
     } else if (next.length === total) {
-      submit.mutate({ kind: "mental", answers: next } as any);
+      submit.mutate({ kind: "mentalpa", answers: next } as any);
     }
   };
 
   /* ------- 结果卡 ------- */
-  if (submit.isSuccess && submit.data?.kind === "mental") {
-    const result = submit.data.result as MentalV2Result;
+  if (submit.isSuccess && submit.data?.kind === "mentalpa") {
+    const result = submit.data.result as unknown as MentalV2Result;
     return (
       <div className="paper-card p-6 text-center">
         <HeartHandshake className="mx-auto text-lime" size={30} />
-        <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">心理健康筛查 · 通用版（PHQ-9 + GAD-7）· 结果</p>
+        <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">心理健康筛查 · 学生版 B（PHQ-A + GAD-7 学生版）· 结果</p>
         <div className={`mx-auto mt-3 inline-block rounded-full border px-4 py-1.5 text-[14px] font-bold ${LEVEL_STYLE[result.level]}`}>
           综合状态：{result.level}
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-cream px-2 py-2.5">
-            <div className="text-[11.5px] text-olive-mute">PHQ-9 抑郁筛查</div>
+            <div className="text-[11.5px] text-olive-mute">PHQ-A 青少年抑郁筛查</div>
             <div className="mt-0.5 text-[18px] font-bold text-olive">{result.phq9}<span className="text-[12px] font-normal text-olive-mute">/27</span></div>
             <div className={`mt-0.5 text-[11.5px] ${result.phq9Level === "良好" ? "text-olive-mute" : "text-terra"}`}>{result.phq9Level}</div>
           </div>
           <div className="rounded-xl bg-cream px-2 py-2.5">
-            <div className="text-[11.5px] text-olive-mute">GAD-7 焦虑筛查</div>
+            <div className="text-[11.5px] text-olive-mute">GAD-7 焦虑筛查 · 学生版</div>
             <div className="mt-0.5 text-[18px] font-bold text-olive">{result.gad7}<span className="text-[12px] font-normal text-olive-mute">/21</span></div>
             <div className={`mt-0.5 text-[11.5px] ${result.gad7Level === "良好" ? "text-olive-mute" : "text-terra"}`}>{result.gad7Level}</div>
           </div>
@@ -133,7 +133,7 @@ export default function MentalQuiz({ onDone }: { onDone: () => void }) {
         {/* 免责声明（必须展示） */}
         <div className="mt-5 flex items-start gap-2 rounded-xl border border-butter bg-butter/20 p-3.5 text-left">
           <AlertTriangle size={16} className="mt-0.5 shrink-0 text-terra" />
-          <p className="text-[12px] leading-relaxed text-olive-soft">{MENTAL_V2_DISCLAIMER}</p>
+          <p className="text-[12px] leading-relaxed text-olive-soft">{MENTAL_PA_DISCLAIMER}</p>
         </div>
         <div className="mt-6 flex gap-3">
           <button
@@ -161,8 +161,8 @@ export default function MentalQuiz({ onDone }: { onDone: () => void }) {
     <div className="paper-card p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-olive">心理健康筛查 · 通用版（PHQ-9 + GAD-7）</h2>
-          <p className="mt-0.5 text-[13px] text-olive-soft">国际通用筛查工具 · 16 题约 3 分钟 · 结果仅供筛查参考</p>
+          <h2 className="text-lg font-bold text-olive">心理健康筛查 · 学生版 B（PHQ-A + GAD-7 学生版）</h2>
+          <p className="mt-0.5 text-[13px] text-olive-soft">国际通用筛查工具 · 适用 11 岁以上 · 16 题约 3 分钟 · 结果仅供筛查参考</p>
         </div>
         <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
           先不测了
@@ -244,7 +244,7 @@ export default function MentalQuiz({ onDone }: { onDone: () => void }) {
           {isLast && (
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-butter bg-butter/20 p-3 text-left">
               <AlertTriangle size={14} className="mt-0.5 shrink-0 text-terra" />
-              <p className="text-[11.5px] leading-relaxed text-olive-soft">{MENTAL_V2_DISCLAIMER}</p>
+              <p className="text-[11.5px] leading-relaxed text-olive-soft">{MENTAL_PA_DISCLAIMER}</p>
             </div>
           )}
 

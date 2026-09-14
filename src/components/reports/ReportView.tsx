@@ -29,8 +29,21 @@ import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_THEORY_NOTE, MULTI5_DIM_ORDER, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { HollandResult } from "@contracts/holland";
 import { HOLLAND_ORDER, HOLLAND_LABEL } from "@contracts/holland";
-import type { MentalResult, MentalV2Result } from "@contracts/mentalHealth";
-import { MENTAL_FACTOR_ORDER, MENTAL_FACTOR_LABEL, mentalBand, isMentalV2, MENTAL_V2_DISCLAIMER, MENTAL_V2_ITEM9_NOTICE } from "@contracts/mentalHealth";
+import type { MentalResult, MentalV2Result, MentalSdqResult, MentalPaResult } from "@contracts/mentalHealth";
+import {
+  MENTAL_FACTOR_ORDER,
+  MENTAL_FACTOR_LABEL,
+  mentalBand,
+  isMentalV2,
+  MENTAL_V2_DISCLAIMER,
+  MENTAL_V2_ITEM9_NOTICE,
+  MENTAL_SDQ_DISCLAIMER,
+  MENTAL_SDQ_SAFETY_NOTICE,
+  MENTAL_SDQ_AGE,
+  MENTAL_PA_AGE,
+  MENTAL_PA_DISCLAIMER,
+  SDQ_DIM_LABEL,
+} from "@contracts/mentalHealth";
 import type { AcademicsData } from "@contracts/academics";
 import { SELF_LEVELS } from "@contracts/academics";
 import { buildAnswerBlocks, answerKindsForSection } from "@/components/reports/answerBlocks";
@@ -70,6 +83,8 @@ export type ReportAssessmentData = {
   multi?: MultiResult | null; multi5?: Multi5Result | null;
   anchor?: AnchorResult | null; holland?: HollandResult | null;
   mental?: MentalResult | MentalV2Result | null;
+  mentalSdq?: MentalSdqResult | null;
+  mentalPa?: MentalPaResult | null;
   raw?: { kind: string; answers: unknown; createdAt: Date | string }[];
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
@@ -261,6 +276,8 @@ function RoadmapSection({
   anchor,
   holland,
   mental,
+  mentalSdq,
+  mentalPa,
   charts,
   raw,
   onReveal,
@@ -277,6 +294,8 @@ function RoadmapSection({
   anchor?: AnchorResult;
   holland?: HollandResult;
   mental?: MentalResult | MentalV2Result;
+  mentalSdq?: MentalSdqResult;
+  mentalPa?: MentalPaResult;
   charts?: ReactNode;
   /** 各测评原始作答：冰山各行/层内重点项的答题明细折叠由此构建（V36 折叠式直出）。 */
   raw?: RawAnswer[];
@@ -432,15 +451,28 @@ function RoadmapSection({
       </>
     ),
   }));
-  if (mental) {
+  if (mental || mentalSdq || mentalPa) {
     underRows.push({
       key: "mental",
       label: "心理健康",
       content: (
         <>
-          {isMentalV2(mental) ? (
+          {mentalSdq && (
             <>
-              <Chip label={`PHQ-9 ${mental.phq9}/27（${mental.phq9Level}）`} bad={mental.phq9Level !== "良好"} />
+              <Chip label={`学生版A · SDQ 困难总分 ${mentalSdq.totalDiff}/40（${mentalSdq.totalBand}）`} bad={mentalSdq.level !== "良好"} />
+              {mentalSdq.selfHarm && <Chip label="!!有自伤念头信号 · 立即求助!!" bad />}
+            </>
+          )}
+          {mentalPa && (
+            <>
+              <Chip label={`学生版B · PHQ-A ${mentalPa.phq9}/27（${mentalPa.phq9Level}）`} bad={mentalPa.phq9Level !== "良好"} />
+              <Chip label={`GAD-7 ${mentalPa.gad7}/21（${mentalPa.gad7Level}）`} bad={mentalPa.gad7Level !== "良好"} />
+              {mentalPa.selfHarm && <Chip label="!!有自伤念头信号 · 立即求助!!" bad />}
+            </>
+          )}
+          {mental && (isMentalV2(mental) ? (
+            <>
+              <Chip label={`通用版 · PHQ-9 ${mental.phq9}/27（${mental.phq9Level}）`} bad={mental.phq9Level !== "良好"} />
               <Chip label={`GAD-7 ${mental.gad7}/21（${mental.gad7Level}）`} bad={mental.gad7Level !== "良好"} />
               {mental.selfHarm && <Chip label="!!有自伤念头信号 · 立即求助!!" bad />}
             </>
@@ -459,8 +491,8 @@ function RoadmapSection({
                 );
               })}
             </>
-          )}
-          <AnswersFold kinds={["mental"]} />
+          ))}
+          <AnswersFold kinds={["mental", "mentalsdq", "mentalpa"]} />
         </>
       ),
     });
@@ -1752,17 +1784,25 @@ function HollandRadar({ holland }: { holland: HollandResult }) {
 }
 
 /** 心理健康 V2（PHQ-9 + GAD-7）双量表条形卡：分级口径 0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险。 */
-function MentalV2Bars({ mental }: { mental: MentalV2Result }) {
+function MentalV2Bars({
+  mental,
+  variant = "v2",
+}: {
+  mental: MentalV2Result | MentalPaResult;
+  /** v2=通用版（PHQ-9）；pa=学生版 B（PHQ-A + GAD-7 学生化）。 */
+  variant?: "v2" | "pa";
+}) {
   const BAND_COLOR: Record<string, string> = { 良好: "#7cb83c", 关注: "#c7a23a", 预警: "#cf6a3c", 高风险: "#b91c1c" };
+  const isPa = variant === "pa";
   const rows = [
-    { label: "PHQ-9 抑郁筛查", value: mental.phq9, max: 27, band: mental.phq9Level },
-    { label: "GAD-7 焦虑筛查", value: mental.gad7, max: 21, band: mental.gad7Level },
+    { label: isPa ? "PHQ-A 青少年抑郁筛查" : "PHQ-9 抑郁筛查", value: mental.phq9, max: 27, band: mental.phq9Level },
+    { label: isPa ? "GAD-7 焦虑筛查 · 学生版" : "GAD-7 焦虑筛查", value: mental.gad7, max: 21, band: mental.gad7Level },
   ];
   return (
     <div className="paper-card p-5">
-      <h3 className="font-bold text-olive">心理健康 · PHQ-9 + GAD-7 专业筛查</h3>
+      <h3 className="font-bold text-olive">{isPa ? "心理健康 · 学生版 B（PHQ-A + GAD-7 学生版）" : "心理健康 · 通用版（PHQ-9 + GAD-7）"}</h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
-        三甲医院心理科常用筛查量表（0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险）；综合分级：
+        国际通用筛查量表{isPa ? `（${MENTAL_PA_AGE}）` : ""}（0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险）；综合分级：
         <b className="text-olive">{mental.level}</b>（筛查参考，非诊断）。
       </p>
       <div className="mt-3 space-y-2.5">
@@ -1787,7 +1827,50 @@ function MentalV2Bars({ mental }: { mental: MentalV2Result }) {
           <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_V2_ITEM9_NOTICE}主动求助是勇敢，不是软弱。</p>
         </div>
       )}
-      <p className="mt-3 text-[11.5px] leading-relaxed text-olive-mute">{MENTAL_V2_DISCLAIMER}</p>
+      <p className="mt-3 text-[11.5px] leading-relaxed text-olive-mute">{isPa ? MENTAL_PA_DISCLAIMER : MENTAL_V2_DISCLAIMER}</p>
+    </div>
+  );
+}
+
+/** 学生版 A（SDQ）五维度条形图。 */
+function MentalSdqBars({ mental }: { mental: MentalSdqResult }) {
+  const BAND_COLOR: Record<string, string> = { 正常: "#7cb83c", 边缘: "#c7a23a", 明显: "#b91c1c" };
+  const dims = ["emotion", "conduct", "hyper", "peer", "prosocial"] as const;
+  return (
+    <div className="paper-card p-5">
+      <h3 className="font-bold text-olive">心理健康 · 学生版 A（SDQ 长处与困难问卷）</h3>
+      <p className="mt-1 text-[12.5px] text-olive-mute">
+        国际通用的儿童青少年行为筛查（{MENTAL_SDQ_AGE}）；困难总分：
+        <b className="text-olive">{mental.totalDiff}/40「{mental.totalBand}」</b>（0-15 正常 / 16-19 边缘 / 20-40 明显），综合分级：
+        <b className="text-olive">{mental.level}</b>（筛查参考，非诊断）。
+      </p>
+      <div className="mt-3 space-y-2.5">
+        {dims.map((k) => (
+          <div key={k} className="flex items-center gap-2">
+            <span className="w-32 shrink-0 text-[12.5px] font-medium text-olive">
+              {SDQ_DIM_LABEL[k]}
+              {k === "prosocial" && <span className="ml-1 text-[10.5px] text-olive-mute">（优势）</span>}
+            </span>
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.max(3, (mental.dims[k] / 10) * 100)}%`, background: BAND_COLOR[mental.dimBands[k]] }}
+              />
+            </div>
+            <span className="mono w-24 shrink-0 text-right text-[12px] font-bold" style={{ color: BAND_COLOR[mental.dimBands[k]] }}>
+              {mental.dims[k]}/10 · {mental.dimBands[k]}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11.5px] text-olive-mute">亲社会行为是优势维度（分越高越好）；其余四维与困难总分越低越好。</p>
+      {mental.selfHarm && (
+        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3">
+          <div className="text-[12.5px] font-bold text-[#8f1313]">⚠ 需要立即关注的信号</div>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_SDQ_SAFETY_NOTICE}主动求助是勇敢，不是软弱。</p>
+        </div>
+      )}
+      <p className="mt-3 text-[11.5px] leading-relaxed text-olive-mute">{MENTAL_SDQ_DISCLAIMER}</p>
     </div>
   );
 }
@@ -1880,6 +1963,8 @@ export default function ReportView({
     const v = (data as any)?.discParents;
     return Array.isArray(v) ? v.filter((p) => p && p.result && p.result.dims) : [];
   }, [data]);
+  const mentalSdq = data?.mentalSdq ?? undefined;
+  const mentalPa = data?.mentalPa ?? undefined;
   const combined = useMemo<CombinedReport | null>(() => {
     if (!data?.mbti || !data?.disc || !e3v37) return null;
     const mr = MBTI_REPORTS[data.mbti.type];
@@ -1891,6 +1976,8 @@ export default function ReportView({
       anchor: data.anchor ?? undefined,
       holland: data.holland ?? undefined,
       mental: data.mental ?? undefined,
+      mentalSdq: mentalSdq ?? undefined,
+      mentalPa: mentalPa ?? undefined,
       e3parent: parentResult ?? undefined,
       discParents,
     });
@@ -1937,7 +2024,8 @@ export default function ReportView({
     if (tab === "multi5") return !!data?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
     if (tab === "academics" || tab === "profile") return false; // 档案/成绩 tab 不提供下载
-    if (tab === "anchor" || tab === "holland" || tab === "mental") return !!(data as any)?.[tab];
+    if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
+    if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa);
     return !!combined;
   }, [tab, data, combined, e3v37, discParents]);
 
@@ -2039,7 +2127,19 @@ export default function ReportView({
             units,
           }
         : { done: false },
-      mental: mental ? { done: true, note: mental.level } : { done: false },
+      mental:
+        mental || mentalSdq || mentalPa
+          ? {
+              done: true,
+              note: [
+                mentalSdq ? `SDQ「${mentalSdq.level}」` : "",
+                mentalPa ? `学生版B「${mentalPa.level}」` : "",
+                mental ? `通用版「${mental.level}」` : "",
+              ]
+                .filter(Boolean)
+                .join(" · "),
+            }
+          : { done: false },
       multi5: multi5
         ? {
             done: true,
@@ -2370,35 +2470,98 @@ export default function ReportView({
         ))}
 
       {tab === "mental" &&
-        (!mental ? (
-          <MissingCard
-            text="心理健康评估为选做（PHQ-9 + GAD-7 专业版，16 题约 3 分钟），关照一下自己的情绪状态。"
-            actionText="还未测评，开始测评 →"
-            to="/assessments?start=mental"
-          />
-        ) : isMentalV2(mental) ? (
+        (!mental && !mentalSdq && !mentalPa ? (
           <div className="space-y-4">
-            <MentalV2Bars mental={mental} />
-            <div className="paper-card p-5">
-              <h3 className="font-bold text-olive">分级解释与建议</h3>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
-                <RichText text={mental.summary} />
-              </p>
-              <p className="mt-2 text-[12.5px] leading-relaxed text-olive-mute">
-                综合分级取 PHQ-9 与 GAD-7 中较重者；得分 ≥2 的题共 {mental.positives}/16 项。两周后可复测对比变化。
-              </p>
+            <MissingCard
+              text="心理健康筛查全部为选做，有三套可挑着做：学生版 A（SDQ 长处与困难问卷，25 题，4—17 岁，11 岁以下可家长陪读）、学生版 B（PHQ-A + GAD-7 学生版，16 题，11 岁以上）、通用版（PHQ-9 + GAD-7，16 题）。做了哪套，结果都会出现在这里和综合报告里。"
+              actionText="去测学生版 A（SDQ）→"
+              to="/assessments?start=mentalsdq"
+            />
+            <div className="flex flex-wrap gap-2">
+              <a href="/assessments?start=mentalpa" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
+                去测学生版 B（PHQ-A，11 岁以上）→
+              </a>
+              <a href="/assessments?start=mental" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
+                去测通用版（PHQ-9 + GAD-7）→
+              </a>
             </div>
           </div>
         ) : (
-          <>
-            <div className="paper-card border-butter bg-butter/20 p-4">
-              <p className="text-[12.5px] leading-relaxed text-olive">
-                你上次完成的是旧版十因子筛查。量表已升级为 <b>PHQ-9 + GAD-7 专业版</b>（三甲医院心理科通用，16 题约 3 分钟）——
-                <button className="font-bold underline" onClick={() => navigate("/assessments?start=mental")}>点这里重新测评 →</button>
-              </p>
-            </div>
-            <MentalDetail result={mental} />
-          </>
+          <div className="space-y-4">
+            {/* 学生版 A（SDQ） */}
+            {mentalSdq ? (
+              <>
+                <MentalSdqBars mental={mentalSdq} />
+                <div className="paper-card p-5">
+                  <h3 className="font-bold text-olive">学生版 A · 分级解释与建议</h3>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
+                    <RichText text={mentalSdq.summary} />
+                  </p>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-olive-mute">一两个月后可复测对比变化。</p>
+                </div>
+              </>
+            ) : (
+              <MissingCard
+                text="学生版 A（SDQ 长处与困难问卷）还没测：25 题约 4 分钟，适用 4—17 岁（11 岁以下可家长陪读）。"
+                actionText="去测学生版 A →"
+                to="/assessments?start=mentalsdq"
+              />
+            )}
+            {/* 学生版 B（PHQ-A + GAD-7 学生化） */}
+            {mentalPa ? (
+              <>
+                <MentalV2Bars mental={mentalPa} variant="pa" />
+                <div className="paper-card p-5">
+                  <h3 className="font-bold text-olive">学生版 B · 分级解释与建议</h3>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
+                    <RichText text={mentalPa.summary} />
+                  </p>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-olive-mute">
+                    综合分级取 PHQ-A 与 GAD-7 中较重者；得分 ≥2 的题共 {mentalPa.positives}/16 项。两周后可复测对比变化。
+                  </p>
+                </div>
+              </>
+            ) : (
+              <MissingCard
+                text="学生版 B（PHQ-A + GAD-7 学生版）还没测：16 题约 3 分钟，适用 11 岁以上。"
+                actionText="去测学生版 B →"
+                to="/assessments?start=mentalpa"
+              />
+            )}
+            {/* 通用版（PHQ-9 + GAD-7，含旧版十因子兼容） */}
+            {mental ? (
+              isMentalV2(mental) ? (
+                <>
+                  <MentalV2Bars mental={mental} />
+                  <div className="paper-card p-5">
+                    <h3 className="font-bold text-olive">通用版 · 分级解释与建议</h3>
+                    <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
+                      <RichText text={mental.summary} />
+                    </p>
+                    <p className="mt-2 text-[12.5px] leading-relaxed text-olive-mute">
+                      综合分级取 PHQ-9 与 GAD-7 中较重者；得分 ≥2 的题共 {mental.positives}/16 项。两周后可复测对比变化。
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="paper-card border-butter bg-butter/20 p-4">
+                    <p className="text-[12.5px] leading-relaxed text-olive">
+                      你上次完成的是旧版十因子筛查（通用版前身）。现在有新版可用：<b>学生版 A（SDQ）</b>、<b>学生版 B（PHQ-A + GAD-7 学生版）</b>或<b>通用版（PHQ-9 + GAD-7）</b>——旧结果保留可查，
+                      <button className="font-bold underline" onClick={() => navigate("/assessments?start=mental")}>点这里测通用版 →</button>
+                    </p>
+                  </div>
+                  <MentalDetail result={mental} />
+                </>
+              )
+            ) : (
+              <MissingCard
+                text="通用版（PHQ-9 + GAD-7）还没测：16 题约 3 分钟。"
+                actionText="去测通用版 →"
+                to="/assessments?start=mental"
+              />
+            )}
+          </div>
         ))}
 
       {tab === "combined" &&
@@ -2462,6 +2625,8 @@ export default function ReportView({
                   anchor={anchor}
                   holland={holland}
                   mental={mental}
+                  mentalSdq={mentalSdq}
+                  mentalPa={mentalPa}
                   raw={data?.raw}
                   onReveal={reveal}
                 />
@@ -2516,6 +2681,8 @@ export default function ReportView({
                     anchor={anchor}
                     holland={holland}
                     mental={mental}
+                    mentalSdq={mentalSdq}
+                    mentalPa={mentalPa}
                     charts={e3v37 ? <NineAbilityRadar e3={e3v37} /> : undefined}
                     raw={data?.raw}
                     onReveal={reveal}
@@ -2537,7 +2704,17 @@ export default function ReportView({
                 ) : undefined;
               } else if (s.title.includes("条件模块")) {
                 /* 亲子 DISC 对照图只放在「亲子对照」章（V38 起），条件章不再重复 */
-                chartNode = mental ? (isMentalV2(mental) ? <MentalV2Bars mental={mental} /> : <MentalBar mental={mental} />) : undefined;
+                chartNode = mentalSdq ? (
+                  <MentalSdqBars mental={mentalSdq} />
+                ) : mentalPa ? (
+                  <MentalV2Bars mental={mentalPa} variant="pa" />
+                ) : mental ? (
+                  isMentalV2(mental) ? (
+                    <MentalV2Bars mental={mental} />
+                  ) : (
+                    <MentalBar mental={mental} />
+                  )
+                ) : undefined;
               } else if (s.title.includes("亲子对照")) {
                 chartNode =
                   disc && discParents.length > 0 ? <DiscParentCompare student={disc} parents={discParents} /> : undefined;

@@ -1,10 +1,16 @@
 /**
  * 心理健康筛查测评题库、计分器与报告文案生成。
  *
- * 【V2 · 现行版】三甲医院心理科通用筛查量表：PHQ-9（抑郁筛查，9 题）
+ * 【V2 · 通用版】国际通用筛查量表：PHQ-9（抑郁筛查，9 题）
  * + GAD-7（焦虑筛查，7 题），共 16 题，四级评分（0=完全不会 / 1=好几天 /
  * 2=超过一半的天数 / 3=几乎天天），引导语「过去两周里，你有多少天受到
  * 以下问题困扰？」。见文件底部 MENTAL_V2_* 与 scoreMental。
+ *
+ * 【V40 · 学生版 A】SDQ 长处与困难问卷学生自评版（25 题 + 1 条安全预警题），
+ * 五维度：情绪/品行/多动注意/同伴交往/亲社会。见 MENTAL_SDQ_* 与 scoreMentalSdq。
+ *
+ * 【V40 · 学生版 B】PHQ-A（青少年抑郁筛查 9 题）+ GAD-7 学生化措辞（7 题），
+ * 共 16 题，四级评分同 V2。见 MENTAL_PA_* 与 scoreMentalPa。
  *
  * 【V1 · 旧版（保留兼容）】SCL-90 式中学生适配版，30 题 10 因子 5 级评分。
  * 旧版类型与计分（scoreMentalLegacy / buildMentalReport 等）全部保留，
@@ -248,7 +254,7 @@ export function buildMentalReport(result: MentalResult): MentalReport {
 }
 
 /* ============================================================================
- * V2 · PHQ-9 + GAD-7 专业筛查版（三甲医院心理科通用）
+ * V2 · PHQ-9 + GAD-7 专业筛查版（国际通用筛查工具）
  * ============================================================================
  * - PHQ-9（Patient Health Questionnaire-9）：抑郁筛查，9 题，总分 0-27；
  * - GAD-7（Generalized Anxiety Disorder-7）：焦虑筛查，7 题，总分 0-21；
@@ -276,7 +282,7 @@ export const MENTAL_V2_OPTIONS = [
 
 /** V2 免责声明（答题末尾与报告必须展示）。 */
 export const MENTAL_V2_DISCLAIMER =
-  "免责声明：本量表为三甲医院常用筛查工具（PHQ-9 / GAD-7），结果仅供筛查参考，不构成医学诊断，也不能替代专业医生或心理咨询师的评估。若得分偏高，或 PHQ-9 第 9 题不是「完全不会」，请尽快告诉家长或老师，必要时前往专业心理/医疗机构评估，或拨打全国心理援助热线 12356。主动求助是勇敢，不是软弱。";
+  "免责声明：本量表为国际通用筛查工具（PHQ-9 / GAD-7），结果仅供筛查参考，不构成医学诊断，也不能替代专业医生或心理咨询师的评估。若得分偏高，或 PHQ-9 第 9 题不是「完全不会」，请尽快告诉家长或老师，必要时前往专业心理/医疗机构评估，或拨打全国心理援助热线 12356。主动求助是勇敢，不是软弱。";
 
 /** PHQ-9 第 9 题（自伤念头）的红线提示（题干下方小字）。 */
 export const MENTAL_V2_ITEM9_NOTICE =
@@ -328,14 +334,14 @@ export const MENTAL_V2_SECTIONS: MentalV2Section[] = [
   {
     key: "phq9",
     title: "第一部分 · PHQ-9 抑郁筛查（9 题）",
-    description: "PHQ-9 是三甲医院心理科常用的抑郁筛查量表，看最近两周情绪与状态方面的困扰。",
+    description: "PHQ-9 是国际通用的抑郁筛查量表，看最近两周情绪与状态方面的困扰。",
     intro: MENTAL_V2_INTRO,
     questions: PHQ9_TEXTS.map((text, i) => ({ no: i + 1, text })),
   },
   {
     key: "gad7",
     title: "第二部分 · GAD-7 焦虑筛查（7 题）",
-    description: "GAD-7 是三甲医院心理科常用的焦虑筛查量表，看最近两周紧张、担忧方面的困扰。",
+    description: "GAD-7 是国际通用的焦虑筛查量表，看最近两周紧张、担忧方面的困扰。",
     intro: MENTAL_V2_INTRO,
     questions: GAD7_TEXTS.map((text, i) => ({ no: i + 10, text })),
   },
@@ -413,3 +419,242 @@ export function isMentalV2(x: unknown): x is MentalV2Result {
   return !!x && typeof x === "object" && (x as { version?: string }).version === "v2";
 }
 
+
+/* ============================================================================
+ * V40 · 学生版 A：SDQ 长处与困难问卷（学生自评版，25 题 + 1 条安全预警题）
+ * ============================================================================
+ * - SDQ（Strengths and Difficulties Questionnaire）是国际通用的儿童青少年
+ *   行为筛查问卷；学生自评版官方适用 11—17 岁，11 岁以下建议家长陪同读题。
+ * - 25 题分五维（每维 5 题）：情绪症状 / 品行问题 / 多动与注意 / 同伴交往 /
+ *   亲社会行为（优势维度，分越高越好，其余四维分越低越好）。
+ * - 三级评分：0=不符合 / 1=有点符合 / 2=完全符合；引导语「过去六个月」。
+ * - 第 7、11、14、21、25 题为反向计分（2 - 原值）。
+ * - 另加第 26 题安全预警题（自伤念头），不计入任何维度，≥1 直接红线。
+ * - 分档（学生自评官方切点）：困难总分（情绪+品行+多动+同伴，0-40）
+ *   0-15 正常 / 16-19 边缘 / 20-40 明显；各维度见 SDQ_BANDS。
+ */
+
+export type SdqDim = "emotion" | "conduct" | "hyper" | "peer" | "prosocial";
+
+export const SDQ_DIM_LABEL: Record<SdqDim, string> = {
+  emotion: "情绪症状",
+  conduct: "品行问题",
+  hyper: "多动与注意",
+  peer: "同伴交往",
+  prosocial: "亲社会行为",
+};
+
+/** SDQ 适用年龄说明（答题页与报告展示）。 */
+export const MENTAL_SDQ_AGE = "适用 4—17 岁：学生自己填写（11 岁以下建议家长陪同读题）";
+
+/** SDQ 作答引导语。 */
+export const MENTAL_SDQ_INTRO = "请根据你过去六个月的实际情况，选择最符合你的一项——没有对错，如实就好。";
+
+/** SDQ 三级选项（分值 0-2）。 */
+export const MENTAL_SDQ_OPTIONS = [
+  { value: 0, label: "不符合" },
+  { value: 1, label: "有点符合" },
+  { value: 2, label: "完全符合" },
+] as const;
+
+export type MentalSdqQuestion = {
+  no: number;
+  text: string;
+  dim?: SdqDim;
+  /** 反向计分（2 - 原值）。 */
+  reverse?: boolean;
+  /** 安全预警题：不计入维度分，≥1 触发红线。 */
+  safety?: boolean;
+};
+
+/** SDQ 学生自评版 25 题（标准条目）+ 第 26 题安全预警题。 */
+export const MENTAL_SDQ_QUESTIONS: MentalSdqQuestion[] = [
+  { no: 1, text: "我尝试对别人友善，我关心别人的感受", dim: "prosocial" },
+  { no: 2, text: "我不能安定下来，不能长时间安静地坐着", dim: "hyper" },
+  { no: 3, text: "我经常头痛、肚子痛或身体不舒服", dim: "emotion" },
+  { no: 4, text: "我常与别人分享东西（食物、玩具、笔等）", dim: "prosocial" },
+  { no: 5, text: "我觉得非常愤怒，常发脾气", dim: "conduct" },
+  { no: 6, text: "我经常独处，通常一个人玩", dim: "peer" },
+  { no: 7, text: "我通常按照吩咐做事", dim: "conduct", reverse: true },
+  { no: 8, text: "我经常担忧，心事重重", dim: "emotion" },
+  { no: 9, text: "如果有人受伤、难过或不舒服，我都乐意帮忙", dim: "prosocial" },
+  { no: 10, text: "我经常坐立不安或感到不耐烦", dim: "hyper" },
+  { no: 11, text: "我有一个或几个好朋友", dim: "peer", reverse: true },
+  { no: 12, text: "我经常与人争执，我能使别人照我的想法做", dim: "conduct" },
+  { no: 13, text: "我经常不快乐、心情沉重或想哭", dim: "emotion" },
+  { no: 14, text: "一般来说，其他和我年纪差不多的人都喜欢我", dim: "peer", reverse: true },
+  { no: 15, text: "我容易分心，觉得难以集中精神", dim: "hyper" },
+  { no: 16, text: "在新的环境中我会紧张，容易失去自信", dim: "emotion" },
+  { no: 17, text: "我会友善地对待比我小的孩子", dim: "prosocial" },
+  { no: 18, text: "我常被指责撒谎或不老实", dim: "conduct" },
+  { no: 19, text: "其他同学或青少年常捉弄或欺负我", dim: "peer" },
+  { no: 20, text: "我常自愿帮助别人（家人、老师、同学）", dim: "prosocial" },
+  { no: 21, text: "我做事前会先想清楚", dim: "hyper", reverse: true },
+  { no: 22, text: "我曾从家里、学校或别处拿过不属于我的东西", dim: "conduct" },
+  { no: 23, text: "我和大人相处，比和同辈相处更融洽", dim: "peer" },
+  { no: 24, text: "我心中有很多恐惧，容易受惊吓", dim: "emotion" },
+  { no: 25, text: "我总能把事情做完，注意力能保持得住", dim: "hyper", reverse: true },
+  { no: 26, text: "我有过「不想活了」或者想伤害自己的念头", safety: true },
+];
+
+export const MENTAL_SDQ_QUESTION_COUNT = MENTAL_SDQ_QUESTIONS.length; // 26
+
+/** SDQ 安全预警题的红线提示（题干下方小字）。 */
+export const MENTAL_SDQ_SAFETY_NOTICE =
+  "如果这题不是「不符合」，请尽快告诉家长或信任的老师，必要时拨打心理援助热线 12356。你不需要一个人扛。";
+
+/** SDQ 维度分档：正常 / 边缘 / 明显（亲社会为优势维度，方向相反）。 */
+export type SdqBand = "正常" | "边缘" | "明显";
+
+const SDQ_BANDS: Record<SdqDim, (v: number) => SdqBand> = {
+  emotion: (v) => (v >= 7 ? "明显" : v >= 6 ? "边缘" : "正常"),
+  conduct: (v) => (v >= 5 ? "明显" : v >= 4 ? "边缘" : "正常"),
+  hyper: (v) => (v >= 7 ? "明显" : v >= 6 ? "边缘" : "正常"),
+  peer: (v) => (v >= 6 ? "明显" : v >= 4 ? "边缘" : "正常"),
+  // 亲社会为优势维度：分低才需要关注
+  prosocial: (v) => (v <= 4 ? "明显" : v === 5 ? "边缘" : "正常"),
+};
+
+export function sdqBand(dim: SdqDim, v: number): SdqBand {
+  return SDQ_BANDS[dim](v);
+}
+
+/** SDQ 计分结果。 */
+export type MentalSdqResult = {
+  version: "sdq";
+  /** 五维度得分（0-10，已做反向计分）。 */
+  dims: Record<SdqDim, number>;
+  /** 五维度分档。 */
+  dimBands: Record<SdqDim, SdqBand>;
+  /** 困难总分（情绪+品行+多动+同伴，0-40；不含亲社会）。 */
+  totalDiff: number;
+  /** 困难总分分档：0-15 正常 / 16-19 边缘 / 20-40 明显。 */
+  totalBand: SdqBand;
+  /** 综合等级（沿用 V2 词表）：良好 / 关注 / 预警 / 高风险。 */
+  level: MentalV2Band;
+  /** 红线：第 26 题（自伤念头）≥1。 */
+  selfHarm: boolean;
+  summary: string;
+};
+
+/** SDQ 计分。answers[i]：第 i+1 题作答（0-2 整数），长度须为 26（最后 1 题为安全预警题，不计分）。 */
+export function scoreMentalSdq(answers: number[]): MentalSdqResult {
+  if (answers.length !== MENTAL_SDQ_QUESTION_COUNT) {
+    throw new Error(`SDQ 测评题数应为 ${MENTAL_SDQ_QUESTION_COUNT}，实际 ${answers.length}`);
+  }
+  answers.forEach((raw, i) => {
+    if (!Number.isInteger(raw) || raw < 0 || raw > 2) {
+      throw new Error(`第 ${i + 1} 题分值应为 0-2，实际 ${raw}`);
+    }
+  });
+  const dims: Record<SdqDim, number> = { emotion: 0, conduct: 0, hyper: 0, peer: 0, prosocial: 0 };
+  MENTAL_SDQ_QUESTIONS.forEach((q, i) => {
+    if (!q.dim) return;
+    dims[q.dim] += q.reverse ? 2 - answers[i] : answers[i];
+  });
+  const totalDiff = dims.emotion + dims.conduct + dims.hyper + dims.peer;
+  const totalBand: SdqBand = totalDiff >= 20 ? "明显" : totalDiff >= 16 ? "边缘" : "正常";
+  const dimBands = Object.fromEntries(
+    (Object.keys(dims) as SdqDim[]).map((k) => [k, sdqBand(k, dims[k])]),
+  ) as Record<SdqDim, SdqBand>;
+  const selfHarm = answers[25] >= 1;
+  const dimIssue = (Object.keys(dims) as SdqDim[]).filter((k) => dimBands[k] !== "正常");
+  const level: MentalV2Band = selfHarm
+    ? "高风险"
+    : totalBand === "明显"
+      ? "预警"
+      : totalBand === "边缘" || dimIssue.length > 0
+        ? "关注"
+        : "良好";
+  const issueText = dimIssue.map((k) => `${SDQ_DIM_LABEL[k]}「${dimBands[k]}」`).join("、");
+  const summary = selfHarm
+    ? "这次问卷中，你在最后一题（「不想活了或想伤害自己」）上的选择需要被认真对待——请一定告诉家长或信任的老师，必要时拨打心理援助热线 12356 或前往专业机构。这不是矫情，是对自己负责。"
+    : level === "良好"
+      ? "过去六个月你的状态总体平稳，亲社会行为（乐于助人、关心别人）是你的闪光点。继续保持规律作息就好。"
+      : level === "关注"
+        ? `过去六个月有些方面需要留意（困难总分 ${totalDiff}/40「${totalBand}」${issueText ? `，${issueText}` : ""}）。先别紧张——这更像「需要休息和照顾」的信号，一两个月后可以再测一次对比。`
+        : `过去六个月的困难信号比较明显（困难总分 ${totalDiff}/40「明显」${issueText ? `，${issueText}` : ""}）。建议把结果告诉家长或老师，找学校心理老师聊一聊，必要时前往专业机构进一步评估。`;
+  return { version: "sdq", dims, dimBands, totalDiff, totalBand, level, selfHarm, summary };
+}
+
+/** 判断是否为 SDQ 学生自评版结果（类型守卫）。 */
+export function isMentalSdq(x: unknown): x is MentalSdqResult {
+  return !!x && typeof x === "object" && (x as { version?: string }).version === "sdq";
+}
+
+/** SDQ 免责声明（答题末尾与报告必须展示）。 */
+export const MENTAL_SDQ_DISCLAIMER =
+  "免责声明：SDQ（长处与困难问卷）是国际通用的儿童青少年行为筛查工具，结果仅供筛查参考，不构成医学诊断，也不能替代专业医生或心理咨询师的评估。若得分偏高，或最后一题不是「不符合」，请尽快告诉家长或老师，必要时前往专业心理/医疗机构评估，或拨打全国心理援助热线 12356。主动求助是勇敢，不是软弱。";
+
+/* ============================================================================
+ * V40 · 学生版 B：PHQ-A（青少年抑郁筛查 9 题）+ GAD-7 学生化措辞（7 题）
+ * ============================================================================
+ * - PHQ-A（Patient Health Questionnaire for Adolescents）是 PHQ-9 的青少年
+ *   版本，国际通用；GAD-7 题干按学生日常语境改写（学习、考试、同伴）。
+ * - 结构、评分、分级与 V2 相同：16 题 0-3 四级评分；PHQ-A 0-27 / GAD-7 0-21；
+ *   0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险；第 9 题（自伤念头）≥1 红线。
+ * - 适用 11 岁以上自评。
+ */
+
+export const MENTAL_PA_QUESTION_COUNT = 16;
+
+/** PHQ-A + GAD-7 学生版适用年龄说明。 */
+export const MENTAL_PA_AGE = "适用 11 岁以上学生自评";
+
+const PHQA_TEXTS = [
+  "做事时提不起劲，或觉得什么都没意思",
+  "感到心情低落、沮丧或绝望",
+  "入睡困难、睡不安稳，或睡得太多",
+  "感觉疲倦，没有活力",
+  "胃口不好，或吃得太多",
+  "觉得自己很糟、很失败，或让家人失望",
+  "很难集中注意力，比如上课、看书或看电视时",
+  "动作或说话慢到别人能察觉；或正好相反——坐不住、动来动去比平时多",
+  "有过「不如死了算了」或想伤害自己的念头",
+];
+
+const GAD7_STUDENT_TEXTS = [
+  "感到紧张、焦虑或着急",
+  "停不下来地担心，或控制不住自己的担心",
+  "对各种各样的事情担心太多（学习、考试、和同学相处等）",
+  "很难放松下来",
+  "坐不住，很难安静地待着",
+  "容易心烦，或爱发脾气",
+  "感到害怕，好像会有什么可怕的事情发生",
+];
+
+/** 学生版 B 题库：两段结构（PHQ-A 九题 + GAD-7 学生化七题），题号全局 1-16。 */
+export const MENTAL_PA_SECTIONS: MentalV2Section[] = [
+  {
+    key: "phq9",
+    title: "第一部分 · PHQ-A 青少年抑郁筛查（9 题）",
+    description: "PHQ-A 是国际通用的青少年抑郁筛查量表（PHQ-9 的青少年版），看最近两周情绪与状态方面的困扰。",
+    intro: MENTAL_V2_INTRO,
+    questions: PHQA_TEXTS.map((text, i) => ({ no: i + 1, text })),
+  },
+  {
+    key: "gad7",
+    title: "第二部分 · GAD-7 焦虑筛查 · 学生版（7 题）",
+    description: "GAD-7 是国际通用的焦虑筛查量表，这里按学生日常语境表述，看最近两周紧张、担忧方面的困扰。",
+    intro: MENTAL_V2_INTRO,
+    questions: GAD7_STUDENT_TEXTS.map((text, i) => ({ no: i + 10, text })),
+  },
+];
+
+/** 学生版 B 计分结果（结构与 V2 相同，版本标记不同）。 */
+export type MentalPaResult = Omit<MentalV2Result, "version"> & { version: "pa" };
+
+/** 学生版 B 计分：复用 V2 算法，version 标记为 "pa"。 */
+export function scoreMentalPa(answers: number[]): MentalPaResult {
+  const r = scoreMental(answers);
+  return { ...r, version: "pa" };
+}
+
+/** 判断是否为 PHQ-A + GAD-7 学生版结果（类型守卫）。 */
+export function isMentalPa(x: unknown): x is MentalPaResult {
+  return !!x && typeof x === "object" && (x as { version?: string }).version === "pa";
+}
+
+/** 学生版 B 免责声明（答题末尾与报告必须展示）。 */
+export const MENTAL_PA_DISCLAIMER =
+  "免责声明：本量表为国际通用筛查工具（PHQ-A / GAD-7），结果仅供筛查参考，不构成医学诊断，也不能替代专业医生或心理咨询师的评估。若得分偏高，或第 9 题不是「完全不会」，请尽快告诉家长或老师，必要时前往专业心理/医疗机构评估，或拨打全国心理援助热线 12356。主动求助是勇敢，不是软弱。";

@@ -87,6 +87,27 @@ function LinkChip({ done, label, onClick }: { done: boolean; label: string; onCl
   );
 }
 
+/** 分数档判定（与 V3.7 全局口径一致）：红 <3.0 卡点；黄 3.0–3.7 待提升；绿 ≥3.8 正常。 */
+export function frameworkScoreLevel(score: number): E3V37Level {
+  if (score < 3.0) return "卡点";
+  if (score < 3.8) return "待提升";
+  return "正常";
+}
+
+/** 系统均分徽标：按分数红黄绿着色，格式「乐学 3.8/5 · 正常」（不再带「学业诊断 ·」前缀）。 */
+function ScoreChip({ name, score }: { name: string; score: number }) {
+  const lv = frameworkScoreLevel(score);
+  const st = E3V37_LEVEL_STYLE[lv];
+  return (
+    <span
+      className="inline-block rounded-full border px-2 py-0.5 text-[10.5px] font-semibold leading-tight"
+      style={{ borderColor: `${st.bar}99`, color: st.text, background: st.bg }}
+    >
+      {name} {score}/5 · {lv}
+    </span>
+  );
+}
+
 /** 二级考察点小 chip：按红黄绿阈值着色（描边 + 浅底）。 */
 function FocusDot({ f }: { f: FrameworkFocus }) {
   const st = E3V37_LEVEL_STYLE[f.level];
@@ -192,11 +213,11 @@ export default function SystemFramework({
               </div>
               {status?.e3 && (
                 <div className="mt-2">
-                  <LinkChip
-                    done={e3Done && score != null}
-                    label={e3Done && score != null ? `学业诊断 · ${t.key} ${score}/5` : "学业诊断 · 未测"}
-                    onClick={!(e3Done && score != null) ? assessE3 : undefined}
-                  />
+                  {e3Done && score != null ? (
+                    <ScoreChip name={t.key} score={score} />
+                  ) : (
+                    <LinkChip done={false} label="学业诊断 · 未测" onClick={assessE3} />
+                  )}
                 </div>
               )}
             </div>
@@ -219,13 +240,12 @@ export default function SystemFramework({
             {/* 条件·支持系统：E3（条件均分）+ 心理健康徽标 */}
             {b.key === "条件" && (status?.e3 || status?.mental) && (
               <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                {status?.e3 && (
-                  <LinkChip
-                    done={e3Done && status.e3.conditionAvg != null}
-                    label={e3Done && status.e3.conditionAvg != null ? `学业诊断 · 条件 ${status.e3.conditionAvg}/5` : "学业诊断 · 未测"}
-                    onClick={!(e3Done && status.e3.conditionAvg != null) ? assessE3 : undefined}
-                  />
-                )}
+                {status?.e3 &&
+                  (e3Done && status.e3.conditionAvg != null ? (
+                    <ScoreChip name="条件" score={status.e3.conditionAvg} />
+                  ) : (
+                    <LinkChip done={false} label="学业诊断 · 未测" onClick={assessE3} />
+                  ))}
                 {status?.mental && (
                   <LinkChip
                     done={status.mental.done}
@@ -238,13 +258,12 @@ export default function SystemFramework({
             {/* 学能·能力系统：E3（学能均分）+ 多元智能五项 + 多元智能八维自评徽标 */}
             {b.key === "学能" && (status?.e3 || status?.multi5 || status?.multi) && (
               <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                {status?.e3 && (
-                  <LinkChip
-                    done={e3Done && status.e3.aptitudeAvg != null}
-                    label={e3Done && status.e3.aptitudeAvg != null ? `学业诊断 · 学能 ${status.e3.aptitudeAvg}/5` : "学业诊断 · 未测"}
-                    onClick={!(e3Done && status.e3.aptitudeAvg != null) ? assessE3 : undefined}
-                  />
-                )}
+                {status?.e3 &&
+                  (e3Done && status.e3.aptitudeAvg != null ? (
+                    <ScoreChip name="学能" score={status.e3.aptitudeAvg} />
+                  ) : (
+                    <LinkChip done={false} label="学业诊断 · 未测" onClick={assessE3} />
+                  ))}
                 {status?.multi5 && (
                   <LinkChip
                     done={status.multi5.done}

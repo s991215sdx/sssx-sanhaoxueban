@@ -29,8 +29,8 @@ import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { HollandResult } from "@contracts/holland";
 import { HOLLAND_LABEL, buildHollandReport } from "@contracts/holland";
-import type { MentalResult, MentalV2Result, MentalV2Band } from "@contracts/mentalHealth";
-import { MENTAL_FACTOR_LABEL, isMentalV2 } from "@contracts/mentalHealth";
+import type { MentalResult, MentalV2Result, MentalV2Band, MentalSdqResult, MentalPaResult } from "@contracts/mentalHealth";
+import { MENTAL_FACTOR_LABEL, isMentalV2, SDQ_DIM_LABEL } from "@contracts/mentalHealth";
 import type {
   CombinedReport,
   CombinedSection,
@@ -436,8 +436,12 @@ export type CombinedReportOptions = {
   multi5?: Multi5Result;
   anchor?: AnchorResult;
   holland?: HollandResult;
-  /** 心理健康：V2（PHQ-9+GAD-7，现行）或旧版 V1 结果（历史数据兼容展示）。 */
+  /** 心理健康：V2 通用版（PHQ-9+GAD-7）或旧版 V1 结果（历史数据兼容展示）。 */
   mental?: MentalResult | MentalV2Result;
+  /** 心理健康 · 学生版 A（SDQ 学生自评）。 */
+  mentalSdq?: MentalSdqResult;
+  /** 心理健康 · 学生版 B（PHQ-A + GAD-7 学生化）。 */
+  mentalPa?: MentalPaResult;
   academics?: AcademicsData;
   /** E3 V3.7 家长卷结果（选做）。 */
   e3parent?: E3V37ParentResult;
@@ -547,12 +551,16 @@ export function buildCombinedReport(
   const mental = opts?.mental;
   const mentalV2 = mental && isMentalV2(mental) ? mental : null;
   const mentalLegacy = mental && !isMentalV2(mental) ? mental : null;
+  const mentalSdq = opts?.mentalSdq ?? null;
+  const mentalPa = opts?.mentalPa ?? null;
+  const mentalTone = (lv: MentalV2Band, selfHarm?: boolean) =>
+    lv === "高风险" || lv === "预警" || selfHarm ? ("red" as const) : lv === "关注" ? ("amber" as const) : ("green" as const);
   if (mentalV2) {
     overviewCards.push({
-      label: "心理健康",
+      label: "心理健康 · 通用版",
       value: `PHQ-9 ${mentalV2.phq9}/27 · GAD-7 ${mentalV2.gad7}/21`,
       note: `分级「${mentalV2.level}」${mentalV2.selfHarm ? " · !!有自伤念头信号，请立即告诉家长/老师或拨打 12356!!" : "（筛查参考，非诊断）"}`,
-      tone: mentalV2.level === "高风险" || mentalV2.level === "预警" || mentalV2.selfHarm ? "red" : mentalV2.level === "关注" ? "amber" : "green",
+      tone: mentalTone(mentalV2.level, mentalV2.selfHarm),
     });
   } else if (mentalLegacy) {
     /* 旧版 V1 结果：量表已升级为 PHQ-9+GAD-7，提示重测 */
@@ -561,6 +569,22 @@ export function buildCombinedReport(
       value: "量表已升级",
       note: "已升级为 PHQ-9 + GAD-7 专业版（16 题），请到测评中心重新测评",
       tone: "amber",
+    });
+  }
+  if (mentalSdq) {
+    overviewCards.push({
+      label: "心理健康 · 学生版 A（SDQ）",
+      value: `困难总分 ${mentalSdq.totalDiff}/40（${mentalSdq.totalBand}）`,
+      note: `分级「${mentalSdq.level}」${mentalSdq.selfHarm ? " · !!有自伤念头信号，请立即告诉家长/老师或拨打 12356!!" : "（筛查参考，非诊断）"}`,
+      tone: mentalTone(mentalSdq.level, mentalSdq.selfHarm),
+    });
+  }
+  if (mentalPa) {
+    overviewCards.push({
+      label: "心理健康 · 学生版 B（PHQ-A）",
+      value: `PHQ-A ${mentalPa.phq9}/27 · GAD-7 ${mentalPa.gad7}/21`,
+      note: `分级「${mentalPa.level}」${mentalPa.selfHarm ? " · !!有自伤念头信号，请立即告诉家长/老师或拨打 12356!!" : "（筛查参考，非诊断）"}`,
+      tone: mentalTone(mentalPa.level, mentalPa.selfHarm),
     });
   }
   const gapSummary = academics ? summarizeGaps(academics) : null;
@@ -619,6 +643,20 @@ export function buildCombinedReport(
     );
   } else if (mentalLegacy && mentalLegacy.positiveFactors.length > 0) {
     belowIce.push(`心理状态：${mentalLegacy.positiveFactors.slice(0, 2).map((f) => MENTAL_FACTOR_LABEL[f]).join("、")}略高（先稳状态再抓学习）`);
+  }
+  if (mentalSdq && mentalSdq.level !== "良好") {
+    belowIce.push(
+      mentalSdq.selfHarm
+        ? `**!!心理状态（SDQ）：困难总分 ${mentalSdq.totalDiff}/40（${mentalSdq.level}），有自伤念头信号——先求助、先陪伴，成绩目标全部让路!!**`
+        : `心理状态（SDQ）：困难总分 ${mentalSdq.totalDiff}/40（${mentalSdq.level}，先稳状态再抓学习）`,
+    );
+  }
+  if (mentalPa && mentalPa.level !== "良好") {
+    belowIce.push(
+      mentalPa.selfHarm
+        ? `**!!心理状态（PHQ-A）：PHQ-A ${mentalPa.phq9}/27 · GAD-7 ${mentalPa.gad7}/21（${mentalPa.level}），有自伤念头信号——先求助、先陪伴，成绩目标全部让路!!**`
+        : `心理状态（PHQ-A）：PHQ-A ${mentalPa.phq9}/27 · GAD-7 ${mentalPa.gad7}/21（${mentalPa.level}，先稳状态再抓学习）`,
+    );
   }
   const roadmapStep2 =
     `**冰山上（看得见的）**：${gapTop3 ? `成绩差距最大的是 ${gapTop3}` : "成绩差距待填写后呈现"}。` +
@@ -780,7 +818,7 @@ export function buildCombinedReport(
   /* 心理健康卡（V33.2）：V2 显示 PHQ-9/GAD-7 分数 + 分级解释 + 建议（selfHarm 醒目求助提示）；旧版 V1 给升级重测卡 */
   const mentalCard: NonNullable<CombinedSection["items"]>[number] | null = mentalV2
     ? {
-        heading: `**心理健康 · PHQ-9 + GAD-7 专业筛查** 「${mentalV2.level}」${mentalV2.selfHarm ? " · !!有自伤念头信号!!" : ""}`,
+        heading: `**心理健康 · 通用版（PHQ-9 + GAD-7）** 「${mentalV2.level}」${mentalV2.selfHarm ? " · !!有自伤念头信号!!" : ""}`,
         level: mentalV2.selfHarm ? "卡点" : mentalV2LevelToCombined(mentalV2.level),
         text:
           `**② 数据分析**：PHQ-9 抑郁筛查 **${mentalV2.phq9}/27 分 · 「${mentalV2.phq9Level}」**；GAD-7 焦虑筛查 **${mentalV2.gad7}/21 分 · 「${mentalV2.gad7Level}」**；综合分级「**${mentalV2.level}**」（取两表较重者）；得分 ≥2 的题共 ${mentalV2.positives}/16 项。分级口径：0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险。\n` +
@@ -788,16 +826,48 @@ export function buildCombinedReport(
             ? `**!!最重要的求助提示!!**：这次筛查中，「有不如死掉或伤害自己的念头」一题不是「完全不会」——请**一定**告诉家长或信任的老师，必要时拨打全国心理援助热线 **12356** 或前往专业心理/医疗机构。这不是矫情，是对自己负责；成绩目标在这件事面前全部让路。\n`
             : "") +
           `**分级解释与建议**：${mentalV2.summary}\n` +
-          `（本量表为三甲医院常用筛查工具，结果仅供筛查参考，不构成医学诊断。）`,
+          `（本量表为国际通用筛查工具，结果仅供筛查参考，不构成医学诊断。）`,
       }
     : mentalLegacy
       ? {
           heading: "**心理健康 · 量表已升级，请重新测评**",
           level: "待提升",
           text:
-            `你上次完成的是旧版心理健康筛查（30 题十因子版，结果为「${mentalLegacy.level}」）。量表已升级为 **PHQ-9 + GAD-7 专业版**（三甲医院心理科通用筛查工具，16 题，约 3 分钟）——旧结果不再解读，请到「测评中心 → 心理健康」重新完成一次，这里会给出 PHQ-9 / GAD-7 的分数与分级解释。`,
+            `你上次完成的是旧版心理健康筛查（30 题十因子版，结果为「${mentalLegacy.level}」）。现在有新版可用：**学生版 A（SDQ 长处与困难问卷，25 题）**、**学生版 B（PHQ-A + GAD-7 学生版，16 题）**或**通用版（PHQ-9 + GAD-7，16 题）**——旧结果保留可查，建议到「测评中心 → 心理健康」补测一套新版，这里会给出分数与分级解释。`,
         }
       : null;
+  /* 学生版 A（SDQ）卡：五维度 + 困难总分 + 分级解释；selfHarm 醒目求助提示 */
+  const sdqCard: NonNullable<CombinedSection["items"]>[number] | null = mentalSdq
+    ? {
+        heading: `**心理健康 · 学生版 A（SDQ 长处与困难问卷）** 「${mentalSdq.level}」${mentalSdq.selfHarm ? " · !!有自伤念头信号!!" : ""}`,
+        level: mentalSdq.selfHarm ? "卡点" : mentalV2LevelToCombined(mentalSdq.level),
+        text:
+          `**② 数据分析**：困难总分 **${mentalSdq.totalDiff}/40 分 · 「${mentalSdq.totalBand}」**（0-15 正常 / 16-19 边缘 / 20-40 明显）；五维度：` +
+          (Object.keys(mentalSdq.dims) as (keyof typeof mentalSdq.dims)[])
+            .map((k) => `${SDQ_DIM_LABEL[k]} ${mentalSdq.dims[k]}/10「${mentalSdq.dimBands[k]}」`)
+            .join("、") +
+          `。亲社会行为为优势维度（分越高越好），其余四维越低越好。\n` +
+          (mentalSdq.selfHarm
+            ? `**!!最重要的求助提示!!**：这次问卷中，最后一题（「不想活了或想伤害自己」）不是「不符合」——请**一定**告诉家长或信任的老师，必要时拨打全国心理援助热线 **12356** 或前往专业心理/医疗机构。这不是矫情，是对自己负责；成绩目标在这件事面前全部让路。\n`
+            : "") +
+          `**分级解释与建议**：${mentalSdq.summary}\n` +
+          `（SDQ 为国际通用的儿童青少年行为筛查工具，结果仅供筛查参考，不构成医学诊断。）`,
+      }
+    : null;
+  /* 学生版 B（PHQ-A + GAD-7 学生化）卡 */
+  const paCard: NonNullable<CombinedSection["items"]>[number] | null = mentalPa
+    ? {
+        heading: `**心理健康 · 学生版 B（PHQ-A + GAD-7 学生版）** 「${mentalPa.level}」${mentalPa.selfHarm ? " · !!有自伤念头信号!!" : ""}`,
+        level: mentalPa.selfHarm ? "卡点" : mentalV2LevelToCombined(mentalPa.level),
+        text:
+          `**② 数据分析**：PHQ-A 青少年抑郁筛查 **${mentalPa.phq9}/27 分 · 「${mentalPa.phq9Level}」**；GAD-7 焦虑筛查（学生版）**${mentalPa.gad7}/21 分 · 「${mentalPa.gad7Level}」**；综合分级「**${mentalPa.level}**」（取两表较重者）；得分 ≥2 的题共 ${mentalPa.positives}/16 项。分级口径：0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险。\n` +
+          (mentalPa.selfHarm
+            ? `**!!最重要的求助提示!!**：这次筛查中，「有不如死掉或伤害自己的念头」一题不是「完全不会」——请**一定**告诉家长或信任的老师，必要时拨打全国心理援助热线 **12356** 或前往专业心理/医疗机构。这不是矫情，是对自己负责；成绩目标在这件事面前全部让路。\n`
+            : "") +
+          `**分级解释与建议**：${mentalPa.summary}\n` +
+          `（本量表为国际通用筛查工具，结果仅供筛查参考，不构成医学诊断。）`,
+      }
+    : null;
   const condViewOf = (keys: string[]) =>
     (e3parent?.condView ?? [])
       .filter((cv) => keys.includes(cv.key))
@@ -825,7 +895,9 @@ export function buildCombinedReport(
           (e3parent && condViewOf(["state"]) ? `。**家长对照**：\n${condViewOf(["state"])}` : ""),
       }),
     },
-    /* 心理健康卡：V2 出 PHQ-9/GAD-7 分数与分级解释；旧版提示升级重测 */
+    /* 心理健康卡：学生版 A（SDQ）/ 学生版 B（PHQ-A）/ 通用版（V2）各出分数与分级解释；旧版提示升级重测 */
+    ...(sdqCard ? [sdqCard] : []),
+    ...(paCard ? [paCard] : []),
     ...(mentalCard ? [mentalCard] : []),
     /* MBTI / DISC 自我认知素材：作为状态分析素材并入状态部分 */
     mbtiStateCard,

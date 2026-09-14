@@ -290,3 +290,31 @@
 
 ### 待做
 - 【v40】Q2 双心理量表：SDQ 学生自评 25 题（4-17 岁，五维+1 条自伤安全预警题沿用红线）+ PHQ-A 9 题/GAD-7 学生化措辞（11+）；两套可分别选做、结果都进报告、各标适用年龄；删全部「三甲医院」措辞改「国际通用筛查工具」（保留 12356 热线：mentalHealth.ts 4 处 + AssessmentCenter mental def + combined.ts mentalCard）；旧 V1(30题)/V2(16题) 兼容+提示重测；kind/版本识别扩展；answerBlocks 适配；测评中心 mental 入口改双量表选择页。
+
+---
+
+## v40（2026-09-14）—— 双心理量表学生版 + 框架图分数徽章
+
+用户需求：新增两套学生版心理量表（SDQ + PHQ-A/GAD-7 学生化），原量表保留改名「通用版」放最后；三套都标（选做），做了就进报告；删「三甲医院」措辞。框架图「学业诊断 ·」徽章去前缀、按分数红黄绿+档位标注。
+
+### 改动
+1. **contracts/mentalHealth.ts**：
+   - 措辞：「三甲医院」全改「国际通用筛查工具」（文件头、MENTAL_V2_DISCLAIMER、两段 description），12356 热线保留。
+   - **学生版 A · SDQ**：`MENTAL_SDQ_QUESTIONS`（标准 SDQ 学生自评 25 题 + 第 26 题安全预警题，0-2 三级评分，反向题 q7/q11/q14/q21/q25）；`scoreMentalSdq` → MentalSdqResult{version:"sdq", dims, dimBands, totalDiff(0-40), totalBand(0-15 正常/16-19 边缘/20+ 明显), level(沿用 V2 词表), selfHarm(末题≥1→高风险)}；`isMentalSdq`、`MENTAL_SDQ_OPTIONS/INTRO/AGE(4—17 岁，11 岁以下家长陪读)/DISCLAIMER/SAFETY_NOTICE`、`SDQ_DIM_LABEL`。
+   - **学生版 B · PHQ-A**：`MENTAL_PA_SECTIONS`（PHQ-A 9 题 + GAD-7 学生化 7 题，题号全局 1-16，复用 V2 选项/引导语/分级）；`scoreMentalPa`（复用 scoreMental 算法，version:"pa"）；`isMentalPa`、`MENTAL_PA_AGE(11 岁以上)`、`MENTAL_PA_DISCLAIMER`。
+2. **api/profileRouter.ts**：kindSchema + mentalsdq/mentalpa；questions 两个新 case（sdq 平铺 questions；pa 复用 V2 options/intro）；submit 两个新 schema（26×0-2 / 16×0-3）与计分分支；latest 增加 mentalSdq/mentalPa 字段（discparent 式 continue 逻辑外用三元判断已存在）；两套均不同步档案、不影响 onboarding。
+3. **DB 迁移 0013_mental_v40_kinds**：assessment_results.kind enum 加 'mentalsdq','mentalpa'（db/schema.ts + db/migrations/0013.sql + meta/_journal.json idx13 + api/migrationsEmbedded.ts 同步）。**发布后需平台跑迁移生效。**
+4. **前端答题**：新建 `MentalSdqQuiz.tsx`（平铺 26 题、0-2 选项、末题红线提示、结果卡五维度+困难总分）；新建 `MentalPaQuiz.tsx`（克隆 MentalQuiz，kind/draft=mentalpa，PHQ-A 文案）；MentalQuiz 改名「通用版」、删三甲医院措辞。
+5. **AssessmentCenter**：TESTS 插入学生版 A（doneOf latest.mentalSdq）、学生版 B（doneOf latest.mentalPa），原 mental 条目改名「心理健康筛查 · 通用版（PHQ-9 + GAD-7）（选做）」放最后；QuizStage 两个新分支。
+6. **报告层**：
+   - ReportView：data 类型加 mentalSdq/mentalPa；**mentalSdq/mentalPa 声明前移到 combined memo 之前（TDZ 修复）**；MentalV2Bars 加 variant="v2"|"pa"；新建 MentalSdqBars；mental tab 重写为三套并列（有结果显示 bars+解释卡，无结果给 MissingCard 直达链接；全空给三入口）；canDownload mental 判三套；框架 status.mental.note 聚合三套分级；冰山 underRows 心理 chips 三套 + AnswersFold kinds 含新两种；条件章 chartNode 优先 SDQ→PA→通用→legacy。
+   - combined.ts：CombinedReportOptions 加 mentalSdq/mentalPa；overviewCards 三张心理卡（学生版A/B/通用版）；belowIce 两套新红线；secCondItems 插入 sdqCard/paCard/mentalCard 三卡（selfHarm 均「卡点」红）。
+   - answerBlocks.ts：mentalsdq（26 题 0-2，安全题标 [安全预警]）与 mentalpa（16 题 0-3）明细块；条件模块 kinds 加两套。
+7. **SystemFramework.tsx**：新增 `frameworkScoreLevel`（<3.0 卡点 / <3.8 待提升 / ≥3.8 正常）+ `ScoreChip`（按档红黄绿）；三阶+条件+学能 5 处已测徽章从 LinkChip「学业诊断 · X n/5」改为 ScoreChip「X n/5 · 档位」，未测仍 LinkChip「学业诊断 · 未测」可点击。
+
+### 验证
+- tsc 基线外无错；build OK；`scripts/smoke-render-v40.tsx`（v37-v39 全量 + v40 增量）全过：SDQ 反向计分手工核对（全 0 → conduct=2/peer=4/hyper=4/total=10）、双红线触发、框架徽章五处文案+去前缀+红色、mental tab 三量表、综合报告三心理卡+明细、「三甲医院」全灭、「国际通用筛查工具」与 12356 保留。
+- BUILD_TAG=v40-2026-09-14。
+
+### 注意
+- 发布前确认平台执行 0013 迁移，否则新两套提交会被 DB enum 拒绝。

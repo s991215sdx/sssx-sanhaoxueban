@@ -8,6 +8,8 @@ import Multi5Quiz from "@/components/companion/Multi5Quiz";
 import AnchorQuiz from "@/components/companion/AnchorQuiz";
 import HollandQuiz from "@/components/companion/HollandQuiz";
 import MentalQuiz from "@/components/companion/MentalQuiz";
+import MentalSdqQuiz from "@/components/companion/MentalSdqQuiz";
+import MentalPaQuiz from "@/components/companion/MentalPaQuiz";
 import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
 import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
@@ -16,7 +18,7 @@ import { isMentalV2 } from "@contracts/mentalHealth";
 import { ClipboardCheck, Sparkles, Target, Compass } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
-type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mental";
+type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental";
 
 type TestDef = {
   kind: TestKind;
@@ -111,16 +113,40 @@ const TESTS: TestDef[] = [
     summary: (l) => (l.holland ? "已生成兴趣代码" : null),
   },
   {
+    kind: "mentalsdq",
+    name: "心理健康 · 学生版 A（SDQ 长处与困难问卷）（选做）",
+    desc: "国际通用儿童青少年行为筛查 · 25 题 + 1 条安全题 · 约 4 分钟 · 学生填写（4—17 岁，11 岁以下可家长陪读） · 选做",
+    required: false,
+    tab: "mental",
+    summary: (l) =>
+      l.mentalSdq
+        ? `困难总分 ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）· 综合「${l.mentalSdq.level}」${l.mentalSdq.selfHarm ? " · 有安全预警信号" : ""}`
+        : null,
+    doneOf: (l) => !!l.mentalSdq,
+  },
+  {
+    kind: "mentalpa",
+    name: "心理健康 · 学生版 B（PHQ-A + GAD-7 学生版）（选做）",
+    desc: "国际通用青少年抑郁/焦虑筛查 · 16 题 · 约 3 分钟 · 适用 11 岁以上 · 选做",
+    required: false,
+    tab: "mental",
+    summary: (l) =>
+      l.mentalPa
+        ? `PHQ-A ${l.mentalPa.phq9}（${l.mentalPa.phq9Level}）· GAD-7 ${l.mentalPa.gad7}（${l.mentalPa.gad7Level}）`
+        : null,
+    doneOf: (l) => !!l.mentalPa,
+  },
+  {
     kind: "mental",
-    name: "心理健康筛查（PHQ-9 + GAD-7 专业量表）",
-    desc: "三甲医院通用筛查量表 · 16 题 · 约 3 分钟 · 选做",
+    name: "心理健康筛查 · 通用版（PHQ-9 + GAD-7）（选做）",
+    desc: "国际通用筛查量表 · 16 题 · 约 3 分钟 · 选做",
     required: false,
     tab: "mental",
     summary: (l) =>
       l.mental
         ? isMentalV2(l.mental)
           ? `PHQ-9 ${l.mental.phq9}（${l.mental.phq9Level}）· GAD-7 ${l.mental.gad7}（${l.mental.gad7Level}）`
-          : "量表已升级为 PHQ-9 + GAD-7 专业版（三甲医院通用筛查），请重新测评"
+          : "旧版量表结果（30 题版）保留可查；建议补测新版（学生版 A / B 或通用版）"
         : null,
   },
 ];
@@ -162,6 +188,8 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   if (kind === "discparent") return <DiscParentQuiz onDone={onDone} />;
   if (kind === "anchor") return <AnchorQuiz onDone={onDone} />;
   if (kind === "holland") return <HollandQuiz onDone={onDone} />;
+  if (kind === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
+  if (kind === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
   return <MentalQuiz onDone={onDone} />;
 }
 

@@ -50,11 +50,21 @@ import {
   scoreMental,
   type MentalResult,
   type MentalV2Result,
+  MENTAL_SDQ_QUESTIONS,
+  MENTAL_SDQ_INTRO,
+  MENTAL_SDQ_OPTIONS,
+  MENTAL_SDQ_QUESTION_COUNT,
+  scoreMentalSdq,
+  type MentalSdqResult,
+  MENTAL_PA_SECTIONS,
+  MENTAL_PA_QUESTION_COUNT,
+  scoreMentalPa,
+  type MentalPaResult,
 } from "@contracts/mentalHealth";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import type { E3V27ParentResult } from "@contracts/e3v27Parent";
 
-const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "discparent"]);
+const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "discparent"]);
 
 /** questions 接口返回：V3.7 学生卷题包。 */
 type E3V37QuestionSet = {
@@ -101,6 +111,22 @@ type MentalQuestionSet = {
   sections: typeof MENTAL_V2_SECTIONS;
 };
 
+/** questions 接口返回：学生版 B（PHQ-A + GAD-7 学生化，结构同 V2）。 */
+type MentalPaQuestionSet = {
+  kind: "mentalpa";
+  intro: string;
+  options: typeof MENTAL_V2_OPTIONS;
+  sections: typeof MENTAL_PA_SECTIONS;
+};
+
+/** questions 接口返回：学生版 A（SDQ 学生自评，25+1 题平铺 + 三级选项）。 */
+type MentalSdqQuestionSet = {
+  kind: "mentalsdq";
+  intro: string;
+  options: typeof MENTAL_SDQ_OPTIONS;
+  questions: typeof MENTAL_SDQ_QUESTIONS;
+};
+
 type AssessmentQuestions =
   | { kind: "mbti"; questions: typeof MBTI_QUESTIONS }
   | { kind: "disc"; groups: typeof DISC_V2_GROUPS }
@@ -111,7 +137,9 @@ type AssessmentQuestions =
   | { kind: "multi5"; questions: Multi5PublicQuestion[] }
   | { kind: "anchor"; ratings: typeof ANCHOR_RATINGS }
   | { kind: "holland"; ratings: typeof HOLLAND_RATINGS }
-  | MentalQuestionSet;
+  | MentalQuestionSet
+  | MentalPaQuestionSet
+  | MentalSdqQuestionSet;
 
 /** submit 接口返回。 */
 type AssessmentSubmitOutcome =
@@ -124,7 +152,9 @@ type AssessmentSubmitOutcome =
   | { kind: "multi5"; result: Multi5Result }
   | { kind: "anchor"; result: AnchorResult }
   | { kind: "holland"; result: HollandResult }
-  | { kind: "mental"; result: MentalV2Result };
+  | { kind: "mental"; result: MentalV2Result }
+  | { kind: "mentalsdq"; result: MentalSdqResult }
+  | { kind: "mentalpa"; result: MentalPaResult };
 
 /** 当前用户的档案；没有则返回 null（前端跳 /welcome）。 */
 async function getProfile(userId: number): Promise<StudentProfile | null> {
@@ -265,8 +295,14 @@ export const assessmentRouter = createRouter({
         case "holland":
           return { kind: "holland", ratings: HOLLAND_RATINGS };
         case "mental":
-          // V2：PHQ-9 + GAD-7 两段式专业量表（三甲医院通用筛查）
+          // 通用版：PHQ-9 + GAD-7 两段式量表（国际通用筛查工具）
           return { kind: "mental", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_V2_SECTIONS };
+        case "mentalpa":
+          // 学生版 B：PHQ-A + GAD-7 学生化措辞（结构同通用版）
+          return { kind: "mentalpa", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_PA_SECTIONS };
+        case "mentalsdq":
+          // 学生版 A：SDQ 学生自评（25 题 + 1 条安全预警题，平铺）
+          return { kind: "mentalsdq", intro: MENTAL_SDQ_INTRO, options: MENTAL_SDQ_OPTIONS, questions: MENTAL_SDQ_QUESTIONS };
         case "e3parent": {
           // V3.7 家长卷：三版一致；studentDone 标记孩子是否已完成 e3 诊断（决定能否生成认知对照）
           const db = getDb();
@@ -363,8 +399,18 @@ export const assessmentRouter = createRouter({
         }),
         z.object({
           kind: z.literal("mental"),
-          // V2：16 题（PHQ-9 九题 + GAD-7 七题），每题 0-3 整数
+          // 通用版：16 题（PHQ-9 九题 + GAD-7 七题），每题 0-3 整数
           answers: z.array(z.number().int().min(0).max(3)).length(MENTAL_V2_QUESTION_COUNT),
+        }),
+        z.object({
+          kind: z.literal("mentalpa"),
+          // 学生版 B：16 题（PHQ-A 九题 + GAD-7 学生化七题），每题 0-3 整数
+          answers: z.array(z.number().int().min(0).max(3)).length(MENTAL_PA_QUESTION_COUNT),
+        }),
+        z.object({
+          kind: z.literal("mentalsdq"),
+          // 学生版 A：SDQ 25 题 + 1 条安全预警题，每题 0-2 整数
+          answers: z.array(z.number().int().min(0).max(2)).length(MENTAL_SDQ_QUESTION_COUNT),
         }),
       ]),
     )
@@ -414,9 +460,17 @@ export const assessmentRouter = createRouter({
         const result: HollandResult = scoreHolland(input.answers);
         outcome = { kind: "holland", result };
       } else if (input.kind === "mental") {
-        // V2：PHQ-9 + GAD-7 计分（0-3 × 16 题）
+        // 通用版：PHQ-9 + GAD-7 计分（0-3 × 16 题）
         const result: MentalV2Result = scoreMental(input.answers);
         outcome = { kind: "mental", result };
+      } else if (input.kind === "mentalpa") {
+        // 学生版 B：PHQ-A + GAD-7 学生化（算法同通用版）
+        const result: MentalPaResult = scoreMentalPa(input.answers);
+        outcome = { kind: "mentalpa", result };
+      } else if (input.kind === "mentalsdq") {
+        // 学生版 A：SDQ 学生自评（0-2 × 26 题，末题为安全预警不计分）
+        const result: MentalSdqResult = scoreMentalSdq(input.answers);
+        outcome = { kind: "mentalsdq", result };
       } else {
         const result: E3V37Result = scoreE3V37(input.answers);
         outcome = { kind: "e3", result };
@@ -447,9 +501,11 @@ export const assessmentRouter = createRouter({
           outcome.kind === "anchor" ||
           outcome.kind === "holland" ||
           outcome.kind === "mental" ||
+          outcome.kind === "mentalsdq" ||
+          outcome.kind === "mentalpa" ||
           outcome.kind === "discparent"
         ) {
-          // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康、家长版 DISC 均为选做，不同步档案字段、不影响 onboarding
+          // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（三套）、家长版 DISC 均为选做，不同步档案字段、不影响 onboarding
         } else {
           await db
             .update(studentProfile)
@@ -491,8 +547,12 @@ export const assessmentRouter = createRouter({
       multi5?: Multi5Result;
       anchor?: AnchorResult;
       holland?: HollandResult;
-      /** 最新一条 mental 结果：V2（PHQ-9+GAD-7）或 V1 legacy（按 result.version==="v2" 区分）。 */
+      /** 最新一条 mental 结果：V2 通用版（PHQ-9+GAD-7）或 V1 legacy（按 result.version==="v2" 区分）。 */
       mental?: MentalV2Result | MentalResult;
+      /** 最新一条 mentalsdq 结果：学生版 A（SDQ 学生自评）。 */
+      mentalSdq?: MentalSdqResult;
+      /** 最新一条 mentalpa 结果：学生版 B（PHQ-A + GAD-7 学生化）。 */
+      mentalPa?: MentalPaResult;
       raw: { kind: string; answers: unknown; createdAt: Date }[];
     } = { raw: [], discParents: [] };
     for (const row of rows) {
@@ -507,8 +567,8 @@ export const assessmentRouter = createRouter({
         latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
         continue;
       }
-      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental";
-      if (latest[key]) continue;
+      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa";
+      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : latest[key]) continue;
       if (key === "e3parent") latest.e3parent = row.result as unknown as E3V37ParentResult | E3V27ParentResult;
       else if (key === "mbti") latest.mbti = row.result as unknown as MbtiResult;
       else if (key === "disc") latest.disc = row.result as unknown as DiscResult;
@@ -517,6 +577,8 @@ export const assessmentRouter = createRouter({
       else if (key === "anchor") latest.anchor = row.result as unknown as AnchorResult;
       else if (key === "holland") latest.holland = row.result as unknown as HollandResult;
       else if (key === "mental") latest.mental = row.result as unknown as MentalV2Result | MentalResult;
+      else if (key === "mentalsdq") latest.mentalSdq = row.result as unknown as MentalSdqResult;
+      else if (key === "mentalpa") latest.mentalPa = row.result as unknown as MentalPaResult;
       else latest.multi = row.result as unknown as MultiResult;
       latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
       if (latest.mbti && latest.disc && latest.e3 && latest.multi && latest.multi5 && latest.anchor && latest.holland && latest.mental) break;

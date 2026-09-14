@@ -34,7 +34,15 @@ import {
 import { MULTI5_QUESTIONS } from "@contracts/multi5";
 import { ANCHOR_RATINGS } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS } from "@contracts/holland";
-import { MENTAL_RATINGS, MENTAL_V2_SECTIONS, MENTAL_V2_OPTIONS, MENTAL_V2_QUESTION_COUNT } from "@contracts/mentalHealth";
+import {
+  MENTAL_RATINGS,
+  MENTAL_V2_SECTIONS,
+  MENTAL_V2_OPTIONS,
+  MENTAL_V2_QUESTION_COUNT,
+  MENTAL_PA_SECTIONS,
+  MENTAL_SDQ_QUESTIONS,
+  MENTAL_SDQ_OPTIONS,
+} from "@contracts/mentalHealth";
 
 export type AnswerRow = { no: number | string; text: string; ans: string; bad?: boolean };
 export type AnswerBlock = { key: string; title: string; note?: string; rows: AnswerRow[] };
@@ -49,7 +57,7 @@ export function answerKindsForSection(title: string, hasAcadSec: boolean): strin
   const modSys = (["乐学", "会学", "善学"] as const).find((k) => title.includes(`${k}模块`));
   if (modSys) return [`e3:${modSys}`];
   if (title.includes("条件模块")) {
-    return ["mental", "e3parent", "discparent", "mbti", "disc", "e3:条件", ...(hasAcadSec ? [] : ["e3:快扫"])];
+    return ["mental", "mentalsdq", "mentalpa", "e3parent", "discparent", "mbti", "disc", "e3:条件", ...(hasAcadSec ? [] : ["e3:快扫"])];
   }
   if (title.includes("亲子对照")) return ["e3parent", "discparent"];
   if (title.includes("成绩现状")) return ["e3:快扫"];
@@ -274,6 +282,35 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
           text: q.text,
           ans: `${a[i] ?? 0} 分`,
           bad: (a[i] ?? 0) <= 2,
+        })),
+      });
+    } else if (r.kind === "mentalpa" && Array.isArray(r.answers)) {
+      /* 学生版 B：PHQ-A（1-9 题）+ GAD-7 学生化（10-16 题），0-3 四级评分 */
+      const a = r.answers as number[];
+      const paQuestions = MENTAL_PA_SECTIONS.flatMap((s) => s.questions);
+      blocks.push({
+        key: "mentalpa",
+        title: `心理健康筛查 · 学生版 B（PHQ-A + GAD-7 学生版）· ${a.length} 题（${date}）`,
+        note: "0=完全不会 / 1=好几天 / 2=超过一半的天数 / 3=几乎天天；红色为 ≥2 分的题（达到中度）。第 9 题不是「完全不会」时请务必告诉家长或老师。",
+        rows: paQuestions.map((q, i) => ({
+          no: q.no,
+          text: `${q.no <= 9 ? "[PHQ-A] " : "[GAD-7] "}${q.text}`,
+          ans: a[i] != null ? `${a[i]} · ${MENTAL_V2_OPTIONS[a[i]]?.label ?? a[i]}` : "未答",
+          bad: (a[i] ?? 0) >= 2,
+        })),
+      });
+    } else if (r.kind === "mentalsdq" && Array.isArray(r.answers)) {
+      /* 学生版 A：SDQ 学生自评 25 题 + 1 条安全预警题，0-2 三级评分 */
+      const a = r.answers as number[];
+      blocks.push({
+        key: "mentalsdq",
+        title: `心理健康筛查 · 学生版 A（SDQ 长处与困难问卷）· ${a.length} 题（${date}）`,
+        note: "0=不符合 / 1=有点符合 / 2=完全符合（过去六个月）；红色为 =2 分的题（完全符合）。第 26 题为安全预警题，不是「不符合」时请务必告诉家长或老师。",
+        rows: MENTAL_SDQ_QUESTIONS.map((q, i) => ({
+          no: q.no,
+          text: `${q.safety ? "[安全预警] " : ""}${q.text}`,
+          ans: a[i] != null ? `${a[i]} · ${MENTAL_SDQ_OPTIONS[a[i]]?.label ?? a[i]}` : "未答",
+          bad: (a[i] ?? 0) >= 2,
         })),
       });
     } else if (r.kind === "mental" && Array.isArray(r.answers)) {

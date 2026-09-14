@@ -189,7 +189,7 @@ export type StudentProfile = typeof studentProfile.$inferSelect;
 export const assessmentResults = mysqlTable("assessment_results", {
   id: serial("id").primaryKey(),
     userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
-  kind: mysqlEnum("kind", ["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "discparent"]).notNull(),
+  kind: mysqlEnum("kind", ["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "discparent"]).notNull(),
   result: json("result").$type<Record<string, unknown>>().notNull(),
   /** 原始作答（题目选项/评分），供伴学师查看答题明细。 */
   answers: json("answers").$type<Record<string, unknown> | number[]>(),
