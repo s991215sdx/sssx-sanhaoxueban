@@ -445,3 +445,11 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - **家长报告 tab 重排**：测了 DISC（parents.length>0）时，① 亲子 DISC 对照（DiscParentCompare + 逐位家长 DiscParentDetail）→ ② 家庭支持与环境观察（家长卷）→ ③ 家长认知对照 → ④ 亲子冲突点清单与改进方案 → ⑤ 答题明细；空态与 MissingCard 同步前移。
 - 冒烟 v46：新增条方向断言（D +100% → left:0%;width:50%；C -100% → left:50%;width:50%；妈妈 I +67% → left:16.5%）+ 家长 tab 排序断言（DISC 对照 < 家长版详版 < 家庭支持 < 认知对照 < 冲突清单）；RENDER_SMOKE_V46_OK。
 - BUILD_TAG v46-2026-09-14。发布顺序提醒：迁移 0013/0014 → v40 → v41 → v46（中间版本可跳过）。
+
+## v47（2026-09-14，git f7f3110 / 版本 5525b43）
+- **反弹区说明卡条件显示**：DiscReboundExplain 改为接收 tendency，仅当任一因子 |倾向度|≥80% 时才渲染；学生详版/家长详版两处调用传 tendency。图上灰带、高低反弹区标签与 ⚠ 提示条不变（本来即条件显示）。
+- **关键词白话解读**：DiscTendencyChart 词阵下方新增「这些关键词怎么读」段落（4 列词=各风格最常用词、高亮 5 词=最贴近平时样子、四型气质一句话对号）；新增 who? 属性区分称呼（学生「你」/家长 label），学生详版与家长详版共用。
+- **管教风格调整**：DiscParentCompare 新增导出 PARENT_DISC_ADJUST（D/I/S/C 各 3 条白话调整点）；对照卡每位家长条下新增「{label}（X 型家长）的管教风格怎么调」清单（家长 tab 与综合详版对照卡同步）；DiscParentDetail 管教建议下新增「三点调整」编号清单。
+- **「顶牛」通俗化**：全站替换为「明显对着干」（DiscParentCompare badge/注释/口径说明、ReportView buildParentChildAnalysis 2 处、combined.ts 综合报告冲突文案）。
+- 冒烟 v47：新增说明卡正反断言（入区显示/无区隐藏且灰带保留）、关键词解读（含家长称呼「最贴近妈妈平时样子的词」）、管教风格调整 3 处、无「顶牛」残留负断言；RENDER_SMOKE_V47_OK。
+- BUILD_TAG v47-2026-09-14。发布顺序提醒：迁移 0013/0014 → v40 → v41 → v47（中间版本可跳过）。
