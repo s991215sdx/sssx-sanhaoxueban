@@ -435,6 +435,73 @@ export function scoreDiscV2(ans: DiscV2Answers, groups: DiscWordGroup[] = DISC_V
   return { primary, dims, summary, version: 2 };
 }
 
+/* --------------------- DISC 双极倾向度口径（V44 统一） --------------------- */
+
+/**
+ * 国际通行 DISC 报告使用「双极倾向度」展示（如：I 倾向度 +86%、S 倾向度 -66%，
+ * 四因子合计恒为 0——这是强迫选择净分的天然性质）。
+ * 倾向度 = 净分 ÷ 24 × 100%（净分 = 最像选中次数 − 最不像选中次数，-24..+24）。
+ * 注：Thomas PPA 等商用系统的常模换算表为商业机密，本口径为国际通行
+ * **原始净分倾向度**，报告统一标注「原始倾向度，未做常模转换」。
+ */
+export type DiscTendency = Record<DiscType, number>;
+
+/** 反弹区阈值（|倾向度| ≥ 80% 进入反弹区，经验性提示阈值，非临床切点）。 */
+export const DISC_REBOUND_PCT = 80;
+
+/** 由 dims（V2：0–24，中性 12；V1：0–12，中性 6）推导双极倾向度（-100..+100，保留整数）。
+ *  V2：(dims−12)/12×100；V1 换算到 0–24 后同式，即 (dims−6)/6×100。 */
+export function discTendencyFromDims(dims: DiscDims, version?: 2): DiscTendency {
+  const neutral = version === 2 ? 12 : 6;
+  const k = version === 2 ? 1 / 12 : 1 / 6;
+  return {
+    D: Math.round((dims.D - neutral) * k * 100),
+    I: Math.round((dims.I - neutral) * k * 100),
+    S: Math.round((dims.S - neutral) * k * 100),
+    C: Math.round((dims.C - neutral) * k * 100),
+  };
+}
+
+/** 由 V2 原始作答直接算净分倾向度（权威口径；与 discTendencyFromDims(dims,2) 结果一致）。 */
+export function discTendencyFromV2(ans: DiscV2Answers, groups: DiscWordGroup[] = DISC_V2_GROUPS): DiscTendency {
+  if (ans.most.length !== groups.length || ans.least.length !== groups.length) {
+    throw new Error(`DISC V2 答案数量应为 ${groups.length} 组`);
+  }
+  const net: DiscDims = { D: 0, I: 0, S: 0, C: 0 };
+  groups.forEach((g, i) => {
+    const m = ans.most[i];
+    const l = ans.least[i];
+    if (m == null || l == null || m < 0 || m > 3 || l < 0 || l > 3 || m === l) {
+      throw new Error(`DISC V2 第 ${i + 1} 组作答无效（最像与最不像须为不同的词）`);
+    }
+    net[g.types[m]] += 1;
+    net[g.types[l]] -= 1;
+  });
+  return { D: Math.round((net.D / 24) * 100), I: Math.round((net.I / 24) * 100), S: Math.round((net.S / 24) * 100), C: Math.round((net.C / 24) * 100) };
+}
+
+/** 行为特征轴双极标签（附件口径）：每因子 + 端与 - 端各是一个行为描述，无好坏。 */
+export const DISC_BIPOLAR: Record<DiscType, { plus: string; minus: string }> = {
+  D: { plus: "掌控", minus: "配合" },
+  I: { plus: "外向", minus: "内向" },
+  S: { plus: "沉稳", minus: "急迫" },
+  C: { plus: "严谨", minus: "灵活" },
+};
+
+/** 程度分档（|倾向度|）：<25 轻微 / <50 中等 / <75 明显 / ≥75 强。 */
+export function discBand(absT: number): "轻微" | "中等" | "明显" | "强" {
+  const a = Math.abs(absT);
+  if (a >= 75) return "强";
+  if (a >= 50) return "明显";
+  if (a >= 25) return "中等";
+  return "轻微";
+}
+
+/** 倾向度展示格式：+50% / -66% / 0%。 */
+export function discTendencyText(t: number): string {
+  return `${t > 0 ? "+" : ""}${Math.round(t)}%`;
+}
+
 /* ----------------------------------- E3 ---------------------------------- */
 /* E3 学业诊断已升级为 V2.7 五维优化版，题库与计分见 ./e3v27。 */
 

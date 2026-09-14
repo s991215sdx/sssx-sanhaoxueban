@@ -19,6 +19,7 @@ import type {
   MbtiResult,
   DiscResult,
 } from "@contracts/assessments";
+import { discTendencyFromDims, discTendencyText } from "@contracts/assessments";
 import type { E3V37Result } from "@contracts/e3v37";
 import type { E3V37ParentResult } from "@contracts/e3v37Parent";
 import type { AcademicsData } from "@contracts/academics";
@@ -500,7 +501,7 @@ export function buildCombinedReport(
     .map((k) => `${k}${mbti.dims[k]}`)
     .join(" ");
   const discScoreText = (["D", "I", "S", "C"] as DiscType[])
-    .map((k) => `${k}${disc.dims[k]}`)
+    .map((k) => `${k}${discTendencyText(discTendencyFromDims(disc.dims, disc.version)[k])}`)
     .join(" ");
   const overviewCards: CombinedOverviewCard[] = [
     {
@@ -512,7 +513,7 @@ export function buildCombinedReport(
     {
       label: "DISC 行为主型",
       value: `${discComboLabel} 型 · ${discReport.name}${discCombo.length > 1 ? `（${discComboAnimals}）` : ""}`,
-      note: `四因子得分：${discScoreText}`,
+      note: `四因子倾向度：${discScoreText}`,
       tone: "green",
     },
     {
@@ -750,8 +751,9 @@ export function buildCombinedReport(
   });
 
   /* ③. MBTI / DISC 自我认知素材卡（作为状态分析素材，并入「条件模块 · 支持系统」章的状态部分） */
+  const discTendency = discTendencyFromDims(disc.dims, disc.version);
   const discDimText = (["D", "I", "S", "C"] as DiscType[])
-    .map((k) => `${k} ${disc.dims[k]} 分`)
+    .map((k) => `${k} ${discTendencyText(discTendency[k])}`)
     .join(" · ");
   const mbtiDimPairs: [string, string][] = [["E", "I"], ["S", "N"], ["T", "F"], ["J", "P"]];
   const mbtiDimText = mbtiDimPairs
@@ -784,21 +786,21 @@ export function buildCombinedReport(
         heading: `**行为素材 · DISC** ${discComboLabel} 型「${discReport.name}」`,
         text:
           (discBlend ? `${discBlend}\n` : "") +
-          `得分：${discDimText}。逐因子解读（按得分从高到低排，越高越明显）：\n` +
-          (Object.entries(disc.dims) as [DiscType, number][])
+          `倾向度：${discDimText}。逐因子解读（按倾向度从高到低排，越高越明显）：\n` +
+          (Object.entries(discTendency) as [DiscType, number][])
             .sort((a, b) => b[1] - a[1])
-            .map(([k, v], i) => {
+            .map(([k, t], i) => {
               const short = DISC_ANIMAL[k].split("（")[0];
               const inCombo = discCombo.includes(k);
               const rank = i === 0 ? "主导，最明显" : inCombo ? "组合成员，同样明显" : i === 3 ? "最弱，不典型" : "不典型";
               const meaning = inCombo ? DISC_FACTOR_MEANING[k].high : DISC_FACTOR_MEANING[k].low;
-              return `· **${k}（${short}）${v} 分** · ${rank}：${meaning}`;
+              return `· **${k}（${short}）${discTendencyText(t)}** · ${rank}：${meaning}`;
             })
             .join("\n") +
           `\n**优点**：${discReport.name}的你，${discReport.keywords.slice(0, 4).join("、")}——这些特质让你在校园里有自己的节奏和位置。\n` +
           `**!!可能的卡点!!**：${discReport.obstacles[0]}\n` +
           `\n**① 这是什么 · 行为画像**：${discReport.headline}。${discReport.overview}\n` +
-          `**② 数据分析**：四因子得分 ${discDimText}（单因子满分 12）；主型 ${discComboLabel} 型，即「${discReport.name}」——${discReport.keywords.slice(0, 5).join("、")}。\n` +
+          `**② 数据分析**：四因子倾向度 ${discDimText}（-100%…+100%，合计恒为 0，原始倾向度未做常模转换）；主型 ${discComboLabel} 型，即「${discReport.name}」——${discReport.keywords.slice(0, 5).join("、")}。\n` +
           `**③ 详细建议 · 可能阻碍你的行为（逐个自查）**：\n${discReport.obstacles.map((t) => `· ${t}`).join("\n")}\n` +
           `**你需要的支持**（可转给家长/老师）：\n${discReport.supports.slice(0, 4).map((t) => `· ${t}`).join("\n")}\n` +
           `**沟通方式**：${discReport.communicationTips.map((t) => t.replace(/。+$/, "")).join("；")}。`,
@@ -966,8 +968,8 @@ export function buildCombinedReport(
       }),
     },
   ];
-  /* DISC 量尺归一：V2 新版原生 0–24；V1 旧版 0–12 ×2，亲子对照同尺可比 */
-  const discNorm = (r: DiscResult, k: DiscType) => (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
+  /* DISC 统一双极倾向度口径（-100…+100）：V2 净分÷24×100%；V1 旧版二选一换算，亲子对照同尺可比 */
+  const discNorm = (r: DiscResult, k: DiscType) => discTendencyFromDims(r.dims, r.version)[k];
   /* 亲子 DISC 对照卡已整体迁入「亲子对照与沟通建议」章（V38），条件章不再重复展示 */
   if (e3.redFlags.length > 0) {
     secCondItems.push({
@@ -1014,11 +1016,11 @@ export function buildCombinedReport(
         k,
         abs: Math.abs(discNorm(disc, k) - discNorm(p.result, k)),
       }));
-      const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+      const strong = deltas.filter((x) => x.abs >= 50).sort((a, b) => b.abs - a.abs);
       conflicts.push(
         strong.length > 0
-          ? `**${p.label}（${pp} 型）× 你（${d} 型）· DISC 频道冲突**：${strong.map((x) => `${x.k} 维差 ${x.abs} 分`).join("、")}（0–24 量尺，≥6 为强烈冲突）——${DISC_CONFLICT[pp][d]}。`
-          : `${p.label}（${pp} 型）× 你（${d} 型）：DISC 四维度差值均在安全区（最大 ${Math.max(...deltas.map((x) => x.abs))} 分），行为频道总体接近；仍需留意——${DISC_CONFLICT[pp][d]}。`,
+          ? `**${p.label}（${pp} 型）× 你（${d} 型）· DISC 频道冲突**：${strong.map((x) => `${x.k} 维倾向度差 ${Math.round(x.abs)}%`).join("、")}（-100%…+100% 倾向度口径，差 ≥50% 为明显顶牛）——${DISC_CONFLICT[pp][d]}。`
+          : `${p.label}（${pp} 型）× 你（${d} 型）：DISC 四维度倾向度差均在安全区（最大 ${Math.round(Math.max(...deltas.map((x) => x.abs)))}%），行为频道总体接近；仍需留意——${DISC_CONFLICT[pp][d]}。`,
       );
     }
     if (disc) {

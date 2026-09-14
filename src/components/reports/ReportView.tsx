@@ -6,12 +6,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { MBTI_REPORTS, DISC_REPORTS, DISC_THEORY, buildCombinedReport, getDiscCombo, buildDiscComboBlend, DISC_ANIMAL } from "@/data/reports";
+import { MBTI_REPORTS, DISC_REPORTS, buildCombinedReport, getDiscCombo, buildDiscComboBlend, DISC_ANIMAL } from "@/data/reports";
 import { buildE3Report } from "@/data/reports/combined";
 import ProfileCard from "@/components/companion/ProfileCard";
 import AcademicsForm from "@/components/companion/AcademicsForm";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
+import { DISC_BIPOLAR, DISC_REBOUND_PCT, discBand, discTendencyFromDims, discTendencyText } from "@contracts/assessments";
 import {
   isE3V37Result,
   E3V37_RATING_COUNT,
@@ -526,7 +527,7 @@ function RoadmapSection({
         <>
           <Chip label={`${discCombo.join("")} 型 · ${DISC_REPORTS[disc.primary as "D"|"I"|"S"|"C"]?.name ?? ""}`} trait />
           {(["D", "I", "S", "C"] as const).map((k) => (
-            <Chip key={k} label={`${k} ${disc.dims[k]}`} trait={discCombo.includes(k)} />
+            <Chip key={k} label={`${k} ${discTendencyText(discTendencyFromDims(disc.dims, disc.version)[k])}`} trait={discCombo.includes(k)} />
           ))}
           <AnswersFold kinds={["disc"]} />
         </>
@@ -1055,6 +1056,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
   const report = DISC_REPORTS[primary];
   const combo = getDiscCombo(dims);
   const blend = buildDiscComboBlend(combo);
+  const tendency = discTendencyFromDims(dims, version);
   return (
     <div className="space-y-4">
       {/* 主型头卡 */}
@@ -1087,36 +1089,62 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
             </p>
           </div>
         )}
-        <div className="mt-4 space-y-2.5">
-          {(["D", "I", "S", "C"] as const).map((k) => {
-            const isMain = k === primary;
-            return (
-              <div key={k} className="flex items-center gap-3">
-                <span className={`w-16 shrink-0 text-[13px] ${isMain ? "font-bold text-olive" : "text-olive-mute"}`}>
-                  {k} · {DISC_THEORY.find((t) => t.type === k)?.name}
-                </span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
-                  <div
-                    className={`h-full rounded-full ${isMain ? "bg-lime" : "bg-lime/40"}`}
-                    style={{ width: `${Math.min(100, (dims[k] / 24) * 100)}%` }}
-                  />
+        {/* 行为特征轴（双极倾向度，与下方竖线图为同一份分数） */}
+        <div className="mt-4">
+          <div className="text-[12.5px] font-bold text-olive">行为特征轴 · 双极倾向度</div>
+          <div className="mt-2 space-y-2.5">
+            {(["D", "I", "S", "C"] as const).map((k) => {
+              const t = tendency[k];
+              const isMain = k === primary;
+              return (
+                <div key={k} className="flex items-center gap-2">
+                  <span className={`w-[64px] shrink-0 text-right text-[12px] ${t > 0 ? "font-bold text-olive" : "text-olive-mute/70"}`}>
+                    {DISC_BIPOLAR[k].plus} {k}+
+                  </span>
+                  <div className="relative h-3 flex-1 rounded-full bg-cream-deep">
+                    <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
+                    <div
+                      className="absolute top-0 h-full rounded-full"
+                      style={{
+                        left: t < 0 ? `${50 + t / 2}%` : "50%",
+                        width: `${Math.abs(t) / 2}%`,
+                        background: DISC_COLOR[k],
+                        opacity: isMain ? 1 : 0.7,
+                      }}
+                    />
+                  </div>
+                  <span className={`w-[64px] shrink-0 text-[12px] ${t < 0 ? "font-bold text-olive" : "text-olive-mute/70"}`}>
+                    {k}- {DISC_BIPOLAR[k].minus}
+                  </span>
+                  <span className="mono w-[86px] shrink-0 text-right text-[12px] text-olive-soft">
+                    {discTendencyText(t)} · {discBand(t)}
+                  </span>
                 </div>
-                <span className="mono w-6 text-right text-[12.5px] text-olive-soft">{dims[k]} 分</span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <div className="mt-1 flex justify-between px-[72px] text-[10.5px] text-olive-mute">
+            <span>强</span>
+            <span>明显</span>
+            <span>中等</span>
+            <span>轻微</span>
+            <span>中等</span>
+            <span>明显</span>
+            <span>强</span>
+          </div>
         </div>
-        {/* 四因子竖线折线图（与上方条形图为同一份分数：净分 0—24 量尺） */}
+        {/* 四因子双极倾向度图（与上方行为特征轴为同一份分数） */}
         <div className="mt-4 -mx-5">
-          <DiscTendencyChart dims={dims} max={version === 2 ? 24 : 12} />
+          <DiscTendencyChart dims={dims} version={version} />
         </div>
         {/* 反弹区说明卡 */}
         <div className="mt-4 rounded-xl border border-border bg-cream/70 px-4 py-3">
-          <div className="text-[12.5px] font-bold text-olive">灰色「反弹区」怎么看</div>
+          <div className="text-[12.5px] font-bold text-olive">上下两个灰色「反弹区」怎么看</div>
           <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">
-            每个行为因子都有一个「甜蜜区间」。得分进入灰色反弹区（量表 80% 以上）说明这个特质被拉到了极端——物极必反，行为有时会反过来走向它的背面：
+            每个行为因子都有一个「甜蜜区间」。倾向度进入顶部高反弹区（≥+80%），说明这个特质被拉到了极端——物极必反：
             D 的果敢可能变成专断、I 的热情可能变成浮躁、S 的沉稳可能变成僵化、C 的严谨可能变成挑剔。
-            反弹区不是缺点，是「用力过猛」的提醒：强项保留，力度收一收，反而更稳。
+            而跌入底部低反弹区（≤-80%），说明它的对立面（配合/内向/急迫/灵活）走到了极端——长期压着这一面，消耗大，同样可能以反面形式反弹。
+            反弹区不是缺点，是「用力过猛」或「压得太狠」的提醒：强项留三分力，弱项不必硬藏，反而更稳。
           </p>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -1244,10 +1272,10 @@ function buildParentChildAnalysis(
         k,
         abs: Math.abs(discNv(student, k) - discNv(p.result, k)),
       }));
-      const strong = deltas.filter((x) => x.abs >= 6).sort((a, b) => b.abs - a.abs);
+      const strong = deltas.filter((x) => x.abs >= 50).sort((a, b) => b.abs - a.abs);
       if (strong.length > 0) {
         conflicts.push({
-          text: `${p.label} × 孩子在「${strong.map((x) => `${x.k}（${DISC_DIM_PLAIN[x.k]}）`).join("、")}」上明显顶牛（差 ${strong.map((x) => x.abs).join("、")} 分，差 6 分以上就算明显）——${style.risk[student.primary]}。`,
+          text: `${p.label} × 孩子在「${strong.map((x) => `${x.k}（${DISC_DIM_PLAIN[x.k]}）`).join("、")}」上明显顶牛（倾向度差 ${strong.map((x) => `${Math.round(x.abs)}%`).join("、")}，差 50% 以上就算明显）——${style.risk[student.primary]}。`,
           hot: true,
         });
       } else {
@@ -1282,9 +1310,9 @@ function buildParentChildAnalysis(
   return { conflicts, tips };
 }
 
-/** DISC 量尺归一（0–24）：V2 原值，V1 ×2。 */
+/** DISC 统一双极倾向度（-100…+100）：V2 净分口径，V1 旧版换算。 */
 function discNv(r: DiscResult, k: "D" | "I" | "S" | "C"): number {
-  return (r.dims[k] ?? 0) * (r.version === 2 ? 1 : 2);
+  return discTendencyFromDims(r.dims, r.version)[k];
 }
 
 /**
@@ -1492,22 +1520,27 @@ function ParentReportTab({
               )}
             </div>
             <div className="mt-3 space-y-1.5">
-              {(["D", "I", "S", "C"] as const).map((k) => (
-                <div key={k} className="flex items-center gap-2">
-                  <span className={`w-10 shrink-0 text-[12px] ${combo.includes(k) ? "font-bold text-olive" : "text-olive-mute"}`}>{k}</span>
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.min(100, (p.result.dims[k] / (p.result.version === 2 ? 24 : 12)) * 100)}%`,
-                        background: combo.includes(k) ? "#c7a23a" : "#7cb83c",
-                        opacity: combo.includes(k) ? 1 : 0.5,
-                      }}
-                    />
+              {(["D", "I", "S", "C"] as const).map((k) => {
+                const t = discTendencyFromDims(p.result.dims, p.result.version)[k];
+                return (
+                  <div key={k} className="flex items-center gap-2">
+                    <span className={`w-10 shrink-0 text-[12px] ${combo.includes(k) ? "font-bold text-olive" : "text-olive-mute"}`}>{k}</span>
+                    <div className="relative h-2.5 flex-1 rounded-full bg-cream-deep">
+                      <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
+                      <div
+                        className="absolute top-0 h-full rounded-full"
+                        style={{
+                          left: t < 0 ? `${50 + t / 2}%` : "50%",
+                          width: `${Math.abs(t) / 2}%`,
+                          background: combo.includes(k) ? "#c7a23a" : "#7cb83c",
+                          opacity: combo.includes(k) ? 1 : 0.55,
+                        }}
+                      />
+                    </div>
+                    <span className="mono w-11 shrink-0 text-right text-[12px] text-olive-soft">{discTendencyText(t)}</span>
                   </div>
-                  <span className="mono w-5 shrink-0 text-right text-[12px] text-olive-soft">{p.result.dims[k]}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-3 space-y-2 text-[13px] leading-relaxed text-olive-soft">
               <p>
@@ -1653,76 +1686,102 @@ const DISC_COLOR: Record<"D" | "I" | "S" | "C", string> = {
   S: "#4e9e5f",
   C: "#3d8ec4",
 };
-/** 因子进入反弹区（得分 ≥ 量表 80%）时的「物极必反」提示。 */
-const DISC_REBOUND_HINT: Record<"D" | "I" | "S" | "C", string> = {
+/** 因子进入高反弹区（倾向度 ≥ +80%）时的「物极必反」提示。 */
+const DISC_REBOUND_HIGH: Record<"D" | "I" | "S" | "C", string> = {
   D: "果敢可能反成专断",
   I: "热情可能反成浮躁",
   S: "沉稳可能反成僵化",
   C: "严谨可能反成挑剔",
 };
+/** 因子进入低反弹区（倾向度 ≤ -80%）时的提示：对立面行为走到极端，同样可能反噬。 */
+const DISC_REBOUND_LOW: Record<"D" | "I" | "S" | "C", string> = {
+  D: "过度配合到失去主见，积压后可能突然激烈顶撞",
+  I: "过度内向到自我封闭，可能以情绪爆发的方式反弹",
+  S: "持续急迫到焦躁难安，可能反而把事情做乱",
+  C: "过度灵活到散漫无章，关键时刻可能掉链子",
+};
 
 /**
- * DISC 四因子竖线折线图（对标专业 DISC 报告样式）：
- * D/I/S/C 四条竖线、落点连线、顶部灰色「反弹区」（≥80%，物极必反）、底部类型标签。
- * V2 用户可分别渲染 MOST（校园中的我）/ LEAST（被压在身后的我）两张图。
+ * DISC 四因子双极倾向度图（国际通行口径，对标专业 DISC 报告样式）：
+ * Y 轴 -100%…+100% 倾向度（净分÷24），中线 0% 加粗；顶部「高反弹区」（≥+80%）
+ * 与底部「低反弹区」（≤-80%）双灰色带；D/I/S/C 四条竖线、落点连线、底部类型标签。
  */
 function DiscTendencyChart({
   dims,
-  max = 12,
+  version,
   title,
   note,
 }: {
   dims: Record<"D" | "I" | "S" | "C", number>;
-  max?: number;
+  version?: 2;
   title?: string;
   note?: string;
 }) {
   const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
   const combo = getDiscCombo(dims);
-  const MAX = max; // 单维量尺：V1 旧版 12；V2 新版 24
-  const REBOUND = 0.8; // 反弹区：得分进入量表 80% 以上的极端高区
+  const tendency = discTendencyFromDims(dims, version);
   const W = 460;
-  const H = 235;
+  const H = 268;
   const PAD_X = 56;
-  const TOP = 42;
-  const BOTTOM = 38;
+  const TOP = 44;
+  const BOTTOM = 40;
   const plotH = H - TOP - BOTTOM;
   const xs = keys.map((_, i) => PAD_X + (i * (W - PAD_X * 2)) / 3);
-  const yOf = (v: number) => TOP + plotH - (v / MAX) * plotH;
-  const reboundY = yOf(MAX * REBOUND);
-  const reboundDims = keys.filter((k) => (dims[k] ?? 0) >= MAX * REBOUND);
+  /** t ∈ [-100, +100] → y 坐标（+100 在顶）。 */
+  const yOf = (t: number) => TOP + (plotH * (100 - t)) / 200;
+  const highY = yOf(DISC_REBOUND_PCT);
+  const lowY = yOf(-DISC_REBOUND_PCT);
+  const reboundHighDims = keys.filter((k) => tendency[k] >= DISC_REBOUND_PCT);
+  const reboundLowDims = keys.filter((k) => tendency[k] <= -DISC_REBOUND_PCT);
   const primaryReport = DISC_REPORTS[combo[0]];
+  const PLOT_L = PAD_X - 34;
+  const PLOT_R = W - PAD_X + 34;
   return (
     <div className="paper-card p-5">
-      <h3 className="font-bold text-olive">{title ?? "行为之镜 · DISC 四因子倾向"}</h3>
+      <h3 className="font-bold text-olive">{title ?? "行为之镜 · DISC 四因子倾向度"}</h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
         {note ??
-          (MAX === 24
-            ? "得分口径：该因子被「最像我」选中的次数 −「最不像我」选中的次数，归一到 0—24 量尺（12 分为中性，与上方条形图为同一份分数）。落点越高，该行为因子越明显。顶部灰色区域是「反弹区」——得分进入极端高区时物极必反，行为可能走向该因子的反面。"
-            : "落点越高，该行为因子越明显；彩色徽章为主因子组合。顶部灰色区域是「反弹区」——得分进入极端高区时物极必反，行为可能走向该因子的反面。")}
+          `得分口径（国际通行净分倾向度）：该因子被「最像我」选中的次数 −「最不像我」选中的次数，÷24 换算为 -100%…+100% 倾向度，四因子合计恒为 0；与上方行为特征轴为同一份分数（原始倾向度，未做常模转换${version === 2 ? "" : "；旧版 12 题二选一作答换算"}）。中线 0% 为中性；顶部与底部灰色区域都是「反弹区」——倾向走入极端时物极必反。`}
       </p>
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="DISC 四因子竖线图">
-        {/* 反弹区灰带（全图顶部贯通） */}
-        <rect x={PAD_X - 34} y={TOP} width={W - (PAD_X - 34) * 2} height={Math.max(0, reboundY - TOP)} rx={8} fill="#6b7280" opacity={0.15} />
-        <text x={W - PAD_X + 30} y={TOP + 13} fontSize={10.5} fill="#6b7280" textAnchor="end">
-          反弹区 ≥{Math.round(REBOUND * 100)}%
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="DISC 四因子双极倾向度图">
+        {/* 高反弹区灰带（+80%…+100%） */}
+        <rect x={PLOT_L} y={TOP} width={PLOT_R - PLOT_L} height={Math.max(0, highY - TOP)} rx={6} fill="#6b7280" opacity={0.15} />
+        <text x={PLOT_R - 4} y={TOP + 12} fontSize={10} fill="#6b7280" textAnchor="end">
+          高反弹区 ≥+{DISC_REBOUND_PCT}%
         </text>
-        <line x1={PAD_X - 34} y1={reboundY} x2={W - PAD_X + 34} y2={reboundY} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
-        {/* 中线（50%）参考 */}
-        <line x1={PAD_X - 34} y1={yOf(MAX / 2)} x2={W - PAD_X + 34} y2={yOf(MAX / 2)} stroke="#a8b08c" strokeWidth={0.8} strokeDasharray="2 4" opacity={0.7} />
+        <line x1={PLOT_L} y1={highY} x2={PLOT_R} y2={highY} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+        {/* 低反弹区灰带（-80%…-100%） */}
+        <rect x={PLOT_L} y={lowY} width={PLOT_R - PLOT_L} height={Math.max(0, TOP + plotH - lowY)} rx={6} fill="#6b7280" opacity={0.15} />
+        <text x={PLOT_R - 4} y={TOP + plotH - 5} fontSize={10} fill="#6b7280" textAnchor="end">
+          低反弹区 ≤-{DISC_REBOUND_PCT}%
+        </text>
+        <line x1={PLOT_L} y1={lowY} x2={PLOT_R} y2={lowY} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+        {/* 分段刻度线（每 25%，中线 0% 加粗带箭头） */}
+        {[-75, -50, -25, 25, 50, 75].map((t) => (
+          <line key={`seg-${t}`} x1={PLOT_L} y1={yOf(t)} x2={PLOT_R} y2={yOf(t)} stroke="#a8b08c" strokeWidth={Math.abs(t) === 50 ? 0.9 : 0.6} strokeDasharray={Math.abs(t) === 50 ? "none" : "2 4"} opacity={0.45} />
+        ))}
+        <line x1={PLOT_L} y1={yOf(0)} x2={PLOT_R} y2={yOf(0)} stroke="#8a9464" strokeWidth={1.6} opacity={0.85} />
+        <polygon points={`${PLOT_L - 6},${yOf(0)} ${PLOT_L},${yOf(0) - 4} ${PLOT_L},${yOf(0) + 4}`} fill="#8a9464" opacity={0.85} />
+        <polygon points={`${PLOT_R + 6},${yOf(0)} ${PLOT_R},${yOf(0) - 4} ${PLOT_R},${yOf(0) + 4}`} fill="#8a9464" opacity={0.85} />
+        {/* 左侧刻度标签 */}
+        {[100, 50, 0, -50, -100].map((t) => (
+          <text key={`tick-${t}`} x={PLOT_L - 8} y={yOf(t) + 3.5} fontSize={9.5} fill="#8a9464" textAnchor="end">
+            {t > 0 ? `+${t}` : t}%
+          </text>
+        ))}
         {/* 竖线 */}
         {keys.map((k, i) => (
           <line key={`line-${k}`} x1={xs[i]} y1={TOP} x2={xs[i]} y2={TOP + plotH} stroke={DISC_COLOR[k]} strokeWidth={3} opacity={0.28} strokeLinecap="round" />
         ))}
         {/* 底部基线 */}
-        <line x1={PAD_X - 34} y1={TOP + plotH} x2={W - PAD_X + 34} y2={TOP + plotH} stroke="#a8b08c" strokeWidth={1} />
+        <line x1={PLOT_L} y1={TOP + plotH} x2={PLOT_R} y2={TOP + plotH} stroke="#a8b08c" strokeWidth={1} />
         {/* 顶部维度徽章 */}
         {keys.map((k, i) => {
           const inCombo = combo.includes(k);
           return (
             <g key={`badge-${k}`} opacity={inCombo ? 1 : 0.55}>
-              <rect x={xs[i] - 21} y={TOP - 30} width={42} height={20} rx={6} fill={DISC_COLOR[k]} />
-              <text x={xs[i]} y={TOP - 16} fontSize={11.5} fontWeight={700} fill="#ffffff" textAnchor="middle">
+              <rect x={xs[i] - 21} y={TOP - 32} width={42} height={20} rx={6} fill={DISC_COLOR[k]} />
+              <text x={xs[i]} y={TOP - 18} fontSize={11.5} fontWeight={700} fill="#ffffff" textAnchor="middle">
                 {k}
               </text>
             </g>
@@ -1730,7 +1789,7 @@ function DiscTendencyChart({
         })}
         {/* 落点连线 */}
         <polyline
-          points={keys.map((k, i) => `${xs[i]},${yOf(dims[k] ?? 0)}`).join(" ")}
+          points={keys.map((k, i) => `${xs[i]},${yOf(tendency[k])}`).join(" ")}
           fill="none"
           stroke="#556339"
           strokeWidth={2}
@@ -1738,16 +1797,17 @@ function DiscTendencyChart({
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-        {/* 落点 */}
+        {/* 落点 + 倾向度标签 */}
         {keys.map((k, i) => {
-          const v = dims[k] ?? 0;
-          const inRebound = v >= MAX * REBOUND;
+          const t = tendency[k];
+          const inRebound = Math.abs(t) >= DISC_REBOUND_PCT;
+          const y = yOf(t);
           return (
             <g key={`dot-${k}`}>
-              <circle cx={xs[i]} cy={yOf(v)} r={11} fill={inRebound ? "#6b7280" : "none"} opacity={inRebound ? 0.25 : 0} />
-              <circle cx={xs[i]} cy={yOf(v)} r={7} fill={DISC_COLOR[k]} stroke="#ffffff" strokeWidth={2.5} />
-              <text x={xs[i]} y={yOf(v) + (yOf(v) > TOP + 24 ? -12 : 22)} fontSize={11} fontWeight={700} fill={DISC_COLOR[k]} textAnchor="middle">
-                {v}
+              <circle cx={xs[i]} cy={y} r={11} fill={inRebound ? "#6b7280" : "none"} opacity={inRebound ? 0.3 : 0} />
+              <circle cx={xs[i]} cy={y} r={7} fill={DISC_COLOR[k]} stroke="#ffffff" strokeWidth={2.5} />
+              <text x={xs[i]} y={y + (y > TOP + 26 ? -12 : 22)} fontSize={10.5} fontWeight={700} fill={DISC_COLOR[k]} textAnchor="middle">
+                {discTendencyText(t)}
               </text>
             </g>
           );
@@ -1757,9 +1817,14 @@ function DiscTendencyChart({
       <div className="mx-auto -mt-1 w-fit rounded-lg border border-border bg-cream px-4 py-1 text-[13px] font-bold text-olive">
         {combo.join("")} 型{primaryReport ? `（${primaryReport.name}）` : ""}
       </div>
-      {reboundDims.length > 0 && (
+      {reboundHighDims.length > 0 && (
         <p className="mt-2 rounded-lg bg-[#6b7280]/10 px-3 py-1.5 text-[11.5px] leading-relaxed text-olive-soft">
-          ⚠ {reboundDims.map((k) => `${k}（${DISC_REBOUND_HINT[k]}）`).join("、")}——已进入反弹区：得分高不等于无限好，物极必反，越是强项越要留意别用过头。
+          ⚠ 高反弹区：{reboundHighDims.map((k) => `${k}（${DISC_REBOUND_HIGH[k]}）`).join("、")}——强项拉满不等于无限好，物极必反，越是强项越要留意别用过头。
+        </p>
+      )}
+      {reboundLowDims.length > 0 && (
+        <p className="mt-2 rounded-lg bg-[#6b7280]/10 px-3 py-1.5 text-[11.5px] leading-relaxed text-olive-soft">
+          ⚠ 低反弹区：{reboundLowDims.map((k) => `${k}（${DISC_REBOUND_LOW[k]}）`).join("、")}——长期把这一面压到极低，消耗大，也容易以反面形式反弹回来。
         </p>
       )}
       {/* 全量特征词阵：四个因子列各按本色高亮最典型的 5 个特征词（主因子组合列颜色更深） */}
@@ -1774,10 +1839,9 @@ function DiscTendencyChart({
         <div className="grid grid-cols-4">
           {keys.map((k) => {
             const inCombo = combo.includes(k);
-            // 按该因子的实际得分定位：词阵从上到下 = 该因子最强→最弱，
-            // 得分越高，高亮区越靠上；以得分对应位置为中心取 5 个词，主因子列底色更深
-            const v = dims[k] ?? 0;
-            const center = Math.round((1 - v / MAX) * (DISC_WORD_GRID[k].length - 1));
+            // 按该因子的倾向度定位：词阵从上到下 = 该因子最强→最弱，
+            // 倾向度越高，高亮区越靠上；以倾向度对应位置为中心取 5 个词，主因子列底色更深
+            const center = Math.round(((100 - tendency[k]) / 200) * (DISC_WORD_GRID[k].length - 1));
             const hiStart = Math.max(0, Math.min(DISC_WORD_GRID[k].length - 5, center - 2));
             const hiCount = 5;
             return (
@@ -1804,10 +1868,10 @@ function DiscTendencyChart({
         </div>
       </div>
       <p className="mt-1.5 text-[11px] text-olive-mute">
-        每列词从上到下按该因子最强到最弱排列；高亮的 5 个词按你的实际得分定位（得分越高越靠上），主因子组合（{combo.join("")} 型）对应列底色更深。仅供对照理解，不代表逐词实测。
+        每列词从上到下按该因子最强到最弱排列；高亮的 5 个词按你的倾向度定位（倾向度越高越靠上），主因子组合（{combo.join("")} 型）对应列底色更深。仅供对照理解，不代表逐词实测。
       </p>
       <p className="mt-3 text-[12px] text-olive-mute">
-        四因子得分：D {dims.D} ｜ I {dims.I} ｜ S {dims.S} ｜ C {dims.C}（各 0—{MAX} 分）。类型没有好坏，只代表当前状态下的行为倾向。
+        四因子倾向度：D {discTendencyText(tendency.D)} ｜ I {discTendencyText(tendency.I)} ｜ S {discTendencyText(tendency.S)} ｜ C {discTendencyText(tendency.C)}（-100%…+100%，合计恒为 0；原始倾向度，未做常模转换）。类型没有好坏，只代表当前状态下的行为倾向。
       </p>
     </div>
   );
