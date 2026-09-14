@@ -328,3 +328,14 @@
 
 ### 全系统审查结论（v40 收尾，详见对话汇报）
 1. 伴学师端 OPTIONAL_KINDS 缺新 kind（已修）；2. DISC V2 词位不均衡（轻微，暂缓）；3. tsc 基线 3 个历史遗留错误（AcademicsSubmit 科目名字面量、StudentDetailDrawer/AcademicsForm/AcademicsStage 三处）仍在，与历次改动无关，建议择机清理；4. latest 接口 early-break 条件未含新 kind（仅多扫几行，无功能影响）；5. 简版 AssessmentChartsLite 心理图只画通用版（SDQ/PA 暂不进简版图解，详版/框架图/冰山均已覆盖）。
+
+---
+
+## v41（2026-09-14）—— 心理健康报告详细化 + 三套自选页 + 明细折叠
+
+1. **详细解读素材**（contracts/mentalHealth.ts 追加 V41 块）：`MENTAL_SCORE_GUIDE`（分数怎么看：量表是频率信号非判决、复测对比>单次）；SDQ_DIM_EXPLAIN（五维：观察什么/分数代表什么/建议）；PHQ9_ITEM_EXPLAIN、GAD7_ITEM_EXPLAIN（逐题观测点说明，第 9 题标红线）；MENTAL_V2_BAND_GUIDE（四级含义+行动）、MENTAL_SDQ_BAND_GUIDE（正常/边缘/明显含义）。
+2. **ReportView mental tab**：顶部 MentalScoreGuideCard；SDQ 结果下 SdqDimExplainCard（每维本次得分徽章+观察/含义/建议+分档总表）；PA/通用版结果下 PhqGadExplainCard（PHQ 九观测点+GAD 七观测点+分级总表，红线题按 selfHarm 标红）；三套答题明细 Fold 挂各自结果卡下方（AnswerDetailsByKind kinds 各一套）。旧版十因子仍走 MentalDetail。
+3. **测评中心三套自选**：TESTS 三条合并为一条「心理健康筛查（三套量表 · 选一套做）」（summary 聚合三套，doneOf 任一已测）；新增 MentalChooser 选择页（A/B/通用三卡片：适用年龄、题数时长、已测状态+结果摘要、开始按钮）；QuizStage kind=mental 进 chooser。报告侧深链全部改 start=mental（进 chooser），框架图心理未测入口同。
+4. 综合报告条件章心理三套明细：answerKindsForSection 条件模块 kinds 已含 mentalsdq/mentalpa（v40 已加），冒烟确认 ansblk- 存在。
+
+验证：tsc 干净；build OK；smoke-v41（v37-v40 全量 + v41 增量 12 项）全过。BUILD_TAG=v41-2026-09-14。

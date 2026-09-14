@@ -113,41 +113,20 @@ const TESTS: TestDef[] = [
     summary: (l) => (l.holland ? "已生成兴趣代码" : null),
   },
   {
-    kind: "mentalsdq",
-    name: "心理健康 · 学生版 A（SDQ 长处与困难问卷）（选做）",
-    desc: "国际通用儿童青少年行为筛查 · 25 题 + 1 条安全题 · 约 4 分钟 · 学生填写（4—17 岁，11 岁以下可家长陪读） · 选做",
-    required: false,
-    tab: "mental",
-    summary: (l) =>
-      l.mentalSdq
-        ? `困难总分 ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）· 综合「${l.mentalSdq.level}」${l.mentalSdq.selfHarm ? " · 有安全预警信号" : ""}`
-        : null,
-    doneOf: (l) => !!l.mentalSdq,
-  },
-  {
-    kind: "mentalpa",
-    name: "心理健康 · 学生版 B（PHQ-A + GAD-7 学生版）（选做）",
-    desc: "国际通用青少年抑郁/焦虑筛查 · 16 题 · 约 3 分钟 · 适用 11 岁以上 · 选做",
-    required: false,
-    tab: "mental",
-    summary: (l) =>
-      l.mentalPa
-        ? `PHQ-A ${l.mentalPa.phq9}（${l.mentalPa.phq9Level}）· GAD-7 ${l.mentalPa.gad7}（${l.mentalPa.gad7Level}）`
-        : null,
-    doneOf: (l) => !!l.mentalPa,
-  },
-  {
     kind: "mental",
-    name: "心理健康筛查 · 通用版（PHQ-9 + GAD-7）（选做）",
-    desc: "国际通用筛查量表 · 16 题 · 约 3 分钟 · 选做",
+    name: "心理健康筛查（三套量表 · 选一套做）",
+    desc: "学生版 A（SDQ 长处与困难，4—17 岁）/ 学生版 B（PHQ-A + GAD-7 学生版，11 岁以上）/ 通用版（PHQ-9 + GAD-7）· 三套均可选做，可分开多次做 · 选做",
     required: false,
     tab: "mental",
-    summary: (l) =>
-      l.mental
-        ? isMentalV2(l.mental)
-          ? `PHQ-9 ${l.mental.phq9}（${l.mental.phq9Level}）· GAD-7 ${l.mental.gad7}（${l.mental.gad7Level}）`
-          : "旧版量表结果（30 题版）保留可查；建议补测新版（学生版 A / B 或通用版）"
-        : null,
+    summary: (l) => {
+      const parts: string[] = [];
+      if (l.mentalSdq) parts.push(`A·SDQ ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）`);
+      if (l.mentalPa) parts.push(`B·PHQ-A ${l.mentalPa.phq9}（${l.mentalPa.phq9Level}）`);
+      if (l.mental)
+        parts.push(isMentalV2(l.mental) ? `通用·PHQ-9 ${l.mental.phq9}（${l.mental.phq9Level}）` : "通用·旧版结果保留");
+      return parts.length > 0 ? parts.join(" · ") : null;
+    },
+    doneOf: (l) => !!(l.mental || l.mentalSdq || l.mentalPa),
   },
 ];
 
@@ -190,7 +169,90 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   if (kind === "holland") return <HollandQuiz onDone={onDone} />;
   if (kind === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
   if (kind === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
-  return <MentalQuiz onDone={onDone} />;
+  return <MentalChooser onDone={onDone} />;
+}
+
+/** 心理健康三套量表自选页：孩子自己挑一套做（三套可分开多次做）。 */
+function MentalChooser({ onDone }: { onDone: () => void }) {
+  const { data } = trpc.assessment.latest.useQuery();
+  const [picked, setPicked] = useState<"mentalsdq" | "mentalpa" | "mental" | null>(null);
+  if (picked === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
+  if (picked === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
+  if (picked === "mental") return <MentalQuiz onDone={onDone} />;
+  const l: any = data ?? {};
+  const OPTIONS: { key: "mentalsdq" | "mentalpa" | "mental"; badge: string; title: string; age: string; desc: string; done: null | { label: string; note: string } }[] = [
+    {
+      key: "mentalsdq",
+      badge: "学生版 A",
+      title: "SDQ 长处与困难问卷",
+      age: "4—17 岁（11 岁以下可家长陪读）",
+      desc: "国际通用的儿童青少年行为筛查：把状态拆成情绪、行为、注意力、同伴关系、亲社会优势五个观察面，还含 1 条安全预警题。25+1 题约 4 分钟。",
+      done: l.mentalSdq
+        ? { label: "已测", note: `困难总分 ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）· 综合「${l.mentalSdq.level}」${l.mentalSdq.selfHarm ? " · ⚠有安全预警信号" : ""}` }
+        : null,
+    },
+    {
+      key: "mentalpa",
+      badge: "学生版 B",
+      title: "PHQ-A + GAD-7 学生版",
+      age: "11 岁以上",
+      desc: "国际通用的青少年抑郁 + 焦虑筛查，题干按学生日常语境改写（学习、考试、和同学相处）。16 题约 3 分钟，含 1 道自伤念头红线题。",
+      done: l.mentalPa
+        ? { label: "已测", note: `PHQ-A ${l.mentalPa.phq9}/27（${l.mentalPa.phq9Level}）· GAD-7 ${l.mentalPa.gad7}/21（${l.mentalPa.gad7Level}）${l.mentalPa.selfHarm ? " · ⚠有安全预警信号" : ""}` }
+        : null,
+    },
+    {
+      key: "mental",
+      badge: "通用版",
+      title: "PHQ-9 + GAD-7",
+      age: "不限（青少年与成人都适用）",
+      desc: "国际通用的抑郁 + 焦虑筛查标准版。16 题约 3 分钟，含 1 道自伤念头红线题。已经测过旧版（30 题十因子）的同学，也可以在这里测新版。",
+      done: l.mental
+        ? isMentalV2(l.mental)
+          ? { label: "已测", note: `PHQ-9 ${l.mental.phq9}/27（${l.mental.phq9Level}）· GAD-7 ${l.mental.gad7}/21（${l.mental.gad7Level}）${l.mental.selfHarm ? " · ⚠有安全预警信号" : ""}` }
+          : { label: "旧版结果", note: "30 题旧版结果保留可查，建议测上面的新版" }
+        : null,
+    },
+  ];
+  return (
+    <div className="paper-card p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-olive">心理健康筛查 · 选一套做</h2>
+          <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">
+            三套都是国际通用筛查工具（选做），观察的侧重点不同，可以挑一套，也可以分几次各做一套——做过的结果都会进报告。如实作答，结果只有你自己看到。
+          </p>
+        </div>
+        <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
+          返回
+        </button>
+      </div>
+      <div className="mt-5 grid gap-3 lg:grid-cols-3">
+        {OPTIONS.map((o) => (
+          <div key={o.key} className="flex flex-col rounded-xl border border-lime/40 bg-lime-pale/40 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="rounded-full bg-olive px-2.5 py-0.5 text-[11px] font-bold text-cream">{o.badge}</span>
+              {o.done ? (
+                <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[11px] font-semibold text-[#5a9326]">{o.done.label}</span>
+              ) : (
+                <span className="rounded-full border border-dashed border-[#a8b08c]/80 px-2 py-px text-[11px] text-olive-mute">未测</span>
+              )}
+            </div>
+            <div className="mt-2 text-[14.5px] font-bold text-olive">{o.title}</div>
+            <div className="mono mt-0.5 text-[11px] text-olive-mute">{o.age}</div>
+            <p className="mt-2 flex-1 text-[12.5px] leading-relaxed text-olive-soft">{o.desc}</p>
+            {o.done && <p className="mt-2 text-[11.5px] leading-relaxed text-olive-mute">{o.done.note}</p>}
+            <button
+              onClick={() => setPicked(o.key)}
+              className="mt-3 w-full rounded-xl bg-olive py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime"
+            >
+              {o.done ? "重新测一遍" : "开始这套测评"}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** 测评中心主页（/assessments）：全部测评的入口与报告导航。 */

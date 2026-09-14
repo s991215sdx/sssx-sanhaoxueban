@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v40.tsx
+// scripts/smoke-render-v41.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -101887,6 +101887,80 @@ function isMentalPa(x) {
   return !!x && typeof x === "object" && x.version === "pa";
 }
 var MENTAL_PA_DISCLAIMER = "\u514D\u8D23\u58F0\u660E\uFF1A\u672C\u91CF\u8868\u4E3A\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u5DE5\u5177\uFF08PHQ-A / GAD-7\uFF09\uFF0C\u7ED3\u679C\u4EC5\u4F9B\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\uFF0C\u4E5F\u4E0D\u80FD\u66FF\u4EE3\u4E13\u4E1A\u533B\u751F\u6216\u5FC3\u7406\u54A8\u8BE2\u5E08\u7684\u8BC4\u4F30\u3002\u82E5\u5F97\u5206\u504F\u9AD8\uFF0C\u6216\u7B2C 9 \u9898\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\uFF0C\u8BF7\u5C3D\u5FEB\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u524D\u5F80\u4E13\u4E1A\u5FC3\u7406/\u533B\u7597\u673A\u6784\u8BC4\u4F30\uFF0C\u6216\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002\u4E3B\u52A8\u6C42\u52A9\u662F\u52C7\u6562\uFF0C\u4E0D\u662F\u8F6F\u5F31\u3002";
+var MENTAL_SCORE_GUIDE = "\u8FD9\u4E9B\u5206\u6570\u600E\u4E48\u770B\uFF1A\u91CF\u8868\u6CA1\u6709\u300C\u8003\u591A\u5C11\u5206\u7B97\u597D\u300D\uFF0C\u5B83\u7EDF\u8BA1\u7684\u662F\u300C\u8FC7\u53BB\u4E00\u6BB5\u65F6\u95F4\u91CC\uFF0C\u67D0\u79CD\u72B6\u6001\u51FA\u73B0\u7684\u9891\u7E41\u7A0B\u5EA6\u300D\u3002\u5206\u8D8A\u4F4E\uFF0C\u8BF4\u660E\u8FD9\u79CD\u56F0\u6270\u8D8A\u5C11\u51FA\u73B0\uFF1B\u5206\u8D8A\u9AD8\uFF0C\u8BF4\u660E\u5B83\u51FA\u73B0\u7684\u9891\u7387\u8D8A\u9AD8\u3001\u503C\u5F97\u8BA4\u771F\u5BF9\u5F85\u3002\u5206\u6570\u662F\u300C\u4FE1\u53F7\u300D\u4E0D\u662F\u300C\u5224\u51B3\u300D\u2014\u2014\u4E00\u6B21\u6D4B\u91CF\u53CD\u6620\u7684\u662F\u8FD9\u6BB5\u65F6\u95F4\u7684\u72B6\u6001\u5FEB\u7167\uFF0C\u60C5\u7EEA\u4F1A\u6CE2\u52A8\uFF0C\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u6BD4\u5355\u6B21\u5206\u6570\u66F4\u6709\u4EF7\u503C\u3002\u6240\u6709\u7ED3\u679C\u90FD\u53EA\u662F\u7B5B\u67E5\u53C2\u8003\uFF0C\u4E0D\u6784\u6210\u533B\u5B66\u8BCA\u65AD\uFF1B\u53EA\u6709\u6301\u7EED\u504F\u9AD8\u6216\u5F71\u54CD\u5403\u7761\u5B66\u65F6\uFF0C\u624D\u9700\u8981\u8FDB\u4E00\u6B65\u4E13\u4E1A\u8BC4\u4F30\u3002";
+var SDQ_DIM_EXPLAIN = {
+  emotion: {
+    observe: "\u89C2\u5BDF\u5B69\u5B50\u662F\u4E0D\u662F\u7ECF\u5E38\u5FE7\u5FC3\u5FE1\u5FE1\u3001\u4E0D\u5FEB\u4E50\u3001\u5BB9\u6613\u5BB3\u6015\u6216\u6709\u8EAF\u4F53\u4E0D\u9002\uFF08\u5934\u75DB\u3001\u809A\u5B50\u75DB\u67E5\u4E0D\u51FA\u539F\u56E0\uFF09\u3002",
+    meaning: "0-5 \u4E3A\u6B63\u5E38\u8303\u56F4\uFF1B6 \u5206\u8FB9\u7F18\uFF1B7 \u5206\u4EE5\u4E0A\u8BF4\u660E\u60C5\u7EEA\u4E0A\u7684\u4E0D\u8212\u670D\u51FA\u73B0\u5F97\u76F8\u5F53\u9891\u7E41\uFF0C\u5DF2\u7ECF\u503C\u5F97\u8BA4\u771F\u5173\u6CE8\u3002",
+    advice: [
+      "\u6BCF\u5929\u7559 10 \u5206\u949F\u4E0D\u8C08\u5B66\u4E60\u7684\u95F2\u804A\u65F6\u95F4\uFF0C\u8BA9\u60C5\u7EEA\u6709\u51FA\u53E3",
+      "\u60C5\u7EEA\u4F4E\u843D\u6301\u7EED\u4E24\u5468\u4EE5\u4E0A\uFF0C\u544A\u8BC9\u5B69\u5B50\u300C\u8FD9\u4E0D\u662F\u4F60\u7684\u9519\u300D\uFF0C\u5E76\u8003\u8651\u627E\u5B66\u6821\u5FC3\u7406\u8001\u5E08\u804A\u804A"
+    ]
+  },
+  conduct: {
+    observe: "\u89C2\u5BDF\u51B2\u52A8\u63A7\u5236\uFF1A\u662F\u5426\u7ECF\u5E38\u53D1\u813E\u6C14\u3001\u8BF4\u8C0E\u3001\u62FF\u522B\u4EBA\u4E1C\u897F\u3001\u4E0E\u4EBA\u4E89\u6267\u3002",
+    meaning: "0-3 \u4E3A\u6B63\u5E38\uFF1B4 \u5206\u8FB9\u7F18\uFF1B5 \u5206\u4EE5\u4E0A\u8BF4\u660E\u884C\u4E3A\u4E0A\u7684\u51B2\u52A8\u51FA\u73B0\u9891\u7E41\uFF0C\u5E38\u4E0E\u300C\u5FC3\u91CC\u618B\u7740\u52B2\u300D\u6709\u5173\u3002",
+    advice: [
+      "\u5148\u627E\u884C\u4E3A\u80CC\u540E\u7684\u539F\u56E0\uFF08\u7D2F\uFF1F\u88AB\u8BEF\u89E3\uFF1F\u538B\u529B\u5927\uFF1F\uFF09\uFF0C\u518D\u8C08\u89C4\u5219",
+      "\u53D1\u706B\u524D\u7EA6\u5B9A\u300C\u6682\u505C 10 \u79D2\u300D\uFF0C\u4E8B\u540E\u4E3B\u52A8\u4FEE\u590D\u4E00\u53E5\u300C\u521A\u624D\u6211\u8BED\u6C14\u91CD\u4E86\u300D"
+    ]
+  },
+  hyper: {
+    observe: "\u89C2\u5BDF\u6CE8\u610F\u4E0E\u5B89\u5B9A\uFF1A\u662F\u5426\u5750\u4E0D\u4F4F\u3001\u5BB9\u6613\u5206\u5FC3\u3001\u505A\u4E8B\u524D\u4E0D\u60F3\u6E05\u695A\u3002",
+    meaning: "0-5 \u4E3A\u6B63\u5E38\uFF1B6 \u5206\u8FB9\u7F18\uFF1B7 \u5206\u4EE5\u4E0A\u8BF4\u660E\u591A\u52A8/\u6CE8\u610F\u65B9\u9762\u7684\u56F0\u6270\u9891\u7E41\u51FA\u73B0\uFF0C\u4F1A\u76F4\u63A5\u5F71\u54CD\u542C\u8BFE\u548C\u4F5C\u4E1A\u6548\u7387\u3002",
+    advice: [
+      "\u628A\u4EFB\u52A1\u5207\u6210\u5C0F\u5757\uFF0815-20 \u5206\u949F\u4E00\u6BB5\uFF09\uFF0C\u6BCF\u6BB5\u4E4B\u95F4\u8D77\u6765\u6D3B\u52A8 3 \u5206\u949F",
+      "\u5199\u4F5C\u4E1A\u53EA\u7559\u5F53\u524D\u8FD9\u4E00\u79D1\u7684\u4E66\uFF0C\u684C\u9762\u6E05\u7A7A\u51CF\u5C11\u5E72\u6270"
+    ]
+  },
+  peer: {
+    observe: "\u89C2\u5BDF\u540C\u4F34\u5173\u7CFB\uFF1A\u662F\u5426\u5B64\u72EC\u3001\u88AB\u6349\u5F04\u3001\u89C9\u5F97\u522B\u4EBA\u4E0D\u559C\u6B22\u81EA\u5DF1\u3001\u53EA\u80FD\u548C\u5927\u4EBA\u76F8\u5904\u3002",
+    meaning: "0-3 \u4E3A\u6B63\u5E38\uFF1B4-5 \u5206\u8FB9\u7F18\uFF1B6 \u5206\u4EE5\u4E0A\u8BF4\u660E\u5728\u540C\u4F34\u4E2D\u611F\u5230\u5B64\u7ACB\u6216\u4E0D\u8212\u670D\uFF0C\u5B64\u72EC\u611F\u662F\u5B66\u4E60\u52A8\u529B\u7684\u5927\u654C\u3002",
+    advice: [
+      "\u5E2E\u5B69\u5B50\u521B\u9020\u4F4E\u538B\u529B\u7684\u793E\u4EA4\u573A\u666F\uFF1A\u5C0F\u7EC4\u4F5C\u4E1A\u3001\u8FD0\u52A8\u961F\u3001\u5174\u8DA3\u793E\u56E2",
+      "\u5982\u679C\u6D89\u53CA\u88AB\u6B3A\u8D1F\uFF0C\u8BA4\u771F\u5BF9\u5F85\uFF0C\u5148\u503E\u542C\u4E0D\u8BC4\u5224\uFF0C\u518D\u548C\u5B66\u6821\u6C9F\u901A"
+    ]
+  },
+  prosocial: {
+    observe: "\u8FD9\u662F\u4F18\u52BF\u7EF4\u5EA6\uFF0C\u89C2\u5BDF\u5B69\u5B50\u7684\u5584\u610F\uFF1A\u662F\u5426\u5173\u5FC3\u522B\u4EBA\u3001\u613F\u610F\u5206\u4EAB\u3001\u4E50\u4E8E\u52A9\u4EBA\u3002\u5206\u8D8A\u9AD8\u8D8A\u597D\u3002",
+    meaning: "6 \u5206\u4EE5\u4E0A\u4E3A\u6B63\u5E38\u4F18\u52BF\uFF1B5 \u5206\u8FB9\u7F18\uFF1B4 \u5206\u4EE5\u4E0B\u8BF4\u660E\u5B69\u5B50\u7684\u5584\u610F\u548C\u52A9\u4EBA\u884C\u4E3A\u8FD1\u671F\u8F83\u5C11\u51FA\u73B0\uFF0C\u53EF\u80FD\u4E0E\u60C5\u7EEA\u72B6\u6001\u6709\u5173\u3002",
+    advice: [
+      "\u4F18\u52BF\u8981\u7528\u8D77\u6765\uFF1A\u8BA9\u5B69\u5B50\u8D1F\u8D23\u4E00\u4EF6\u80FD\u5E2E\u52A9\u522B\u4EBA\u7684\u4E8B\uFF08\u6559\u540C\u5B66\u4E00\u9053\u9898\u3001\u7167\u987E\u5F1F\u59B9\uFF09",
+      "\u88AB\u770B\u89C1\u7684\u4EB2\u793E\u4F1A\u884C\u4E3A\u4F1A\u88AB\u5F3A\u5316\uFF0C\u591A\u5177\u4F53\u5730\u80AF\u5B9A\uFF08\u300C\u4F60\u6CE8\u610F\u5230\u540C\u5B66\u96BE\u8FC7\u4E3B\u52A8\u53BB\u966A\uFF0C\u8FD9\u5F88\u68D2\u300D\uFF09"
+    ]
+  }
+};
+var PHQ9_ITEM_EXPLAIN = [
+  { text: "\u505A\u4E8B\u63D0\u4E0D\u8D77\u52B2 / \u6CA1\u6709\u4E50\u8DA3", observe: "\u89C2\u5BDF\u300C\u6109\u60A6\u611F\u300D\u2014\u2014\u5BF9\u4EE5\u524D\u559C\u6B22\u7684\u4E8B\u60C5\u8FD8\u6709\u6CA1\u6709\u5174\u8DA3\uFF0C\u8FD9\u662F\u60C5\u7EEA\u4F4E\u843D\u6700\u6838\u5FC3\u7684\u4FE1\u53F7\u4E4B\u4E00\u3002" },
+  { text: "\u5FC3\u60C5\u4F4E\u843D\u3001\u6CAE\u4E27\u6216\u7EDD\u671B", observe: "\u89C2\u5BDF\u300C\u60C5\u7EEA\u5E95\u8272\u300D\u2014\u2014\u6700\u8FD1\u4E24\u5468\u5FC3\u60C5\u7684\u5E73\u5747\u6C34\u5E73\uFF0C\u800C\u4E0D\u662F\u67D0\u4E00\u4E24\u5929\u7684\u5FC3\u60C5\u3002" },
+  { text: "\u7761\u7720\u95EE\u9898\uFF08\u5165\u7761\u96BE/\u7761\u4E0D\u7A33/\u7761\u592A\u591A\uFF09", observe: "\u89C2\u5BDF\u300C\u7761\u7720\u8282\u5F8B\u300D\u2014\u2014\u7761\u7720\u662F\u5FC3\u7406\u72B6\u6001\u7684\u5730\u57FA\uFF0C\u6301\u7EED\u5931\u7720\u6216\u55DC\u7761\u90FD\u503C\u5F97\u91CD\u89C6\u3002" },
+  { text: "\u75B2\u5026\u3001\u6CA1\u6709\u7CBE\u529B", observe: "\u89C2\u5BDF\u300C\u80FD\u91CF\u6C34\u5E73\u300D\u2014\u2014\u7761\u591F\u4E86\u8FD8\u662F\u7D2F\uFF0C\u53EF\u80FD\u63D0\u793A\u5FC3\u7406\u5728\u6301\u7EED\u8017\u80FD\u3002" },
+  { text: "\u98DF\u6B32\u95EE\u9898\uFF08\u5403\u4E0D\u4E0B/\u5403\u592A\u591A\uFF09", observe: "\u89C2\u5BDF\u300C\u8EAB\u4F53\u53CD\u5E94\u300D\u2014\u2014\u60C5\u7EEA\u4F1A\u901A\u8FC7\u80C3\u53E3\u8868\u73B0\u51FA\u6765\u3002" },
+  { text: "\u89C9\u5F97\u81EA\u5DF1\u5F88\u7CDF\u3001\u5F88\u5931\u8D25", observe: "\u89C2\u5BDF\u300C\u81EA\u6211\u8BC4\u4EF7\u300D\u2014\u2014\u5BF9\u81EA\u5DF1\u7684\u770B\u6CD5\u662F\u5426\u53D8\u5F97\u82DB\u523B\u3001\u53EA\u5269\u8D1F\u9762\uFF0C\u8FD9\u662F\u9700\u8981\u6E29\u67D4\u5BF9\u5F85\u7684\u4FE1\u53F7\u3002" },
+  { text: "\u96BE\u4EE5\u96C6\u4E2D\u6CE8\u610F\u529B", observe: "\u89C2\u5BDF\u300C\u6CE8\u610F\u8D44\u6E90\u300D\u2014\u2014\u4E0A\u8BFE\u8D70\u795E\u3001\u770B\u4E0D\u8FDB\u4E66\u662F\u5426\u6BD4\u5E73\u65F6\u591A\uFF0C\u76F4\u63A5\u5F71\u54CD\u5B66\u4E60\u6548\u7387\u3002" },
+  { text: "\u52A8\u4F5C\u8BF4\u8BDD\u53D8\u6162 / \u70E6\u8E81\u4E0D\u5B89", observe: "\u89C2\u5BDF\u300C\u6FC0\u6D3B\u6C34\u5E73\u300D\u2014\u2014\u8981\u4E48\u660E\u663E\u53D8\u6162\u3001\u8981\u4E48\u660E\u663E\u5750\u4E0D\u4F4F\uFF0C\u4E24\u79CD\u6781\u7AEF\u90FD\u63D0\u793A\u72B6\u6001\u5F02\u5E38\u3002" },
+  { text: "\u6709\u4F24\u5BB3\u81EA\u5DF1\u7684\u5FF5\u5934", observe: "\u7EA2\u7EBF\u89C2\u6D4B\u70B9\u2014\u2014\u53EA\u8981\u8FD9\u4E00\u9879\u4E0D\u662F\u300C\u5B8C\u5168\u4E0D\u4F1A\u300D\uFF0C\u65E0\u8BBA\u603B\u5206\u591A\u5C11\uFF0C\u90FD\u9700\u8981\u8BA4\u771F\u5BF9\u5F85\u5E76\u544A\u8BC9\u53EF\u4FE1\u4EFB\u7684\u5927\u4EBA\u3002" }
+];
+var GAD7_ITEM_EXPLAIN = [
+  { text: "\u7D27\u5F20\u3001\u7126\u8651\u6216\u7740\u6025", observe: "\u89C2\u5BDF\u300C\u7D27\u7EF7\u7A0B\u5EA6\u300D\u2014\u2014\u8EAB\u4F53\u548C\u5FC3\u7406\u662F\u4E0D\u662F\u7ECF\u5E38\u5904\u5728\u5907\u6218\u72B6\u6001\u3002" },
+  { text: "\u65E0\u6CD5\u505C\u6B62\u6216\u63A7\u5236\u62C5\u5FE7", observe: "\u89C2\u5BDF\u300C\u62C5\u5FE7\u7684\u53EF\u63A7\u6027\u300D\u2014\u2014\u62C5\u5FC3\u7684\u5F00\u5173\u80FD\u4E0D\u80FD\u81EA\u5DF1\u5173\u4E0A\uFF0C\u5173\u4E0D\u4E0A\u6700\u8017\u4EBA\u3002" },
+  { text: "\u5BF9\u5404\u79CD\u4E8B\u60C5\u8FC7\u5EA6\u62C5\u5FE7", observe: "\u89C2\u5BDF\u300C\u62C5\u5FE7\u7684\u6CDB\u5316\u300D\u2014\u2014\u662F\u5426\u4ECE\u5C0F\u4E8B\u62C5\u5FC3\u5230\u5927\u4E8B\u3001\u4ECE\u5B66\u4E60\u62C5\u5FC3\u5230\u751F\u6D3B\uFF0C\u65E0\u5904\u4E0D\u5728\u3002" },
+  { text: "\u5F88\u96BE\u653E\u677E\u4E0B\u6765", observe: "\u89C2\u5BDF\u300C\u653E\u677E\u80FD\u529B\u300D\u2014\u2014\u4F11\u606F\u65F6\u662F\u4E0D\u662F\u8111\u5B50\u8FD8\u5728\u8F6C\uFF0C\u300C\u4E0D\u4F1A\u653E\u677E\u300D\u672C\u8EAB\u5C31\u662F\u4E00\u79CD\u8D1F\u62C5\u3002" },
+  { text: "\u5750\u7ACB\u4E0D\u5B89\u3001\u9759\u4E0D\u4E0B\u6765", observe: "\u89C2\u5BDF\u300C\u8EAF\u4F53\u5316\u8868\u73B0\u300D\u2014\u2014\u7126\u8651\u5E38\u5E38\u4EE5\u5750\u4E0D\u4F4F\u3001\u6765\u56DE\u8D70\u52A8\u7684\u65B9\u5F0F\u8DD1\u51FA\u6765\u3002" },
+  { text: "\u5BB9\u6613\u70E6\u607C\u6216\u6613\u6012", observe: "\u89C2\u5BDF\u300C\u60C5\u7EEA\u9608\u503C\u300D\u2014\u2014\u662F\u4E0D\u662F\u4E00\u70B9\u5C0F\u4E8B\u5C31\u70E6\uFF0C\u6613\u6012\u5F80\u5F80\u662F\u7126\u8651\u6216\u538B\u529B\u7684\u526F\u4EA7\u54C1\u3002" },
+  { text: "\u611F\u5230\u5BB3\u6015\u3001\u4EFF\u4F5B\u6709\u53EF\u6015\u7684\u4E8B\u8981\u53D1\u751F", observe: "\u89C2\u5BDF\u300C\u4E0D\u7965\u9884\u611F\u300D\u2014\u2014\u6CA1\u6765\u7531\u7684\u5FC3\u614C\u548C\u4E0D\u5B89\uFF0C\u662F\u7126\u8651\u7A0B\u5EA6\u504F\u9AD8\u7684\u5178\u578B\u611F\u53D7\u3002" }
+];
+var MENTAL_V2_BAND_GUIDE = [
+  { band: "\u826F\u597D", meaning: "0-4 \u5206\uFF1A\u8FC7\u53BB\u4E24\u5468\u57FA\u672C\u6CA1\u6709\u8FD9\u7C7B\u56F0\u6270\uFF0C\u72B6\u6001\u5728\u6B63\u5E38\u6CE2\u52A8\u8303\u56F4\u5185\u3002", action: "\u7EE7\u7EED\u4FDD\u6301\u89C4\u5F8B\u4F5C\u606F\u548C\u8FD0\u52A8\uFF0C\u72B6\u6001\u4F1A\u6709\u81EA\u7136\u8D77\u4F0F\uFF0C\u4E0D\u7528\u4E3A\u5076\u5C14\u7684\u5C0F\u4F4E\u843D\u7D27\u5F20\u3002" },
+  { band: "\u5173\u6CE8", meaning: "5-9 \u5206\uFF1A\u6709\u4E00\u4E9B\u8F7B\u5EA6\u56F0\u6270\uFF0C\u50CF\u662F\u8EAB\u4F53\u5728\u53D1\u300C\u9700\u8981\u4F11\u606F\u548C\u7167\u987E\u300D\u7684\u4FE1\u53F7\u3002", action: "\u5148\u7167\u987E\u81EA\u5DF1\uFF1A\u7761\u591F\u3001\u8FD0\u52A8\u3001\u628A\u62C5\u5FC3\u5199\u4E0B\u6765\uFF1B\u4E00\u4E24\u5468\u540E\u590D\u6D4B\uFF0C\u770B\u5206\u6570\u6709\u6CA1\u6709\u56DE\u843D\u3002" },
+  { band: "\u9884\u8B66", meaning: "10-14 \u5206\uFF1A\u4E2D\u5EA6\u56F0\u6270\uFF0C\u8FD9\u7C7B\u611F\u53D7\u5DF2\u7ECF\u6BD4\u8F83\u9891\u7E41\uFF0C\u5927\u6982\u7387\u5728\u5F71\u54CD\u5403\u7761\u548C\u6CE8\u610F\u529B\u3002", action: "\u5EFA\u8BAE\u628A\u7ED3\u679C\u544A\u8BC9\u5BB6\u957F\u6216\u8001\u5E08\uFF0C\u627E\u5B66\u6821\u5FC3\u7406\u8001\u5E08\u804A\u4E00\u804A\uFF1B\u5FC5\u8981\u65F6\u5230\u4E13\u4E1A\u673A\u6784\u505A\u8FDB\u4E00\u6B65\u8BC4\u4F30\u3002" },
+  { band: "\u9AD8\u98CE\u9669", meaning: "15 \u5206\u53CA\u4EE5\u4E0A\uFF1A\u56F0\u6270\u660E\u663E\u4E14\u9891\u7E41\uFF0C\u6216\u89E6\u53D1\u4E86\u81EA\u4F24\u5FF5\u5934\u7EA2\u7EBF\uFF0C\u8FD9\u4EF6\u4E8B\u7684\u4F18\u5148\u7EA7\u9AD8\u4E8E\u4E00\u5207\u5B66\u4E60\u76EE\u6807\u3002", action: "\u8BF7\u4E00\u5B9A\u544A\u8BC9\u5BB6\u957F\u6216\u4FE1\u4EFB\u7684\u8001\u5E08\uFF0C\u5C3D\u5FEB\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\uFF0C\u53EF\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356\u3002" }
+];
+var MENTAL_SDQ_BAND_GUIDE = [
+  { band: "\u6B63\u5E38", meaning: "\u5F97\u5206\u5728\u5E38\u89C1\u8303\u56F4\u5185\uFF0C\u8FD9\u4E2A\u65B9\u9762\u4E0E\u5927\u591A\u6570\u540C\u9F84\u4EBA\u76F8\u5F53\u3002" },
+  { band: "\u8FB9\u7F18", meaning: "\u5F97\u5206\u63A5\u8FD1\u9700\u8981\u5173\u6CE8\u7684\u8FB9\u754C\uFF0C\u4E0D\u7B97\u5F02\u5E38\uFF0C\u4F46\u503C\u5F97\u7559\u4E2A\u5FC3\u773C\u2014\u2014\u7559\u610F\u5B83\u662F\u5426\u5728\u590D\u6D4B\u4E2D\u7EE7\u7EED\u8D70\u9AD8\u3002" },
+  { band: "\u660E\u663E", meaning: "\u5F97\u5206\u660E\u663E\u504F\u79BB\u5E38\u89C1\u8303\u56F4\uFF0C\u8FD9\u4E2A\u65B9\u9762\u7684\u56F0\u6270\u51FA\u73B0\u5F97\u76F8\u5F53\u9891\u7E41\uFF0C\u5EFA\u8BAE\u8BA4\u771F\u5BF9\u5F85\u5E76\u8003\u8651\u4E13\u4E1A\u8BC4\u4F30\u3002" }
+];
 
 // src/data/reports/combined.ts
 var LEVEL_TONE = {
@@ -110832,7 +110906,7 @@ function SystemFramework({
           {
             done: status.mental.done,
             label: status.mental.done ? `\u5FC3\u7406\u5065\u5EB7 \xB7 ${status.mental.note ?? "\u5DF2\u6D4B"}` : "\u5FC3\u7406\u5065\u5EB7 \xB7 \u672A\u6D4B",
-            onClick: !status.mental.done && onOpen ? () => open({ kind: "assess", start: "mentalsdq" }) : void 0
+            onClick: !status.mental.done && onOpen ? () => open({ kind: "assess", start: "mental" }) : void 0
           }
         )
       ] }),
@@ -112681,6 +112755,116 @@ function MentalSdqBars({ mental }) {
     /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-3 text-[11.5px] leading-relaxed text-olive-mute", children: MENTAL_SDQ_DISCLAIMER })
   ] });
 }
+function MentalScoreGuideCard() {
+  return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card border-lime/50 bg-lime-pale/40 p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u8FD9\u4E9B\u5206\u6570\u600E\u4E48\u770B\uFF1F" }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[13px] leading-relaxed text-olive-soft", children: MENTAL_SCORE_GUIDE })
+  ] });
+}
+function MentalBandGuideCard({ title }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-border/70 bg-cream/60 p-3.5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[12.5px] font-bold text-olive", children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ul", { className: "mt-1.5 space-y-1.5", children: MENTAL_V2_BAND_GUIDE.map((g) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
+        g.band,
+        "\uFF1A"
+      ] }),
+      g.meaning,
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("span", { className: "text-olive-mute", children: [
+        "\u2014\u2014",
+        g.action
+      ] })
+    ] }, g.band)) })
+  ] });
+}
+function SdqDimExplainCard({ mental }) {
+  const dims = ["emotion", "conduct", "hyper", "peer", "prosocial"];
+  return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5B66\u751F\u7248 A \xB7 \u6BCF\u4E2A\u89C2\u6D4B\u70B9\u5728\u89C2\u5BDF\u4EC0\u4E48" }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: "SDQ \u628A\u5B69\u5B50\u7684\u72B6\u6001\u62C6\u6210\u4E94\u4E2A\u89C2\u5BDF\u9762\uFF1B\u4E0B\u9762\u9010\u9762\u8BF4\u660E\u5B83\u89C2\u5BDF\u4EC0\u4E48\u3001\u5206\u6570\u4EE3\u8868\u4EC0\u4E48\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-3 space-y-2.5", children: dims.map((k) => {
+      const ex = SDQ_DIM_EXPLAIN[k];
+      return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-border/70 bg-cream/60 p-3.5", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex flex-wrap items-center gap-2", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("span", { className: "text-[13px] font-bold text-olive", children: SDQ_DIM_LABEL[k] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(
+            "span",
+            {
+              className: `rounded-full border px-2 py-px text-[11px] font-semibold ${mental.dimBands[k] === "\u6B63\u5E38" ? "border-lime/50 bg-lime-pale text-[#5a9326]" : mental.dimBands[k] === "\u8FB9\u7F18" ? "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]" : "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]"}`,
+              children: [
+                "\u672C\u6B21 ",
+                mental.dims[k],
+                "/10\u300C",
+                mental.dimBands[k],
+                "\u300D"
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1.5 text-[12.5px] leading-relaxed text-olive-soft", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u89C2\u5BDF\u4EC0\u4E48\uFF1A" }),
+          ex.observe
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "mt-1 text-[12.5px] leading-relaxed text-olive-soft", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("b", { className: "text-olive", children: "\u5206\u6570\u4EE3\u8868\u4EC0\u4E48\uFF1A" }),
+          ex.meaning
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ul", { className: "mt-1.5 list-disc space-y-0.5 pl-5 text-[12.5px] leading-relaxed text-olive-soft", children: ex.advice.map((a, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("li", { children: a }, i)) })
+      ] }, k);
+    }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 rounded-xl border border-border/70 bg-cream/60 p-3.5", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[12.5px] font-bold text-olive", children: "\u300C\u6B63\u5E38 / \u8FB9\u7F18 / \u660E\u663E\u300D\u5206\u522B\u610F\u5473\u7740\u4EC0\u4E48" }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ul", { className: "mt-1.5 space-y-1", children: MENTAL_SDQ_BAND_GUIDE.map((g) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
+          g.band,
+          "\uFF1A"
+        ] }),
+        g.meaning
+      ] }, g.band)) })
+    ] })
+  ] });
+}
+function PhqGadExplainCard({ variant, selfHarm }) {
+  const phqTitle = variant === "pa" ? "PHQ-A \u4E5D\u4E2A\u89C2\u6D4B\u70B9" : "PHQ-9 \u4E5D\u4E2A\u89C2\u6D4B\u70B9";
+  return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("h3", { className: "font-bold text-olive", children: [
+      variant === "pa" ? "\u5B66\u751F\u7248 B" : "\u901A\u7528\u7248",
+      " \xB7 \u6BCF\u9053\u9898\u5728\u89C2\u5BDF\u4EC0\u4E48"
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: variant === "pa" ? `PHQ-A \u662F\u9752\u5C11\u5E74\u6291\u90C1\u7B5B\u67E5\uFF08PHQ-9 \u7684\u9752\u5C11\u5E74\u7248\uFF09\uFF0CGAD-7 \u770B\u7126\u8651\uFF1B\u6BCF\u9053\u9898\u5BF9\u5E94\u4E00\u4E2A\u89C2\u6D4B\u70B9\uFF0C0=\u5B8C\u5168\u4E0D\u4F1A / 1=\u597D\u51E0\u5929 / 2=\u8D85\u8FC7\u4E00\u534A\u7684\u5929\u6570 / 3=\u51E0\u4E4E\u5929\u5929\uFF0C\u5206\u6570\u5C31\u662F\u300C\u8FC7\u53BB\u4E24\u5468\u8FD9\u4E2A\u72B6\u6001\u51FA\u73B0\u7684\u9891\u7387\u300D\u3002` : `PHQ-9 \u770B\u6291\u90C1\u3001GAD-7 \u770B\u7126\u8651\uFF1B\u6BCF\u9053\u9898\u5BF9\u5E94\u4E00\u4E2A\u89C2\u6D4B\u70B9\uFF0C0=\u5B8C\u5168\u4E0D\u4F1A / 1=\u597D\u51E0\u5929 / 2=\u8D85\u8FC7\u4E00\u534A\u7684\u5929\u6570 / 3=\u51E0\u4E4E\u5929\u5929\uFF0C\u5206\u6570\u5C31\u662F\u300C\u8FC7\u53BB\u4E24\u5468\u8FD9\u4E2A\u72B6\u6001\u51FA\u73B0\u7684\u9891\u7387\u300D\u3002` }),
+    /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 grid gap-2.5 lg:grid-cols-2", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-border/70 bg-cream/60 p-3.5", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[12.5px] font-bold text-olive", children: phqTitle }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ul", { className: "mt-1.5 space-y-1.5", children: PHQ9_ITEM_EXPLAIN.map((it, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: i === 8 && selfHarm ? "text-[#8f1313]" : "text-olive", children: [
+            "\u7B2C ",
+            i + 1,
+            " \u9898",
+            i === 8 ? "\uFF08\u7EA2\u7EBF\uFF09" : "",
+            "\uFF1A"
+          ] }),
+          it.text,
+          "\u2014\u2014",
+          it.observe
+        ] }, i)) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "rounded-xl border border-border/70 bg-cream/60 p-3.5", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "text-[12.5px] font-bold text-olive", children: "GAD-7 \u4E03\u4E2A\u89C2\u6D4B\u70B9" }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ul", { className: "mt-1.5 space-y-1.5", children: GAD7_ITEM_EXPLAIN.map((it, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("b", { className: "text-olive", children: [
+            "\u7B2C ",
+            i + 10,
+            " \u9898\uFF1A"
+          ] }),
+          it.text,
+          "\u2014\u2014",
+          it.observe
+        ] }, i)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "mt-2.5", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalBandGuideCard, { title: "\u7EFC\u5408\u5206\u7EA7\u610F\u5473\u7740\u4EC0\u4E48" }) })
+      ] })
+    ] })
+  ] });
+}
 function MentalBar({ mental }) {
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
     /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5FC3\u7406\u5065\u5EB7 \xB7 \u5341\u56E0\u5B50\u5747\u5206" }),
@@ -113173,27 +113357,30 @@ function ReportView({
           {
             text: "\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5\u5168\u90E8\u4E3A\u9009\u505A\uFF0C\u6709\u4E09\u5957\u53EF\u6311\u7740\u505A\uFF1A\u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF0C25 \u9898\uFF0C4\u201417 \u5C81\uFF0C11 \u5C81\u4EE5\u4E0B\u53EF\u5BB6\u957F\u966A\u8BFB\uFF09\u3001\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF0C16 \u9898\uFF0C11 \u5C81\u4EE5\u4E0A\uFF09\u3001\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF0C16 \u9898\uFF09\u3002\u505A\u4E86\u54EA\u5957\uFF0C\u7ED3\u679C\u90FD\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u548C\u7EFC\u5408\u62A5\u544A\u91CC\u3002",
             actionText: "\u53BB\u6D4B\u5B66\u751F\u7248 A\uFF08SDQ\uFF09\u2192",
-            to: "/assessments?start=mentalsdq"
+            to: "/assessments?start=mental"
           }
         ),
         /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "flex flex-wrap gap-2", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("a", { href: "/assessments?start=mentalpa", className: "rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime", children: "\u53BB\u6D4B\u5B66\u751F\u7248 B\uFF08PHQ-A\uFF0C11 \u5C81\u4EE5\u4E0A\uFF09\u2192" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("a", { href: "/assessments?start=mental", className: "rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime", children: "\u53BB\u6D4B\u5B66\u751F\u7248 B\uFF08PHQ-A\uFF0C11 \u5C81\u4EE5\u4E0A\uFF09\u2192" }),
           /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("a", { href: "/assessments?start=mental", className: "rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime", children: "\u53BB\u6D4B\u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF09\u2192" })
         ] })
       ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalScoreGuideCard, {}),
         mentalSdq ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
           /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(MentalSdqBars, { mental: mentalSdq }),
           /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
             /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("h3", { className: "font-bold text-olive", children: "\u5B66\u751F\u7248 A \xB7 \u5206\u7EA7\u89E3\u91CA\u4E0E\u5EFA\u8BAE" }),
             /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[13.5px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(RichText, { text: mentalSdq.summary }) }),
             /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[12.5px] leading-relaxed text-olive-mute", children: "\u4E00\u4E24\u4E2A\u6708\u540E\u53EF\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u3002" })
-          ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(SdqDimExplainCard, { mental: mentalSdq }),
+          data3?.raw && data3.raw.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Fold, { title: "\u7B54\u9898\u660E\u7EC6 \xB7 \u5B66\u751F\u7248 A\uFF08SDQ\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswerDetailsByKind, { raw: data3.raw, kinds: ["mentalsdq"] }) })
         ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
           MissingCard,
           {
             text: "\u5B66\u751F\u7248 A\uFF08SDQ \u957F\u5904\u4E0E\u56F0\u96BE\u95EE\u5377\uFF09\u8FD8\u6CA1\u6D4B\uFF1A25 \u9898\u7EA6 4 \u5206\u949F\uFF0C\u9002\u7528 4\u201417 \u5C81\uFF0811 \u5C81\u4EE5\u4E0B\u53EF\u5BB6\u957F\u966A\u8BFB\uFF09\u3002",
             actionText: "\u53BB\u6D4B\u5B66\u751F\u7248 A \u2192",
-            to: "/assessments?start=mentalsdq"
+            to: "/assessments?start=mental"
           }
         ),
         mentalPa ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
@@ -113206,13 +113393,15 @@ function ReportView({
               mentalPa.positives,
               "/16 \u9879\u3002\u4E24\u5468\u540E\u53EF\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u3002"
             ] })
-          ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(PhqGadExplainCard, { variant: "pa", selfHarm: mentalPa.selfHarm }),
+          data3?.raw && data3.raw.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Fold, { title: "\u7B54\u9898\u660E\u7EC6 \xB7 \u5B66\u751F\u7248 B\uFF08PHQ-A\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswerDetailsByKind, { raw: data3.raw, kinds: ["mentalpa"] }) })
         ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
           MissingCard,
           {
             text: "\u5B66\u751F\u7248 B\uFF08PHQ-A + GAD-7 \u5B66\u751F\u7248\uFF09\u8FD8\u6CA1\u6D4B\uFF1A16 \u9898\u7EA6 3 \u5206\u949F\uFF0C\u9002\u7528 11 \u5C81\u4EE5\u4E0A\u3002",
             actionText: "\u53BB\u6D4B\u5B66\u751F\u7248 B \u2192",
-            to: "/assessments?start=mentalpa"
+            to: "/assessments?start=mental"
           }
         ),
         mental ? isMentalV2(mental) ? /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
@@ -113225,7 +113414,9 @@ function ReportView({
               mental.positives,
               "/16 \u9879\u3002\u4E24\u5468\u540E\u53EF\u590D\u6D4B\u5BF9\u6BD4\u53D8\u5316\u3002"
             ] })
-          ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(PhqGadExplainCard, { variant: "v2", selfHarm: mental.selfHarm }),
+          data3?.raw && data3.raw.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Fold, { title: "\u7B54\u9898\u660E\u7EC6 \xB7 \u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(AnswerDetailsByKind, { raw: data3.raw, kinds: ["mental"] }) })
         ] }) : /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)(import_jsx_runtime17.Fragment, { children: [
           /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("div", { className: "paper-card border-butter bg-butter/20 p-4", children: /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "text-[12.5px] leading-relaxed text-olive", children: [
             "\u4F60\u4E0A\u6B21\u5B8C\u6210\u7684\u662F\u65E7\u7248\u5341\u56E0\u5B50\u7B5B\u67E5\uFF08\u901A\u7528\u7248\u524D\u8EAB\uFF09\u3002\u73B0\u5728\u6709\u65B0\u7248\u53EF\u7528\uFF1A",
@@ -113890,7 +114081,7 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v40.tsx
+// scripts/smoke-render-v41.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -114153,7 +114344,21 @@ if (/三甲医院/.test(mentalTab + combinedM)) throw new Error("\u4ECD\u6709\u3
 need(mentalTab + combinedM, "\u56FD\u9645\u901A\u7528\u7B5B\u67E5\u5DE5\u5177", "\u56FD\u9645\u901A\u7528\u63AA\u8F9E");
 need(mentalTab + combinedM, "12356", "\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF\u4FDD\u7559");
 console.log("OK v40 \u4E09\u91CF\u8868\u8FDB\u62A5\u544A + \u63AA\u8F9E");
-console.log("RENDER_SMOKE_V40_OK");
+need(mentalTab, "\u8FD9\u4E9B\u5206\u6570\u600E\u4E48\u770B", "\u5FC3\u7406\u62A5\u544A\xB7\u5206\u6570\u6307\u5357");
+need(mentalTab, "\u5206\u6570\u662F\u300C\u4FE1\u53F7\u300D\u4E0D\u662F\u300C\u5224\u51B3\u300D", "\u5FC3\u7406\u62A5\u544A\xB7\u5206\u6570\u6307\u5357\u767D\u8BDD");
+need(mentalTab, "\u6BCF\u4E2A\u89C2\u6D4B\u70B9\u5728\u89C2\u5BDF\u4EC0\u4E48", "SDQ \u7EF4\u5EA6\u8BF4\u660E");
+need(mentalTab, "\u89C2\u5BDF\u4EC0\u4E48\uFF1A", "SDQ \u89C2\u5BDF\u70B9");
+need(mentalTab, "\u5206\u6570\u4EE3\u8868\u4EC0\u4E48\uFF1A", "SDQ \u5206\u6570\u542B\u4E49");
+need(mentalTab, "\u6BCF\u9053\u9898\u5728\u89C2\u5BDF\u4EC0\u4E48", "PHQ-A/GAD-7 \u89C2\u6D4B\u70B9\u8BF4\u660E");
+need(mentalTab, "\u7B2C 9 \u9898\uFF08\u7EA2\u7EBF\uFF09\uFF1A", "PHQ \u7EA2\u7EBF\u89C2\u6D4B\u70B9");
+need(mentalTab, "\u7EFC\u5408\u5206\u7EA7\u610F\u5473\u7740\u4EC0\u4E48", "\u5206\u7EA7\u603B\u8868");
+need(mentalTab, "\u7B54\u9898\u660E\u7EC6 \xB7 \u5B66\u751F\u7248 A\uFF08SDQ\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09", "SDQ \u660E\u7EC6\u6298\u53E0");
+need(mentalTab, "\u7B54\u9898\u660E\u7EC6 \xB7 \u5B66\u751F\u7248 B\uFF08PHQ-A\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09", "PHQ-A \u660E\u7EC6\u6298\u53E0");
+need(mentalTab, "\u7B54\u9898\u660E\u7EC6 \xB7 \u901A\u7528\u7248\uFF08PHQ-9 + GAD-7\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09", "\u901A\u7528\u7248\u660E\u7EC6\u6298\u53E0");
+need(combinedM, "ansblk-mentalsdq", "\u7EFC\u5408\u6761\u4EF6\u7AE0 SDQ \u660E\u7EC6\u5757");
+need(combinedM, "ansblk-mentalpa", "\u7EFC\u5408\u6761\u4EF6\u7AE0 PHQ-A \u660E\u7EC6\u5757");
+console.log("OK v41 \u5FC3\u7406\u8BE6\u7EC6\u89E3\u8BFB + \u660E\u7EC6\u6298\u53E0");
+console.log("RENDER_SMOKE_V41_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

@@ -250,7 +250,7 @@ export default function SystemFramework({
                   <LinkChip
                     done={status.mental.done}
                     label={status.mental.done ? `心理健康 · ${status.mental.note ?? "已测"}` : "心理健康 · 未测"}
-                    onClick={!status.mental.done && onOpen ? () => open({ kind: "assess", start: "mentalsdq" }) : undefined}
+                    onClick={!status.mental.done && onOpen ? () => open({ kind: "assess", start: "mental" }) : undefined}
                   />
                 )}
               </div>

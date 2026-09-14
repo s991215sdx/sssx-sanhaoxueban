@@ -43,6 +43,12 @@ import {
   MENTAL_PA_AGE,
   MENTAL_PA_DISCLAIMER,
   SDQ_DIM_LABEL,
+  MENTAL_SCORE_GUIDE,
+  MENTAL_V2_BAND_GUIDE,
+  MENTAL_SDQ_BAND_GUIDE,
+  SDQ_DIM_EXPLAIN,
+  PHQ9_ITEM_EXPLAIN,
+  GAD7_ITEM_EXPLAIN,
 } from "@contracts/mentalHealth";
 import type { AcademicsData } from "@contracts/academics";
 import { SELF_LEVELS } from "@contracts/academics";
@@ -1875,6 +1881,134 @@ function MentalSdqBars({ mental }: { mental: MentalSdqResult }) {
   );
 }
 
+/** 分数总指南卡：量表分数怎么看（三种量表共用，mental tab 顶部展示一次）。 */
+function MentalScoreGuideCard() {
+  return (
+    <div className="paper-card border-lime/50 bg-lime-pale/40 p-5">
+      <h3 className="font-bold text-olive">这些分数怎么看？</h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-olive-soft">{MENTAL_SCORE_GUIDE}</p>
+    </div>
+  );
+}
+
+/** 分级总表卡：PHQ-9/PHQ-A/GAD-7 四级各自意味着什么。 */
+function MentalBandGuideCard({ title }: { title: string }) {
+  return (
+    <div className="rounded-xl border border-border/70 bg-cream/60 p-3.5">
+      <div className="text-[12.5px] font-bold text-olive">{title}</div>
+      <ul className="mt-1.5 space-y-1.5">
+        {MENTAL_V2_BAND_GUIDE.map((g) => (
+          <li key={g.band} className="text-[12.5px] leading-relaxed text-olive-soft">
+            <b className="text-olive">{g.band}：</b>
+            {g.meaning}
+            <span className="text-olive-mute">——{g.action}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** SDQ 维度说明卡：每个观测点观察什么 + 分数含义 + 建议。 */
+function SdqDimExplainCard({ mental }: { mental: MentalSdqResult }) {
+  const dims = ["emotion", "conduct", "hyper", "peer", "prosocial"] as const;
+  return (
+    <div className="paper-card p-5">
+      <h3 className="font-bold text-olive">学生版 A · 每个观测点在观察什么</h3>
+      <p className="mt-1 text-[12.5px] text-olive-mute">SDQ 把孩子的状态拆成五个观察面；下面逐面说明它观察什么、分数代表什么。</p>
+      <div className="mt-3 space-y-2.5">
+        {dims.map((k) => {
+          const ex = SDQ_DIM_EXPLAIN[k];
+          return (
+            <div key={k} className="rounded-xl border border-border/70 bg-cream/60 p-3.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[13px] font-bold text-olive">{SDQ_DIM_LABEL[k]}</span>
+                <span
+                  className={`rounded-full border px-2 py-px text-[11px] font-semibold ${
+                    mental.dimBands[k] === "正常"
+                      ? "border-lime/50 bg-lime-pale text-[#5a9326]"
+                      : mental.dimBands[k] === "边缘"
+                        ? "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]"
+                        : "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]"
+                  }`}
+                >
+                  本次 {mental.dims[k]}/10「{mental.dimBands[k]}」
+                </span>
+              </div>
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-olive-soft">
+                <b className="text-olive">观察什么：</b>{ex.observe}
+              </p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">
+                <b className="text-olive">分数代表什么：</b>{ex.meaning}
+              </p>
+              <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-[12.5px] leading-relaxed text-olive-soft">
+                {ex.advice.map((a, i) => (
+                  <li key={i}>{a}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 rounded-xl border border-border/70 bg-cream/60 p-3.5">
+        <div className="text-[12.5px] font-bold text-olive">「正常 / 边缘 / 明显」分别意味着什么</div>
+        <ul className="mt-1.5 space-y-1">
+          {MENTAL_SDQ_BAND_GUIDE.map((g) => (
+            <li key={g.band} className="text-[12.5px] leading-relaxed text-olive-soft">
+              <b className="text-olive">{g.band}：</b>
+              {g.meaning}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/** PHQ-9 / PHQ-A + GAD-7 逐观测点说明卡（通用版与学生版 B 共用）。 */
+function PhqGadExplainCard({ variant, selfHarm }: { variant: "v2" | "pa"; selfHarm: boolean }) {
+  const phqTitle = variant === "pa" ? "PHQ-A 九个观测点" : "PHQ-9 九个观测点";
+  return (
+    <div className="paper-card p-5">
+      <h3 className="font-bold text-olive">{variant === "pa" ? "学生版 B" : "通用版"} · 每道题在观察什么</h3>
+      <p className="mt-1 text-[12.5px] text-olive-mute">
+        {variant === "pa"
+          ? `PHQ-A 是青少年抑郁筛查（PHQ-9 的青少年版），GAD-7 看焦虑；每道题对应一个观测点，0=完全不会 / 1=好几天 / 2=超过一半的天数 / 3=几乎天天，分数就是「过去两周这个状态出现的频率」。`
+          : `PHQ-9 看抑郁、GAD-7 看焦虑；每道题对应一个观测点，0=完全不会 / 1=好几天 / 2=超过一半的天数 / 3=几乎天天，分数就是「过去两周这个状态出现的频率」。`}
+      </p>
+      <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
+        <div className="rounded-xl border border-border/70 bg-cream/60 p-3.5">
+          <div className="text-[12.5px] font-bold text-olive">{phqTitle}</div>
+          <ul className="mt-1.5 space-y-1.5">
+            {PHQ9_ITEM_EXPLAIN.map((it, i) => (
+              <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
+                <b className={i === 8 && selfHarm ? "text-[#8f1313]" : "text-olive"}>
+                  第 {i + 1} 题{i === 8 ? "（红线）" : ""}：
+                </b>
+                {it.text}——{it.observe}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-cream/60 p-3.5">
+          <div className="text-[12.5px] font-bold text-olive">GAD-7 七个观测点</div>
+          <ul className="mt-1.5 space-y-1.5">
+            {GAD7_ITEM_EXPLAIN.map((it, i) => (
+              <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
+                <b className="text-olive">第 {i + 10} 题：</b>
+                {it.text}——{it.observe}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2.5">
+            <MentalBandGuideCard title="综合分级意味着什么" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 旧版 V1 心理健康十因子条形图（历史数据兼容展示）。 */
 function MentalBar({ mental }: { mental: MentalResult }) {
   return (
@@ -2475,10 +2609,10 @@ export default function ReportView({
             <MissingCard
               text="心理健康筛查全部为选做，有三套可挑着做：学生版 A（SDQ 长处与困难问卷，25 题，4—17 岁，11 岁以下可家长陪读）、学生版 B（PHQ-A + GAD-7 学生版，16 题，11 岁以上）、通用版（PHQ-9 + GAD-7，16 题）。做了哪套，结果都会出现在这里和综合报告里。"
               actionText="去测学生版 A（SDQ）→"
-              to="/assessments?start=mentalsdq"
+              to="/assessments?start=mental"
             />
             <div className="flex flex-wrap gap-2">
-              <a href="/assessments?start=mentalpa" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
+              <a href="/assessments?start=mental" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
                 去测学生版 B（PHQ-A，11 岁以上）→
               </a>
               <a href="/assessments?start=mental" className="rounded-full border border-lime/50 bg-lime-pale/60 px-3 py-1.5 text-[12.5px] font-semibold text-olive hover:border-lime">
@@ -2488,6 +2622,7 @@ export default function ReportView({
           </div>
         ) : (
           <div className="space-y-4">
+            <MentalScoreGuideCard />
             {/* 学生版 A（SDQ） */}
             {mentalSdq ? (
               <>
@@ -2499,12 +2634,18 @@ export default function ReportView({
                   </p>
                   <p className="mt-2 text-[12.5px] leading-relaxed text-olive-mute">一两个月后可复测对比变化。</p>
                 </div>
+                <SdqDimExplainCard mental={mentalSdq} />
+                {data?.raw && data.raw.length > 0 && (
+                  <Fold title="答题明细 · 学生版 A（SDQ，点击展开）">
+                    <AnswerDetailsByKind raw={data.raw} kinds={["mentalsdq"]} />
+                  </Fold>
+                )}
               </>
             ) : (
               <MissingCard
                 text="学生版 A（SDQ 长处与困难问卷）还没测：25 题约 4 分钟，适用 4—17 岁（11 岁以下可家长陪读）。"
                 actionText="去测学生版 A →"
-                to="/assessments?start=mentalsdq"
+                to="/assessments?start=mental"
               />
             )}
             {/* 学生版 B（PHQ-A + GAD-7 学生化） */}
@@ -2520,12 +2661,18 @@ export default function ReportView({
                     综合分级取 PHQ-A 与 GAD-7 中较重者；得分 ≥2 的题共 {mentalPa.positives}/16 项。两周后可复测对比变化。
                   </p>
                 </div>
+                <PhqGadExplainCard variant="pa" selfHarm={mentalPa.selfHarm} />
+                {data?.raw && data.raw.length > 0 && (
+                  <Fold title="答题明细 · 学生版 B（PHQ-A，点击展开）">
+                    <AnswerDetailsByKind raw={data.raw} kinds={["mentalpa"]} />
+                  </Fold>
+                )}
               </>
             ) : (
               <MissingCard
                 text="学生版 B（PHQ-A + GAD-7 学生版）还没测：16 题约 3 分钟，适用 11 岁以上。"
                 actionText="去测学生版 B →"
-                to="/assessments?start=mentalpa"
+                to="/assessments?start=mental"
               />
             )}
             {/* 通用版（PHQ-9 + GAD-7，含旧版十因子兼容） */}
@@ -2542,6 +2689,12 @@ export default function ReportView({
                       综合分级取 PHQ-9 与 GAD-7 中较重者；得分 ≥2 的题共 {mental.positives}/16 项。两周后可复测对比变化。
                     </p>
                   </div>
+                  <PhqGadExplainCard variant="v2" selfHarm={mental.selfHarm} />
+                  {data?.raw && data.raw.length > 0 && (
+                    <Fold title="答题明细 · 通用版（PHQ-9 + GAD-7，点击展开）">
+                      <AnswerDetailsByKind raw={data.raw} kinds={["mental"]} />
+                    </Fold>
+                  )}
                 </>
               ) : (
                 <>
