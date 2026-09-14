@@ -2,7 +2,7 @@
  * 学生 × 家长 DISC 四因子对照条（「条件模块 · 支持系统」章节图表折叠用）。
  * 学生 DISC 四因子条 + 每位家长 DISC 四因子条（标签区分）。
  * V44：统一改为国际通行双极倾向度口径（净分÷24×100%，-100%…+100%，中线 0%）；
- * 逐维度 |学生-家长| 倾向度差标注——|Δ|≥50 标「⚠ 明显顶牛」红色 badge 并排在最前，
+ * 逐维度 |学生-家长| 倾向度差标注——|Δ|≥50 标「⚠ 明显对着干」红色 badge 并排在最前，
  * 33–49 标「略有差异」琥珀色（与原 0–24 量尺 差 6 / 差 4–5 等比换算）。
  */
 import { DISC_THEORY, getDiscCombo } from "@/data/reports";
@@ -28,6 +28,30 @@ export const DISC_DIM_PLAIN: Record<DiscType, string> = {
 function nv(result: DiscResult, k: DiscType): number {
   return discTendencyFromDims(result.dims, result.version)[k];
 }
+
+/** 各类型家长的管教风格「要调整 / 注意」白话清单（对照卡与详版共用）。 */
+export const PARENT_DISC_ADJUST: Record<DiscType, string[]> = {
+  D: [
+    "少下命令、多给选择：把「必须这样做」换成「A 还是 B，你定」，孩子更愿意配合。",
+    "批评只对事不对人，不在气头上讲道理；发火前先停十秒。",
+    "孩子不是下属：每周留一次不谈学习的闲聊，关系先于管教。",
+  ],
+  I: [
+    "热情要有度：表扬要具体到哪件事，批评私下说、先肯定再提问题。",
+    "定了规则就执行到底，别被孩子的软磨硬泡带偏节奏。",
+    "少开「空头支票」：答应的奖励一定要兑现，否则威信打折。",
+  ],
+  S: [
+    "温和不等于没原则：规则要少，但定了就坚持到底。",
+    "别替孩子包办：让他自己定目标、自己承担后果，家长做「安静的同路人」。",
+    "家里气氛好是好事，也要定期推一推学习节奏，别让计划停在纸上。",
+  ],
+  C: [
+    "标准别拉满：先肯定，再只提一个（只提一个）改进点。",
+    "允许孩子用自己的方式完成，把「完美」调成「完成优先」。",
+    "少用放大镜看缺点：避免把小问题说成对孩子的整体否定。",
+  ],
+};
 
 function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: string; result: DiscResult; hot?: DiscType[] }) {
   const combo = getDiscCombo(result.dims);
@@ -73,7 +97,7 @@ function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: str
   );
 }
 
-/** 家长 × 学生逐维度倾向度差标注：|Δ|≥50 明显顶牛（红，排最前）；33–49 略有差异（琥珀）。 */
+/** 家长 × 学生逐维度倾向度差标注：|Δ|≥50 明显对着干（红，排最前）；33–49 略有差异（琥珀）。 */
 function DimDeltaBadges({ label, parent, student }: { label: string; parent: DiscResult; student: DiscResult }) {
   const deltas = (["D", "I", "S", "C"] as DiscType[]).map((k) => ({
     k,
@@ -97,7 +121,7 @@ function DimDeltaBadges({ label, parent, student }: { label: string; parent: Dis
           key={d.k}
           className="rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]"
         >
-          ⚠ {d.k}（{DISC_DIM_PLAIN[d.k]}）明显顶牛：你 {discTendencyText(d.student)} / {label} {discTendencyText(d.parent)}，差 {Math.round(d.abs)}%
+          ⚠ {d.k}（{DISC_DIM_PLAIN[d.k]}）差得最多、容易对着干：你 {discTendencyText(d.student)} / {label} {discTendencyText(d.parent)}，差 {Math.round(d.abs)}%
         </span>
       ))}
       {watch.map((d) => (
@@ -125,7 +149,7 @@ export default function DiscParentCompare({
       <p className="mt-1 text-[12.5px] text-olive-mute">
         看看孩子和家长各自最自然的行为模式差在哪里（类型没有好坏，只有不同）。已统一为国际通行双极倾向度口径
         （净分÷24×100%，中线 0%，原始倾向度未做常模转换；旧版二选一作答换算）；同一维度两边倾向度差 ≥50%
-        算「明显顶牛」（日常相处最容易频道对不上，红色标出），差 33–49%「略有差异」。
+        算「明显对着干」（这一条上你和孩子容易拧着来、频道对不上，红色标出），差 33–49%「略有差异」。
       </p>
       <div className="mt-3 space-y-4">
         {(() => {
@@ -150,6 +174,16 @@ export default function DiscParentCompare({
                     hot={perParent[i]}
                   />
                   <DimDeltaBadges label={p.label} parent={p.result} student={student} />
+                  <div className="mt-2 rounded-xl border border-butter/60 bg-butter/10 px-3 py-2">
+                    <div className="text-[12px] font-bold text-olive">{p.label}（{p.result.primary} 型家长）的管教风格怎么调</div>
+                    <ul className="mt-1 space-y-0.5">
+                      {PARENT_DISC_ADJUST[p.result.primary].map((t, j) => (
+                        <li key={j} className="text-[11.5px] leading-relaxed text-olive-soft">
+                          · {t}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               ))}
             </>

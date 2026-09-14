@@ -1019,7 +1019,7 @@ export function buildCombinedReport(
       const strong = deltas.filter((x) => x.abs >= 50).sort((a, b) => b.abs - a.abs);
       conflicts.push(
         strong.length > 0
-          ? `**${p.label}（${pp} 型）× 你（${d} 型）· DISC 频道冲突**：${strong.map((x) => `${x.k} 维倾向度差 ${Math.round(x.abs)}%`).join("、")}（-100%…+100% 倾向度口径，差 ≥50% 为明显顶牛）——${DISC_CONFLICT[pp][d]}。`
+          ? `**${p.label}（${pp} 型）× 你（${d} 型）· DISC 频道冲突**：${strong.map((x) => `${x.k} 维倾向度差 ${Math.round(x.abs)}%`).join("、")}（-100%…+100% 倾向度口径，差 ≥50% 为明显对着干）——${DISC_CONFLICT[pp][d]}。`
           : `${p.label}（${pp} 型）× 你（${d} 型）：DISC 四维度倾向度差均在安全区（最大 ${Math.round(Math.max(...deltas.map((x) => x.abs)))}%），行为频道总体接近；仍需留意——${DISC_CONFLICT[pp][d]}。`,
       );
     }

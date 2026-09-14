@@ -21,7 +21,7 @@ import {
 } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Stage, E3V37ItemScore } from "@contracts/e3v37";
 import { E3V37P_MIRROR_QUESTIONS, isE3V37ParentResult, type E3V37ParentResult } from "@contracts/e3v37Parent";
-import { DISC_DIM_PLAIN } from "./DiscParentCompare";
+import { DISC_DIM_PLAIN, PARENT_DISC_ADJUST } from "./DiscParentCompare";
 import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { AnchorResult } from "@contracts/careerAnchor";
 import type { MultiResult } from "@contracts/multi";
@@ -1095,7 +1095,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
         <div className="mt-4 -mx-5">
           <DiscTendencyChart dims={dims} version={version} />
         </div>
-        <DiscReboundExplain />
+        <DiscReboundExplain tendency={tendency} />
         <div className="mt-3 flex flex-wrap gap-1.5">
           {report.keywords.map((k) => (
             <span key={k} className="chip">
@@ -1224,11 +1224,11 @@ function buildParentChildAnalysis(
       const strong = deltas.filter((x) => x.abs >= 50).sort((a, b) => b.abs - a.abs);
       if (strong.length > 0) {
         conflicts.push({
-          text: `${p.label} × 孩子在「${strong.map((x) => `${x.k}（${DISC_DIM_PLAIN[x.k]}）`).join("、")}」上明显顶牛（倾向度差 ${strong.map((x) => `${Math.round(x.abs)}%`).join("、")}，差 50% 以上就算明显）——${style.risk[student.primary]}。`,
+          text: `${p.label} × 孩子在「${strong.map((x) => `${x.k}（${DISC_DIM_PLAIN[x.k]}）`).join("、")}」上明显对着干（倾向度差 ${strong.map((x) => `${Math.round(x.abs)}%`).join("、")}，差 50% 以上就算明显）——${style.risk[student.primary]}。`,
           hot: true,
         });
       } else {
-        conflicts.push({ text: `${p.label} × 孩子：行为频道总体接近，没有明显顶牛的维度；日常留意——${style.risk[student.primary]}。`, hot: false });
+        conflicts.push({ text: `${p.label} × 孩子：行为频道总体接近，没有明显对着干的维度；日常留意——${style.risk[student.primary]}。`, hot: false });
       }
     } else {
       conflicts.push({ text: `${p.label} 偏 ${p.result.primary} 型（${style.style}）；孩子完成 DISC 后这里会给出亲子冲突对照。`, hot: false });
@@ -1645,8 +1645,10 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
   );
 }
 
-/** 上下反弹区说明卡（学生/家长详版共用）。 */
-function DiscReboundExplain() {
+/** 上下反弹区说明卡（学生/家长详版共用）：仅当任一因子进入反弹区（|倾向度|≥80%）时才显示。 */
+function DiscReboundExplain({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
+  const inRebound = (["D", "I", "S", "C"] as const).some((k) => Math.abs(tendency[k]) >= DISC_REBOUND_PCT);
+  if (!inRebound) return null;
   return (
     <div className="mt-4 rounded-xl border border-border bg-cream/70 px-4 py-3">
       <div className="text-[12.5px] font-bold text-olive">上下两个灰色「反弹区」怎么看</div>
@@ -1698,9 +1700,9 @@ function DiscParentDetail({ label, result, student }: { label: string; result: D
       <DiscBipolarAxis tendency={tendency} />
       {/* 双极倾向度图（家长版） */}
       <div className="mt-4 -mx-5">
-        <DiscTendencyChart dims={result.dims} version={result.version} title={`${label} 的行为之镜 · DISC 四因子倾向度（家长版）`} />
+        <DiscTendencyChart dims={result.dims} version={result.version} title={`${label} 的行为之镜 · DISC 四因子倾向度（家长版）`} who={label} />
       </div>
-      <DiscReboundExplain />
+      <DiscReboundExplain tendency={tendency} />
       <div className="mt-3 space-y-2 text-[13px] leading-relaxed text-olive-soft">
         {student && (
           <p>
@@ -1713,6 +1715,16 @@ function DiscParentDetail({ label, result, student }: { label: string; result: D
           <b className="text-olive">管教建议：</b>
           {style.tip}
         </p>
+        <div className="rounded-xl border border-butter/60 bg-butter/10 px-3 py-2">
+          <div className="text-[12.5px] font-bold text-olive">{label} 的管教风格 · 三点调整</div>
+          <ul className="mt-1 space-y-0.5">
+            {PARENT_DISC_ADJUST[result.primary].map((t, i) => (
+              <li key={i} className="text-[12px] leading-relaxed text-olive-soft">
+                {i + 1}. {t}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -1728,11 +1740,14 @@ function DiscTendencyChart({
   version,
   title,
   note,
+  who,
 }: {
   dims: Record<"D" | "I" | "S" | "C", number>;
   version?: 2;
   title?: string;
   note?: string;
+  /** 词阵白话解读里的称呼：学生版默认「你」，家长版传家长称呼（如「妈妈」）。 */
+  who?: string;
 }) {
   const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
   const combo = getDiscCombo(dims);
@@ -1751,6 +1766,7 @@ function DiscTendencyChart({
   const reboundHighDims = keys.filter((k) => tendency[k] >= DISC_REBOUND_PCT);
   const reboundLowDims = keys.filter((k) => tendency[k] <= -DISC_REBOUND_PCT);
   const primaryReport = DISC_REPORTS[combo[0]];
+  const plainWho = who ?? "你";
   const PLOT_L = PAD_X - 34;
   const PLOT_R = W - PAD_X + 34;
   return (
@@ -1900,6 +1916,11 @@ function DiscTendencyChart({
       </div>
       <p className="mt-1.5 text-[11px] text-olive-mute">
         每列词从上到下按该因子最强到最弱排列；高亮的 5 个词按你的倾向度定位（倾向度越高越靠上），主因子组合（{combo.join("")} 型）对应列底色更深。仅供对照理解，不代表逐词实测。
+      </p>
+      <p className="mt-1.5 rounded-lg bg-cream/70 px-3 py-2 text-[11.5px] leading-relaxed text-olive-soft">
+        <b className="text-olive">这些关键词怎么读：</b>每一列是这个行为风格最常用的词，从上往下由「最典型」到「最不像」排列；彩色高亮的那 5
+        个词，就是最贴近{plainWho}平时样子的词——不用逐词对号入座，抓住大意就好：偏「敢冲、说了算」是 D（老虎）气质，偏「热闹、爱表达」是
+        I（孔雀）气质，偏「稳、慢热、配合」是 S（考拉）气质，偏「细、较真、讲规矩」是 C（猫头鹰）气质。类型没有好坏，只是每个人的默认档位不同。
       </p>
       <p className="mt-3 text-[12px] text-olive-mute">
         四因子倾向度：D {discTendencyText(tendency.D)} ｜ I {discTendencyText(tendency.I)} ｜ S {discTendencyText(tendency.S)} ｜ C {discTendencyText(tendency.C)}（-100%…+100%，合计恒为 0；原始倾向度，未做常模转换）。类型没有好坏，只代表当前状态下的行为倾向。
