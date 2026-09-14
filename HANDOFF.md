@@ -318,3 +318,13 @@
 
 ### 注意
 - 发布前确认平台执行 0013 迁移，否则新两套提交会被 DB enum 拒绝。
+
+### v40 补丁（同日，全量审查修复）
+- **伴学师端遗漏修复**：api/studentDetail.ts `OPTIONAL_KINDS` 加 mentalsdq/mentalpa（否则伴学师看不到学生新量表结果）；StudentDetailDrawer 已测清单与 ReportView data 透传同步加两套。
+- 框架图「心理健康 · 未测」点击入口从 mental 改为 mentalsdq（学生版 A 优先）。
+- **全量计分审查**（scripts/.audit.ts 极值/模式作答 20 项）：MBTI/E3/multi5/职业锚/霍兰德/心理四套（V1/V2/SDQ/PA）/家长卷全部 PASS。DISC 两项初判 FAIL 复核后结论：
+  - V1「全 0/全 1 同主型、总分 24」= 测试假设错误（题库每维 a/b 各 6 次完全均衡，全 0 → 各维 6 分平局 → 按 D 优先），非 bug。
+  - V2「模式作答主型偏移」= **词位分布轻微不均衡**（每维在四词位出现 5-8 次不等，如 D 在第 2 位 8 次、第 3/4 位各 5 次；理想应各 6 次）。对按词义作答无影响，仅对「按位置习惯作答」有轻微偏差；学生/家长版同步同构。**注意：直接重排词序会使历史作答明细（按词下标存储）错标，若要修需连带版本号。**
+
+### 全系统审查结论（v40 收尾，详见对话汇报）
+1. 伴学师端 OPTIONAL_KINDS 缺新 kind（已修）；2. DISC V2 词位不均衡（轻微，暂缓）；3. tsc 基线 3 个历史遗留错误（AcademicsSubmit 科目名字面量、StudentDetailDrawer/AcademicsForm/AcademicsStage 三处）仍在，与历次改动无关，建议择机清理；4. latest 接口 early-break 条件未含新 kind（仅多扫几行，无功能影响）；5. 简版 AssessmentChartsLite 心理图只画通用版（SDQ/PA 暂不进简版图解，详版/框架图/冰山均已覆盖）。

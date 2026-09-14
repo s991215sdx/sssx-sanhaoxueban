@@ -139,7 +139,9 @@ export default function StudentDetailDrawer({
                   if (a.optional?.multi5) names.push("多元智能五项");
                   if (a.optional?.anchor) names.push("职业锚");
                   if (a.optional?.holland) names.push("霍兰德职业兴趣");
-                  if (a.optional?.mental) names.push("心理健康");
+                  if (a.optional?.mental) names.push("心理健康·通用版");
+                  if (a.optional?.mentalsdq) names.push("心理健康·学生版A(SDQ)");
+                  if (a.optional?.mentalpa) names.push("心理健康·学生版B(PHQ-A)");
                   if (a.e3parent) names.push("家长卷");
                   return names.length > 0 ? `已测 ${names.length} 项：${names.join("、")}` : "还没有测评结果。";
                 })()}
@@ -154,6 +156,7 @@ export default function StudentDetailDrawer({
                           mbti: a.mbti, disc: a.disc, e3: a.e3, multi: a.multi ?? null,
                           multi5: (a.optional?.multi5 as any) ?? null, anchor: (a.optional?.anchor as any) ?? null,
                           holland: (a.optional?.holland as any) ?? null, mental: (a.optional?.mental as any) ?? null,
+                          mentalSdq: (a.optional?.mentalsdq as any) ?? null, mentalPa: (a.optional?.mentalpa as any) ?? null,
                           e3parent: a.e3parent, discParents: (a.discParents ?? []) as any, raw: a.raw ?? [],
                         }}
                         profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as any }}

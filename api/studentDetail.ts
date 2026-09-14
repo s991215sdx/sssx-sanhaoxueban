@@ -149,8 +149,8 @@ export async function getStudentDetail(db: Db, userId: number): Promise<StudentD
     .where(eq(assessmentResults.userId, userId))
     .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
   const assessments: StudentDetail["assessments"] = { raw: [], discParents: [] };
-  // 选做测评（multi5/职业锚/霍兰德/心理健康）也一并带出，供伴学师查看完整报告与综合分析
-  const OPTIONAL_KINDS = ["multi5", "anchor", "holland", "mental"] as const;
+  // 选做测评（multi5/职业锚/霍兰德/心理健康三套）也一并带出，供伴学师查看完整报告与综合分析
+  const OPTIONAL_KINDS = ["multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa"] as const;
   for (const row of rows) {
     const kind = row.kind;
     if (kind === "discparent") {

@@ -110832,7 +110832,7 @@ function SystemFramework({
           {
             done: status.mental.done,
             label: status.mental.done ? `\u5FC3\u7406\u5065\u5EB7 \xB7 ${status.mental.note ?? "\u5DF2\u6D4B"}` : "\u5FC3\u7406\u5065\u5EB7 \xB7 \u672A\u6D4B",
-            onClick: !status.mental.done && onOpen ? () => open({ kind: "assess", start: "mental" }) : void 0
+            onClick: !status.mental.done && onOpen ? () => open({ kind: "assess", start: "mentalsdq" }) : void 0
           }
         )
       ] }),
