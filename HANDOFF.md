@@ -453,3 +453,7 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - **「顶牛」通俗化**：全站替换为「明显对着干」（DiscParentCompare badge/注释/口径说明、ReportView buildParentChildAnalysis 2 处、combined.ts 综合报告冲突文案）。
 - 冒烟 v47：新增说明卡正反断言（入区显示/无区隐藏且灰带保留）、关键词解读（含家长称呼「最贴近妈妈平时样子的词」）、管教风格调整 3 处、无「顶牛」残留负断言；RENDER_SMOKE_V47_OK。
 - BUILD_TAG v47-2026-09-14。发布顺序提醒：迁移 0013/0014 → v40 → v41 → v47（中间版本可跳过）。
+
+## v48（2026-09-15，git ddf7f87 / 版本 fbc6981）
+- **桌面侧边栏可折叠**（src/components/Layout.tsx）：右缘贴圆形开关（ChevronsLeft/ChevronsRight，-right-3.5 top-9），点按在 w-60 ↔ w-[68px] 间切换，transition-all 200ms；折叠态只显示图标（导航项 w-10 居中、title 悬浮提示名称；Logo 缩为图形标 LogoMark；隐藏学习心法卡；底部只留头像+退出按钮）。折叠选择持久化 localStorage（key: sanhao-nav-collapsed）。主内容区 md:pl-60 ↔ md:pl-[68px] 联动。移动端顶栏/底部导航不受影响。
+- tsc 无新增错误；BUILD_TAG v48-2026-09-15。
