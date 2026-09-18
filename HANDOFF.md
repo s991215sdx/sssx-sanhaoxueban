@@ -457,3 +457,18 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 ## v48（2026-09-15，git ddf7f87 / 版本 fbc6981）
 - **桌面侧边栏可折叠**（src/components/Layout.tsx）：右缘贴圆形开关（ChevronsLeft/ChevronsRight，-right-3.5 top-9），点按在 w-60 ↔ w-[68px] 间切换，transition-all 200ms；折叠态只显示图标（导航项 w-10 居中、title 悬浮提示名称；Logo 缩为图形标 LogoMark；隐藏学习心法卡；底部只留头像+退出按钮）。折叠选择持久化 localStorage（key: sanhao-nav-collapsed）。主内容区 md:pl-60 ↔ md:pl-[68px] 联动。移动端顶栏/底部导航不受影响。
 - tsc 无新增错误；BUILD_TAG v48-2026-09-15。
+
+## v49（2026-09-15，git df08beb / 版本 0d4632e）邀请制注册 + 渠道二维码
+- **数据层（迁移 0015_invite_channels，三处已同步：schema/journal idx15 when 1789488000000/embedded）**：
+  - `invite_channels`（code 唯一渠道码 10 位去混淆字母表、name、kind、note、active、created_by）
+  - `invite_registrations`（channelId+冗余 channelCode、parentName、studentName、phone、grade、userId）
+- **API**（api/inviteRouter.ts，挂 appRouter.invite）：
+  - admin：createChannel（建渠道自动发码）/ channels（列表+各渠道累计注册数+最近 50 条）/ setChannelActive（停用即二维码失效）
+  - public：channelInfo（校验码，只回渠道名/类型）/ registerWithInvite（验码→录基础信息→建 users(unionId phone:)+预填 studentProfile(name/grade, onboarded=false)→写注册记录→签 session 直接登录）
+  - auth-router.ts：导出 hashPassword/setSessionCookie；**loginPhone 不再自动注册**——未注册手机号提示「邀请制，请扫管理员发放的注册二维码」（OAuth 链路未动）
+- **前端**：
+  - /invite/:code 公开落地页（src/pages/InviteRegister.tsx）：渠道徽标 → 孩子姓名/年级（INVITE_GRADES 12 档）/家长称呼/手机号/双密码 → 注册成功直接登录 → ProfileGuard 进 /welcome 引导填资料做测评；无效/停用码有友好提示
+  - 后台新增「注册邀请」tab（src/components/admin/InviteChannelsTab.tsx）：建渠道（名称+类型[地推/异业合作/线上社群/老带新/其他]+备注）、显示/下载二维码 PNG（qrcode 包客户端渲染，链接 {origin}/invite/{code}）、复制链接、停用/启用、每渠道累计注册数、最近注册表
+  - Login.tsx 文案改为邀请制提示
+- 契约层 contracts/invite.ts（INVITE_CHANNEL_KINDS/INVITE_GRADES/INVITE_CODE_RE/normalizeInviteCode）；冒烟 v49 契约断言 OK；tsc 无新增错误；新增依赖 qrcode + @types/qrcode。
+- **发布顺序提醒**：迁移需包含 0013/0014/0015 → v40 → v41 → v49（中间可跳）。
