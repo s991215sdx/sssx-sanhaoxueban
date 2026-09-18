@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 
-/** 登录页：手机号 + 密码，第一次使用会自动注册一个全新账号。 */
+/** 登录页：手机号 + 密码。邀请制注册——没有账号的家长需扫描管理员发放的注册二维码（/invite/{code}）完成注册。 */
 export default function Login() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -70,7 +70,7 @@ export default function Login() {
             type="password"
             autoComplete="current-password"
             maxLength={64}
-            placeholder="6～64 位，第一次用会自动注册"
+            placeholder="6～64 位"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1.5 w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-3 text-[15px] text-olive outline-none transition-colors placeholder:text-olive-mute/60 focus:border-lime"
@@ -88,9 +88,9 @@ export default function Login() {
             {loginMutation.isPending ? "正在进入…" : "进入三好学伴"}
           </button>
           <p className="mt-3.5 text-center text-[12.5px] leading-relaxed text-olive-mute">
-            第一次使用会自动为你注册一个全新账号，
+            还没有账号？三好学伴采用邀请制注册——
             <br />
-            错题、试卷、心情记录都只属于你自己。
+            请向管理员或老师索取<b className="text-olive">注册二维码</b>，扫码填写信息后注册。
           </p>
         </form>
 

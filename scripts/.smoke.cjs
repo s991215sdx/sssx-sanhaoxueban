@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v47.tsx
+// scripts/smoke-render-v49.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -114774,7 +114774,28 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v47.tsx
+// contracts/invite.ts
+var INVITE_CHANNEL_KINDS = ["\u5730\u63A8", "\u5F02\u4E1A\u5408\u4F5C", "\u7EBF\u4E0A\u793E\u7FA4", "\u8001\u5E26\u65B0", "\u5176\u4ED6"];
+var INVITE_GRADES = [
+  "\u4E00\u5E74\u7EA7",
+  "\u4E8C\u5E74\u7EA7",
+  "\u4E09\u5E74\u7EA7",
+  "\u56DB\u5E74\u7EA7",
+  "\u4E94\u5E74\u7EA7",
+  "\u516D\u5E74\u7EA7",
+  "\u521D\u4E00",
+  "\u521D\u4E8C",
+  "\u521D\u4E09",
+  "\u9AD8\u4E00",
+  "\u9AD8\u4E8C",
+  "\u9AD8\u4E09"
+];
+var INVITE_CODE_RE = /^[a-z0-9]{8,24}$/;
+function normalizeInviteCode(raw) {
+  return (raw ?? "").trim().toLowerCase();
+}
+
+// scripts/smoke-render-v49.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -115189,7 +115210,12 @@ need(parentHtml, "\u7684\u7BA1\u6559\u98CE\u683C \xB7 \u4E09\u70B9\u8C03\u6574",
 need(fullParent, "\u7684\u7BA1\u6559\u98CE\u683C\u600E\u4E48\u8C03", "\u7EFC\u5408\u8BE6\u7248\u5BF9\u7167\u5361\u7BA1\u6559\u98CE\u683C\u8C03\u6574");
 if (/顶牛/.test(parentHtml + fullParent + discHtml)) throw new Error("\u4ECD\u6709\u300C\u9876\u725B\u300D\u63AA\u8F9E\u672A\u66FF\u6362");
 console.log("OK v47 \u53CD\u5F39\u533A\u6761\u4EF6\u663E\u793A + \u5173\u952E\u8BCD\u767D\u8BDD + \u7BA1\u6559\u98CE\u683C\u8C03\u6574 + \u63AA\u8F9E\u901A\u4FD7\u5316");
-console.log("RENDER_SMOKE_V47_OK");
+if (INVITE_CHANNEL_KINDS.join("") !== "\u5730\u63A8\u5F02\u4E1A\u5408\u4F5C\u7EBF\u4E0A\u793E\u7FA4\u8001\u5E26\u65B0\u5176\u4ED6") throw new Error("\u6E20\u9053\u7C7B\u578B\u9009\u9879\u5F02\u5E38");
+if (INVITE_GRADES.length !== 12 || INVITE_GRADES[0] !== "\u4E00\u5E74\u7EA7" || INVITE_GRADES[11] !== "\u9AD8\u4E09") throw new Error("\u5E74\u7EA7\u9009\u9879\u5F02\u5E38");
+if (!INVITE_CODE_RE.test("abc2345678") || INVITE_CODE_RE.test("AB") || INVITE_CODE_RE.test("\u77ED")) throw new Error("\u6E20\u9053\u7801\u683C\u5F0F\u6821\u9A8C\u5F02\u5E38");
+if (normalizeInviteCode("  AbC2345678 ") !== "abc2345678") throw new Error("\u6E20\u9053\u7801\u5F52\u4E00\u5316\u5F02\u5E38");
+console.log("OK v49 \u9080\u8BF7\u5236\u6CE8\u518C\u5951\u7EA6\u5C42");
+console.log("RENDER_SMOKE_V49_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

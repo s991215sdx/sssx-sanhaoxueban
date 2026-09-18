@@ -10,6 +10,7 @@ import Companion from "./pages/Companion";
 import Papers from "./pages/Papers";
 import Treehole from "./pages/Treehole";
 import Login from "./pages/Login";
+import InviteRegister from "./pages/InviteRegister";
 import Admin from "./pages/Admin";
 import Tutor from "./pages/Tutor";
 import { trpc } from "./providers/trpc";
@@ -63,6 +64,8 @@ export default function App() {
     <Routes>
       {/* 登录页：公开 */}
       <Route path="/login" element={<Login />} />
+      {/* 邀请注册落地页：公开（扫码直达，无需登录） */}
+      <Route path="/invite/:code" element={<InviteRegister />} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}
       <Route
         path="/welcome"

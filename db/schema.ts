@@ -334,3 +334,40 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+/* ---------------------------------- 注册邀请渠道 --------------------------------- */
+
+/** 注册邀请渠道：管理员按推广渠道生成二维码（地推/异业合作/线上社群等），扫码注册绑定渠道。 */
+export const inviteChannels = mysqlTable("invite_channels", {
+  id: serial("id").primaryKey(),
+  /** 渠道码：出现在二维码链接 /invite/{code} 里 */
+  code: varchar("code", { length: 24 }).notNull().unique(),
+  /** 渠道名：如「地推-万达广场点位」 */
+  name: varchar("name", { length: 64 }).notNull(),
+  /** 渠道类型：地推 / 异业合作 / 线上社群 / 老带新 / 其他 */
+  kind: varchar("kind", { length: 24 }).notNull().default("地推"),
+  /** 备注：对接人、点位、合作方等 */
+  note: varchar("note", { length: 255 }),
+  /** 停用后二维码失效，不再接受新注册 */
+  active: boolean("active").notNull().default(true),
+  createdBy: bigint("created_by", { mode: "number", unsigned: true }).notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type InviteChannel = typeof inviteChannels.$inferSelect;
+
+/** 邀请注册记录：每位扫码注册的家长一条（含渠道归属，用于渠道效果统计）。 */
+export const inviteRegistrations = mysqlTable("invite_registrations", {
+  id: serial("id").primaryKey(),
+  channelId: bigint("channel_id", { mode: "number", unsigned: true }).notNull(),
+  /** 冗余存渠道码，渠道删除/改名后记录仍可追溯 */
+  channelCode: varchar("channel_code", { length: 24 }).notNull(),
+  parentName: varchar("parent_name", { length: 64 }).notNull(),
+  studentName: varchar("student_name", { length: 64 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  grade: varchar("grade", { length: 16 }).notNull(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type InviteRegistration = typeof inviteRegistrations.$inferSelect;

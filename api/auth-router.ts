@@ -11,7 +11,7 @@ import { signSessionToken } from "./kimi/session";
 import { env } from "./lib/env";
 
 /* ── 密码散列（scrypt + 随机盐，格式 s1$salt$hash） ─────────────── */
-function hashPassword(password: string): string {
+export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 32).toString("hex");
   return `s1$${salt}$${hash}`;
@@ -45,7 +45,7 @@ function checkThrottle(phone: string) {
 
 const PHONE_RE = /^1[3-9]\d{9}$/;
 
-function setSessionCookie(ctx: { req: Request; resHeaders: Headers }, token: string) {
+export function setSessionCookie(ctx: { req: Request; resHeaders: Headers }, token: string) {
   const opts = getSessionCookieOptions(ctx.req.headers);
   ctx.resHeaders.append(
     "set-cookie",
@@ -66,7 +66,10 @@ export const authRouter = createRouter({
     return safe;
   }),
 
-  /** 手机号 + 密码登录；该手机号第一次使用时自动注册。 */
+  /**
+   * 手机号 + 密码登录。v49 起为邀请制：不再自动注册——
+   * 未注册的手机号需先扫描管理员发放的「注册邀请二维码」（invite.registerWithInvite 注册）。
+   */
   loginPhone: publicQuery
     .input((v: unknown) => v as { phone: string; password: string })
     .mutation(async ({ ctx, input }) => {
@@ -82,35 +85,22 @@ export const authRouter = createRouter({
 
       const db = getDb();
       const found = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
-      let user = found[0];
-      let isNewUser = false;
+      const user = found[0];
 
-      if (user) {
-        if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "密码不对，再想想～" });
-        }
-      } else {
-        // 第一次使用：自动注册一个全新账号
-        const passwordHash = hashPassword(password);
-        const unionId = `phone:${phone}`;
-        const name = `同学${phone.slice(-4)}`;
-        try {
-          await db.insert(users).values({ unionId, phone, passwordHash, name, lastSignInAt: new Date() });
-        } catch {
-          // 并发重复提交：已有账号则按登录处理
-        }
-        user = (await db.select().from(users).where(eq(users.phone, phone)).limit(1))[0];
-        if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "注册失败，请重试" });
-        if (!verifyPassword(password, user.passwordHash ?? "")) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "密码不对，再想想～" });
-        }
-        isNewUser = true;
+      if (!user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "这个手机号还没有注册——三好学伴采用邀请制，请扫描管理员发放的注册二维码完成注册后再登录",
+        });
+      }
+      if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "密码不对，再想想～" });
       }
 
       await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, user.id));
       const token = await signSessionToken({ unionId: user.unionId, clientId: env.appId });
       setSessionCookie(ctx, token);
-      return { ok: true, isNewUser, name: user.name };
+      return { ok: true, isNewUser: false, name: user.name };
     }),
 
   // 注意：logout 用公开过程——即使会话过期也要能清掉 cookie，否则前端会出现「退不出」。

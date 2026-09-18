@@ -2,9 +2,10 @@ import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
+import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X } from "lucide-react";
 
-/** 后台管理：总览 / 学员 / 伴学师 三个 tab。 */
+/** 后台管理：总览 / 学员 / 伴学师 / 注册邀请 四个 tab。 */
 export default function Admin() {
   const { user, refresh } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -57,12 +58,13 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Users; label: str
   );
 }
 
-type AdminTab = "overview" | "students" | "tutors";
+type AdminTab = "overview" | "students" | "tutors" | "invites";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "overview", label: "总览" },
   { key: "students", label: "学员" },
   { key: "tutors", label: "伴学师" },
+  { key: "invites", label: "注册邀请" },
 ];
 
 function AdminPanel({ selfId }: { selfId: number }) {
@@ -100,6 +102,7 @@ function AdminPanel({ selfId }: { selfId: number }) {
         ))}
       </div>
 
+      {tab === "invites" && <InviteChannelsTab />}
       {tab === "overview" && (
         <>
           {overview && (
