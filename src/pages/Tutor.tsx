@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
+import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal } from "lucide-react";
 
@@ -171,6 +172,9 @@ export default function Tutor() {
           <InviteChannelsTab />
         </div>
       </section>
+
+      {/* 学习力陪跑训练方案（三阶九能）：典型问题 + 简要方案，点开看详细做法 */}
+      <TrainingPlanLibrary />
 
       {detailId !== null && <StudentDetailDrawer userId={detailId} source="coach" onClose={() => setDetailId(null)} />}
     </div>

@@ -316,7 +316,7 @@ function e3V37ChartsHtml(e3: E3V37Result): string[] {
 
 export function combinedPrintHtml(
   report: CombinedReport,
-  ctx: { e3?: unknown; multi?: MultiResult; academics?: AcademicsData },
+  ctx: { e3?: unknown; academics?: AcademicsData },
 ): string {
   const parts = [
     h2(report.title),
@@ -335,12 +335,6 @@ export function combinedPrintHtml(
     charts.push(
       h2("数据速览 · 学业诊断") +
         para("学业诊断已升级为 V3.7 三阶九能版，该学生的旧版结果不再适用——请重新完成一次诊断（约 16-18 分钟）后重新生成本报告。"),
-    );
-  }
-  if (ctx.multi) {
-    charts.push(
-      h2("数据速览 · 多元智能八维") +
-        `<div class="chart">${MULTI_DIM_ORDER.map((k) => barRow(MULTI_DIM_LABEL[k], Number(ctx.multi!.dims[k].toFixed(1)), 5, " / 5")).join("")}</div>`,
     );
   }
   const gapRows = (ctx.academics?.subjects ?? []).filter((s) => s.lastScore != null || s.targetScore != null);

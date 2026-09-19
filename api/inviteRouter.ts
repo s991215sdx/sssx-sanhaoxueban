@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { desc, eq, or, sql } from "drizzle-orm";
-import { INVITE_CHANNEL_KINDS, INVITE_GRADES, normalizeInviteCode } from "@contracts/invite";
+import { INVITE_CHANNEL_KINDS, normalizeInviteCode } from "@contracts/invite";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
 import { inviteChannels, inviteRegistrations, studentProfile, users } from "@db/schema";
 import { createRouter, publicQuery, tutorQuery } from "./middleware";
@@ -102,25 +102,16 @@ export const inviteRouter = createRouter({
 
   /**
    * 公开：扫码注册（邀请制唯一注册入口）。
-   * 校验渠道码 → 录基础信息（家长称呼/学生姓名/年级/手机号/密码）→ 建账号 + 预填档案 → 直接登录。
-   * 注册记录绑定渠道，用于渠道效果统计；手机号已注册则提示直接登录。
+   * V51：极简注册——只填手机号 + 密码即完成注册；不再收集家长称呼/学生姓名/年级，
+   * 档案用占位姓名（后续可在测评中心/引导页里补）。注册后默认只开测评中心，伴学师渠道自动挂名。
    */
   registerWithInvite: publicQuery
-    .input(
-      (v: unknown) =>
-        v as { code: string; parentName: string; studentName: string; grade: string; phone: string; password: string },
-    )
+    .input((v: unknown) => v as { code: string; phone: string; password: string })
     .mutation(async ({ ctx, input }) => {
       const code = normalizeInviteCode(input.code ?? "");
-      const parentName = (input.parentName ?? "").trim().slice(0, 64);
-      const studentName = (input.studentName ?? "").trim().slice(0, 64);
-      const grade = (input.grade ?? "").trim();
       const phone = (input.phone ?? "").trim();
       const password = input.password ?? "";
 
-      if (!parentName) badRequest("请填写家长称呼，比如「乐乐妈妈」");
-      if (!studentName) badRequest("请填写孩子姓名");
-      if (!(INVITE_GRADES as readonly string[]).includes(grade)) badRequest("请选择孩子年级");
       if (!PHONE_RE.test(phone)) badRequest("手机号格式不对，检查一下");
       if (password.length < 6 || password.length > 64) badRequest("密码需要 6～64 个字符");
 
@@ -132,6 +123,8 @@ export const inviteRouter = createRouter({
       const existing = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
       if (existing[0]) badRequest("这个手机号已经注册过了，直接去登录页登录就好");
 
+      /* V51 极简注册：不采集家长称呼/学生姓名/年级，档案姓名用尾号占位，欢迎引导里再补全 */
+      const studentName = `同学${phone.slice(-4)}`;
       const passwordHash = hashPassword(password);
       let userId = 0;
       try {
@@ -143,13 +136,10 @@ export const inviteRouter = createRouter({
       } catch {
         badRequest("这个手机号已经注册过了，直接去登录页登录就好");
       }
-      /* 预填学习档案（姓名+年级；默认只开测评中心；伴学师渠道自动挂到该伴学师名下）。
-         注册时已录基础信息 → onboarded=true，登录后直达测评中心 */
       try {
         await db.insert(studentProfile).values({
           userId,
           name: studentName,
-          grade,
           enabledModules: DEFAULT_INVITE_MODULES,
           tutorId: ch.tutorId ?? null,
           onboarded: true,
@@ -157,15 +147,9 @@ export const inviteRouter = createRouter({
       } catch {
         /* 档案建失败不阻断注册，welcome 引导会兜底补齐 */
       }
-      await db.insert(inviteRegistrations).values({
-        channelId: ch.id,
-        channelCode: ch.code,
-        parentName,
-        studentName,
-        phone,
-        grade,
-        userId,
-      });
+      await db
+        .insert(inviteRegistrations)
+        .values({ channelId: ch.id, channelCode: ch.code, phone, userId });
 
       const token = await signSessionToken({ unionId: `phone:${phone}`, clientId: env.appId });
       setSessionCookie(ctx, token);

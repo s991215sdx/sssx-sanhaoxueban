@@ -25,7 +25,6 @@ import { DISC_DIM_PLAIN, PARENT_DISC_ADJUST } from "./DiscParentCompare";
 import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { AnchorResult } from "@contracts/careerAnchor";
 import type { MultiResult } from "@contracts/multi";
-import { MULTI_DIM_LABEL } from "@contracts/multi";
 import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_THEORY_NOTE, MULTI5_DIM_ORDER, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { HollandResult } from "@contracts/holland";
@@ -65,7 +64,7 @@ import { RichText } from "@/components/RichText";
 import NineAbilityRadar from "@/components/reports/NineAbilityRadar";
 import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import SystemFramework from "@/components/reports/SystemFramework";
-import type { FrameworkStatus, FrameworkUnit, FrameworkFocus, FrameworkLink } from "@/components/reports/SystemFramework";
+import type { FrameworkStatus, FrameworkUnit, FrameworkLink } from "@/components/reports/SystemFramework";
 import DiscParentCompare from "@/components/reports/DiscParentCompare";
 import AnchorBarChart from "@/components/reports/AnchorBarChart";
 import { E3V37_LEVEL_CLASS, E3V37_LEVEL_CAPTION, E3V37_LEVEL_STYLE, e3v37LevelTextClass } from "@/components/reports/e3v37Theme";
@@ -2537,53 +2536,19 @@ export default function ReportView({
   };
 
   const { mbti, disc, multi5 } = data ?? {};
-  const multi = data?.multi ?? undefined;
   const anchor = data?.anchor ?? undefined;
   const holland = data?.holland ?? undefined;
   const mental = data?.mental ?? undefined;
   const academics = profile?.academics ?? undefined;
 
-  /** 学习力系统框架图的测评完成状态 + 二级考察点（全部由 props 数据计算，学生端/伴学师端口径一致）。 */
+  /** 学习力系统框架图的测评完成状态（全部由 props 数据计算，学生端/伴学师端口径一致）。 */
   const frameworkStatus = useMemo<FrameworkStatus>(() => {
     const r1 = (x: number) => Math.round(x * 10) / 10;
-    /** 逐题分按关注点（kp）聚合成二级考察点：均分 + 三档。 */
-    const groupKp = (items: { kp: string; score: number }[]): FrameworkFocus[] => {
-      const map = new Map<string, { sum: number; n: number }>();
-      for (const it of items) {
-        const g = map.get(it.kp);
-        if (g) {
-          g.sum += it.score;
-          g.n += 1;
-        } else map.set(it.kp, { sum: it.score, n: 1 });
-      }
-      return [...map.entries()].map(([kp, g]) => {
-        const score = r1(g.sum / g.n);
-        return { kp, score, level: e3v37Level(score) };
-      });
-    };
-    const itemScores = e3v37 && e3Ratings ? scoreE3V37Items(e3v37.stage, e3Ratings) : [];
     const units: Record<string, FrameworkUnit> = {};
     if (e3v37) {
-      for (const a of e3v37.abilities)
-        units[a.label] = {
-          score: a.score,
-          level: a.level,
-          focuses: a.focuses.map((f) => ({ kp: f.kp, score: f.score, level: f.level })),
-        };
-      for (const c of e3v37.systems.condition.cells)
-        units[c.label] = {
-          score: c.score,
-          level: c.level,
-          focuses: groupKp(itemScores.filter((it) => it.ability === c.label)),
-        };
-      for (const a of e3v37.aptitude)
-        units[a.label] = {
-          score: a.score,
-          level: a.level,
-          focuses: itemScores
-            .filter((it) => it.system === "学能" && it.ability === a.label)
-            .map((it) => ({ kp: `第${it.no}题`, score: it.score, level: it.level })),
-        };
+      for (const a of e3v37.abilities) units[a.label] = { score: a.score, level: a.level };
+      for (const c of e3v37.systems.condition.cells) units[c.label] = { score: c.score, level: c.level };
+      for (const a of e3v37.aptitude) units[a.label] = { score: a.score, level: a.level };
     }
     return {
       academics: {
@@ -2623,7 +2588,6 @@ export default function ReportView({
             subs: MULTI5_DIM_ORDER.map((k) => `${MULTI5_DIM_LABEL[k]} ${multi5.dims[k]}`),
           }
         : { done: false },
-      multi: multi ? { done: true, note: multi.top3.map((k) => MULTI_DIM_LABEL[k]).join("、") } : { done: false },
       mbti: mbti
         ? {
             done: true,
@@ -2656,7 +2620,7 @@ export default function ReportView({
           }
         : { done: false },
     };
-  }, [academics, e3v37, e3Ratings, mental, multi5, multi, mbti, disc, holland, anchor]);
+  }, [academics, e3v37, mental, multi5, mbti, disc, holland, anchor]);
 
   return (
     <div className="space-y-4">

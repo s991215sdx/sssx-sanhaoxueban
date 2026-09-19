@@ -2,20 +2,16 @@ import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import { QrCode } from "lucide-react";
 import { trpc } from "@/providers/trpc";
-import { INVITE_GRADES } from "@contracts/invite";
 
 /**
  * 邀请注册落地页（公开，扫码直达）：/invite/{渠道码}
- * 家长扫码 → 校验渠道码 → 录入基础信息（孩子姓名/年级/家长称呼/手机号/密码）→ 注册并直接登录 → 进入资料填写引导。
- * 三好学伴为邀请制，这是唯一的注册入口。
+ * 家长扫码 → 校验渠道码 → 只填手机号 + 密码即完成注册并直接登录 → 进入测评中心。
+ * 三好学伴为邀请制，这是唯一的注册入口。V51 起不再要求姓名/年级等资料。
  */
 export default function InviteRegister() {
   const { code = "" } = useParams();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
-  const [studentName, setStudentName] = useState("");
-  const [grade, setGrade] = useState("");
-  const [parentName, setParentName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
@@ -37,14 +33,7 @@ export default function InviteRegister() {
       setError("两次输入的密码不一样，再核对一下");
       return;
     }
-    register.mutate({
-      code,
-      studentName: studentName.trim(),
-      grade,
-      parentName: parentName.trim(),
-      phone: phone.trim(),
-      password,
-    });
+    register.mutate({ code, phone: phone.trim(), password });
   };
 
   const inputCls =
@@ -93,47 +82,9 @@ export default function InviteRegister() {
           </p>
         </div>
 
-        {/* 注册卡 */}
+        {/* 注册卡：V51 起只填手机号 + 密码 */}
         <form onSubmit={submit} className="paper-card mt-6 p-6">
-          <p className="text-[13px] leading-relaxed text-olive-mute">
-            录入基础信息即可完成注册，接下来会引导你填写孩子资料并进入测评。
-          </p>
-
-          <label className="mt-4 block text-[13px] font-medium text-olive" htmlFor="studentName">
-            孩子姓名
-          </label>
-          <input
-            id="studentName"
-            maxLength={32}
-            placeholder="孩子的真实姓名"
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
-            className={inputCls}
-          />
-
-          <label className="mt-4 block text-[13px] font-medium text-olive" htmlFor="grade">
-            孩子年级
-          </label>
-          <select id="grade" value={grade} onChange={(e) => setGrade(e.target.value)} className={inputCls}>
-            <option value="">请选择年级</option>
-            {INVITE_GRADES.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-
-          <label className="mt-4 block text-[13px] font-medium text-olive" htmlFor="parentName">
-            家长称呼
-          </label>
-          <input
-            id="parentName"
-            maxLength={32}
-            placeholder="比如：乐乐妈妈 / 乐乐爸爸"
-            value={parentName}
-            onChange={(e) => setParentName(e.target.value)}
-            className={inputCls}
-          />
+          <p className="text-[13px] leading-relaxed text-olive-mute">输入手机号和密码即可完成注册，注册后直接进入测评中心。</p>
 
           <label className="mt-4 block text-[13px] font-medium text-olive" htmlFor="phone">
             手机号（登录账号）
@@ -178,15 +129,7 @@ export default function InviteRegister() {
 
           <button
             type="submit"
-            disabled={
-              register.isPending ||
-              !studentName.trim() ||
-              !grade ||
-              !parentName.trim() ||
-              phone.length !== 11 ||
-              password.length < 6 ||
-              password2.length < 6
-            }
+            disabled={register.isPending || phone.length !== 11 || password.length < 6 || password2.length < 6}
             className="mt-5 w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
           >
             {register.isPending ? "注册中…" : "完成注册，开始使用"}

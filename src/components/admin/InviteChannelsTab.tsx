@@ -199,7 +199,6 @@ export default function InviteChannelsTab() {
                   <th className="pb-2 pr-3 font-medium">渠道</th>
                   <th className="pb-2 pr-3 font-medium">学生</th>
                   <th className="pb-2 pr-3 font-medium">年级</th>
-                  <th className="pb-2 pr-3 font-medium">家长称呼</th>
                   <th className="pb-2 font-medium">手机号</th>
                 </tr>
               </thead>
@@ -210,9 +209,8 @@ export default function InviteChannelsTab() {
                     <tr key={r.id} className="border-t border-border/60 text-olive-soft">
                       <td className="py-2 pr-3 whitespace-nowrap">{new Date(r.createdAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
                       <td className="py-2 pr-3">{ch?.name ?? r.channelCode}</td>
-                      <td className="py-2 pr-3 font-semibold text-olive">{r.studentName}</td>
-                      <td className="py-2 pr-3">{r.grade}</td>
-                      <td className="py-2 pr-3">{r.parentName}</td>
+                      <td className="py-2 pr-3 font-semibold text-olive">{r.studentName ?? "—"}</td>
+                      <td className="py-2 pr-3">{r.grade ?? "—"}</td>
                       <td className="py-2 mono">{r.phone}</td>
                     </tr>
                   );

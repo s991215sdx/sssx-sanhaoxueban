@@ -366,10 +366,11 @@ export const inviteRegistrations = mysqlTable("invite_registrations", {
   channelId: bigint("channel_id", { mode: "number", unsigned: true }).notNull(),
   /** 冗余存渠道码，渠道删除/改名后记录仍可追溯 */
   channelCode: varchar("channel_code", { length: 24 }).notNull(),
-  parentName: varchar("parent_name", { length: 64 }).notNull(),
-  studentName: varchar("student_name", { length: 64 }).notNull(),
+  /* V51 极简注册：不再采集家长称呼/学生姓名/年级（历史记录保留展示，新记录为 null） */
+  parentName: varchar("parent_name", { length: 64 }),
+  studentName: varchar("student_name", { length: 64 }),
   phone: varchar("phone", { length: 20 }).notNull(),
-  grade: varchar("grade", { length: 16 }).notNull(),
+  grade: varchar("grade", { length: 16 }),
   userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

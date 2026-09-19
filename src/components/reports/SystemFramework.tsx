@@ -6,8 +6,9 @@
  * V36：
  * - 已测评节点为纯静态展示（不再链接到图形与图表）；未测评徽章仍可点击直达对应测评，
  *   成绩未填仍可点击去填写（onOpen 仅这两种动作）。
- * - 每个部分排出对应的二级考察点（能力 → 关注点 kp，带红黄绿分数小 chip；深层特质 → 各维度分）。
+ * - 一级单元只展示能力名 + 均分（不再渲染二级考察点小 chip），保持框架清爽。
  * - 不传 status / onOpen 时退化为纯静态图（零 props 向后兼容）。
+ * V51：多元智能八维自评已下线，框架中不再出现「多元智能八维」徽标。
  */
 import { E3V37_LEVEL_STYLE } from "./e3v37Theme";
 import type { E3V37Level } from "./e3v37Theme";
@@ -15,11 +16,8 @@ import type { E3V37Level } from "./e3v37Theme";
 /** 节点点击行为：assess=去测评（未测节点）；fill-academics=去填成绩（未填节点）。 */
 export type FrameworkLink = { kind: "assess"; start: string } | { kind: "fill-academics" };
 
-/** 二级考察点（关注点 kp）：名称 + 均分 + 三档。 */
-export type FrameworkFocus = { kp: string; score: number; level: E3V37Level };
-
-/** 一级单元（能力/条件格/学能项）：均分 + 二级考察点列表。 */
-export type FrameworkUnit = { score?: number; level?: E3V37Level; focuses?: FrameworkFocus[] };
+/** 一级单元（能力/条件格/学能项）：只保留均分（二级考察点不再上框架图）。 */
+export type FrameworkUnit = { score?: number; level?: E3V37Level };
 
 export type FrameworkStatus = {
   academics?: {
@@ -33,12 +31,11 @@ export type FrameworkStatus = {
     scores?: Record<"乐学" | "会学" | "善学", number>;
     conditionAvg?: number;
     aptitudeAvg?: number;
-    /** 一级/二级数据，key=能力名（动力…）或条件格（状态/关系/资源）或学能项（注意力/工作记忆/加工速度）。 */
+    /** 一级数据，key=能力名（动力…）或条件格（状态/关系/资源）或学能项（注意力/工作记忆/加工速度）。 */
     units?: Record<string, FrameworkUnit>;
   };
   mental?: { done: boolean; note?: string };
   multi5?: { done: boolean; note?: string; subs?: string[] }; // 五项维度分
-  multi?: { done: boolean; note?: string }; // 多元八维自评（已下线，仅展示历史结果）
   mbti?: { done: boolean; note?: string; subs?: string[] };
   disc?: { done: boolean; note?: string; subs?: string[] };
   holland?: { done: boolean; note?: string; subs?: string[] };
@@ -108,20 +105,7 @@ function ScoreChip({ name, score }: { name: string; score: number }) {
   );
 }
 
-/** 二级考察点小 chip：按红黄绿阈值着色（描边 + 浅底）。 */
-function FocusDot({ f }: { f: FrameworkFocus }) {
-  const st = E3V37_LEVEL_STYLE[f.level];
-  return (
-    <span
-      className="inline-block rounded border px-1 py-px text-[10px] leading-tight"
-      style={{ borderColor: `${st.bar}55`, color: st.text, background: st.bg }}
-    >
-      {f.kp} {f.score}
-    </span>
-  );
-}
-
-/** 一级单元块：能力名 + 均分（有色）+ 二级考察点；纯静态展示。 */
+/** 一级单元块：能力名 + 均分（有色），不带二级考察点；纯静态展示。 */
 function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; done: boolean }) {
   const lv: E3V37Level = unit?.level ?? (done ? "正常" : "待提升");
   const st = E3V37_LEVEL_STYLE[lv];
@@ -135,13 +119,6 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
           </span>
         )}
       </div>
-      {done && unit?.focuses && unit.focuses.length > 0 && (
-        <div className="mt-1 flex flex-wrap justify-center gap-0.5">
-          {unit.focuses.map((f) => (
-            <FocusDot key={f.kp} f={f} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -175,19 +152,6 @@ export default function SystemFramework({
             }
             onClick={!status.academics.filled && onOpen ? () => open({ kind: "fill-academics" }) : undefined}
           />
-          {/* 二级考察点：各科 现状→目标 */}
-          {status.academics.filled && (status.academics.subjects?.length ?? 0) > 0 && (
-            <div className="mt-1.5 flex flex-wrap justify-center gap-1">
-              {status.academics.subjects!.map((s) => (
-                <span
-                  key={s.name}
-                  className="rounded border border-border bg-white/70 px-1.5 py-px text-[10.5px] leading-tight text-olive-soft"
-                >
-                  {s.name} {s.last ?? "—"}→{s.target ?? "—"}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       )}
       <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
@@ -255,8 +219,8 @@ export default function SystemFramework({
                 )}
               </div>
             )}
-            {/* 学能·能力系统：E3（学能均分）+ 多元智能五项 + 多元智能八维自评徽标 */}
-            {b.key === "学能" && (status?.e3 || status?.multi5 || status?.multi) && (
+            {/* 学能·能力系统：E3（学能均分）+ 多元智能五项徽标（八维自评已下线，不再展示） */}
+            {b.key === "学能" && (status?.e3 || status?.multi5) && (
               <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                 {status?.e3 &&
                   (e3Done && status.e3.aptitudeAvg != null ? (
@@ -270,9 +234,6 @@ export default function SystemFramework({
                     label={status.multi5.done ? `多元五项 · ${status.multi5.note ?? "已测"}` : "多元智能五项 · 未测"}
                     onClick={!status.multi5.done && onOpen ? () => open({ kind: "assess", start: "multi5" }) : undefined}
                   />
-                )}
-                {status?.multi && (
-                  <LinkChip done={status.multi.done} label={status.multi.done ? `多元八维 · ${status.multi.note ?? "已测"}` : "多元智能八维 · 未测"} />
                 )}
               </div>
             )}
