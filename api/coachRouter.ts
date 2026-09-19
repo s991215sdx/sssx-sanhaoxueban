@@ -106,10 +106,12 @@ export const coachRouter = createRouter({
           throw new Error("这位同学不在你的伴学名单里");
         }
       }
+      /* V55：推送时清掉「请伴学师推送」请求标记 */
+      const releasePatch = input.released ? { reportPushRequestedAt: null } : {};
       if (existing) {
-        await db.update(studentProfile).set({ reportReleased: !!input.released }).where(eq(studentProfile.id, existing.id));
+        await db.update(studentProfile).set({ reportReleased: !!input.released, ...releasePatch }).where(eq(studentProfile.id, existing.id));
       } else {
-        await db.insert(studentProfile).values({ userId: input.userId, reportReleased: !!input.released });
+        await db.insert(studentProfile).values({ userId: input.userId, reportReleased: !!input.released, ...releasePatch });
       }
       return { ok: true as const, released: !!input.released };
     }),

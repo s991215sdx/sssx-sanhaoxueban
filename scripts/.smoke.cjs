@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v54.tsx
+// scripts/smoke-render-v55.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -117927,7 +117927,7 @@ function TrainingPlanLibrary() {
   ] });
 }
 
-// scripts/smoke-render-v54.tsx
+// scripts/smoke-render-v55.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118466,35 +118466,51 @@ need(tutorSrc, "ResetPasswordButton", "\u4F34\u5B66\u5B66\u5458\u5361\u91CD\u7F6
 var adminSrc = readSrc("../src/pages/Admin.tsx");
 need(adminSrc, "ResetPasswordButton", "\u7BA1\u7406\u5458\u5B66\u5458\u5217\u8868\u91CD\u7F6E\u5165\u53E3");
 console.log("OK v53 \u5FD8\u8BB0\u5BC6\u7801\u5F15\u5BFC + \u91CD\u7F6E\u4E3A 123456 + \u81EA\u884C\u6539\u5BC6");
-var readSrc54 = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
-var schemaSrc = readSrc54("../db/schema.ts");
+var readSrc55 = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
+var schemaSrc = readSrc55("../db/schema.ts");
 need(schemaSrc, 'reportReleased: boolean("report_released")', "schema report_released \u5217");
 need(schemaSrc, ".notNull().default(false)", "\u9ED8\u8BA4\u4E0D\u63A8\u9001");
-var embSrc54 = readSrc54("../api/migrationsEmbedded.ts");
-need(embSrc54, "0018_report_released", "\u5185\u5D4C\u8FC1\u79FB 0018");
-need(embSrc54, "report_released", "0018 SQL \u5185\u5BB9");
-var journalSrc54 = readSrc54("../db/migrations/meta/_journal.json");
-need(journalSrc54, "0018_report_released", "journal 0018");
-var coachSrc54 = readSrc54("../api/coachRouter.ts");
-need(coachSrc54, "setReportAccess", "coachRouter.setReportAccess");
-need(coachSrc54, "reportReleased: !!input.released", "\u5199\u5165\u63A8\u9001\u5F00\u5173");
-var detailSrc = readSrc54("../api/studentDetail.ts");
+var embSrc55 = readSrc55("../api/migrationsEmbedded.ts");
+need(embSrc55, "0018_report_released", "\u5185\u5D4C\u8FC1\u79FB 0018");
+need(embSrc55, "report_released", "0018 SQL \u5185\u5BB9");
+var journalSrc55 = readSrc55("../db/migrations/meta/_journal.json");
+need(journalSrc55, "0018_report_released", "journal 0018");
+var coachSrc55 = readSrc55("../api/coachRouter.ts");
+need(coachSrc55, "setReportAccess", "coachRouter.setReportAccess");
+need(coachSrc55, "reportReleased: !!input.released", "\u5199\u5165\u63A8\u9001\u5F00\u5173");
+var detailSrc = readSrc55("../api/studentDetail.ts");
 need(detailSrc, "reportReleased: p.reportReleased", "\u5B66\u5458\u5217\u8868\u5E26 reportReleased");
-var gateSrc = readSrc54("../src/components/ReportLockedGate.tsx");
+var gateSrc = readSrc55("../src/components/ReportLockedGate.tsx");
 need(gateSrc, "profile.reportReleased", "\u95E8\u7981\u5224\u65AD");
-need(gateSrc, "\u62A5\u544A\u6B63\u5728\u7531\u4F34\u5B66\u5E08\u6574\u7406", "\u62E6\u622A\u5360\u4F4D\u6587\u6848");
-var rdSrc = readSrc54("../src/pages/ReportDetail.tsx");
-need(rdSrc, "ReportLockedGate", "\u8BE6\u7248\u62A5\u544A\u9875\u52A0\u95E8\u7981");
-var rSrc = readSrc54("../src/pages/Report.tsx");
+var panelSrc = readSrc55("../src/components/ReportLockedPanel.tsx");
+need(panelSrc, "\u8BF7\u4F34\u5B66\u5E08\u63A8\u9001\u62A5\u544A", "\u9762\u677F\u542B\u8BF7\u6C42\u63A8\u9001\u6309\u94AE");
+need(panelSrc, "requestReportPush", "\u9762\u677F\u8C03\u7528\u8BF7\u6C42\u63A5\u53E3");
+var rdSrc = readSrc55("../src/pages/ReportDetail.tsx");
+need(rdSrc, "OPEN_TABS", "\u8BE6\u7248\u62A5\u544A\u6309 tab \u767D\u540D\u5355");
+need(rdSrc, '"mbti"', "\u767D\u540D\u5355\u542B mbti");
+need(rdSrc, '"discparent"', "\u767D\u540D\u5355\u542B\u5BB6\u957F DISC");
+need(rdSrc, "ReportLockedPanel", "\u672A\u5F00\u653E tab \u6E32\u67D3\u8BF7\u6C42\u9762\u677F");
+need(rdSrc, "!OPEN_TABS.includes(tab)", "\u672A\u63A8\u9001\u4E14\u975E\u767D\u540D\u5355\u5219\u9501\u5B9A");
+var rSrc = readSrc55("../src/pages/Report.tsx");
 need(rSrc, "ReportLockedGate", "\u5B66\u529B\u62A5\u544A\u9875\u52A0\u95E8\u7981");
-var btnSrc = readSrc54("../src/components/ReportAccessButton.tsx");
+var btnSrc = readSrc55("../src/components/ReportAccessButton.tsx");
 need(btnSrc, "setReportAccess", "\u63A8\u9001\u6309\u94AE\u8C03\u7528\u63A5\u53E3");
-var tutorSrc54 = readSrc54("../src/pages/Tutor.tsx");
-need(tutorSrc54, "ReportAccessButton", "\u4F34\u5B66\u5B66\u5458\u5361\u63A8\u9001\u5165\u53E3");
-var adminSrc54 = readSrc54("../src/pages/Admin.tsx");
+var tutorSrc55 = readSrc55("../src/pages/Tutor.tsx");
+need(tutorSrc55, "ReportAccessButton", "\u4F34\u5B66\u5B66\u5458\u5361\u63A8\u9001\u5165\u53E3");
+var adminSrc54 = readSrc55("../src/pages/Admin.tsx");
 need(adminSrc54, "ReportAccessButton", "\u7BA1\u7406\u5458\u5217\u8868\u63A8\u9001\u5165\u53E3");
 console.log("OK v54 \u62A5\u544A\u4F34\u5B66\u5E08\u628A\u5173\uFF08\u8FC1\u79FB 0018 + \u95E8\u7981 + \u63A8\u9001\u5F00\u5173\uFF09");
-console.log("RENDER_SMOKE_V54_OK");
+console.log("RENDER_SMOKE_V55_OK");
+var profileSrc55 = readSrc55("../api/profileRouter.ts");
+need(profileSrc55, "requestReportPush", "profileRouter.requestReportPush");
+need(profileSrc55, "reportPushRequestedAt", "\u8BB0\u5F55\u8BF7\u6C42\u65F6\u95F4");
+need(coachSrc55, "reportPushRequestedAt: null", "\u63A8\u9001\u540E\u81EA\u52A8\u6E05\u7A7A\u8BF7\u6C42");
+need(schemaSrc, "reportPushRequestedAt", "schema \u8BF7\u6C42\u65F6\u95F4\u5217");
+need(embSrc55, "0019_report_push_request", "\u5185\u5D4C\u8FC1\u79FB 0019");
+need(journalSrc55, "0019_report_push_request", "journal 0019");
+need(detailSrc, "reportPushRequestedAt: p.reportPushRequestedAt", "\u5B66\u5458\u5217\u8868\u5E26\u8BF7\u6C42\u6807\u8BB0");
+need(tutorSrc55, "\u5BB6\u957F\u8BF7\u6C42\u63A8\u9001\u62A5\u544A", "\u4F34\u5B66\u5361\u8BF7\u6C42\u63D0\u9192");
+console.log("OK v55 MBTI/DISC \u76F4\u63A5\u53EF\u770B + \u4E00\u952E\u8BF7\u4F34\u5B66\u5E08\u63A8\u9001\uFF08\u8FC1\u79FB 0019\uFF09");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

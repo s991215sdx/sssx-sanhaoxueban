@@ -134,6 +134,13 @@
       "when": 1789747200000,
       "tag": "0018_report_released",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1789833600000,
+      "tag": "0019_report_push_request",
+      "breakpoints": true
     }
   ]
 }

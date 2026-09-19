@@ -7,7 +7,7 @@ import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import { STUDENT_MODULES } from "@contracts/studentModules";
-import { GraduationCap, SlidersHorizontal } from "lucide-react";
+import { GraduationCap, SlidersHorizontal, Send } from "lucide-react";
 
 /** 学员卡内联的「功能开关」面板：勾选该学员可用的模块（测评中心恒可用）。 */
 function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabledModules: string[] | null }) {
@@ -151,6 +151,13 @@ export default function Tutor() {
                 )}
                 {s.hasMulti && <span className="chip !py-0.5 !text-[10.5px] text-olive">多元 ✓</span>}
                 {s.hasAcademics && <span className="chip !py-0.5 !text-[10.5px] text-olive">学业目标 ✓</span>}
+                {/* V55：家长/学员点了「请伴学师推送报告」——橙色提醒，推送后自动消失 */}
+                {s.reportPushRequestedAt && !s.reportReleased && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-[#c7a23a99] bg-[#f5e7c1] px-2 py-0.5 text-[10.5px] font-semibold text-[#8a6d1a]">
+                    <Send size={11} />
+                    家长请求推送报告
+                  </span>
+                )}
               </div>
               <div className="mono mt-3 flex gap-3 text-[12px] text-olive-soft">
                 <span>答题 {s.attempts}</span>

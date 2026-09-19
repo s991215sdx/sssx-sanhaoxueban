@@ -233,6 +233,20 @@ export const profileRouter = createRouter({
       return { ok: true as const };
     }),
 
+  /** V55：家长/学员一键「请伴学师推送报告」——记录请求时间，伴学师在学员卡上看到提醒。 */
+  requestReportPush: authedQuery.mutation(async ({ ctx }) => {
+    const db = getDb();
+    const userId = ctx.user.id;
+    const existing = await getProfile(userId);
+    const now = new Date();
+    if (existing) {
+      await db.update(studentProfile).set({ reportPushRequestedAt: now }).where(eq(studentProfile.id, existing.id));
+    } else {
+      await db.insert(studentProfile).values({ userId, reportPushRequestedAt: now });
+    }
+    return { ok: true as const };
+  }),
+
   /** 只更新每日可用学习时长。 */
   updateMinutes: authedQuery
     .input(z.object({ dailyMinutes: z.number().int().min(10).max(240) }))

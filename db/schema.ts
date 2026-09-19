@@ -185,6 +185,8 @@ export const studentProfile = mysqlTable("student_profile", {
   onboarded: boolean("onboarded").notNull().default(false),
   /** V54：报告推送开关——false=测评报告由伴学师把关，家长暂不可见；true=已推送，家长可直接查看（伴学师/管理员在后台切换） */
   reportReleased: boolean("report_released").notNull().default(false),
+  /** V55：家长「请伴学师推送报告」的请求时间（推送后清空） */
+  reportPushRequestedAt: timestamp("report_push_requested_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
