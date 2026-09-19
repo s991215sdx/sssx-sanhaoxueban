@@ -2,25 +2,27 @@ import { NavLink } from "react-router";
 import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { trpc } from "@/providers/trpc";
 
+/** 导航项所属学员端模块（测评中心恒可用；首页属 home，受限学员不显示）。 */
 const NAV = [
-  { to: "/", label: "首页", icon: Home },
-  { to: "/preview", label: "预习中心", icon: BookOpenCheck },
-  { to: "/gaps", label: "查漏补缺", icon: Bandage },
-  { to: "/assessments", label: "测评中心", icon: ClipboardCheck },
-  { to: "/papers", label: "试卷分析", icon: ClipboardList },
-  { to: "/treehole", label: "树洞心情", icon: HeartHandshake },
-  { to: "/companion", label: "伴学师", icon: Sprout },
-  { to: "/report", label: "学习报告", icon: LineChart },
+  { to: "/", label: "首页", icon: Home, module: "home" },
+  { to: "/preview", label: "预习中心", icon: BookOpenCheck, module: "preview" },
+  { to: "/gaps", label: "查漏补缺", icon: Bandage, module: "gaps" },
+  { to: "/assessments", label: "测评中心", icon: ClipboardCheck, module: "assessments" },
+  { to: "/papers", label: "试卷分析", icon: ClipboardList, module: "papers" },
+  { to: "/treehole", label: "树洞心情", icon: HeartHandshake, module: "treehole" },
+  { to: "/companion", label: "伴学师", icon: Sprout, module: "companion" },
+  { to: "/report", label: "学习报告", icon: LineChart, module: "report" },
 ];
 
 const MOBILE_NAV = [
-  { to: "/", label: "首页", icon: Home },
-  { to: "/preview", label: "预习", icon: BookOpenCheck },
-  { to: "/gaps", label: "查漏", icon: Bandage },
-  { to: "/assessments", label: "测评", icon: ClipboardCheck },
-  { to: "/treehole", label: "树洞", icon: HeartHandshake },
-  { to: "/companion", label: "我的", icon: Sprout },
+  { to: "/", label: "首页", icon: Home, module: "home" },
+  { to: "/preview", label: "预习", icon: BookOpenCheck, module: "preview" },
+  { to: "/gaps", label: "查漏", icon: Bandage, module: "gaps" },
+  { to: "/assessments", label: "测评", icon: ClipboardCheck, module: "assessments" },
+  { to: "/treehole", label: "树洞", icon: HeartHandshake, module: "treehole" },
+  { to: "/companion", label: "我的", icon: Sprout, module: "companion" },
 ];
 
 /** 品牌标志图形（侧边栏折叠态与完整 Logo 共用）。 */
@@ -63,6 +65,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   const isAdmin = user?.role === "admin";
   const showCoach = isAdmin || user?.role === "tutor";
   const displayName = user?.name?.trim() || "同学";
+  /* 学员端功能开关（v50）：null=全功能；数组=只显示这些模块（测评中心恒显示） */
+  const { data: profile } = trpc.profile.get.useQuery();
+  const enabledModules = profile?.enabledModules ?? null;
+  const navVisible = (m: string) => enabledModules === null || m === "assessments" || enabledModules.includes(m);
   /* 桌面侧边栏折叠态：记住用户选择，折叠后只留图标，给阅读区让出最大空间 */
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -107,7 +113,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <Logo />
         )}
         <nav className={`mt-10 flex flex-col gap-1.5 ${collapsed ? "items-center" : ""}`}>
-          {NAV.map((n) => (
+          {NAV.filter((n) => navVisible(n.module)).map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
@@ -222,8 +228,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       </main>
 
       {/* 移动底部导航 */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-border bg-cream-card/95 backdrop-blur md:hidden">
-        {MOBILE_NAV.map((n) => (
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-cream-card/95 backdrop-blur md:hidden"
+        style={{ gridTemplateColumns: `repeat(${MOBILE_NAV.filter((n) => navVisible(n.module)).length}, minmax(0, 1fr))` }}
+      >
+        {MOBILE_NAV.filter((n) => navVisible(n.module)).map((n) => (
           <NavLink
             key={n.to}
             to={n.to}

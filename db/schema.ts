@@ -180,6 +180,8 @@ export const studentProfile = mysqlTable("student_profile", {
   academics: json("academics").$type<Record<string, unknown>>(),
   // 分配给哪位伴学师（users.id；null=未分配）
   tutorId: bigint("tutor_id", { mode: "number", unsigned: true }),
+  /** 学员端功能开关（v50）：null=全功能；数组=仅开启这些模块（测评中心恒可用） */
+  enabledModules: json("enabled_modules").$type<string[] | null>(),
   onboarded: boolean("onboarded").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -350,6 +352,8 @@ export const inviteChannels = mysqlTable("invite_channels", {
   note: varchar("note", { length: 255 }),
   /** 停用后二维码失效，不再接受新注册 */
   active: boolean("active").notNull().default(true),
+  /** 归属伴学师（users.id）：伴学师自建渠道非空，经此码注册的学员自动挂到该伴学师名下；机构渠道为 null */
+  tutorId: bigint("tutor_id", { mode: "number", unsigned: true }),
   createdBy: bigint("created_by", { mode: "number", unsigned: true }).notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

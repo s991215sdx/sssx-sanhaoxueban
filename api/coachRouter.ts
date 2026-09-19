@@ -4,6 +4,7 @@ import { createRouter, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { studentProfile } from "@db/schema";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
+import { sanitizeModules } from "@contracts/studentModules";
 import { getStudentDetail, listStudents } from "./studentDetail";
 
 /** 伴学师工作台：只能看到分配给自己的学员（管理员可看全部）。 */
@@ -69,5 +70,29 @@ export const coachRouter = createRouter({
         await db.insert(studentProfile).values({ userId: input.userId, academics: value });
       }
       return { ok: true as const };
+    }),
+
+  /** 开启/关闭学员端功能模块（测评中心恒可用；传空数组=恢复全功能）。伴学师只能管自己名下的学员。 */
+  setStudentModules: tutorQuery
+    .input((v: unknown) => v as { userId: number; modules: string[] })
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const existing = (
+        await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
+      )[0];
+      if (ctx.user.role !== "admin") {
+        if (!existing || existing.tutorId !== ctx.user.id) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+      }
+      const modules = sanitizeModules(input.modules);
+      /* 只存「被关掉的之外、明确开启的」模块；传空数组表示恢复全功能（存 null） */
+      const value = modules.length === 0 ? null : modules;
+      if (existing) {
+        await db.update(studentProfile).set({ enabledModules: value }).where(eq(studentProfile.id, existing.id));
+      } else {
+        await db.insert(studentProfile).values({ userId: input.userId, enabledModules: value });
+      }
+      return { ok: true as const, modules: value };
     }),
 });

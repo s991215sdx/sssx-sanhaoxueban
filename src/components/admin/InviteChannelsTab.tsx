@@ -20,7 +20,7 @@ function ChannelQr({ code, name }: { code: string; name: string }) {
   }, [code]);
   return (
     <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border border-border bg-white p-3">
-      <canvas ref={canvasRef} className="w-full max-w-[240px]" />
+      <canvas ref={canvasRef} className="h-auto w-full max-w-[240px]" />
       {ready && (
         <>
           <p className="mono break-all text-center text-[10.5px] text-olive-mute">{inviteUrl(code)}</p>

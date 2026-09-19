@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route, Navigate, useLocation } from "react-router";
+import { moduleForPath } from "@contracts/studentModules";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import PreviewList from "./pages/PreviewList";
@@ -59,6 +60,20 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** 模块门禁：受限学员（enabledModules 非空）只能访问已开启模块；首页直落测评中心。 */
+function ModuleGate({ children }: { children: React.ReactNode }) {
+  const { data: profile } = trpc.profile.get.useQuery();
+  const location = useLocation();
+  const mods = profile?.enabledModules;
+  if (mods != null) {
+    const key = moduleForPath(location.pathname);
+    if (key === "home" || (key != null && key !== "assessments" && !mods.includes(key))) {
+      return <Navigate to="/assessments" replace />;
+    }
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -80,7 +95,8 @@ export default function App() {
         element={
           <AuthGate>
             <ProfileGuard>
-              <Layout>
+              <ModuleGate>
+                <Layout>
                 <Suspense fallback={<PageSpinner />}>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
@@ -99,7 +115,8 @@ export default function App() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
-              </Layout>
+                </Layout>
+              </ModuleGate>
             </ProfileGuard>
           </AuthGate>
         }

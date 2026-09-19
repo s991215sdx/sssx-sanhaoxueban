@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, or, sql } from "drizzle-orm";
 import { INVITE_CHANNEL_KINDS, INVITE_GRADES, normalizeInviteCode } from "@contracts/invite";
+import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
 import { inviteChannels, inviteRegistrations, studentProfile, users } from "@db/schema";
-import { createRouter, adminQuery, publicQuery } from "./middleware";
+import { createRouter, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
@@ -25,19 +26,20 @@ function badRequest(message: string): never {
 }
 
 export const inviteRouter = createRouter({
-  /** 管理员：新建注册邀请渠道（返回含渠道码的记录，前端据此生成二维码）。 */
-  createChannel: adminQuery
+  /** 管理员/伴学师：新建注册邀请渠道（返回含渠道码的记录，前端据此生成二维码）。伴学师建的码归属自己。 */
+  createChannel: tutorQuery
     .input((v: unknown) => v as { name: string; kind: string; note?: string })
     .mutation(async ({ ctx, input }) => {
       const name = (input.name ?? "").trim();
       if (name.length < 2 || name.length > 64) badRequest("渠道名 2～64 个字，比如「地推-万达广场点位」");
       const kind = (INVITE_CHANNEL_KINDS as readonly string[]).includes(input.kind) ? input.kind : "其他";
       const note = (input.note ?? "").trim().slice(0, 255) || null;
+      const tutorId = ctx.user.role === "tutor" ? ctx.user.id : null;
       const db = getDb();
       for (let i = 0; i < 5; i++) {
         const code = newInviteCode();
         try {
-          await db.insert(inviteChannels).values({ code, name, kind, note, createdBy: ctx.user.id });
+          await db.insert(inviteChannels).values({ code, name, kind, note, tutorId, createdBy: ctx.user.id });
           const row = (await db.select().from(inviteChannels).where(eq(inviteChannels.code, code)).limit(1))[0];
           if (row) return row;
         } catch {
@@ -47,11 +49,15 @@ export const inviteRouter = createRouter({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "生成渠道码失败，请再试一次" });
     }),
 
-  /** 管理员：渠道列表（含每渠道累计注册数）+ 最近 50 条注册记录。 */
-  channels: adminQuery.query(async () => {
+  /** 管理员看全部渠道；伴学师只看自己创建的（含各渠道累计注册数 + 最近 50 条注册记录）。 */
+  channels: tutorQuery.query(async ({ ctx }) => {
     const db = getDb();
+    const where =
+      ctx.user.role === "admin"
+        ? undefined
+        : or(eq(inviteChannels.tutorId, ctx.user.id), eq(inviteChannels.createdBy, ctx.user.id));
     const [channels, counts, recent] = await Promise.all([
-      db.select().from(inviteChannels).orderBy(desc(inviteChannels.createdAt)),
+      db.select().from(inviteChannels).where(where).orderBy(desc(inviteChannels.createdAt)),
       db
         .select({ channelId: inviteRegistrations.channelId, c: sql<number>`count(*)` })
         .from(inviteRegistrations)
@@ -59,17 +65,24 @@ export const inviteRouter = createRouter({
       db.select().from(inviteRegistrations).orderBy(desc(inviteRegistrations.createdAt)).limit(50),
     ]);
     const totalMap = new Map(counts.map((r) => [Number(r.channelId), Number(r.c)]));
+    const mine = new Set(channels.map((c) => c.id));
     return {
       channels: channels.map((c) => ({ ...c, registrations: totalMap.get(c.id) ?? 0 })),
-      recent,
+      recent: ctx.user.role === "admin" ? recent : recent.filter((r) => mine.has(r.channelId)),
     };
   }),
 
-  /** 管理员：停用/启用渠道——停用后对应二维码立即失效，不再接受新注册。 */
-  setChannelActive: adminQuery
+  /** 管理员/伴学师：停用/启用渠道——停用后对应二维码立即失效，不再接受新注册。伴学师只能动自己的码。 */
+  setChannelActive: tutorQuery
     .input((v: unknown) => v as { id: number; active: boolean })
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      if (ctx.user.role !== "admin") {
+        const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.id, input.id)).limit(1))[0];
+        if (!ch || (ch.tutorId !== ctx.user.id && ch.createdBy !== ctx.user.id)) {
+          badRequest("这张二维码不在你名下");
+        }
+      }
       await db.update(inviteChannels).set({ active: !!input.active }).where(eq(inviteChannels.id, input.id));
       return { ok: true as const };
     }),
@@ -130,9 +143,17 @@ export const inviteRouter = createRouter({
       } catch {
         badRequest("这个手机号已经注册过了，直接去登录页登录就好");
       }
-      /* 预填学习档案（姓名+年级），onboarded=false → 首次进入走 welcome 引导完成资料与测评 */
+      /* 预填学习档案（姓名+年级；默认只开测评中心；伴学师渠道自动挂到该伴学师名下）。
+         注册时已录基础信息 → onboarded=true，登录后直达测评中心 */
       try {
-        await db.insert(studentProfile).values({ userId, name: studentName, grade });
+        await db.insert(studentProfile).values({
+          userId,
+          name: studentName,
+          grade,
+          enabledModules: DEFAULT_INVITE_MODULES,
+          tutorId: ch.tutorId ?? null,
+          onboarded: true,
+        });
       } catch {
         /* 档案建失败不阻断注册，welcome 引导会兜底补齐 */
       }

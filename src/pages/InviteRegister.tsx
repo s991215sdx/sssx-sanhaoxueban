@@ -25,7 +25,7 @@ export default function InviteRegister() {
   const register = trpc.invite.registerWithInvite.useMutation({
     onSuccess: async () => {
       await utils.invalidate();
-      navigate("/", { replace: true });
+      navigate("/assessments", { replace: true });
     },
     onError: (err) => setError(err.message || "注册失败，请重试"),
   });
@@ -87,7 +87,9 @@ export default function InviteRegister() {
           </svg>
           <h1 className="mt-3 text-[24px] font-bold tracking-tight text-olive">三好学伴 · 邀请注册</h1>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-olive-mute">
-            你正在通过「{info.data?.name}」（{info.data?.kind}）渠道加入
+            加入之后，你将获得<b className="text-olive">价值 2980 元的学习力系统测评</b>一份，
+            <br />
+            全面测评了解孩子的系统学习力。
           </p>
         </div>
 

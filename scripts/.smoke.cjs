@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v49.tsx
+// scripts/smoke-render-v50.tsx
 var import_react5 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -114795,7 +114795,29 @@ function normalizeInviteCode(raw) {
   return (raw ?? "").trim().toLowerCase();
 }
 
-// scripts/smoke-render-v49.tsx
+// contracts/studentModules.ts
+var STUDENT_MODULE_KEYS = ["preview", "gaps", "papers", "treehole", "companion", "report"];
+var DEFAULT_INVITE_MODULES = ["assessments"];
+function moduleForPath(pathname) {
+  const p = pathname;
+  if (p.startsWith("/admin") || p.startsWith("/tutor") || p.startsWith("/welcome")) return null;
+  if (p === "/") return "home";
+  if (p.startsWith("/assessments")) return "assessments";
+  if (p.startsWith("/preview")) return "preview";
+  if (p.startsWith("/gaps") || p.startsWith("/learn")) return "gaps";
+  if (p.startsWith("/papers")) return "papers";
+  if (p.startsWith("/treehole")) return "treehole";
+  if (p.startsWith("/companion")) return "companion";
+  if (p.startsWith("/report")) return "report";
+  return null;
+}
+function sanitizeModules(modules) {
+  if (!Array.isArray(modules)) return [];
+  const known = /* @__PURE__ */ new Set([...STUDENT_MODULE_KEYS, "assessments"]);
+  return modules.filter((m) => typeof m === "string" && known.has(m));
+}
+
+// scripts/smoke-render-v50.tsx
 var E3V37_BAD = "#8f1313";
 var E3V37_MID = "#8a6d1a";
 var E3V37_OK = "#5a9326";
@@ -115215,7 +115237,16 @@ if (INVITE_GRADES.length !== 12 || INVITE_GRADES[0] !== "\u4E00\u5E74\u7EA7" || 
 if (!INVITE_CODE_RE.test("abc2345678") || INVITE_CODE_RE.test("AB") || INVITE_CODE_RE.test("\u77ED")) throw new Error("\u6E20\u9053\u7801\u683C\u5F0F\u6821\u9A8C\u5F02\u5E38");
 if (normalizeInviteCode("  AbC2345678 ") !== "abc2345678") throw new Error("\u6E20\u9053\u7801\u5F52\u4E00\u5316\u5F02\u5E38");
 console.log("OK v49 \u9080\u8BF7\u5236\u6CE8\u518C\u5951\u7EA6\u5C42");
-console.log("RENDER_SMOKE_V49_OK");
+if (STUDENT_MODULE_KEYS.join(",") !== "preview,gaps,papers,treehole,companion,report") throw new Error("\u5B66\u5458\u6A21\u5757 key \u5F02\u5E38");
+if (DEFAULT_INVITE_MODULES.join("") !== "assessments") throw new Error("\u9080\u8BF7\u6CE8\u518C\u9ED8\u8BA4\u6A21\u5757\u5E94\u4E3A\u4EC5\u6D4B\u8BC4\u4E2D\u5FC3");
+if (moduleForPath("/") !== "home") throw new Error("\u9996\u9875\u5F52\u5C5E\u5F02\u5E38");
+if (moduleForPath("/learn/3") !== "gaps" || moduleForPath("/gaps") !== "gaps") throw new Error("\u67E5\u6F0F/\u53D8\u5F0F\u8BAD\u7EC3\u5F52\u5C5E\u5F02\u5E38");
+if (moduleForPath("/report-detail") !== "report" || moduleForPath("/preview/x") !== "preview") throw new Error("\u62A5\u544A/\u9884\u4E60\u5F52\u5C5E\u5F02\u5E38");
+if (moduleForPath("/assessments") !== "assessments") throw new Error("\u6D4B\u8BC4\u4E2D\u5FC3\u5F52\u5C5E\u5F02\u5E38");
+if (moduleForPath("/admin") !== null || moduleForPath("/tutor") !== null || moduleForPath("/welcome") !== null) throw new Error("\u540E\u53F0/\u5DE5\u4F5C\u53F0/\u5F15\u5BFC\u4E0D\u53D7\u5F00\u5173\u9650\u5236");
+if (sanitizeModules(["preview", "hack", "gaps", 1]).join(",") !== "preview,gaps") throw new Error("\u6A21\u5757\u8FC7\u6EE4\u5F02\u5E38");
+console.log("OK v50 \u5B66\u5458\u529F\u80FD\u5F00\u5173\u5951\u7EA6\u5C42");
+console.log("RENDER_SMOKE_V50_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:
