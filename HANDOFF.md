@@ -490,3 +490,11 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - 训练方案库：新增 src/data/training/threeTierPlans.ts（三阶九能各能典型问题）+ src/components/TrainingPlanLibrary.tsx（伴学工作台底部）：每能列典型问题+简要方案一句话，点击简要方案展开详细做法（方法明细复用 e3v37Training/methods，口径与学生报告一致；详细块内每个方法可再单独收起）。
 - 冒烟：scripts/smoke-render-v51.tsx 全绿（框架图无 kp chip/无八维词；库数据完整性 9 能×方法 id 全命中；落地页/后端契约/0017 三处同步静态断言）。tsc 无新增错误。BUILD_TAG v51-2026-09-19。
 - 发布顺序：迁移 0013→0017（顺序执行）→ v40 → v41 → v51。git 6e2d4e6。
+
+## v52（2026-09-19，版本号 4bcd069）
+- 框架图底色统一：三阶/底座/单元块全部按红黄绿三档浅色底+深色字（E3V37_LEVEL_STYLE），不再用 tier 绿/蓝/金；心理健康徽标 tone 化（关注=黄、预警/高风险=红），frameworkStatus.mental 增 tone 字段。
+- 建议进步方案：删副标题「（哪层不行补哪层）」；答题明细 onlyAbilities 过滤——只展开对应问题（弱项能力）的题目明细（冰山各行+方案表两处调用）。
+- 图2→图3：新增 E3V37OverviewCard（三阶九能体检一张图），综合详版 RoadmapSection charts、一页看懂、E3 tab 三处的九能雷达全部替换/删除（模块章三能小雷达保留但随图表折叠）。
+- 综合结论与行动方案：章首新增总述块（主卡点徽章 + 状态/生活事件/成绩总差距 + 总策略一句话，含红线时前缀「先照顾好状态，再谈成绩」）。
+- 图形与图表：模块章 Fold 与 RoadmapSection Fold 全部改为默认折叠（标题「图形与图表（点击展开）」），打印仍强制展开。
+- 冒烟：scripts/smoke-render-v52.tsx 全绿（v36 旧断言「默认展开」已反转为默认折叠断言）。tsc 无新增。BUILD_TAG v52-2026-09-19。git e3e2166。发布顺序不变：迁移 0013→0017 → v40 → v41 → 最新。
