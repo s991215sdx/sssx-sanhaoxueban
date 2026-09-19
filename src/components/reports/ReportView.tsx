@@ -62,6 +62,7 @@ import { buildAnswerBlocks, answerKindsForSection } from "@/components/reports/a
 import type { AnswerBlock, RawAnswer } from "@/components/reports/answerBlocks";
 import { RichText } from "@/components/RichText";
 import NineAbilityRadar from "@/components/reports/NineAbilityRadar";
+import E3V37OverviewCard from "@/components/reports/E3V37OverviewCard";
 import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import SystemFramework from "@/components/reports/SystemFramework";
 import type { FrameworkStatus, FrameworkUnit, FrameworkLink } from "@/components/reports/SystemFramework";
@@ -225,7 +226,7 @@ function CollapsibleSection({
       {itemsVisible && section.items && <SectionItems items={section.items} />}
       {bulletsVisible && section.bullets && <SectionBullets bullets={section.bullets} />}
       {charts && (
-        <Fold title="图形与图表（默认展开，点击可折叠）" defaultOpen>
+        <Fold title="图形与图表（点击展开）">
           {charts}
         </Fold>
       )}
@@ -409,15 +410,23 @@ function RoadmapSection({
     乐学: ["e3:乐学"],
     条件: ["e3:条件"],
   };
-  /** 行内答题明细折叠（V36：折叠式直出在当前行，不再跳转到其他 tab）。 */
-  const AnswersFold = ({ kinds, title = "答题明细（点击展开）" }: { kinds: string[]; title?: string }) => {
+  /** 行内答题明细折叠（V36：折叠式直出在当前行，不再跳转到其他 tab）。
+   *  V52：onlyAbilities 只保留对应问题（弱项能力）的题目明细。 */
+  const AnswersFold = ({ kinds, title, onlyAbilities }: { kinds: string[]; title?: string; onlyAbilities?: string[] }) => {
     if (!raw || raw.length === 0) return null;
-    const blocks = buildAnswerBlocks(raw, kinds);
+    let blocks = buildAnswerBlocks(raw, kinds);
+    const filtered = !!onlyAbilities && onlyAbilities.length > 0 && blocks.some((b) => b.key.startsWith("e3-"));
+    if (filtered) {
+      const allow = new Set(itemScores.filter((it) => onlyAbilities!.includes(it.ability)).map((it) => it.no));
+      blocks = blocks
+        .map((b) => (b.key.startsWith("e3-") ? { ...b, rows: b.rows.filter((r) => typeof r.no === "number" && allow.has(r.no as number)) } : b))
+        .filter((b) => b.rows.length > 0);
+    }
     if (blocks.length === 0) return null;
     return (
       <details className="group mt-1.5 overflow-hidden rounded-lg border border-border/70 bg-white/60 print:hidden">
         <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
-          <span>{title}</span>
+          <span>{title ?? (filtered ? "答题明细（仅对应问题，点击展开）" : "答题明细（点击展开）")}</span>
           <ChevronDown size={13} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
         </summary>
         <div className="border-t border-border/60 px-1 py-1">
@@ -461,7 +470,7 @@ function RoadmapSection({
             <Chip label={`细心指数 ${multi5.carefulIndex}%`} bad={multi5.carefulIndex < 70} />
           </div>
         )}
-        <AnswersFold kinds={LAYER_KINDS[layer]} />
+        <AnswersFold kinds={LAYER_KINDS[layer]} onlyAbilities={(layerUnits[layer] ?? []).filter((u) => u.level !== "正常").map((u) => u.label)} />
         {layer === "学能" && multi5 && <AnswersFold kinds={["multi5"]} title="多元五项 · 答题明细（点击展开）" />}
       </>
     ),
@@ -590,6 +599,28 @@ function RoadmapSection({
           <RichText text={p} />
         </p>
       ))}
+
+      {/* V52 · 总览先读：主卡点 + 关键状态 + 总策略一句话（对应一页看懂报告的总述块） */}
+      {e3 && (
+        <div className="paper-card p-4 text-center">
+          <div className="inline-flex items-center gap-2 rounded-2xl bg-olive px-5 py-2.5 text-[17px] font-bold text-cream">
+            {e3.mainBlock ? `主卡点：${e3.mainBlock.label} ${e3.mainBlock.score}/5` : "三阶九能全部正常"}
+          </div>
+          <p className="mt-2 text-[12.5px] text-olive-soft">
+            状态「{e3.motivationLabel}」{e3.motivationScore}/5 · 生活事件 {e3.lifeEventScore}/24（{e3.lifeEventLevel}）
+            {lastTotal > 0 && targetTotal > 0 && ` · 成绩总差距 ${Math.max(0, targetTotal - lastTotal)} 分`}
+          </p>
+          <p className="mt-2 rounded-xl bg-lime-pale/60 px-3.5 py-2.5 text-left text-[12.5px] leading-relaxed text-olive">
+            <b>总策略：</b>
+            {e3.redFlags.length > 0
+              ? "先照顾好状态，再谈成绩；"
+              : ""}
+            {e3.mainBlock
+              ? `优先攻 ${e3.priorities.slice(0, 3).map((p) => `${p.label} ${p.score}`).join("、")}，按「条件 → 乐学 → 会学 → 善学 → 学能」的顺序逐层补。`
+              : "保持当前节奏，每周对照自查一次即可。"}
+          </p>
+        </div>
+      )}
 
       {/* 第一步 · 现状与目标（成绩表 + 三阶表） */}
       <div className="paper-card border-lime/50 p-4">
@@ -753,7 +784,7 @@ function RoadmapSection({
 
       {/* 第三步 · 训练方案表 */}
       <div className="paper-card border-terra/50 p-4">
-        <StepHead n="3" title="建议进步方案（哪层不行补哪层）" color="bg-terra" />
+        <StepHead n="3" title="建议进步方案" color="bg-terra" />
         <div className="mt-2.5 overflow-x-auto">
           <table className="w-full min-w-[460px] border-collapse text-[11.5px] sm:text-[12.5px]">
             <thead>
@@ -786,7 +817,7 @@ function RoadmapSection({
                           {n.label} {n.score}
                         </span>
                       ))}
-                      <AnswersFold kinds={LAYER_KINDS[l.layer]} />
+                      <AnswersFold kinds={LAYER_KINDS[l.layer]} onlyAbilities={weakDims.map((n) => n.label)} />
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 leading-relaxed text-olive-soft">
                       {bad ? LAYER_PLAN_TEXT[l.layer] : "已到 3.8 正常线：保持节奏，每周对照自查一次即可。"}
@@ -802,9 +833,9 @@ function RoadmapSection({
         </p>
       </div>
 
-      {/* 图形与图表（如九能整体雷达，诊断总览）：默认展开，可手动折叠 */}
+      {/* 图形与图表（V52 起默认折叠，需要再点开） */}
       {charts && (
-        <Fold title="图形与图表（默认展开，点击可折叠）" defaultOpen>
+        <Fold title="图形与图表（点击展开）">
           {charts}
         </Fold>
       )}
@@ -2569,17 +2600,19 @@ export default function ReportView({
         : { done: false },
       mental:
         mental || mentalSdq || mentalPa || mentalScl90
-          ? {
-              done: true,
-              note: [
+          ? (() => {
+              const note = [
                 mentalSdq ? `SDQ「${mentalSdq.level}」` : "",
                 mentalPa ? `学生版B「${mentalPa.level}」` : "",
                 mentalScl90 ? `SCL-90「${mentalScl90.level}」` : "",
                 mental ? `通用版「${mental.level}」` : "",
               ]
                 .filter(Boolean)
-                .join(" · "),
-            }
+                .join(" · ");
+              /* V52：关注=黄，预警/高风险=红 */
+              const tone = /高风险|预警|严重/.test(note) ? "bad" : /关注|警戒|阳性/.test(note) ? "warn" : "ok";
+              return { done: true, note, tone: tone as "ok" | "warn" | "bad" };
+            })()
           : { done: false },
       multi5: multi5
         ? {
@@ -2808,7 +2841,7 @@ export default function ReportView({
                 </div>
               )}
             </div>
-            <NineAbilityRadar e3={e3v37} />
+            <E3V37OverviewCard e3={e3v37} />
             {(() => {
               const report = buildE3Report(e3v37);
               return (
@@ -3163,7 +3196,7 @@ export default function ReportView({
                     mental={mental}
                     mentalSdq={mentalSdq}
                     mentalPa={mentalPa}
-                    charts={e3v37 ? <NineAbilityRadar e3={e3v37} /> : undefined}
+                    charts={e3v37 ? <E3V37OverviewCard e3={e3v37} /> : undefined}
                     raw={data?.raw}
                     onReveal={reveal}
                   />
@@ -3562,8 +3595,7 @@ function CombinedLite({
         </div>
       </div>
 
-      {/* 九能雷达：先看图 */}
-      <NineAbilityRadar e3={e3} />
+      {/* 三阶九能体检一张图（V52：替代已删除的九能雷达） */}
       <div className="paper-card p-5">
         <h3 className="font-bold text-olive">三阶九能体检一张图</h3>
         <p className="mt-1 text-[12.5px] text-olive-mute">{E3V37_LEVEL_CAPTION}，凹陷处就是发力点。</p>
