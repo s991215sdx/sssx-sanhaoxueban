@@ -183,6 +183,8 @@ export const studentProfile = mysqlTable("student_profile", {
   /** 学员端功能开关（v50）：null=全功能；数组=仅开启这些模块（测评中心恒可用） */
   enabledModules: json("enabled_modules").$type<string[] | null>(),
   onboarded: boolean("onboarded").notNull().default(false),
+  /** V54：报告推送开关——false=测评报告由伴学师把关，家长暂不可见；true=已推送，家长可直接查看（伴学师/管理员在后台切换） */
+  reportReleased: boolean("report_released").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

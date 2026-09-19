@@ -1,5 +1,6 @@
 import { trpc } from "@/providers/trpc";
 import { MasteryBar, scoreColor, scoreLabel } from "@/components/ScoreRing";
+import ReportLockedGate from "@/components/ReportLockedGate";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { MessageSquareHeart } from "lucide-react";
 
@@ -18,7 +19,8 @@ export default function Report() {
   }
 
   return (
-    <div className="space-y-6">
+    <ReportLockedGate>
+      <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-olive">学习报告</h1>
         <p className="mt-1 text-[15px] text-olive-soft">给爸爸妈妈看的部分：客观数据 + 可执行建议，不焦虑、只看趋势。</p>
@@ -139,5 +141,6 @@ export default function Report() {
         </div>
       ))}
     </div>
+    </ReportLockedGate>
   );
 }

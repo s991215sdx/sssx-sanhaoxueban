@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
+import ReportAccessButton from "@/components/ReportAccessButton";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X } from "lucide-react";
 
 /** 后台管理：总览 / 学员 / 伴学师 / 注册邀请 四个 tab。 */
@@ -273,6 +274,8 @@ function StudentsTab() {
               </div>
               <div className="flex items-center gap-2">
                 <TutorSelect value={s.tutorId} studentUserId={s.userId} tutors={tutors ?? []} />
+                {/* V54：报告推送开关 */}
+                <ReportAccessButton userId={s.userId} released={s.reportReleased} />
                 {/* V53：管理员可重置任意学员登录密码（默认 123456） */}
                 <ResetPasswordButton userId={s.userId} name={s.name} />
                 <button

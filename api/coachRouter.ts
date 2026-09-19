@@ -93,6 +93,27 @@ export const coachRouter = createRouter({
       return { ok: true as const, password: "123456" };
     }),
 
+  /** V54：推送/收回学员报告。released=true 家长可直接查看全部报告；false 由伴学师把关（默认）。伴学师只能操作名下学员。 */
+  setReportAccess: tutorQuery
+    .input((v: unknown) => v as { userId: number; released: boolean })
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const existing = (
+        await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
+      )[0];
+      if (ctx.user.role !== "admin") {
+        if (!existing || existing.tutorId !== ctx.user.id) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+      }
+      if (existing) {
+        await db.update(studentProfile).set({ reportReleased: !!input.released }).where(eq(studentProfile.id, existing.id));
+      } else {
+        await db.insert(studentProfile).values({ userId: input.userId, reportReleased: !!input.released });
+      }
+      return { ok: true as const, released: !!input.released };
+    }),
+
   setStudentModules: tutorQuery
     .input((v: unknown) => v as { userId: number; modules: string[] })
     .mutation(async ({ input, ctx }) => {

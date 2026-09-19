@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v53.tsx
+// scripts/smoke-render-v54.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -117927,7 +117927,7 @@ function TrainingPlanLibrary() {
   ] });
 }
 
-// scripts/smoke-render-v53.tsx
+// scripts/smoke-render-v54.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118466,7 +118466,35 @@ need(tutorSrc, "ResetPasswordButton", "\u4F34\u5B66\u5B66\u5458\u5361\u91CD\u7F6
 var adminSrc = readSrc("../src/pages/Admin.tsx");
 need(adminSrc, "ResetPasswordButton", "\u7BA1\u7406\u5458\u5B66\u5458\u5217\u8868\u91CD\u7F6E\u5165\u53E3");
 console.log("OK v53 \u5FD8\u8BB0\u5BC6\u7801\u5F15\u5BFC + \u91CD\u7F6E\u4E3A 123456 + \u81EA\u884C\u6539\u5BC6");
-console.log("RENDER_SMOKE_V53_OK");
+var readSrc54 = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
+var schemaSrc = readSrc54("../db/schema.ts");
+need(schemaSrc, 'reportReleased: boolean("report_released")', "schema report_released \u5217");
+need(schemaSrc, ".notNull().default(false)", "\u9ED8\u8BA4\u4E0D\u63A8\u9001");
+var embSrc54 = readSrc54("../api/migrationsEmbedded.ts");
+need(embSrc54, "0018_report_released", "\u5185\u5D4C\u8FC1\u79FB 0018");
+need(embSrc54, "report_released", "0018 SQL \u5185\u5BB9");
+var journalSrc54 = readSrc54("../db/migrations/meta/_journal.json");
+need(journalSrc54, "0018_report_released", "journal 0018");
+var coachSrc54 = readSrc54("../api/coachRouter.ts");
+need(coachSrc54, "setReportAccess", "coachRouter.setReportAccess");
+need(coachSrc54, "reportReleased: !!input.released", "\u5199\u5165\u63A8\u9001\u5F00\u5173");
+var detailSrc = readSrc54("../api/studentDetail.ts");
+need(detailSrc, "reportReleased: p.reportReleased", "\u5B66\u5458\u5217\u8868\u5E26 reportReleased");
+var gateSrc = readSrc54("../src/components/ReportLockedGate.tsx");
+need(gateSrc, "profile.reportReleased", "\u95E8\u7981\u5224\u65AD");
+need(gateSrc, "\u62A5\u544A\u6B63\u5728\u7531\u4F34\u5B66\u5E08\u6574\u7406", "\u62E6\u622A\u5360\u4F4D\u6587\u6848");
+var rdSrc = readSrc54("../src/pages/ReportDetail.tsx");
+need(rdSrc, "ReportLockedGate", "\u8BE6\u7248\u62A5\u544A\u9875\u52A0\u95E8\u7981");
+var rSrc = readSrc54("../src/pages/Report.tsx");
+need(rSrc, "ReportLockedGate", "\u5B66\u529B\u62A5\u544A\u9875\u52A0\u95E8\u7981");
+var btnSrc = readSrc54("../src/components/ReportAccessButton.tsx");
+need(btnSrc, "setReportAccess", "\u63A8\u9001\u6309\u94AE\u8C03\u7528\u63A5\u53E3");
+var tutorSrc54 = readSrc54("../src/pages/Tutor.tsx");
+need(tutorSrc54, "ReportAccessButton", "\u4F34\u5B66\u5B66\u5458\u5361\u63A8\u9001\u5165\u53E3");
+var adminSrc54 = readSrc54("../src/pages/Admin.tsx");
+need(adminSrc54, "ReportAccessButton", "\u7BA1\u7406\u5458\u5217\u8868\u63A8\u9001\u5165\u53E3");
+console.log("OK v54 \u62A5\u544A\u4F34\u5B66\u5E08\u628A\u5173\uFF08\u8FC1\u79FB 0018 + \u95E8\u7981 + \u63A8\u9001\u5F00\u5173\uFF09");
+console.log("RENDER_SMOKE_V54_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

@@ -32,6 +32,8 @@ export type StudentListItem = {
   tutorName: string | null;
   /** 学员端功能开关（null=全功能） */
   enabledModules: string[] | null;
+  /** V54：报告是否已推送给家长（false=伴学师把关中） */
+  reportReleased: boolean;
   hasMulti: boolean;
   hasAcademics: boolean;
   errors: number;
@@ -88,6 +90,7 @@ export async function listStudents(db: Db): Promise<StudentListItem[]> {
         tutorId: p.tutorId ?? null,
         tutorName: p.tutorId != null ? (tutorNameMap.get(p.tutorId) ?? null) : null,
         enabledModules: p.enabledModules ?? null,
+        reportReleased: p.reportReleased,
         hasMulti: multiSet.has(p.userId),
         hasAcademics: p.academics != null,
         errors: errMap.get(p.userId) ?? 0,
