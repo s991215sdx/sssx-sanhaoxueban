@@ -472,3 +472,14 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
   - Login.tsx 文案改为邀请制提示
 - 契约层 contracts/invite.ts（INVITE_CHANNEL_KINDS/INVITE_GRADES/INVITE_CODE_RE/normalizeInviteCode）；冒烟 v49 契约断言 OK；tsc 无新增错误；新增依赖 qrcode + @types/qrcode。
 - **发布顺序提醒**：迁移需包含 0013/0014/0015 → v40 → v41 → v49（中间可跳）。
+
+## v50（2026-09-16，git 828fde9 / 版本 2798173）
+- **二维码变形修复**：ChannelQr canvas 加 `h-auto`（原 w-full 拉伸 + 固定高属性 → 竖长码）。
+- **落地页**：去掉「你正在通过『XX渠道』加入」，改为「价值 2980 元的学习力系统测评一份，全面测评了解孩子的系统学习力」；注册成功 navigate("/assessments")；注册档案 onboarded=true（基础信息已录，直达测评中心）。
+- **学员功能开关**（迁移 0016_invite_v50，journal idx16 when 1789574400000 + embedded 三处同步）：
+  - student_profile 加 `enabled_modules` json（null=全功能）；contracts/studentModules.ts（STUDENT_MODULE_KEYS/STUDENT_MODULES/DEFAULT_INVITE_MODULES=["assessments"]/moduleForPath/sanitizeModules）
+  - 邀请注册默认仅测评中心；App.tsx ModuleGate（受限学员访问未开模块或首页 → /assessments；/admin /tutor /welcome 不受限）；Layout 桌面+移动导航按开关过滤（测评中心恒显）
+  - coachRouter.setStudentModules（tutorQuery；伴学师仅名下学员；空数组=恢复全功能）；listStudents 返回 enabledModules；Tutor 页学员卡内联功能开关面板（SlidersHorizontal 展开，chips 多选+保存）
+- **伴学师发码**：inviteRouter createChannel/channels/setChannelActive 由 adminQuery 改 tutorQuery（伴学师仅见/仅动自己的码，recent 按渠道过滤）；invite_channels 加 tutor_id；伴学师建的码注册学员自动 tutorId 归属（registerWithInvite 写入档案）；Tutor 页新增「邀请注册 · 我的二维码」区块（复用 InviteChannelsTab）
+- 冒烟 v50 契约断言 OK；tsc 无新增错误；BUILD_TAG v50-2026-09-16。
+- **发布顺序**：迁移 0013→0016 → v40 → v41 → v50。
