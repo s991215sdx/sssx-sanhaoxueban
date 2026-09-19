@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
-import { Minus, Plus, RotateCcw, Target } from "lucide-react";
+import { Minus, Plus, RotateCcw, Target, KeyRound } from "lucide-react";
 
 /** 伴学师 · 我的档案：基础信息 + 每日时长可改 + 测评标签。 */
 export default function ProfileCard() {
@@ -17,6 +17,28 @@ export default function ProfileCard() {
   const update = trpc.profile.updateMinutes.useMutation({
     onSuccess: () => utils.profile.get.invalidate(),
   });
+
+  /* V53：修改登录密码 */
+  const [pwOpen, setPwOpen] = useState(false);
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const changePw = trpc.profile.changePassword.useMutation({
+    onSuccess: () => {
+      setPwMsg({ ok: true, text: "密码已更新，下次登录请用新密码。" });
+      setOldPw("");
+      setNewPw("");
+      setNewPw2("");
+    },
+    onError: (err) => setPwMsg({ ok: false, text: err.message || "修改失败，请重试" }),
+  });
+  const submitPw = () => {
+    setPwMsg(null);
+    if (newPw.length < 6) return setPwMsg({ ok: false, text: "新密码至少 6 位" });
+    if (newPw !== newPw2) return setPwMsg({ ok: false, text: "两次输入的新密码不一样" });
+    changePw.mutate({ oldPassword: oldPw, newPassword: newPw });
+  };
 
   if (isLoading) {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
@@ -108,6 +130,69 @@ export default function ProfileCard() {
           </button>
         )}
         {!dirty && update.isSuccess && <p className="mt-2 text-center text-[12.5px] text-lime">已保存，明天开始按新节奏安排。</p>}
+      </div>
+
+      {/* V53：修改登录密码（忘记密码可联系伴学师/管理员重置为 123456） */}
+      <div className="mt-4 rounded-xl border border-border bg-cream p-4">
+        <button
+          type="button"
+          onClick={() => {
+            setPwOpen(!pwOpen);
+            setPwMsg(null);
+          }}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="flex items-center gap-1.5 text-[13.5px] font-semibold text-olive">
+            <KeyRound size={14} className="text-olive-mute" />
+            修改登录密码
+          </span>
+          <span className="text-[12px] text-olive-mute">{pwOpen ? "收起" : "展开"}</span>
+        </button>
+        {pwOpen && (
+          <div className="mt-3 space-y-2.5">
+            <input
+              type="password"
+              autoComplete="current-password"
+              maxLength={64}
+              placeholder="原密码（重置后的默认密码是 123456）"
+              value={oldPw}
+              onChange={(e) => setOldPw(e.target.value)}
+              className="w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
+            />
+            <input
+              type="password"
+              autoComplete="new-password"
+              maxLength={64}
+              placeholder="新密码（6～64 位）"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              className="w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
+            />
+            <input
+              type="password"
+              autoComplete="new-password"
+              maxLength={64}
+              placeholder="再输一遍新密码"
+              value={newPw2}
+              onChange={(e) => setNewPw2(e.target.value)}
+              className="w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
+            />
+            {pwMsg && (
+              <p className={`rounded-lg px-3 py-2 text-[12.5px] ${pwMsg.ok ? "bg-lime-pale text-[#4e7d20]" : "bg-terra/10 text-terra"}`}>
+                {pwMsg.text}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={changePw.isPending || !oldPw || newPw.length < 6 || newPw2.length < 6}
+              onClick={submitPw}
+              className="w-full rounded-xl bg-olive py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {changePw.isPending ? "保存中…" : "保存新密码"}
+            </button>
+            <p className="text-[12px] leading-relaxed text-olive-mute">忘记密码？联系伴学师或管理员在后台重置，重置后默认密码为 123456。</p>
+          </div>
+        )}
       </div>
     </div>
   );

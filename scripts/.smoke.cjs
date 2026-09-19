@@ -36487,7 +36487,7 @@ var require_lucide_react = __commonJS({
       ],
       ["circle", { cx: "16.5", cy: "7.5", r: ".5", fill: "currentColor", key: "w0ekpg" }]
     ];
-    var KeyRound = createLucideIcon("key-round", __iconNode$cU);
+    var KeyRound2 = createLucideIcon("key-round", __iconNode$cU);
     var __iconNode$cT = [
       [
         "path",
@@ -45419,7 +45419,7 @@ var require_lucide_react = __commonJS({
       Kanban,
       Kayak,
       Key,
-      KeyRound,
+      KeyRound: KeyRound2,
       KeySquare,
       Keyboard,
       KeyboardMusic,
@@ -48211,8 +48211,8 @@ var require_lucide_react = __commonJS({
     exports2.KayakIcon = Kayak;
     exports2.Key = Key;
     exports2.KeyIcon = Key;
-    exports2.KeyRound = KeyRound;
-    exports2.KeyRoundIcon = KeyRound;
+    exports2.KeyRound = KeyRound2;
+    exports2.KeyRoundIcon = KeyRound2;
     exports2.KeySquare = KeySquare;
     exports2.KeySquareIcon = KeySquare;
     exports2.Keyboard = Keyboard;
@@ -49366,7 +49366,7 @@ var require_lucide_react = __commonJS({
     exports2.LucideKanbanSquareDashed = SquareDashedKanban;
     exports2.LucideKayak = Kayak;
     exports2.LucideKey = Key;
-    exports2.LucideKeyRound = KeyRound;
+    exports2.LucideKeyRound = KeyRound2;
     exports2.LucideKeySquare = KeySquare;
     exports2.LucideKeyboard = Keyboard;
     exports2.LucideKeyboardMusic = KeyboardMusic;
@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v52.tsx
+// scripts/smoke-render-v53.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -110071,6 +110071,26 @@ function ProfileCard() {
   const update = trpc.profile.updateMinutes.useMutation({
     onSuccess: () => utils.profile.get.invalidate()
   });
+  const [pwOpen, setPwOpen] = (0, import_react.useState)(false);
+  const [oldPw, setOldPw] = (0, import_react.useState)("");
+  const [newPw, setNewPw] = (0, import_react.useState)("");
+  const [newPw2, setNewPw2] = (0, import_react.useState)("");
+  const [pwMsg, setPwMsg] = (0, import_react.useState)(null);
+  const changePw = trpc.profile.changePassword.useMutation({
+    onSuccess: () => {
+      setPwMsg({ ok: true, text: "\u5BC6\u7801\u5DF2\u66F4\u65B0\uFF0C\u4E0B\u6B21\u767B\u5F55\u8BF7\u7528\u65B0\u5BC6\u7801\u3002" });
+      setOldPw("");
+      setNewPw("");
+      setNewPw2("");
+    },
+    onError: (err) => setPwMsg({ ok: false, text: err.message || "\u4FEE\u6539\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" })
+  });
+  const submitPw = () => {
+    setPwMsg(null);
+    if (newPw.length < 6) return setPwMsg({ ok: false, text: "\u65B0\u5BC6\u7801\u81F3\u5C11 6 \u4F4D" });
+    if (newPw !== newPw2) return setPwMsg({ ok: false, text: "\u4E24\u6B21\u8F93\u5165\u7684\u65B0\u5BC6\u7801\u4E0D\u4E00\u6837" });
+    changePw.mutate({ oldPassword: oldPw, newPassword: newPw });
+  };
   if (isLoading) {
     return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "paper-card h-40 animate-pulse bg-cream-deep/50" });
   }
@@ -110171,6 +110191,76 @@ function ProfileCard() {
         }
       ),
       !dirty && update.isSuccess && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { className: "mt-2 text-center text-[12.5px] text-lime", children: "\u5DF2\u4FDD\u5B58\uFF0C\u660E\u5929\u5F00\u59CB\u6309\u65B0\u8282\u594F\u5B89\u6392\u3002" })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "mt-4 rounded-xl border border-border bg-cream p-4", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setPwOpen(!pwOpen);
+            setPwMsg(null);
+          },
+          className: "flex w-full items-center justify-between text-left",
+          children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("span", { className: "flex items-center gap-1.5 text-[13.5px] font-semibold text-olive", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(import_lucide_react.KeyRound, { size: 14, className: "text-olive-mute" }),
+              "\u4FEE\u6539\u767B\u5F55\u5BC6\u7801"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "text-[12px] text-olive-mute", children: pwOpen ? "\u6536\u8D77" : "\u5C55\u5F00" })
+          ]
+        }
+      ),
+      pwOpen && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "mt-3 space-y-2.5", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+          "input",
+          {
+            type: "password",
+            autoComplete: "current-password",
+            maxLength: 64,
+            placeholder: "\u539F\u5BC6\u7801\uFF08\u91CD\u7F6E\u540E\u7684\u9ED8\u8BA4\u5BC6\u7801\u662F 123456\uFF09",
+            value: oldPw,
+            onChange: (e) => setOldPw(e.target.value),
+            className: "w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+          "input",
+          {
+            type: "password",
+            autoComplete: "new-password",
+            maxLength: 64,
+            placeholder: "\u65B0\u5BC6\u7801\uFF086\uFF5E64 \u4F4D\uFF09",
+            value: newPw,
+            onChange: (e) => setNewPw(e.target.value),
+            className: "w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+          "input",
+          {
+            type: "password",
+            autoComplete: "new-password",
+            maxLength: 64,
+            placeholder: "\u518D\u8F93\u4E00\u904D\u65B0\u5BC6\u7801",
+            value: newPw2,
+            onChange: (e) => setNewPw2(e.target.value),
+            className: "w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
+          }
+        ),
+        pwMsg && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { className: `rounded-lg px-3 py-2 text-[12.5px] ${pwMsg.ok ? "bg-lime-pale text-[#4e7d20]" : "bg-terra/10 text-terra"}`, children: pwMsg.text }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+          "button",
+          {
+            type: "button",
+            disabled: changePw.isPending || !oldPw || newPw.length < 6 || newPw2.length < 6,
+            onClick: submitPw,
+            className: "w-full rounded-xl bg-olive py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50",
+            children: changePw.isPending ? "\u4FDD\u5B58\u4E2D\u2026" : "\u4FDD\u5B58\u65B0\u5BC6\u7801"
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("p", { className: "text-[12px] leading-relaxed text-olive-mute", children: "\u5FD8\u8BB0\u5BC6\u7801\uFF1F\u8054\u7CFB\u4F34\u5B66\u5E08\u6216\u7BA1\u7406\u5458\u5728\u540E\u53F0\u91CD\u7F6E\uFF0C\u91CD\u7F6E\u540E\u9ED8\u8BA4\u5BC6\u7801\u4E3A 123456\u3002" })
+      ] })
     ] })
   ] });
 }
@@ -117837,7 +117927,7 @@ function TrainingPlanLibrary() {
   ] });
 }
 
-// scripts/smoke-render-v52.tsx
+// scripts/smoke-render-v53.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118355,7 +118445,28 @@ need(full, "\u4E3B\u5361\u70B9\uFF1A", "\u603B\u89C8\u4E3B\u5361\u70B9");
 if (full.includes("\u5EFA\u8BAE\u8FDB\u6B65\u65B9\u6848\uFF08\u54EA\u5C42\u4E0D\u884C\u8865\u54EA\u5C42\uFF09")) throw new Error("\uFF08\u54EA\u5C42\u4E0D\u884C\u8865\u54EA\u5C42\uFF09\u672A\u5220\u9664");
 need(full, "\u7B54\u9898\u660E\u7EC6\uFF08\u4EC5\u5BF9\u5E94\u95EE\u9898\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09", "\u7B54\u9898\u660E\u7EC6\u4EC5\u5BF9\u5E94\u95EE\u9898");
 console.log("OK v52 \u6846\u67B6\u56FE\u7EA2\u9EC4\u7EFF\u7EDF\u4E00\u5E95\u8272 + \u96F7\u8FBE\u6362\u4F53\u68C0\u56FE + \u6298\u53E0\u9ED8\u8BA4\u6536\u8D77 + \u603B\u7B56\u7565\u603B\u8FF0");
-console.log("RENDER_SMOKE_V52_OK");
+var readSrc = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
+var profileSrc = readSrc("../api/profileRouter.ts");
+need(profileSrc, "changePassword", "profileRouter.changePassword");
+need(profileSrc, "scryptSync", "\u6539\u5BC6\u9700\u6821\u9A8C\u539F\u5BC6\u7801\u54C8\u5E0C");
+var coachSrc = readSrc("../api/coachRouter.ts");
+need(coachSrc, "resetStudentPassword", "coachRouter.resetStudentPassword");
+need(coachSrc, 'hashPassword("123456")', "\u91CD\u7F6E\u9ED8\u8BA4\u5BC6\u7801 123456");
+need(coachSrc, "\u8FD9\u4F4D\u540C\u5B66\u4E0D\u5728\u4F60\u7684\u4F34\u5B66\u540D\u5355\u91CC", "\u4F34\u5B66\u5E08\u4EC5\u540D\u4E0B\u5B66\u5458\u6821\u9A8C");
+var loginSrc = readSrc("../src/pages/Login.tsx");
+need(loginSrc, "\u5FD8\u8BB0\u5BC6\u7801", "\u767B\u5F55\u9875\u5FD8\u8BB0\u5BC6\u7801\u5165\u53E3");
+need(loginSrc, "123456", "\u5FD8\u8BB0\u5BC6\u7801\u5F39\u5C42\u542B\u9ED8\u8BA4\u5BC6\u7801\u8BF4\u660E");
+var profileCardSrc = readSrc("../src/components/companion/ProfileCard.tsx");
+need(profileCardSrc, "\u4FEE\u6539\u767B\u5F55\u5BC6\u7801", "\u6211\u7684\u6863\u6848\u5361\u4FEE\u6539\u5BC6\u7801");
+need(profileCardSrc, "changePassword", "\u6211\u7684\u6863\u6848\u5361\u8C03\u7528\u6539\u5BC6\u63A5\u53E3");
+var resetBtnSrc = readSrc("../src/components/ResetPasswordButton.tsx");
+need(resetBtnSrc, "resetStudentPassword", "\u91CD\u7F6E\u6309\u94AE\u8C03\u7528\u63A5\u53E3");
+var tutorSrc = readSrc("../src/pages/Tutor.tsx");
+need(tutorSrc, "ResetPasswordButton", "\u4F34\u5B66\u5B66\u5458\u5361\u91CD\u7F6E\u5165\u53E3");
+var adminSrc = readSrc("../src/pages/Admin.tsx");
+need(adminSrc, "ResetPasswordButton", "\u7BA1\u7406\u5458\u5B66\u5458\u5217\u8868\u91CD\u7F6E\u5165\u53E3");
+console.log("OK v53 \u5FD8\u8BB0\u5BC6\u7801\u5F15\u5BFC + \u91CD\u7F6E\u4E3A 123456 + \u81EA\u884C\u6539\u5BC6");
+console.log("RENDER_SMOKE_V53_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

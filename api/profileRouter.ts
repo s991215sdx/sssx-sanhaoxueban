@@ -1,8 +1,10 @@
+import { scryptSync, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { assessmentResults, studentProfile, type StudentProfile } from "@db/schema";
+import { assessmentResults, studentProfile, users, type StudentProfile } from "@db/schema";
+import { hashPassword } from "./auth-router";
 import {
   MBTI_QUESTIONS,
   DISC_QUESTIONS,
@@ -212,6 +214,22 @@ export const profileRouter = createRouter({
       } else {
         await db.insert(studentProfile).values({ userId, ...values });
       }
+      return { ok: true as const };
+    }),
+
+  /** V53：本人修改登录密码（需验证原密码；重置后的默认密码 123456 登录后应先改掉）。 */
+  changePassword: authedQuery
+    .input(z.object({ oldPassword: z.string().min(1).max(64), newPassword: z.string().min(6).max(64) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const me = (await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1))[0];
+      if (!me?.passwordHash) throw new Error("当前账号不支持密码登录");
+      const [v, salt, hash] = me.passwordHash.split("$");
+      const calc = scryptSync(input.oldPassword, salt ?? "", 32);
+      const expect = Buffer.from(hash ?? "", "hex");
+      const ok = v === "s1" && salt && hash && calc.length === expect.length && timingSafeEqual(calc, expect);
+      if (!ok) throw new Error("原密码不对，再想想或联系伴学师重置");
+      await db.update(users).set({ passwordHash: hashPassword(input.newPassword) }).where(eq(users.id, ctx.user.id));
       return { ok: true as const };
     }),
 

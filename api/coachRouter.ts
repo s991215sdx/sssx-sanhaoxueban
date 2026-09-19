@@ -2,7 +2,8 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { createRouter, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { studentProfile } from "@db/schema";
+import { studentProfile, users } from "@db/schema";
+import { hashPassword } from "./auth-router";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
 import { getStudentDetail, listStudents } from "./studentDetail";
@@ -73,6 +74,25 @@ export const coachRouter = createRouter({
     }),
 
   /** 开启/关闭学员端功能模块（测评中心恒可用；传空数组=恢复全功能）。伴学师只能管自己名下的学员。 */
+  /** V53：伴学师/管理员帮学员重置登录密码（重置后为默认密码 123456，学员登录后应自行修改）。伴学师只能重置自己名下的学员。 */
+  resetStudentPassword: tutorQuery
+    .input((v: unknown) => v as { userId: number })
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const target = (
+        await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
+      )[0];
+      if (ctx.user.role !== "admin") {
+        if (!target || target.tutorId !== ctx.user.id) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+      }
+      const userRow = (await db.select({ id: users.id }).from(users).where(eq(users.id, input.userId)).limit(1))[0];
+      if (!userRow) throw new Error("学员账号不存在");
+      await db.update(users).set({ passwordHash: hashPassword("123456") }).where(eq(users.id, input.userId));
+      return { ok: true as const, password: "123456" };
+    }),
+
   setStudentModules: tutorQuery
     .input((v: unknown) => v as { userId: number; modules: string[] })
     .mutation(async ({ input, ctx }) => {

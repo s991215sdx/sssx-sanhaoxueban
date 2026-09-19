@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
+import ResetPasswordButton from "@/components/ResetPasswordButton";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal } from "lucide-react";
 
@@ -130,6 +131,8 @@ export default function Tutor() {
                 >
                   <SlidersHorizontal size={15} />
                 </button>
+                {/* V53：重置该学员登录密码（默认 123456） */}
+                <ResetPasswordButton userId={s.userId} name={s.name} compact />
               </div>
               {modulesFor === s.userId && <StudentModulesPanel userId={s.userId} enabledModules={s.enabledModules} />}
               <div className="mt-3 flex flex-wrap gap-1.5">
