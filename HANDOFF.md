@@ -483,3 +483,10 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - **伴学师发码**：inviteRouter createChannel/channels/setChannelActive 由 adminQuery 改 tutorQuery（伴学师仅见/仅动自己的码，recent 按渠道过滤）；invite_channels 加 tutor_id；伴学师建的码注册学员自动 tutorId 归属（registerWithInvite 写入档案）；Tutor 页新增「邀请注册 · 我的二维码」区块（复用 InviteChannelsTab）
 - 冒烟 v50 契约断言 OK；tsc 无新增错误；BUILD_TAG v50-2026-09-16。
 - **发布顺序**：迁移 0013→0016 → v40 → v41 → v50。
+
+## v51（2026-09-19，版本号 0167889）
+- 框架图清爽化：SystemFramework 删除全部二级考察点 chip（九能/条件/学能的小 kp 徽标 + 成绩「现状→目标」行），一级单元只留能力名+均分；多元智能八维彻底下线（FrameworkStatus.multi 字段删除，ReportView 计算与 import 同步清理，打印 combinedPrintHtml 的八维分支删除）。
+- 极简注册：InviteRegister 只留手机号+密码（保留 2980 文案）；registerWithInvite 输入改为 {code, phone, password}，档案姓名用「同学+尾号4位」占位、grade 走默认值；inviteRegistrations 三列放宽可空，新增迁移 0017_invite_v51_minimal（schema/journal/migrationsEmbedded 三处同步）；伴学/管理端「最近注册」表去掉家长称呼列、空值显示 —。
+- 训练方案库：新增 src/data/training/threeTierPlans.ts（三阶九能各能典型问题）+ src/components/TrainingPlanLibrary.tsx（伴学工作台底部）：每能列典型问题+简要方案一句话，点击简要方案展开详细做法（方法明细复用 e3v37Training/methods，口径与学生报告一致；详细块内每个方法可再单独收起）。
+- 冒烟：scripts/smoke-render-v51.tsx 全绿（框架图无 kp chip/无八维词；库数据完整性 9 能×方法 id 全命中；落地页/后端契约/0017 三处同步静态断言）。tsc 无新增错误。BUILD_TAG v51-2026-09-19。
+- 发布顺序：迁移 0013→0017（顺序执行）→ v40 → v41 → v51。git 6e2d4e6。
