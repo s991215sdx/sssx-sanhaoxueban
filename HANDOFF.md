@@ -504,3 +504,10 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - 重置密码：coachRouter.resetStudentPassword（tutorQuery；伴学师仅名下学员，管理员任意）→ 密码重置为默认 123456；前端共享组件 ResetPasswordButton（两步确认 + 成功提示），挂到伴学工作台学员卡（icon）与管理后台学员列表行（文字）。
 - 自行改密：profileRouter.changePassword（验原密码 scrypt 校验，新密码 6～64）；「我的」档案卡（ProfileCard）新增「修改登录密码」折叠块。
 - 冒烟：scripts/smoke-render-v53.tsx 全绿（后端两接口 + 三处前端入口源码断言）。tsc 无新增。BUILD_TAG v53-2026-09-19。git c5c5e56。无 DB 变更（复用 users.password_hash）。
+
+## v54（2026-09-19，版本号 245e33e）
+- 报告把关：student_profile 新增 report_released（默认 false）——测评完家长默认不可见报告，伴学师/管理员推送后才可见。迁移 0018_report_released（schema/journal/migrationsEmbedded 三处同步）。
+- 后端：coachRouter.setReportAccess（tutorQuery；伴学师仅名下学员）；studentDetail 列表带 reportReleased。
+- 前端：ReportAccessButton 推送/收回按钮（收回需确认）——伴学工作台学员卡（icon）+ 管理后台学员行（文字）；学生端 ReportLockedGate 门禁组件，包裹「学习报告」(/report) 与「测评详细报告」(/report-detail) 两页，未推送显示「报告正在由伴学师整理」占位（可刷新）。
+- 冒烟：scripts/smoke-render-v54.tsx 全绿（0018 三处同步 + 接口/字段/门禁/按钮源码断言）。tsc 无新增。BUILD_TAG v54-2026-09-19。git 993d6b3。
+- 发布顺序：迁移 0013→0018（顺序执行，新增 0018）→ v40 → v41 → 最新。
