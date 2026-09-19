@@ -511,3 +511,14 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - 前端：ReportAccessButton 推送/收回按钮（收回需确认）——伴学工作台学员卡（icon）+ 管理后台学员行（文字）；学生端 ReportLockedGate 门禁组件，包裹「学习报告」(/report) 与「测评详细报告」(/report-detail) 两页，未推送显示「报告正在由伴学师整理」占位（可刷新）。
 - 冒烟：scripts/smoke-render-v54.tsx 全绿（0018 三处同步 + 接口/字段/门禁/按钮源码断言）。tsc 无新增。BUILD_TAG v54-2026-09-19。git 993d6b3。
 - 发布顺序：迁移 0013→0018（顺序执行，新增 0018）→ v40 → v41 → 最新。
+
+## v55（17adc63）：MBTI/DISC 家长直接可看 + 一键请伴学师推送
+- 迁移 0019：student_profile.report_push_requested_at（schema/journal/migrationsEmbedded 三处同步）
+- api/profileRouter.requestReportPush：家长/学员一键请求，写入时间戳（无档案则 insert）
+- api/coachRouter.setReportAccess：推送(released)时自动清空请求字段 → 伴学卡提醒随之消失
+- api/studentDetail：学员列表带 reportPushRequestedAt
+- 新增 ReportLockedPanel：锁文案 + 「请伴学师推送报告」按钮 + 已发送态；ReportLockedGate 重构复用（/report 页同样获得请求按钮）
+- ReportDetail 去掉整页门禁，改按 tab 白名单：OPEN_TABS=["mbti","disc","parent","discparent"]（家长 DISC 在家长报告页内，整页放行）；未推送且非白名单 → ReportLockedPanel
+- Tutor 学员卡：reportPushRequestedAt && !reportReleased 显示橙色「家长请求推送报告」chip
+- 冒烟 v55：14 项断言全过；BUILD_TAG v55-2026-09-19；版本 8f1bff9
+- 发布顺序：迁移 0013→0019 顺序执行 → v40 → v41 → 最新版
