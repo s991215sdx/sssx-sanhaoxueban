@@ -498,3 +498,9 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - 综合结论与行动方案：章首新增总述块（主卡点徽章 + 状态/生活事件/成绩总差距 + 总策略一句话，含红线时前缀「先照顾好状态，再谈成绩」）。
 - 图形与图表：模块章 Fold 与 RoadmapSection Fold 全部改为默认折叠（标题「图形与图表（点击展开）」），打印仍强制展开。
 - 冒烟：scripts/smoke-render-v52.tsx 全绿（v36 旧断言「默认展开」已反转为默认折叠断言）。tsc 无新增。BUILD_TAG v52-2026-09-19。git e3e2166。发布顺序不变：迁移 0013→0017 → v40 → v41 → 最新。
+
+## v53（2026-09-19，版本号 7441b2c）
+- 忘记密码：登录页新增「忘记密码？」入口 → 弹层三步说明（找伴学师/管理员重置 → 默认 123456 登录 → 到「我的」改密）。
+- 重置密码：coachRouter.resetStudentPassword（tutorQuery；伴学师仅名下学员，管理员任意）→ 密码重置为默认 123456；前端共享组件 ResetPasswordButton（两步确认 + 成功提示），挂到伴学工作台学员卡（icon）与管理后台学员列表行（文字）。
+- 自行改密：profileRouter.changePassword（验原密码 scrypt 校验，新密码 6～64）；「我的」档案卡（ProfileCard）新增「修改登录密码」折叠块。
+- 冒烟：scripts/smoke-render-v53.tsx 全绿（后端两接口 + 三处前端入口源码断言）。tsc 无新增。BUILD_TAG v53-2026-09-19。git c5c5e56。无 DB 变更（复用 users.password_hash）。
