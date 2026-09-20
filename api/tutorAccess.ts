@@ -4,6 +4,22 @@ import { studentProfile, studentTutor } from "@db/schema";
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
 /**
+ * 读取全部学员-伴学师分配记录。
+ * 容错：迁移 0020 是后台非阻塞执行的，若 student_tutor 尚未建好（或任何原因查询失败），
+ * 退化为空数组——学员列表只按主管伴学师展示，保证页面可用；保存分配时仍会明确报错。
+ */
+export async function listStudentTutorLinks(db: Db): Promise<{ studentUserId: number; tutorUserId: number }[]> {
+  try {
+    const rows = await db
+      .select({ studentUserId: studentTutor.studentUserId, tutorUserId: studentTutor.tutorUserId })
+      .from(studentTutor);
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * V56：判定某学员是否在某伴学师名下。
  * 命中条件（任一）：student_profile.tutor_id 主管伴学师，或 student_tutor 多对多分配表中有记录。
  */

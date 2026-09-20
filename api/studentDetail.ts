@@ -11,7 +11,6 @@ import {
   moodEntries,
   previewSessions,
   studentProfile,
-  studentTutor,
   users,
 } from "@db/schema";
 import type { MbtiResult, DiscResult, E3V27Result, E3V37Result } from "@contracts/assessments";
@@ -80,8 +79,9 @@ export async function listStudents(db: Db): Promise<StudentListItem[]> {
   ]);
   const prevMap = new Map(prevRows.map((r) => [r.userId, Number(r.c)]));
   const multiSet = new Set(multiRows.map((r) => r.userId));
-  // V56：学员-伴学师多对多分配
-  const links = await db.select().from(studentTutor);
+  // V56：学员-伴学师多对多分配（容错：表未就绪时退化为空）
+  const { listStudentTutorLinks } = await import("./tutorAccess");
+  const links = await listStudentTutorLinks(db);
   const tutorsOf = (studentUserId: number, primaryTutorId: number | null) => {
     const ids: number[] = [];
     if (primaryTutorId != null) ids.push(primaryTutorId);

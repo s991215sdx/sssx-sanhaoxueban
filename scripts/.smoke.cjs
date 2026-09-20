@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v56.tsx
+// scripts/smoke-render-v57.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -114799,8 +114799,7 @@ function sanitizeModules(modules) {
 }
 
 // src/components/TrainingPlanLibrary.tsx
-var import_react5 = __toESM(require_react(), 1);
-var import_lucide_react7 = __toESM(require_lucide_react(), 1);
+var import_lucide_react8 = __toESM(require_lucide_react(), 1);
 
 // src/data/training/threeTierPlans.ts
 var THREE_TIER_PLANS = [
@@ -114903,6 +114902,10 @@ var THREE_TIER_STYLE = {
   \u4F1A\u5B66: { label: "2 \u9636 \xB7 \u4F1A\u5B66 \xB7 \u884C\u4E3A\u7CFB\u7EDF", sub: "\u5E95\u76D8 \xB7 \u8DD1\u987A\u65E5\u5E38\u5B66\u4E60\u95ED\u73AF", color: "#3d8ec4", bg: "#e3edf6", border: "#3d8ec480" },
   \u5584\u5B66: { label: "3 \u9636 \xB7 \u5584\u5B66 \xB7 \u52A0\u901F\u7CFB\u7EDF", sub: "\u52A0\u901F\u5668 \xB7 \u7B56\u7565\u4E0E\u5143\u8BA4\u77E5", color: "#c7a23a", bg: "#f5eecb", border: "#c7a23a80" }
 };
+
+// src/components/training/AbilityPlanCard.tsx
+var import_react5 = __toESM(require_react(), 1);
+var import_lucide_react7 = __toESM(require_lucide_react(), 1);
 
 // src/data/training/e3v37Training.ts
 var E3V37_ABILITY_TRAINING = {
@@ -117818,116 +117821,120 @@ var TRAINING_METHODS = [
 ];
 var METHOD_BY_ID = new Map(TRAINING_METHODS.map((m) => [m.id, m]));
 
-// src/components/TrainingPlanLibrary.tsx
+// src/components/training/AbilityPlanCard.tsx
 var import_jsx_runtime19 = __toESM(require_jsx_runtime(), 1);
-function TrainingPlanLibrary() {
-  const [openAbility, setOpenAbility] = (0, import_react5.useState)(null);
+function AbilityPlanCard({ tier, ability }) {
+  const [open, setOpen] = (0, import_react5.useState)(false);
   const [closedMethods, setClosedMethods] = (0, import_react5.useState)(/* @__PURE__ */ new Set());
-  const toggle = (key) => setOpenAbility((cur) => cur === key ? null : key);
+  const plan = THREE_TIER_PLANS.find((p) => p.tier === tier && p.ability === ability);
+  const rx = E3V37_ABILITY_TRAINING[ability];
+  const methods = (rx?.methodIds ?? []).map((id) => METHOD_BY_ID.get(id)).filter((m) => m != null);
+  if (!plan) return null;
   const toggleMethod = (key) => setClosedMethods((cur) => {
     const next = new Set(cur);
     if (next.has(key)) next.delete(key);
     else next.add(key);
     return next;
   });
-  return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("section", { className: "paper-card p-5", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "flex items-center gap-2", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ClipboardList, { size: 16, className: "text-olive" }),
-      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("h2", { className: "text-[16px] font-bold text-olive", children: "\u5B66\u4E60\u529B\u966A\u8DD1\u8BAD\u7EC3\u65B9\u6848\uFF08\u4E09\u9636\u4E5D\u80FD\uFF09" })
+  return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "flex flex-col rounded-xl border border-[#a8b08c]/50 bg-white/80 p-3", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { className: "text-[14px] font-bold text-olive", children: plan.ability }),
+    /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("ul", { className: "mt-1.5 space-y-1", children: plan.questions.map((q) => /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("li", { className: "flex items-start gap-1.5 text-[12px] leading-relaxed text-olive-soft", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.CircleHelp, { size: 12, className: "mt-0.5 shrink-0 text-olive-mute/70" }),
+      q
+    ] }, q)) }),
+    /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(
+      "button",
+      {
+        type: "button",
+        onClick: () => setOpen((v) => !v),
+        className: "mt-2.5 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-2 text-left transition hover:bg-lime/20",
+        children: [
+          /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("span", { className: "block text-[10.5px] font-semibold tracking-wide text-olive-mute", children: "\u7B80\u8981\u65B9\u6848 \xB7 \u70B9\u5F00\u770B\u8BE6\u7EC6\u505A\u6CD5" }),
+          /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("span", { className: "mt-0.5 flex items-start justify-between gap-1.5 text-[12.5px] font-semibold leading-snug text-olive", children: [
+            rx?.rationale ?? "\u7ED3\u5408\u5B66\u5458\u8BCA\u65AD\u7ED3\u679C\u5339\u914D\u8BAD\u7EC3\u65B9\u6CD5\u3002",
+            open ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronUp, { size: 14, className: "mt-0.5 shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronDown, { size: 14, className: "mt-0.5 shrink-0" })
+          ] })
+        ]
+      }
+    ),
+    open && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "mt-2 space-y-2", children: [
+      methods.map((m, i) => {
+        const mKey = `${tier}-${ability}-${m.id}`;
+        const mOpen = !closedMethods.has(mKey);
+        return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "rounded-lg border border-cream-deep bg-cream/70", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(
+            "button",
+            {
+              type: "button",
+              onClick: () => toggleMethod(mKey),
+              className: "flex w-full items-center justify-between gap-1.5 px-2.5 py-1.5 text-left",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("span", { className: "text-[12px] font-semibold text-olive", children: [
+                  i + 1,
+                  ". ",
+                  m.name,
+                  /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("span", { className: "ml-1 font-normal text-olive-mute", children: [
+                    "\uFF08",
+                    BOARD_LABEL[m.board],
+                    " \xB7 ",
+                    m.sub,
+                    "\uFF09"
+                  ] })
+                ] }),
+                mOpen ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronUp, { size: 13, className: "shrink-0 text-olive-mute" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronDown, { size: 13, className: "shrink-0 text-olive-mute" })
+              ]
+            }
+          ),
+          mOpen && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "space-y-1 border-t border-cream-deep px-2.5 py-2 text-[12px] leading-relaxed text-olive-soft", children: [
+            m.problems && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { className: "whitespace-pre-line", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u9002\u7528\uFF1A" }),
+              m.problems
+            ] }),
+            m.purpose && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { className: "whitespace-pre-line", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u76EE\u7684\uFF1A" }),
+              m.purpose
+            ] }),
+            m.steps.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("ol", { className: "list-decimal space-y-0.5 pl-5", children: m.steps.map((s, si) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("li", { children: s }, si)) }),
+            m.schedule && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u9891\u7387\uFF1A" }),
+              m.schedule
+            ] }),
+            m.tool && m.tool !== "\u65E0" && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u5DE5\u5177\uFF1A" }),
+              m.tool
+            ] })
+          ] })
+        ] }, m.id);
+      }),
+      rx?.note && /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("p", { className: "text-[12px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(RichText, { text: `**\u8865\u5145\u7EA6\u5B9A**\uFF1A${rx.note}` }) })
+    ] })
+  ] });
+}
+
+// src/components/TrainingPlanLibrary.tsx
+var import_jsx_runtime20 = __toESM(require_jsx_runtime(), 1);
+function TrainingPlanLibrary() {
+  return /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("section", { className: "paper-card p-5", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "flex items-center gap-2", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.ClipboardList, { size: 16, className: "text-olive" }),
+      /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("h2", { className: "text-[16px] font-bold text-olive", children: "\u5B66\u4E60\u529B\u966A\u8DD1\u8BAD\u7EC3\u65B9\u6848\uFF08\u4E09\u9636\u4E5D\u80FD\uFF09" })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("p", { className: "mt-1 text-[12.5px] leading-relaxed text-olive-mute", children: "\u5BF9\u7167\u5B66\u5458\u7684\u8868\u73B0\u627E\u5230\u5BF9\u5E94\u7684\u95EE\u9898\uFF0C\u5148\u770B\u300C\u7B80\u8981\u65B9\u6848\u300D\uFF0C\u611F\u5174\u8DA3\u518D\u70B9\u5F00\u770B\u8BE6\u7EC6\u505A\u6CD5\uFF08\u6B65\u9AA4\u3001\u9891\u7387\u3001\u5DE5\u5177\uFF09\u3002 \u4E0E\u5B66\u5458\u62A5\u544A\u4E2D\u7684\u8BAD\u7EC3\u65B9\u6848\u53E3\u5F84\u4E00\u81F4\u3002" }),
-    /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { className: "mt-4 space-y-3.5", children: ["\u4E50\u5B66", "\u4F1A\u5B66", "\u5584\u5B66"].map((tier) => {
+    /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("p", { className: "mt-1 text-[12.5px] leading-relaxed text-olive-mute", children: "\u5BF9\u7167\u5B66\u5458\u7684\u8868\u73B0\u627E\u5230\u5BF9\u5E94\u7684\u95EE\u9898\uFF0C\u5148\u770B\u300C\u7B80\u8981\u65B9\u6848\u300D\uFF0C\u611F\u5174\u8DA3\u518D\u70B9\u5F00\u770B\u8BE6\u7EC6\u505A\u6CD5\uFF08\u6B65\u9AA4\u3001\u9891\u7387\u3001\u5DE5\u5177\uFF09\u3002 \u4E0E\u5B66\u5458\u62A5\u544A\u4E2D\u7684\u8BAD\u7EC3\u65B9\u6848\u53E3\u5F84\u4E00\u81F4\u3002" }),
+    /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("div", { className: "mt-4 space-y-3.5", children: ["\u4E50\u5B66", "\u4F1A\u5B66", "\u5584\u5B66"].map((tier) => {
       const st = THREE_TIER_STYLE[tier];
       const plans = THREE_TIER_PLANS.filter((p) => p.tier === tier);
-      return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "rounded-xl border px-3.5 py-3", style: { borderColor: st.border, background: st.bg }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "flex flex-wrap items-baseline gap-x-2", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("span", { className: "text-[14px] font-bold", style: { color: st.color }, children: st.label }),
-          /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("span", { className: "text-[11.5px] text-olive-mute", children: st.sub })
+      return /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "rounded-xl border px-3.5 py-3", style: { borderColor: st.border, background: st.bg }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "flex flex-wrap items-baseline gap-x-2", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("span", { className: "text-[14px] font-bold", style: { color: st.color }, children: st.label }),
+          /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("span", { className: "text-[11.5px] text-olive-mute", children: st.sub })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { className: "mt-2.5 grid gap-2.5 lg:grid-cols-3", children: plans.map((p) => {
-          const rx = E3V37_ABILITY_TRAINING[p.ability];
-          const methods = (rx?.methodIds ?? []).map((id) => METHOD_BY_ID.get(id)).filter((m) => m != null);
-          const open = openAbility === `${tier}-${p.ability}`;
-          return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "flex flex-col rounded-xl border border-[#a8b08c]/50 bg-white/80 p-3", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { className: "text-[14px] font-bold text-olive", children: p.ability }),
-            /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("ul", { className: "mt-1.5 space-y-1", children: p.questions.map((q) => /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("li", { className: "flex items-start gap-1.5 text-[12px] leading-relaxed text-olive-soft", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.CircleHelp, { size: 12, className: "mt-0.5 shrink-0 text-olive-mute/70" }),
-              q
-            ] }, q)) }),
-            /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(
-              "button",
-              {
-                type: "button",
-                onClick: () => toggle(`${tier}-${p.ability}`),
-                className: "mt-2.5 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-2 text-left transition hover:bg-lime/20",
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("span", { className: "block text-[10.5px] font-semibold tracking-wide text-olive-mute", children: "\u7B80\u8981\u65B9\u6848 \xB7 \u70B9\u5F00\u770B\u8BE6\u7EC6\u505A\u6CD5" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("span", { className: "mt-0.5 flex items-start justify-between gap-1.5 text-[12.5px] font-semibold leading-snug text-olive", children: [
-                    rx?.rationale ?? "\u7ED3\u5408\u5B66\u5458\u8BCA\u65AD\u7ED3\u679C\u5339\u914D\u8BAD\u7EC3\u65B9\u6CD5\u3002",
-                    open ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronUp, { size: 14, className: "mt-0.5 shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronDown, { size: 14, className: "mt-0.5 shrink-0" })
-                  ] })
-                ]
-              }
-            ),
-            open && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "mt-2 space-y-2", children: [
-              methods.map((m, i) => {
-                const mKey = `${tier}-${p.ability}-${m.id}`;
-                const mOpen = !closedMethods.has(mKey);
-                return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "rounded-lg border border-cream-deep bg-cream/70", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: () => toggleMethod(mKey),
-                      className: "flex w-full items-center justify-between gap-1.5 px-2.5 py-1.5 text-left",
-                      children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("span", { className: "text-[12px] font-semibold text-olive", children: [
-                          i + 1,
-                          ". ",
-                          m.name,
-                          /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("span", { className: "ml-1 font-normal text-olive-mute", children: [
-                            "\uFF08",
-                            BOARD_LABEL[m.board],
-                            " \xB7 ",
-                            m.sub,
-                            "\uFF09"
-                          ] })
-                        ] }),
-                        mOpen ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronUp, { size: 13, className: "shrink-0 text-olive-mute" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronDown, { size: 13, className: "shrink-0 text-olive-mute" })
-                      ]
-                    }
-                  ),
-                  mOpen && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "space-y-1 border-t border-cream-deep px-2.5 py-2 text-[12px] leading-relaxed text-olive-soft", children: [
-                    m.problems && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { className: "whitespace-pre-line", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u9002\u7528\uFF1A" }),
-                      m.problems
-                    ] }),
-                    m.purpose && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { className: "whitespace-pre-line", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u76EE\u7684\uFF1A" }),
-                      m.purpose
-                    ] }),
-                    m.steps.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("ol", { className: "list-decimal space-y-0.5 pl-5", children: m.steps.map((s, si) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("li", { children: s }, si)) }),
-                    m.schedule && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u9891\u7387\uFF1A" }),
-                      m.schedule
-                    ] }),
-                    m.tool && m.tool !== "\u65E0" && /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("p", { children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("b", { className: "text-olive", children: "\u5DE5\u5177\uFF1A" }),
-                      m.tool
-                    ] })
-                  ] })
-                ] }, m.id);
-              }),
-              rx?.note && /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("p", { className: "text-[12px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(RichText, { text: `**\u8865\u5145\u7EA6\u5B9A**\uFF1A${rx.note}` }) })
-            ] })
-          ] }, p.ability);
-        }) })
+        /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("div", { className: "mt-2.5 grid gap-2.5 lg:grid-cols-3", children: plans.map((p) => /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(AbilityPlanCard, { tier: p.tier, ability: p.ability }, p.ability)) })
       ] }, tier);
     }) })
   ] });
 }
 
-// scripts/smoke-render-v56.tsx
+// scripts/smoke-render-v57.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118553,6 +118560,39 @@ need(acSrc, "CombinedSuite", "\u6D4B\u8BC4\u4E2D\u5FC3\u63A5\u5BFC\u5411\u5BFC")
 need(acSrc, "\u7EFC\u5408\u5B66\u4E60\u529B\u7CFB\u7EDF\u6D4B\u8BC4", "\u6D4B\u8BC4\u4E2D\u5FC3\u9876\u90E8\u5165\u53E3");
 console.log("OK v56 \u591A\u4F34\u5B66\u5E08\u5206\u914D + \u53CC\u5411\u641C\u7D22 + \u65B0\u6807\u8BED + \u7EFC\u5408\u6D4B\u8BC4\u5411\u5BFC\uFF08\u8FC1\u79FB 0020\uFF09");
 console.log("RENDER_SMOKE_V56_OK");
+var readSrc57 = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
+var coachSrc57 = readSrc57("../api/coachRouter.ts");
+need(coachSrc57, "askAdvice", "coach.askAdvice \u95EE\u8BCA\u63A5\u53E3");
+need(coachSrc57, "tryChat", "AI \u8C03\u7528");
+need(coachSrc57, "matchAbility", "\u89C4\u5219\u515C\u5E95\u5339\u914D");
+need(coachSrc57, "AI \u901A\u9053\u6682\u4E0D\u53EF\u7528", "\u515C\u5E95\u6587\u6848");
+var accessSrc57 = readSrc57("../api/tutorAccess.ts");
+need(accessSrc57, "listStudentTutorLinks", "\u5206\u914D\u8868\u5BB9\u9519\u8BFB\u53D6");
+var detailSrc57 = readSrc57("../api/studentDetail.ts");
+need(detailSrc57, "listStudentTutorLinks", "\u5B66\u5458\u5217\u8868\u7528\u5BB9\u9519\u8BFB\u53D6");
+var adminSrc57 = readSrc57("../api/adminRouter.ts");
+need(adminSrc57, "listStudentTutorLinks", "\u4F34\u5B66\u5E08\u5217\u8868\u7528\u5BB9\u9519\u8BFB\u53D6");
+var tutorSrc57 = readSrc57("../src/pages/Tutor.tsx");
+need(tutorSrc57, "\u966A\u8DD1\u8BAD\u7EC3\u4E13\u680F", "\u4E13\u680F\u5207\u6362");
+need(tutorSrc57, "AiCoachPanel", "AI \u95EE\u8BCA\u63A5\u5165");
+need(tutorSrc57, "StudentAdvicePanel", "\u5B66\u5458\u5361\u5BF9\u7B56\u9762\u677F");
+need(tutorSrc57, "\u641C\u7D22\u5B66\u5458\u59D3\u540D / \u624B\u673A\u53F7", "\u5B66\u5458\u641C\u7D22\u4FDD\u7559");
+var aiSrc = readSrc57("../src/components/coach/AiCoachPanel.tsx");
+need(aiSrc, "askAdvice", "\u95EE\u8BCA\u9762\u677F\u8C03\u63A5\u53E3");
+need(aiSrc, "\u5173\u8054\u5B66\u5458", "\u53EF\u5E26\u5165\u5B66\u5458\u4E0A\u4E0B\u6587");
+need(aiSrc, "\u89C4\u5219\u5339\u914D", "\u964D\u7EA7\u6807\u6CE8");
+var adviceSrc = readSrc57("../src/components/coach/StudentAdvicePanel.tsx");
+need(adviceSrc, "score < 3.8", "\u6309\u8BCA\u65AD\u5F31\u9879\u5339\u914D");
+need(adviceSrc, "AbilityPlanCard", "\u590D\u7528\u8BAD\u7EC3\u5361");
+var cardSrc = readSrc57("../src/components/training/AbilityPlanCard.tsx");
+need(cardSrc, "\u7B80\u8981\u65B9\u6848", "\u5355\u80FD\u8BAD\u7EC3\u5361");
+var libSrc = readSrc57("../src/components/TrainingPlanLibrary.tsx");
+need(libSrc, "AbilityPlanCard", "\u65B9\u6848\u5E93\u590D\u7528\u5355\u80FD\u5361");
+var assignSrc57 = readSrc57("../src/components/TutorAssignButton.tsx");
+need(assignSrc57, "toggleOpen", "\u6253\u5F00\u65F6\u521D\u59CB\u5316\u52FE\u9009");
+if (/useEffect/.test(assignSrc57)) throw new Error("\u5206\u914D\u6309\u94AE\u4E0D\u5E94\u518D\u4F9D\u8D56 useEffect \u521D\u59CB\u5316");
+console.log("OK v57 \u966A\u8DD1\u8BAD\u7EC3\u4E13\u680F + AI \u95EE\u8BCA + \u6309\u5B66\u5458\u75C7\u72B6\u5BF9\u7B56 + v56 \u5BB9\u9519\u4FEE\u590D");
+console.log("RENDER_SMOKE_V57_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

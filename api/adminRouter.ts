@@ -43,7 +43,8 @@ export const adminRouter = createRouter({
     const db = getDb();
     const tutors = await db.select().from(users).where(eq(users.role, "tutor"));
     const profiles = await db.select().from(studentProfile);
-    const links = await db.select().from(studentTutor);
+    const { listStudentTutorLinks } = await import("./tutorAccess");
+    const links = await listStudentTutorLinks(db);
     const attRows = await db
       .select({ userId: attempts.userId, c: sql<number>`count(*)` })
       .from(attempts)

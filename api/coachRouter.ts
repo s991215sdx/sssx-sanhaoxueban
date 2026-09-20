@@ -8,6 +8,10 @@ import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
 import { getStudentDetail, listStudents } from "./studentDetail";
 import { isMyStudent } from "./tutorAccess";
+import { tryChat } from "./ai";
+import { THREE_TIER_PLANS } from "@/data/training/threeTierPlans";
+import { E3V37_ABILITY_TRAINING } from "@/data/training/e3v37Training";
+import { METHOD_BY_ID } from "@/data/training/methods";
 
 /** 伴学师工作台：只能看到分配给自己的学员（管理员可看全部）。 */
 export const coachRouter = createRouter({
@@ -134,4 +138,118 @@ export const coachRouter = createRouter({
       }
       return { ok: true as const, modules: value };
     }),
+
+  /** V57：AI 陪跑问诊——描述孩子近期遇到的问题，AI 结合三阶九能训练方案库给对策。
+   *  AI 不可用时降级为规则匹配（按关键词命中能力 → 典型问题 + 简要方案 + 训练方法），功能永不硬失败。 */
+  askAdvice: tutorQuery
+    .input(
+      z.object({
+        question: z.string().min(4).max(2000),
+        /** 伴学师判断主要相关的能力（九能之一），可空 */
+        ability: z.string().max(32).nullable().optional(),
+        /** 关联学员（带入诊断上下文，可空） */
+        userId: z.number().int().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      let studentCtx: string | null = null;
+      if (input.userId) {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+        const detail = await getStudentDetail(db, input.userId);
+        const e3 = detail.assessments.e3 as { version?: string; abilities?: { label: string; score: number; level: string }[] } | undefined;
+        const weak =
+          e3?.version === "3.7" && e3.abilities
+            ? e3.abilities.filter((a) => a.score < 3.8).map((a) => `${a.label} ${a.score}/5（${a.level}）`)
+            : [];
+        studentCtx = [
+          `学员：${detail.profile?.name ?? detail.user.name ?? "未命名"}（${detail.profile?.grade ?? "年级未知"}${detail.profile?.school ? ` · ${detail.profile.school}` : ""}）`,
+          e3?.version === "3.7"
+            ? `学习力诊断弱项：${weak.join("、") || "无（九能全部 ≥3.8）"}`
+            : e3
+              ? "学习力诊断为旧版，建议请学员重测 V3.7"
+              : "尚未做学习力诊断",
+          detail.academics?.subjects?.length
+            ? `学业现状与目标：${detail.academics.subjects.map((s) => `${s.name} ${s.lastScore ?? "?"}/${s.targetScore ?? "?"}`).join("、")}`
+            : null,
+        ].filter(Boolean).join("\n");
+      }
+
+      // 三阶九能方案库摘要（喂给 AI，保证口径与训练专栏一致）
+      const libSummary = THREE_TIER_PLANS.map((p) => {
+        const rx = E3V37_ABILITY_TRAINING[p.ability];
+        return `- 【${p.tier}·${p.ability}】典型问题：${p.questions.join("；")}｜简要方案：${rx?.rationale ?? ""}`;
+      }).join("\n");
+
+      const sysPrompt = [
+        "你是「三好学伴」的伴学教练，帮 K12 伴学师分析孩子近期遇到的学习问题并给出可执行对策。",
+        "下面是本校的学习力陪跑训练方案库（三阶九能），你的对策必须与之一致：",
+        libSummary,
+        "",
+        "回答规则：",
+        "1. 先一句话判断问题主要对应哪一能（动力/信心/韧劲/学懂/记住/会用/计划/复盘/智学，或状态/关系/资源/注意力等工作记忆等条件学能）；",
+        "2. 「现在就能做的三件事」——每件给出具体做法 + 频率 + 预计耗时，优先用方案库中的训练方法思路；",
+        "3. 「一周观察点」——列出 2-3 个可观察的行为信号，判断对策是否起效；",
+        "4. 「何时升级」——什么情况建议找更专业帮助或调整方案；",
+        "5. 语气具体、温和、可操作，不要空话套话；不超过 600 字。",
+      ].join("\n");
+      const userPrompt = [
+        studentCtx,
+        input.ability ? `伴学师判断主要相关能力：${input.ability}` : null,
+        `孩子近期遇到的问题：\n${input.question}`,
+      ].filter(Boolean).join("\n\n");
+
+      const ai = await tryChat(
+        [
+          { role: "system", content: sysPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        { timeoutMs: 45000, maxTokens: 2500 },
+      );
+      if (ai) return { answer: ai, ai: true as const };
+
+      /* —— AI 不可用：规则兜底 —— */
+      const hit = matchAbility(input.question, input.ability ?? null);
+      const rx = E3V37_ABILITY_TRAINING[hit.ability];
+      const plan = THREE_TIER_PLANS.find((p) => p.ability === hit.ability);
+      const methodNames = (rx?.methodIds ?? [])
+        .map((id) => METHOD_BY_ID.get(id))
+        .filter((m) => m != null)
+        .map((m) => `${m.name}（${m.sub}）`)
+        .join("、");
+      const fallback = [
+        `（AI 通道暂不可用，以下为方案库规则匹配结果）`,
+        `问题判断：主要对应【${hit.tier}·${hit.ability}】。`,
+        plan ? `典型表现：${plan.questions.join("；")}` : null,
+        `简要方案：${rx?.rationale ?? "结合学员诊断结果匹配训练方法。"}`,
+        methodNames ? `建议训练方法：${methodNames}` : null,
+        rx?.note ? `补充约定：${rx.note}` : null,
+      ].filter(Boolean).join("\n");
+      return { answer: fallback, ai: false as const };
+    }),
 });
+
+/** 规则兜底：伴学师指定能力优先；否则按关键词命中典型问题。 */
+function matchAbility(question: string, prefer: string | null): { tier: string; ability: string } {
+  const all = THREE_TIER_PLANS.map((p) => ({ tier: p.tier, ability: p.ability, questions: p.questions }));
+  if (prefer) {
+    const p = all.find((x) => x.ability === prefer);
+    if (p) return { tier: p.tier, ability: p.ability };
+  }
+  let best: { tier: string; ability: string; score: number } | null = null;
+  for (const p of all) {
+    let score = 0;
+    for (const q of p.questions) {
+      for (let len = 4; len >= 2; len--) {
+        for (let i = 0; i + len <= q.length; i++) {
+          if (question.includes(q.slice(i, i + len))) score += len;
+        }
+      }
+    }
+    if (question.includes(p.ability)) score += 6;
+    if (!best || score > best.score) best = { tier: p.tier, ability: p.ability, score };
+  }
+  return best && best.score > 0 ? { tier: best.tier, ability: best.ability } : { tier: "乐学", ability: "动力" };
+}

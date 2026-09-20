@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { UserPlus, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
@@ -28,16 +28,18 @@ export default function TutorAssignButton({
     },
   });
 
-  useEffect(() => {
-    if (open) setSelected(assigned.map((t) => t.id));
-  }, [open, assigned]);
+  // 打开时按当前分配初始化勾选（避免渲染期 effect 反复重置用户选择）
+  const toggleOpen = () => {
+    if (!open) setSelected(assigned.map((t) => t.id));
+    setOpen((v) => !v);
+  };
 
   return (
     <span className="relative inline-block" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
         title="分配伴学师（可多选）"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
           assigned.length > 0
             ? "border-lime/60 bg-lime-pale text-olive"
