@@ -536,3 +536,12 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - 新增 CombinedSuite 向导：基本信息→MBTI→DISC 学生版→学习力诊断→学业目标→智能五项，步骤条+完成页；测评中心最顶部入口卡
 - 冒烟 v56 全过；BUILD_TAG v56-2026-09-20；版本 8b2a5ed
 - 发布顺序：迁移 0013→0020 顺序执行 → v40 → v41 → 最新版
+
+## v57（775e1ac）：陪跑训练专栏 + AI 问诊 + 按学员症状对策 + v56 容错修复
+- Tutor 工作台改双专栏：「学员管理」（搜索+学员卡+邀请二维码）/「陪跑训练专栏」（AI 问诊 + 三阶九能训练方案库）
+- 单能训练卡抽为 AbilityPlanCard（TrainingPlanLibrary 与学员对策共用）
+- 学员卡内新增「陪跑对策」面板：按 E3 V3.7 诊断弱项（score<3.8 前 4 项）渲染对应典型问题+简要方案+详细做法；未测/旧版给引导
+- 新增 coach.askAdvice（tutorQuery）：AI 结合三阶九能方案库+学员上下文给对策（问题判断/三件事/一周观察点/何时升级）；tryChat 失败自动规则兜底 matchAbility（关键词命中典型问题），返回 ai:false 标注
+- v56 修复：TutorAssignButton 去掉 useEffect 初始化（改打开时初始化，避免父级重渲染重置勾选）；student_tutor 查询统一走 listStudentTutorLinks 容错（迁移后台非阻塞执行，表未就绪时列表退化为主管伴学师，页面不再挂）
+- 冒烟 v57 全过；BUILD_TAG v57-2026-09-20；版本 52ab37b
+- 发布顺序：迁移 0013→0020 → v40 → v41 → 最新版
