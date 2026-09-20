@@ -7,6 +7,7 @@ import { hashPassword } from "./auth-router";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
 import { getStudentDetail, listStudents } from "./studentDetail";
+import { isMyStudent } from "./tutorAccess";
 
 /** 伴学师工作台：只能看到分配给自己的学员（管理员可看全部）。 */
 export const coachRouter = createRouter({
@@ -14,7 +15,8 @@ export const coachRouter = createRouter({
   myStudents: tutorQuery.query(async ({ ctx }) => {
     const all = await listStudents(getDb());
     if (ctx.user.role === "admin") return all;
-    return all.filter((s) => s.tutorId === ctx.user.id);
+    // V56：名下 = 主管伴学师 或 student_tutor 多对多分配
+    return all.filter((s) => s.tutorId === ctx.user.id || s.tutorIds.includes(ctx.user.id));
   }),
 
   /** 学员详情（伴学师仅可查自己名下学员）。 */
@@ -23,10 +25,7 @@ export const coachRouter = createRouter({
     .query(async ({ input, ctx }) => {
       const db = getDb();
       if (ctx.user.role !== "admin") {
-        const p = (
-          await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
-        )[0];
-        if (!p || p.tutorId !== ctx.user.id) {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
       }
@@ -58,7 +57,7 @@ export const coachRouter = createRouter({
         await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
       )[0];
       if (ctx.user.role !== "admin") {
-        if (!existing || existing.tutorId !== ctx.user.id) {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
       }
@@ -79,11 +78,8 @@ export const coachRouter = createRouter({
     .input((v: unknown) => v as { userId: number })
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
-      const target = (
-        await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
-      )[0];
       if (ctx.user.role !== "admin") {
-        if (!target || target.tutorId !== ctx.user.id) {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
       }
@@ -102,7 +98,7 @@ export const coachRouter = createRouter({
         await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
       )[0];
       if (ctx.user.role !== "admin") {
-        if (!existing || existing.tutorId !== ctx.user.id) {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
       }
@@ -124,7 +120,7 @@ export const coachRouter = createRouter({
         await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
       )[0];
       if (ctx.user.role !== "admin") {
-        if (!existing || existing.tutorId !== ctx.user.id) {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
       }

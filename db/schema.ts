@@ -192,6 +192,17 @@ export const studentProfile = mysqlTable("student_profile", {
 
 export type StudentProfile = typeof studentProfile.$inferSelect;
 
+/** V56：学员-伴学师多对多分配。一个学员可挂多位伴学师（管理员在后台分配）；
+ *  student_profile.tutor_id 保留为主管伴学师（= 本表第一条，向后兼容旧逻辑）。 */
+export const studentTutor = mysqlTable("student_tutor", {
+  id: serial("id").primaryKey(),
+  studentUserId: bigint("student_user_id", { mode: "number", unsigned: true }).notNull(),
+  tutorUserId: bigint("tutor_user_id", { mode: "number", unsigned: true }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type StudentTutor = typeof studentTutor.$inferSelect;
+
 export const assessmentResults = mysqlTable("assessment_results", {
   id: serial("id").primaryKey(),
     userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),

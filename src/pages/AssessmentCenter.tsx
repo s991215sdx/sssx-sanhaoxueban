@@ -14,9 +14,10 @@ import MentalScl90Quiz from "@/components/companion/MentalScl90Quiz";
 import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
 import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
+import CombinedSuite from "@/components/assessment/CombinedSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass } from "lucide-react";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
 type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental";
@@ -273,6 +274,8 @@ export default function AssessmentCenter() {
   const navigate = useNavigate();
   const { data, isLoading } = trpc.assessment.latest.useQuery();
   const [testing, setTesting] = useState<TestKind | null>(null);
+  // V56：综合学习力系统测评（一条龙向导）
+  const [suiteOpen, setSuiteOpen] = useState(false);
   // 支持 ?start=e3 深链：从报告页「去测评」直达对应答题
   const [params, setParams] = useSearchParams();
   useEffect(() => {
@@ -295,8 +298,37 @@ export default function AssessmentCenter() {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
   }
 
+  // V56：综合测评向导打开时，整页进入向导
+  if (suiteOpen) {
+    return <CombinedSuite onExit={() => setSuiteOpen(false)} />;
+  }
+
   return (
     <div className="space-y-4">
+      {/* V56：综合学习力系统测评（最顶部入口，一条龙） */}
+      {!testing && (
+        <button
+          onClick={() => setSuiteOpen(true)}
+          className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-olive text-cream">
+            <Rocket size={24} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-2">
+              <h3 className="text-[17px] font-bold text-olive">综合学习力系统测评</h3>
+              <span className="rounded-full bg-olive px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
+            </span>
+            <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+              第一次来？点这里一次走完：基本信息 → MBTI 性格 → DISC 学生版 → 学习力诊断 → 学业目标 → 智能五项，全程约 25 分钟，做完自动生成综合学习力报告。
+            </p>
+          </span>
+          <span className="shrink-0 rounded-xl bg-olive px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+            开始 →
+          </span>
+        </button>
+      )}
+
       {/* 顶部简介卡 */}
       <div className="paper-card accent-l border-lime p-5">
         <div className="flex items-center gap-2">

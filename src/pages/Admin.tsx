@@ -5,7 +5,8 @@ import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
-import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X } from "lucide-react";
+import TutorAssignButton from "@/components/TutorAssignButton";
+import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search } from "lucide-react";
 
 /** 后台管理：总览 / 学员 / 伴学师 / 注册邀请 四个 tab。 */
 export default function Admin() {
@@ -192,57 +193,32 @@ function AdminPanel({ selfId }: { selfId: number }) {
   );
 }
 
-/** 伴学师下拉选项（分配/更换/解除）。 */
-function TutorSelect({
-  value,
-  studentUserId,
-  tutors,
-  onDone,
-}: {
-  value: number | null;
-  studentUserId: number;
-  tutors: { id: number; name: string }[];
-  onDone?: () => void;
-}) {
-  const utils = trpc.useUtils();
-  const assign = trpc.admin.assignTutor.useMutation({
-    onSuccess: () => {
-      utils.admin.students.invalidate();
-      utils.admin.tutors.invalidate();
-      onDone?.();
-    },
-  });
-  return (
-    <select
-      value={value ?? ""}
-      disabled={assign.isPending}
-      onChange={(e) => {
-        const v = e.target.value;
-        assign.mutate({ studentUserId, tutorId: v === "" ? null : Number(v) });
-      }}
-      className="rounded-lg border border-border bg-cream px-2 py-1.5 text-[12px] text-olive outline-none focus:border-lime disabled:opacity-50"
-    >
-      <option value="">未分配</option>
-      {tutors.map((t) => (
-        <option key={t.id} value={t.id}>
-          {t.name}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-/** 学员 tab：admin.students 列表 + 伴学师分配 + 详情抽屉。 */
+/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。 */
 function StudentsTab() {
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [q, setQ] = useState("");
   const { data: students, isLoading } = trpc.admin.students.useQuery();
   const { data: tutors } = trpc.admin.tutors.useQuery();
+  const kw = q.trim();
+  const filtered = (students ?? []).filter(
+    (s) => !kw || s.name.includes(kw) || (s.phone ?? "").includes(kw),
+  );
 
   return (
     <div className="paper-card overflow-hidden">
-      <div className="border-b border-border px-5 py-3.5">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3.5">
         <span className="text-[14.5px] font-semibold text-olive">学员列表</span>
-        <span className="ml-2 text-[12px] text-olive-mute">{students?.length ?? 0} 位</span>
+        <span className="text-[12px] text-olive-mute">{filtered.length} 位{kw ? ` / 共 ${students?.length ?? 0} 位` : ""}</span>
+        {/* V56：学员查询（姓名/手机号） */}
+        <span className="relative ml-auto">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-olive-mute" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="搜索姓名 / 手机号"
+            className="w-52 rounded-lg border border-border bg-cream py-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
+          />
+        </span>
       </div>
       {isLoading ? (
         <div className="flex justify-center py-10">
@@ -250,7 +226,7 @@ function StudentsTab() {
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {students?.map((s) => (
+          {filtered.map((s) => (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive text-[14px] font-bold text-cream">
                 {(s.name || "学")[0]}
@@ -264,6 +240,19 @@ function StudentsTab() {
                   {s.hasMulti && <span className="chip !py-0.5 !text-[10.5px] text-olive">多元✓</span>}
                   {s.hasAcademics && <span className="chip !py-0.5 !text-[10.5px] text-olive">学业✓</span>}
                 </div>
+                {/* V56：名下伴学师（可多选） */}
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <span className="text-[11px] text-olive-mute">伴学师：</span>
+                  {s.tutors.length === 0 ? (
+                    <span className="text-[11px] text-olive-mute">未分配</span>
+                  ) : (
+                    s.tutors.map((t) => (
+                      <span key={t.id} className="rounded-full bg-lime-pale px-1.5 py-px text-[10.5px] font-semibold text-olive">
+                        {t.name}
+                      </span>
+                    ))
+                  )}
+                </div>
                 <div className="mono mt-0.5 text-[11px] text-olive-mute">
                   {s.phone && <>{s.phone} · </>}注册 {new Date(s.createdAt).toLocaleDateString("zh-CN")} · 最近活跃{" "}
                   {new Date(s.lastSignInAt).toLocaleDateString("zh-CN")}
@@ -273,7 +262,8 @@ function StudentsTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <TutorSelect value={s.tutorId} studentUserId={s.userId} tutors={tutors ?? []} />
+                {/* V56：多对多分配伴学师 */}
+                <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
                 {/* V54：报告推送开关 */}
                 <ReportAccessButton userId={s.userId} released={s.reportReleased} />
                 {/* V53：管理员可重置任意学员登录密码（默认 123456） */}
@@ -287,7 +277,11 @@ function StudentsTab() {
               </div>
             </div>
           ))}
-          {students?.length === 0 && <p className="px-5 py-8 text-center text-[13px] text-olive-mute">还没有学员档案。</p>}
+          {filtered.length === 0 && (
+            <p className="px-5 py-8 text-center text-[13px] text-olive-mute">
+              {kw ? `没有匹配「${kw}」的学员。` : "还没有学员档案。"}
+            </p>
+          )}
         </div>
       )}
       {detailId !== null && <StudentDetailDrawer userId={detailId} source="admin" onClose={() => setDetailId(null)} />}
@@ -295,9 +289,11 @@ function StudentsTab() {
   );
 }
 
-/** 伴学师 tab：admin.tutors 列表，行内学员可更换/解除伴学师。 */
+/** 伴学师 tab：admin.tutors 列表，行内学员可调整伴学师分配（多对多）。 */
 function TutorsTab() {
   const { data: tutors, isLoading } = trpc.admin.tutors.useQuery();
+  const { data: students } = trpc.admin.students.useQuery();
+  const assignedOf = (userId: number) => students?.find((s) => s.userId === userId)?.tutors ?? [];
 
   return (
     <div className="space-y-3">
@@ -329,7 +325,7 @@ function TutorsTab() {
                       {s.grade && <span className="ml-1.5 text-[11.5px] text-olive-mute">{s.grade}</span>}
                     </span>
                     <span className="ml-auto">
-                      <TutorSelect value={t.id} studentUserId={s.userId} tutors={tutors} />
+                      <TutorAssignButton studentUserId={s.userId} tutors={tutors} assigned={assignedOf(s.userId)} />
                     </span>
                   </div>
                 ))}

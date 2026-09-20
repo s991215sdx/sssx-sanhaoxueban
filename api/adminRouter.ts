@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { attempts, dailyPlans, errorLogs, moodEntries, papers, previewSessions, studentProfile, users } from "@db/schema";
+import { attempts, dailyPlans, errorLogs, moodEntries, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
 import { getStudentDetail, listStudents } from "./studentDetail";
 
 export const adminRouter = createRouter({
@@ -38,18 +38,22 @@ export const adminRouter = createRouter({
       return getStudentDetail(getDb(), input.userId);
     }),
 
-  /** 伴学师列表：每人名下学员数与学员活跃度。 */
+  /** 伴学师列表：每人名下学员数与学员活跃度（V56：含多对多分配，去重）。 */
   tutors: adminQuery.query(async () => {
     const db = getDb();
     const tutors = await db.select().from(users).where(eq(users.role, "tutor"));
     const profiles = await db.select().from(studentProfile);
+    const links = await db.select().from(studentTutor);
     const attRows = await db
       .select({ userId: attempts.userId, c: sql<number>`count(*)` })
       .from(attempts)
       .groupBy(attempts.userId);
     const attMap = new Map(attRows.map((r) => [r.userId, Number(r.c)]));
     return tutors.map((t) => {
-      const mine = profiles.filter((p) => p.tutorId === t.id);
+      const ids = new Set<number>();
+      for (const p of profiles) if (p.tutorId === t.id) ids.add(p.userId);
+      for (const l of links) if (l.tutorUserId === t.id) ids.add(l.studentUserId);
+      const mine = profiles.filter((p) => ids.has(p.userId));
       return {
         id: t.id,
         name: t.name ?? `伴学师${t.id}`,
@@ -62,7 +66,7 @@ export const adminRouter = createRouter({
     });
   }),
 
-  /** 给学员分配/更换/解除伴学师（tutorId=null 解除）。 */
+  /** 给学员分配/更换/解除伴学师（tutorId=null 解除）。V56：同步写入多对多分配表。 */
   assignTutor: adminQuery
     .input((v: unknown) => v as { studentUserId: number; tutorId: number | null })
     .mutation(async ({ input }) => {
@@ -75,7 +79,33 @@ export const adminRouter = createRouter({
         .update(studentProfile)
         .set({ tutorId: input.tutorId })
         .where(eq(studentProfile.userId, input.studentUserId));
+      // 多对多表同步：单选分配 = 全量替换为该伴学师一人（解除 = 清空）
+      await db.delete(studentTutor).where(eq(studentTutor.studentUserId, input.studentUserId));
+      if (input.tutorId != null) {
+        await db.insert(studentTutor).values({ studentUserId: input.studentUserId, tutorUserId: input.tutorId });
+      }
       return { ok: true };
+    }),
+
+  /** V56：给一个学员分配多位伴学师（全量替换）。第一位写入 tutor_id 作为主管（兼容旧逻辑）。 */
+  setStudentTutors: adminQuery
+    .input((v: unknown) => v as { studentUserId: number; tutorIds: number[] })
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const ids = [...new Set(input.tutorIds ?? [])];
+      for (const id of ids) {
+        const t = await db.query.users.findFirst({ where: eq(users.id, id) });
+        if (!t || (t.role !== "tutor" && t.role !== "admin")) throw new Error(`用户 ${id} 不是伴学师`);
+      }
+      await db.delete(studentTutor).where(eq(studentTutor.studentUserId, input.studentUserId));
+      if (ids.length > 0) {
+        await db.insert(studentTutor).values(ids.map((tutorUserId) => ({ studentUserId: input.studentUserId, tutorUserId })));
+      }
+      await db
+        .update(studentProfile)
+        .set({ tutorId: ids[0] ?? null })
+        .where(eq(studentProfile.userId, input.studentUserId));
+      return { ok: true, tutorIds: ids };
     }),
 
   /** 全局总览：用户数与关键业务量。 */

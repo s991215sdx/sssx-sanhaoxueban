@@ -11,6 +11,7 @@ import {
   moodEntries,
   previewSessions,
   studentProfile,
+  studentTutor,
   users,
 } from "@db/schema";
 import type { MbtiResult, DiscResult, E3V27Result, E3V37Result } from "@contracts/assessments";
@@ -28,8 +29,12 @@ export type StudentListItem = {
   mbti: string | null;
   disc: string | null;
   onboarded: boolean;
+  /** 主管伴学师（student_profile.tutor_id，兼容旧逻辑；= tutors[0]） */
   tutorId: number | null;
   tutorName: string | null;
+  /** V56：名下全部伴学师（多对多，含主管） */
+  tutors: { id: number; name: string }[];
+  tutorIds: number[];
   /** 学员端功能开关（null=全功能） */
   enabledModules: string[] | null;
   /** V54：报告是否已推送给家长（false=伴学师把关中） */
@@ -75,11 +80,22 @@ export async function listStudents(db: Db): Promise<StudentListItem[]> {
   ]);
   const prevMap = new Map(prevRows.map((r) => [r.userId, Number(r.c)]));
   const multiSet = new Set(multiRows.map((r) => r.userId));
+  // V56：学员-伴学师多对多分配
+  const links = await db.select().from(studentTutor);
+  const tutorsOf = (studentUserId: number, primaryTutorId: number | null) => {
+    const ids: number[] = [];
+    if (primaryTutorId != null) ids.push(primaryTutorId);
+    for (const l of links) {
+      if (l.studentUserId === studentUserId && !ids.includes(l.tutorUserId)) ids.push(l.tutorUserId);
+    }
+    return ids;
+  };
 
   return profiles
     .filter((p) => userMap.has(p.userId))
     .map((p) => {
       const u = userMap.get(p.userId)!;
+      const tutorIds = tutorsOf(p.userId, p.tutorId ?? null);
       return {
         userId: p.userId,
         name: p.name || u.name || "未命名",
@@ -91,6 +107,8 @@ export async function listStudents(db: Db): Promise<StudentListItem[]> {
         onboarded: p.onboarded,
         tutorId: p.tutorId ?? null,
         tutorName: p.tutorId != null ? (tutorNameMap.get(p.tutorId) ?? null) : null,
+        tutors: tutorIds.map((id) => ({ id, name: tutorNameMap.get(id) ?? `伴学师${id}` })),
+        tutorIds,
         enabledModules: p.enabledModules ?? null,
         reportReleased: p.reportReleased,
         reportPushRequestedAt: p.reportPushRequestedAt ?? null,

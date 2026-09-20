@@ -7,7 +7,7 @@ import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import { STUDENT_MODULES } from "@contracts/studentModules";
-import { GraduationCap, SlidersHorizontal, Send } from "lucide-react";
+import { GraduationCap, SlidersHorizontal, Send, Search } from "lucide-react";
 
 /** 学员卡内联的「功能开关」面板：勾选该学员可用的模块（测评中心恒可用）。 */
 function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabledModules: string[] | null }) {
@@ -64,7 +64,13 @@ export default function Tutor() {
   const allowed = user?.role === "tutor" || user?.role === "admin";
   const [detailId, setDetailId] = useState<number | null>(null);
   const [modulesFor, setModulesFor] = useState<number | null>(null);
+  const [q, setQ] = useState("");
   const { data: students, isLoading } = trpc.coach.myStudents.useQuery(undefined, { enabled: allowed });
+  // V56：学员查询（姓名/手机号）
+  const kw = q.trim();
+  const filtered = (students ?? []).filter(
+    (s) => !kw || s.name.includes(kw) || (s.phone ?? "").includes(kw),
+  );
 
   if (!allowed) {
     return (
@@ -83,10 +89,24 @@ export default function Tutor() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight text-olive">伴学工作台</h1>
-        <p className="mt-1 text-[13px] text-olive-mute">
-          你名下的学员都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex-1">
+            <h1 className="text-[22px] font-bold tracking-tight text-olive">伴学工作台</h1>
+            <p className="mt-1 text-[13px] text-olive-mute">
+              你名下的学员都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。
+            </p>
+          </div>
+          {/* V56：学员查询（姓名/手机号） */}
+          <span className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-olive-mute" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="搜索学员姓名 / 手机号"
+              className="w-56 rounded-lg border border-border bg-cream py-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
+            />
+          </span>
+        </div>
       </header>
 
       {isLoading ? (
@@ -95,7 +115,7 @@ export default function Tutor() {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {students?.map((s) => (
+          {filtered.map((s) => (
             <div
               key={s.userId}
               onClick={() => setDetailId(s.userId)}
@@ -167,9 +187,9 @@ export default function Tutor() {
               </div>
             </div>
           ))}
-          {students?.length === 0 && (
+          {filtered.length === 0 && (
             <p className="paper-card px-5 py-8 text-center text-[13px] text-olive-mute sm:col-span-2">
-              还没有分配学员给你，请等管理员在后台分配。
+              {kw ? `没有匹配「${kw}」的学员。` : "还没有分配学员给你，请等管理员在后台分配。"}
             </p>
           )}
         </div>

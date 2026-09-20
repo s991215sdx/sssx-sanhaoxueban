@@ -41,9 +41,9 @@ export default function Login() {
           </svg>
           <h1 className="mt-4 text-[26px] font-bold tracking-tight text-olive">三好学伴</h1>
           <p className="mt-1.5 text-[14px] leading-relaxed text-olive-mute">
-            先预习 · 勤查漏 · 会复盘
+            先测评，再设计，向未来
             <br />
-            你的 K12 个性化学习伙伴
+            你的 K12 个性化学习成长伙伴
           </p>
         </div>
 

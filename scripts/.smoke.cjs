@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v55.tsx
+// scripts/smoke-render-v56.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -117927,7 +117927,7 @@ function TrainingPlanLibrary() {
   ] });
 }
 
-// scripts/smoke-render-v55.tsx
+// scripts/smoke-render-v56.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118511,6 +118511,48 @@ need(journalSrc55, "0019_report_push_request", "journal 0019");
 need(detailSrc, "reportPushRequestedAt: p.reportPushRequestedAt", "\u5B66\u5458\u5217\u8868\u5E26\u8BF7\u6C42\u6807\u8BB0");
 need(tutorSrc55, "\u5BB6\u957F\u8BF7\u6C42\u63A8\u9001\u62A5\u544A", "\u4F34\u5B66\u5361\u8BF7\u6C42\u63D0\u9192");
 console.log("OK v55 MBTI/DISC \u76F4\u63A5\u53EF\u770B + \u4E00\u952E\u8BF7\u4F34\u5B66\u5E08\u63A8\u9001\uFF08\u8FC1\u79FB 0019\uFF09");
+var readSrc56 = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
+var schemaSrc56 = readSrc56("../db/schema.ts");
+need(schemaSrc56, 'export const studentTutor = mysqlTable("student_tutor"', "schema student_tutor \u8868");
+need(schemaSrc56, "studentUserId", "\u5173\u8054\u5B66\u5458");
+var embSrc56 = readSrc56("../api/migrationsEmbedded.ts");
+need(embSrc56, "0020_student_tutor", "\u5185\u5D4C\u8FC1\u79FB 0020");
+var journalSrc56 = readSrc56("../db/migrations/meta/_journal.json");
+need(journalSrc56, "0020_student_tutor", "journal 0020");
+var adminSrc56 = readSrc56("../api/adminRouter.ts");
+need(adminSrc56, "setStudentTutors", "\u7BA1\u7406\u5458\u591A\u5206\u914D\u63A5\u53E3");
+need(adminSrc56, true ? "studentTutor" : "", "\u4F34\u5B66\u5E08\u5217\u8868\u542B\u591A\u5BF9\u591A\u5E76\u96C6");
+var accessSrc = readSrc56("../api/tutorAccess.ts");
+need(accessSrc, "isMyStudent", "\u5F52\u5C5E\u5224\u5B9A\u52A9\u624B");
+need(accessSrc, "studentTutor", "\u5224\u5B9A\u67E5\u591A\u5BF9\u591A\u8868");
+var coachSrc56 = readSrc56("../api/coachRouter.ts");
+need(coachSrc56, "isMyStudent", "\u4F34\u5B66\u63A5\u53E3\u7528\u5F52\u5C5E\u5224\u5B9A");
+need(coachSrc56, "s.tutorIds.includes(ctx.user.id)", "\u540D\u4E0B\u5B66\u5458\u542B\u591A\u5BF9\u591A");
+var detailSrc56 = readSrc56("../api/studentDetail.ts");
+need(detailSrc56, "tutors: { id: number; name: string }[]", "\u5B66\u5458\u5217\u8868\u5E26\u5168\u90E8\u4F34\u5B66\u5E08");
+var assignSrc = readSrc56("../src/components/TutorAssignButton.tsx");
+need(assignSrc, "setStudentTutors", "\u5206\u914D\u6309\u94AE\u8C03\u591A\u5206\u914D\u63A5\u53E3");
+var adminPageSrc = readSrc56("../src/pages/Admin.tsx");
+need(adminPageSrc, "TutorAssignButton", "\u5B66\u5458\u5217\u8868\u7528\u591A\u5206\u914D\u6309\u94AE");
+need(adminPageSrc, "\u641C\u7D22\u59D3\u540D / \u624B\u673A\u53F7", "\u7BA1\u7406\u5458\u5B66\u5458\u641C\u7D22");
+var tutorPageSrc56 = readSrc56("../src/pages/Tutor.tsx");
+need(tutorPageSrc56, "\u641C\u7D22\u5B66\u5458\u59D3\u540D / \u624B\u673A\u53F7", "\u4F34\u5B66\u5E08\u5B66\u5458\u641C\u7D22");
+var loginSrc56 = readSrc56("../src/pages/Login.tsx");
+need(loginSrc56, "\u5148\u6D4B\u8BC4\uFF0C\u518D\u8BBE\u8BA1\uFF0C\u5411\u672A\u6765", "\u9996\u9875\u65B0\u6807\u8BED");
+need(loginSrc56, "\u4E2A\u6027\u5316\u5B66\u4E60\u6210\u957F\u4F19\u4F34", "\u9996\u9875\u65B0\u526F\u6807");
+var suiteSrc = readSrc56("../src/components/assessment/CombinedSuite.tsx");
+need(suiteSrc, "\u7EFC\u5408\u5B66\u4E60\u529B\u7CFB\u7EDF\u6D4B\u8BC4", "\u5411\u5BFC\u6807\u9898");
+need(suiteSrc, "\u57FA\u672C\u4FE1\u606F", "\u7B2C\u4E00\u6B65\u57FA\u672C\u4FE1\u606F");
+need(suiteSrc, '"mbti"', "\u542B MBTI \u6B65\u9AA4");
+need(suiteSrc, '"disc"', "\u542B DISC \u6B65\u9AA4");
+need(suiteSrc, '"e3"', "\u542B\u5B66\u4E60\u529B\u8BCA\u65AD\u6B65\u9AA4");
+need(suiteSrc, '"academics"', "\u542B\u5B66\u4E1A\u76EE\u6807\u6B65\u9AA4");
+need(suiteSrc, '"multi5"', "\u542B\u667A\u80FD\u4E94\u9879\u6B65\u9AA4");
+var acSrc = readSrc56("../src/pages/AssessmentCenter.tsx");
+need(acSrc, "CombinedSuite", "\u6D4B\u8BC4\u4E2D\u5FC3\u63A5\u5BFC\u5411\u5BFC");
+need(acSrc, "\u7EFC\u5408\u5B66\u4E60\u529B\u7CFB\u7EDF\u6D4B\u8BC4", "\u6D4B\u8BC4\u4E2D\u5FC3\u9876\u90E8\u5165\u53E3");
+console.log("OK v56 \u591A\u4F34\u5B66\u5E08\u5206\u914D + \u53CC\u5411\u641C\u7D22 + \u65B0\u6807\u8BED + \u7EFC\u5408\u6D4B\u8BC4\u5411\u5BFC\uFF08\u8FC1\u79FB 0020\uFF09");
+console.log("RENDER_SMOKE_V56_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:
