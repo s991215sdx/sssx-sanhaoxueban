@@ -522,3 +522,17 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - Tutor 学员卡：reportPushRequestedAt && !reportReleased 显示橙色「家长请求推送报告」chip
 - 冒烟 v55：14 项断言全过；BUILD_TAG v55-2026-09-19；版本 8f1bff9
 - 发布顺序：迁移 0013→0019 顺序执行 → v40 → v41 → 最新版
+
+## v56（ebb0d0d）：多伴学师分配 + 双向搜索 + 新标语 + 综合测评向导
+- 迁移 0020：student_tutor 多对多表（student_user_id+tutor_user_id 唯一对；schema/journal/migrationsEmbedded 三处同步）
+- student_profile.tutor_id 保留为主管伴学师（= 多对多第一位，兼容旧逻辑）
+- api/tutorAccess.ts isMyStudent：tutor_id 或 student_tutor 命中即名下；coachRouter 全部归属校验改用它
+- admin.assignTutor（单选）同步写 student_tutor（全量替换为该一人）；新增 admin.setStudentTutors（多选全量替换，第一位写 tutor_id）
+- admin.tutors 名下学员 = tutor_id ∪ student_tutor 并集去重
+- listStudents 增 tutors[]/tutorIds；coach.myStudents 过滤含 tutorIds
+- 前端：TutorAssignButton 多选分配面板（Admin 学员列表+伴学师 tab 共用）；Admin 学员列表显示名下伴学师 chips
+- 搜索：Admin 学员 tab 与伴学工作台均有姓名/手机号搜索框
+- 首页文案：先测评，再设计，向未来 / 你的 K12 个性化学习成长伙伴
+- 新增 CombinedSuite 向导：基本信息→MBTI→DISC 学生版→学习力诊断→学业目标→智能五项，步骤条+完成页；测评中心最顶部入口卡
+- 冒烟 v56 全过；BUILD_TAG v56-2026-09-20；版本 8b2a5ed
+- 发布顺序：迁移 0013→0020 顺序执行 → v40 → v41 → 最新版
