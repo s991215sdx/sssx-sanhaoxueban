@@ -17,9 +17,10 @@ import { adminRouter } from "./adminRouter";
 import { inviteRouter } from "./inviteRouter";
 import { coachRouter } from "./coachRouter";
 import { analyzeRouter } from "./analyzeRouter";
+import { orgRouter } from "./orgRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v58-2026-09-20";
+const BUILD_TAG = "v59-2026-09-24";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),
@@ -211,6 +212,7 @@ export const appRouter = createRouter({
   admin: adminRouter,
   invite: inviteRouter,
   coach: coachRouter,
+  org: orgRouter,
   analyze: analyzeRouter,
   graph: graphRouter,
   preview: previewRouter,

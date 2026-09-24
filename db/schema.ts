@@ -341,6 +341,8 @@ export const users = mysqlTable("users", {
   /** 密码散列（scrypt，含盐），永不返回给前端 */
   passwordHash: varchar("password_hash", { length: 255 }),
   role: mysqlEnum("role", ["user", "tutor", "admin"]).default("user").notNull(),
+  /** V59 SaaS：所属机构（organizations.id）。null = 平台超管（总系统）。 */
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -348,6 +350,29 @@ export const users = mysqlTable("users", {
     .$onUpdate(() => new Date()),
   lastSignInAt: timestamp("lastSignInAt").defaultNow().notNull(),
 });
+
+/* ---------------------------------- SaaS 机构（租户） --------------------------------- */
+
+/** 合作机构：一套独立的三好学伴系统（品牌独立、账号独立、数据隔离）。由平台超管在总系统开通。 */
+export const organizations = mysqlTable("organizations", {
+  id: serial("id").primaryKey(),
+  /** 机构全称：如「东莞上上升学教育咨询有限公司」 */
+  name: varchar("name", { length: 128 }).notNull(),
+  /** 对外品牌名（商标名）：登录后全站展示，如「上上升学 · 三好伴学」 */
+  brandName: varchar("brand_name", { length: 128 }).notNull(),
+  /** 品牌 Logo URL（可选；空则只显示品牌名） */
+  logoUrl: varchar("logo_url", { length: 512 }),
+  /** 停用后：机构账号登录即见停用提示，管理端置灰 */
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+});
+
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -369,6 +394,8 @@ export const inviteChannels = mysqlTable("invite_channels", {
   active: boolean("active").notNull().default(true),
   /** 归属伴学师（users.id）：伴学师自建渠道非空，经此码注册的学员自动挂到该伴学师名下；机构渠道为 null */
   tutorId: bigint("tutor_id", { mode: "number", unsigned: true }),
+  /** V59 SaaS：发码人所属机构，注册学员继承该机构（平台超发的码为 null） */
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
   createdBy: bigint("created_by", { mode: "number", unsigned: true }).notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

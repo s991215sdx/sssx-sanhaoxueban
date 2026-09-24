@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v58.tsx
+// scripts/smoke-render-v59.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -117947,7 +117947,7 @@ function TrainingPlanLibrary() {
   ] });
 }
 
-// scripts/smoke-render-v58.tsx
+// scripts/smoke-render-v59.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118662,7 +118662,70 @@ need(rdSrc58, "!profile || !!profile.reportReleased", "\u65E0\u6863\u6848\u884C\
 need(rdSrc58, "isLoading || profileLoading", "\u7B49\u6863\u6848\u52A0\u8F7D\u5B8C\u518D\u5224\u5B9A\uFF0C\u907F\u514D\u95EA\u9501");
 console.log("OK v58 \u7B54\u9898\u660E\u7EC6\u663E\u793A\u539F\u7B54\u6848\uFF08\u53CD\u5411\u9898\u6807\u6CE8\u6362\u7B97\u5206\uFF09");
 console.log("OK v58-fix \u62A5\u544A\u95E8\u7981 fail-open \u4E0E\u95E8\u7981\u7EC4\u4EF6\u53E3\u5F84\u4E00\u81F4");
-console.log("RENDER_SMOKE_V58_OK");
+var readSrc59 = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
+var tenantSrc = readSrc59("../api/tenant.ts");
+need(tenantSrc, "export function isPlatformAdmin", "tenant.ts \u5E73\u53F0\u8D85\u7BA1\u5224\u5B9A");
+need(tenantSrc, "export async function sameOrg", "tenant.ts \u540C\u673A\u6784\u6821\u9A8C");
+need(tenantSrc, "return user.orgId ?? null;", "tenant.ts orgOf \u8BED\u4E49");
+var admSrc59 = readSrc59("../api/adminRouter.ts");
+need(admSrc59, "claimPlatformAdmin: adminQuery.mutation", "\u5E73\u53F0\u8D85\u7BA1\u81EA\u4E3E\u8FC7\u7A0B");
+need(admSrc59, "isNull(users.orgId)", "\u5E73\u53F0\u8D85\u7BA1=orgId IS NULL \u5224\u5B9A");
+need(admSrc59, "listStudents(getDb(), ctx.user.orgId)", "\u5B66\u5458\u5217\u8868\u9650\u672C\u673A\u6784");
+need(admSrc59, "getStudentDetail(getDb(), input.userId, ctx.user.orgId)", "\u5B66\u5458\u8BE6\u60C5\u9650\u672C\u673A\u6784");
+need(admSrc59, "\u4EC5\u5E73\u53F0\u8D85\u7BA1\u53EF\u8BBE\u7F6E\u7BA1\u7406\u5458", "\u673A\u6784\u5185\u7981\u6B62\u79C1\u8BBE\u7BA1\u7406\u5458");
+need(admSrc59, "sameOrg(db, ctx.user, input.userId)", "setRole \u540C\u673A\u6784\u6821\u9A8C");
+need(admSrc59, "\u8BE5\u4F34\u5B66\u5E08\u4E0D\u5728\u4F60\u7684\u673A\u6784\u5185", "assignTutor \u540C\u673A\u6784\u6821\u9A8C");
+need(admSrc59, "\u7528\u6237 ${id} \u4E0D\u5728\u4F60\u7684\u673A\u6784\u5185", "setStudentTutors \u9010\u4EBA\u540C\u673A\u6784\u6821\u9A8C");
+need(admSrc59, "innerJoin(users", "overview \u4E1A\u52A1\u91CF\u6309\u673A\u6784\u7EDF\u8BA1");
+need(admSrc59, "orgId == null", "\u5E73\u53F0\u8D85\u7BA1 overview \u8FD4\u56DE\u7A7A");
+var coachSrc59 = readSrc59("../api/coachRouter.ts");
+need(coachSrc59, "listStudents(getDb(), ctx.user.orgId)", "myStudents \u9650\u672C\u673A\u6784");
+need(coachSrc59, "\u7BA1\u7406\u5458\u53EF\u67E5\u672C\u673A\u6784\u4EFB\u610F\u5B66\u5458", "studentDetail \u7BA1\u7406\u5458\u8C41\u514D");
+need(coachSrc59, "\u7BA1\u7406\u5458\uFF08\u517C\u4F34\u5B66\u5E08\uFF09\u53EF\u5E26\u5165\u672C\u673A\u6784\u4EFB\u610F\u5B66\u5458", "askAdvice \u7BA1\u7406\u5458\u8C41\u514D");
+need(coachSrc59, "getStudentDetail(db, input.userId, ctx.user.orgId)", "\u95EE\u8BCA\u4E0A\u4E0B\u6587\u9650\u672C\u673A\u6784");
+var sameOrgCount59 = (coachSrc59.match(/sameOrg\(db, ctx\.user/g) ?? []).length;
+assert58.ok(sameOrgCount59 >= 5, "coachRouter \u7BA1\u7406\u5458\u8DEF\u5F84\u5E94\u6709\u591A\u5904 sameOrg \u515C\u5E95\uFF08\u5B9E\u9645 " + sameOrgCount59 + "\uFF09");
+var invSrc59 = readSrc59("../api/inviteRouter.ts");
+need(invSrc59, "orgId: ch.orgId ?? null", "\u6CE8\u518C\u5B66\u5458\u7EE7\u627F\u6E20\u9053\u673A\u6784");
+need(invSrc59, "const orgId = ctx.user.orgId ?? null;", "\u53D1\u7801\u8BB0\u5F55\u673A\u6784");
+need(invSrc59, "isNull(inviteChannels.orgId)", "\u5E73\u53F0\u8D85\u7BA1\u770B\u76F4\u5C5E\u7801");
+need(invSrc59, "\u8FD9\u5F20\u4E8C\u7EF4\u7801\u4E0D\u5728\u4F60\u673A\u6784\u5185", "\u505C\u7528\u7801\u673A\u6784\u6821\u9A8C");
+need(invSrc59, "recent.filter((r) => mine.has(r.channelId))", "\u6CE8\u518C\u8BB0\u5F55\u9650\u6743\u9650\u8303\u56F4");
+var meSrc59 = readSrc59("../api/auth-router.ts");
+need(meSrc59, "organizations.findFirst", "me \u8054\u67E5\u673A\u6784");
+need(meSrc59, "brandName: org.brandName", "me \u8FD4\u56DE\u54C1\u724C\u540D");
+var layoutSrc59 = readSrc59("../src/components/Layout.tsx");
+need(layoutSrc59, 'user?.org?.brandName ?? "\u4E09\u597D\u5B66\u4F34"', "\u4FA7\u8FB9\u680F\u54C1\u724C=\u673A\u6784\u5546\u6807");
+need(layoutSrc59, "orgPaused", "\u673A\u6784\u505C\u7528\u63D0\u793A\u6761");
+need(layoutSrc59, "\u5E73\u53F0\u8D85\u7BA1", "\u5E73\u53F0\u8D85\u7BA1\u8EAB\u4EFD\u6807\u8BC6");
+var adminSrc59 = readSrc59("../src/pages/Admin.tsx");
+need(adminSrc59, "<OrgAdminTab />", "\u5E73\u53F0\u8D85\u7BA1\u8DEF\u7531\u5230\u673A\u6784\u7BA1\u7406");
+need(adminSrc59, "claimPlatformAdmin", "\u673A\u6784\u7BA1\u7406\u5458\u5347\u7EA7\u5E73\u53F0\u8D85\u7BA1\u5165\u53E3");
+need(adminSrc59, "\u673A\u6784\u540E\u53F0\u4E0D\u518D\u63D0\u4F9B\u300C\u8BBE\u4E3A\u7BA1\u7406\u5458\u300D", "\u673A\u6784\u5185\u7981\u8BBE\u7BA1\u7406\u5458");
+var orgTabSrc59 = readSrc59("../src/components/admin/OrgAdminTab.tsx");
+need(orgTabSrc59, "trpc.org.list.useQuery", "\u673A\u6784\u5217\u8868\u67E5\u8BE2");
+need(orgTabSrc59, "trpc.org.create.useMutation", "\u5F00\u901A\u673A\u6784");
+need(orgTabSrc59, "trpc.org.setActive.useMutation", "\u505C\u7528/\u542F\u7528\u673A\u6784");
+need(orgTabSrc59, "trpc.org.resetAdminPassword.useMutation", "\u91CD\u7F6E\u7BA1\u7406\u5458\u5BC6\u7801");
+var orgRouterSrc59 = readSrc59("../api/orgRouter.ts");
+need(orgRouterSrc59, "requirePlatformAdmin(ctx.user)", "\u673A\u6784\u8DEF\u7531\u5E73\u53F0\u8D85\u7BA1\u5B88\u536B");
+need(orgRouterSrc59, 'role: "admin"', "\u5F00\u901A\u673A\u6784\u5EFA\u673A\u6784\u7BA1\u7406\u5458");
+need(orgRouterSrc59, "orgId,", "\u7BA1\u7406\u5458\u8D26\u53F7\u6302\u673A\u6784");
+need(orgRouterSrc59, "hashPassword(password)", "\u7BA1\u7406\u5458\u521D\u59CB\u5BC6\u7801\u6563\u5217");
+var routerSrc59 = readSrc59("../api/router.ts");
+need(routerSrc59, "org: orgRouter", "orgRouter \u6CE8\u518C");
+need(routerSrc59, "v59-2026-09-24", "BUILD_TAG \u5347 v59");
+var migFile59 = readSrc59("../db/migrations/0021_organizations.sql");
+need(migFile59, "CREATE TABLE `organizations`", "0021 \u5EFA\u673A\u6784\u8868");
+need(migFile59, "ALTER TABLE `users` ADD `org_id`", "0021 users \u52A0 org_id");
+need(migFile59, "ALTER TABLE `invite_channels` ADD `org_id`", "0021 \u6E20\u9053\u52A0 org_id");
+need(migFile59, "SELECT '\u9ED8\u8BA4\u673A\u6784', '\u4E09\u597D\u5B66\u4F34'", "0021 \u56DE\u586B\u9ED8\u8BA4\u673A\u6784");
+var embedSrc59 = readSrc59("../api/migrationsEmbedded.ts");
+need(embedSrc59, '"0021_organizations"', "\u5185\u5D4C\u8FC1\u79FB\u542B 0021");
+console.log("OK v59 SaaS \u79DF\u6237\u9694\u79BB\uFF08\u884C\u7EA7 orgId\uFF09\u5168\u8DEF\u7531\u8FC7\u6EE4");
+console.log("OK v59 \u5E73\u53F0\u8D85\u7BA1\u603B\u7CFB\u7EDF\uFF08orgRouter + \u673A\u6784\u7BA1\u7406\u9762\u677F + \u81EA\u4E3E\uFF09");
+console.log("OK v59 \u7BA1\u7406\u5458\u517C\u4F34\u5B66\u5E08\uFF1A\u5168\u673A\u6784\u5B66\u5458\u95EE\u8BCA\u8C41\u514D");
+console.log("RENDER_SMOKE_V59_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

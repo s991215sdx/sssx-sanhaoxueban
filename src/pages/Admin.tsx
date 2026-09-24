@@ -3,20 +3,26 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
+import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import TutorAssignButton from "@/components/TutorAssignButton";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search } from "lucide-react";
 
-/** 后台管理：总览 / 学员 / 伴学师 / 注册邀请 四个 tab。 */
+/** 后台管理：机构管理员=总览/学员/伴学师/注册邀请；平台超管=机构管理（总系统）。 */
 export default function Admin() {
   const { user, refresh } = useAuth();
   const isAdmin = user?.role === "admin";
+  const isPlatformAdmin = isAdmin && user?.orgId == null;
 
   if (!isAdmin) {
     return <ClaimAdminCard onClaimed={() => refresh()} />;
   }
-  return <AdminPanel selfId={user.id} />;
+  /* V59 SaaS 总系统：平台超管登录后台即机构管理面板 */
+  if (isPlatformAdmin) {
+    return <OrgAdminTab />;
+  }
+  return <AdminPanel selfId={user.id} onRefresh={refresh} />;
 }
 
 /** 系统还没有管理员时，当前用户可一键自任管理员（bootstrap）。 */
@@ -70,7 +76,8 @@ const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "invites", label: "注册邀请" },
 ];
 
-function AdminPanel({ selfId }: { selfId: number }) {
+function AdminPanel({ selfId, onRefresh }: { selfId: number; onRefresh: () => void }) {
+  const refresh = onRefresh;
   const [tab, setTab] = useState<AdminTab>("overview");
   const [detailId, setDetailId] = useState<number | null>(null);
   const utils = trpc.useUtils();
@@ -82,12 +89,25 @@ function AdminPanel({ selfId }: { selfId: number }) {
       utils.admin.overview.invalidate();
     },
   });
+  /* V59：平台超管自举——系统还没有平台超管时，机构管理员可把自己升级为平台超管（总系统） */
+  const claimPlatform = trpc.admin.claimPlatformAdmin.useMutation({
+    onSuccess: () => refresh(),
+  });
 
   return (
     <div className="space-y-5">
       <header>
         <h1 className="text-[22px] font-bold tracking-tight text-olive">后台管理</h1>
         <p className="mt-1 text-[13px] text-olive-mute">所有账号的学习概览。树洞内容属于隐私，这里只看得到心情曲线，看不到具体文字。</p>
+        <button
+          onClick={() => claimPlatform.mutate()}
+          disabled={claimPlatform.isPending}
+          className="mt-2 text-[12px] text-olive-mute underline decoration-dotted underline-offset-2 hover:text-olive disabled:opacity-40"
+          title="若系统还没有平台超管（总系统），点这里接管"
+        >
+          {claimPlatform.isPending ? "处理中…" : "我是平台负责人，升级为平台超管"}
+        </button>
+        {claimPlatform.error && <p className="mt-1 text-[11.5px] text-terra">{claimPlatform.error.message}</p>}
       </header>
 
       {/* Tab 切换 */}
@@ -159,13 +179,7 @@ function AdminPanel({ selfId }: { selfId: number }) {
                       </button>
                       {u.id !== selfId && (
                         <>
-                          <button
-                            onClick={() => setRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" })}
-                            disabled={setRole.isPending}
-                            className="rounded-lg border border-border bg-cream px-3 py-1.5 text-[12.5px] font-medium text-olive-soft hover:border-olive/40 disabled:opacity-40"
-                          >
-                            {u.role === "admin" ? "取消管理员" : "设为管理员"}
-                          </button>
+                          {/* V59：管理员只能由平台超管在机构管理中开通，机构后台不再提供「设为管理员」 */}
                           <button
                             onClick={() => setRole.mutate({ userId: u.id, role: u.role === "tutor" ? "user" : "tutor" })}
                             disabled={setRole.isPending}

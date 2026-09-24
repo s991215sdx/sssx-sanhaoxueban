@@ -50,10 +50,17 @@ export type StudentListItem = {
   createdAt: Date;
 };
 
-/** 学员列表（有档案的用户视为学员），含测评标签与学习概览。 */
-export async function listStudents(db: Db): Promise<StudentListItem[]> {
+/** 学员列表（有档案的用户视为学员），含测评标签与学习概览。
+ *  V59：orgId 限定机构范围；传 null（平台超管）返回空——总系统不直接看学员数据。 */
+export async function listStudents(db: Db, orgId?: number | null): Promise<StudentListItem[]> {
   const profiles = await db.select().from(studentProfile);
-  const allUsers = await db.select().from(users);
+  /* 机构范围：只看本机构用户；平台超管（null）范围为空 */
+  const allUsers =
+    orgId === undefined
+      ? await db.select().from(users)
+      : orgId === null
+        ? []
+        : await db.select().from(users).where(eq(users.orgId, orgId));
   const userMap = new Map(allUsers.map((u) => [u.id, u]));
   const tutorNameMap = new Map(
     allUsers.filter((u) => u.role === "tutor" || u.role === "admin").map((u) => [u.id, u.name ?? `用户${u.id}`]),
@@ -163,8 +170,15 @@ export type StudentDetail = {
   };
 };
 
-/** 单个学员详情：档案 + 学业目标 + 全部测评（含原始作答）+ 学习数据。 */
-export async function getStudentDetail(db: Db, userId: number): Promise<StudentDetail> {
+/** 单个学员详情：档案 + 学业目标 + 全部测评（含原始作答）+ 学习数据。
+ *  V59：传 orgId 时校验目标学员属于该机构（跨机构访问直接抛错）；平台超管传 null 恒拒。 */
+export async function getStudentDetail(db: Db, userId: number, orgId?: number | null): Promise<StudentDetail> {
+  if (orgId !== undefined) {
+    const target = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, userId)).limit(1))[0];
+    if (orgId === null || !target || target.orgId !== orgId) {
+      throw new Error("无权查看该学员");
+    }
+  }
   const u = await db.query.users.findFirst({ where: eq(users.id, userId) });
   if (!u) throw new Error("用户不存在");
   const profile = (await db.select().from(studentProfile).where(eq(studentProfile.userId, userId)).limit(1))[0] ?? null;

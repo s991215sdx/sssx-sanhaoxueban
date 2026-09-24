@@ -3,7 +3,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { Session } from "@contracts/constants";
-import { users } from "@db/schema";
+import { organizations, users } from "@db/schema";
 import { getSessionCookieOptions } from "./lib/cookies";
 import { createRouter, authedQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
@@ -60,10 +60,17 @@ export function setSessionCookie(ctx: { req: Request; resHeaders: Headers }, tok
 }
 
 export const authRouter = createRouter({
-  me: authedQuery.query((opts) => {
+  me: authedQuery.query(async (opts) => {
     const u = opts.ctx.user!;
     const { passwordHash: _ph, ...safe } = u;
-    return safe;
+    /* V59 SaaS：带出机构品牌信息（登录后全站展示机构商标/名称）；平台超管 org 为 null */
+    if (u.orgId == null) return { ...safe, org: null };
+    const db = getDb();
+    const org = await db.query.organizations.findFirst({ where: eq(organizations.id, u.orgId) });
+    return {
+      ...safe,
+      org: org ? { name: org.name, brandName: org.brandName, logoUrl: org.logoUrl, active: org.active } : null,
+    };
   }),
 
   /**

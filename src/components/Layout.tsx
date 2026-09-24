@@ -37,12 +37,12 @@ function LogoMark() {
   );
 }
 
-function Logo() {
+function Logo({ brand }: { brand: string }) {
   return (
     <div className="flex items-center gap-2.5">
       <LogoMark />
       <div>
-        <div className="font-bold text-[17px] leading-tight tracking-tight text-olive">三好学伴</div>
+        <div className="font-bold text-[17px] leading-tight tracking-tight text-olive">{brand}</div>
         <div className="mono text-[10px] tracking-wider text-olive-mute">K12 · 个性化学习</div>
       </div>
     </div>
@@ -63,8 +63,12 @@ const COLLAPSE_KEY = "sanhao-nav-collapsed";
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === "admin";
+  const isPlatformAdmin = isAdmin && user?.orgId == null;
   const showCoach = isAdmin || user?.role === "tutor";
   const displayName = user?.name?.trim() || "同学";
+  /* V59 SaaS：机构品牌名（商标）；平台超管与未登录一律显示平台品牌 */
+  const brand = user?.org?.brandName ?? "三好学伴";
+  const orgPaused = !!user?.org && !user.org.active;
   /* 学员端功能开关（v50）：null=全功能；数组=只显示这些模块（测评中心恒显示） */
   const { data: profile } = trpc.profile.get.useQuery();
   const enabledModules = profile?.enabledModules ?? null;
@@ -106,11 +110,11 @@ export default function Layout({ children }: { children: ReactNode }) {
           {collapsed ? <ChevronsRight size={15} strokeWidth={2.4} /> : <ChevronsLeft size={15} strokeWidth={2.4} />}
         </button>
         {collapsed ? (
-          <div className="flex justify-center" title="三好学伴">
+          <div className="flex justify-center" title={brand}>
             <LogoMark />
           </div>
         ) : (
-          <Logo />
+          <Logo brand={brand} />
         )}
         <nav className={`mt-10 flex flex-col gap-1.5 ${collapsed ? "items-center" : ""}`}>
           {NAV.filter((n) => navVisible(n.module)).map((n) => (
@@ -186,7 +190,9 @@ export default function Layout({ children }: { children: ReactNode }) {
               <Avatar name={displayName} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13.5px] font-semibold text-olive">{displayName}</div>
-                <div className="mono text-[10px] text-olive-mute">{isAdmin ? "管理员" : "好好学习的账号"}</div>
+                <div className="mono text-[10px] text-olive-mute">
+                  {isPlatformAdmin ? "平台超管" : isAdmin ? "管理员" : "好好学习的账号"}
+                </div>
               </div>
               <button
                 onClick={logout}
@@ -202,7 +208,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* 移动顶栏 */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
-        <Logo />
+        <Logo brand={brand} />
         <div className="flex items-center gap-2">
           {showCoach && (
             <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-lime-pale hover:text-olive" title="伴学工作台">
@@ -224,6 +230,12 @@ export default function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <main className={`pb-24 transition-all duration-200 md:pb-10 ${collapsed ? "md:pl-[68px]" : "md:pl-60"}`}>
+        {/* V59：机构被平台停用时的提示条（学员/伴学师/机构管理员都能看到） */}
+        {orgPaused && (
+          <div className="border-b border-terra/30 bg-terra/10 px-4 py-2.5 text-center text-[12.5px] text-terra">
+            本机构服务已暂停，部分功能可能不可用。如有疑问请联系机构老师。
+          </div>
+        )}
         <div className="mx-auto max-w-5xl px-4 pt-6 md:px-8 md:pt-8">{children}</div>
       </main>
 

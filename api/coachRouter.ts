@@ -8,6 +8,7 @@ import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
 import { getStudentDetail, listStudents } from "./studentDetail";
 import { isMyStudent } from "./tutorAccess";
+import { sameOrg } from "./tenant";
 import { tryChat } from "./ai";
 import { THREE_TIER_PLANS } from "@/data/training/threeTierPlans";
 import { E3V37_ABILITY_TRAINING } from "@/data/training/e3v37Training";
@@ -15,15 +16,15 @@ import { METHOD_BY_ID } from "@/data/training/methods";
 
 /** 伴学师工作台：只能看到分配给自己的学员（管理员可看全部）。 */
 export const coachRouter = createRouter({
-  /** 我名下的学员列表。 */
+  /** 我名下的学员列表。管理员（兼伴学师）看本机构全部学员，可给每个学员做陪跑问诊。 */
   myStudents: tutorQuery.query(async ({ ctx }) => {
-    const all = await listStudents(getDb());
+    const all = await listStudents(getDb(), ctx.user.orgId);
     if (ctx.user.role === "admin") return all;
     // V56：名下 = 主管伴学师 或 student_tutor 多对多分配
     return all.filter((s) => s.tutorId === ctx.user.id || s.tutorIds.includes(ctx.user.id));
   }),
 
-  /** 学员详情（伴学师仅可查自己名下学员）。 */
+  /** 学员详情（伴学师仅可查自己名下学员；管理员可查本机构任意学员）。 */
   studentDetail: tutorQuery
     .input((v: unknown) => v as { userId: number })
     .query(async ({ input, ctx }) => {
@@ -32,8 +33,10 @@ export const coachRouter = createRouter({
         if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
       }
-      return getStudentDetail(db, input.userId);
+      return getStudentDetail(db, input.userId, ctx.user.orgId);
     }),
 
   /** 伴学师代学员填写成绩与目标（校验规则与学生端 profileRouter.saveAcademics 一致）。 */
@@ -64,6 +67,8 @@ export const coachRouter = createRouter({
         if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
       }
       const data: AcademicsData = { examName: input.examName, subjects: input.subjects, updatedAt: Date.now() };
       const value = data as unknown as Record<string, unknown>;
@@ -86,6 +91,8 @@ export const coachRouter = createRouter({
         if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
       }
       const userRow = (await db.select({ id: users.id }).from(users).where(eq(users.id, input.userId)).limit(1))[0];
       if (!userRow) throw new Error("学员账号不存在");
@@ -105,6 +112,8 @@ export const coachRouter = createRouter({
         if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
       }
       /* V55：推送时清掉「请伴学师推送」请求标记 */
       const releasePatch = input.released ? { reportPushRequestedAt: null } : {};
@@ -127,6 +136,8 @@ export const coachRouter = createRouter({
         if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
       }
       const modules = sanitizeModules(input.modules);
       /* 只存「被关掉的之外、明确开启的」模块；传空数组表示恢复全功能（存 null） */
@@ -155,10 +166,15 @@ export const coachRouter = createRouter({
       const db = getDb();
       let studentCtx: string | null = null;
       if (input.userId) {
-        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
-          throw new Error("这位同学不在你的伴学名单里");
+        /* V59：管理员（兼伴学师）可带入本机构任意学员；伴学师仅限名下学员 */
+        if (ctx.user.role !== "admin") {
+          if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+            throw new Error("这位同学不在你的伴学名单里");
+          }
+        } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+          throw new Error("这位同学不在你的机构内");
         }
-        const detail = await getStudentDetail(db, input.userId);
+        const detail = await getStudentDetail(db, input.userId, ctx.user.orgId);
         const e3 = detail.assessments.e3 as { version?: string; abilities?: { label: string; score: number; level: string }[] } | undefined;
         const weak =
           e3?.version === "3.7" && e3.abilities

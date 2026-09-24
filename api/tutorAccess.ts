@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { studentProfile, studentTutor } from "@db/schema";
+import { studentProfile, studentTutor, users } from "@db/schema";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -22,8 +22,14 @@ export async function listStudentTutorLinks(db: Db): Promise<{ studentUserId: nu
 /**
  * V56：判定某学员是否在某伴学师名下。
  * 命中条件（任一）：student_profile.tutor_id 主管伴学师，或 student_tutor 多对多分配表中有记录。
+ * V59：必须同机构（users.orgId 一致），跨机构记录一律不认。
  */
 export async function isMyStudent(db: Db, tutorUserId: number, studentUserId: number): Promise<boolean> {
+  const [me, target] = await Promise.all([
+    db.select({ orgId: users.orgId }).from(users).where(eq(users.id, tutorUserId)).limit(1),
+    db.select({ orgId: users.orgId }).from(users).where(eq(users.id, studentUserId)).limit(1),
+  ]);
+  if (!me[0] || !target[0] || me[0].orgId == null || me[0].orgId !== target[0].orgId) return false;
   const p = (
     await db
       .select({ tutorId: studentProfile.tutorId })
