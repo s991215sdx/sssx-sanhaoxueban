@@ -30,7 +30,7 @@ dist-ssr
 *.db
 *.sqlite
 *.sqlite3
-db/migrations/*.sql
+# 注意：db/migrations/*.sql 必须纳入版本管理（drizzle 迁移四同步之一），勿忽略
 # TypeScript cache
 *.tsbuildinfo
 # Build outputs
@@ -39,3 +39,6 @@ build/
 # Test coverage
 coverage/
 .nyc_output/
+.ask.sh
+scripts/.*.cjs
+!scripts/dump-db.cjs

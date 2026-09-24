@@ -46,7 +46,7 @@ function checkThrottle(phone: string) {
 const PHONE_RE = /^1[3-9]\d{9}$/;
 
 export function setSessionCookie(ctx: { req: Request; resHeaders: Headers }, token: string) {
-  const opts = getSessionCookieOptions(ctx.req.headers);
+  const opts = getSessionCookieOptions(ctx.req);
   ctx.resHeaders.append(
     "set-cookie",
     cookie.serialize(Session.cookieName, token, {
@@ -112,7 +112,7 @@ export const authRouter = createRouter({
 
   // 注意：logout 用公开过程——即使会话过期也要能清掉 cookie，否则前端会出现「退不出」。
   logout: publicQuery.mutation(async ({ ctx }) => {
-    const opts = getSessionCookieOptions(ctx.req.headers);
+    const opts = getSessionCookieOptions(ctx.req);
     ctx.resHeaders.append(
       "set-cookie",
       cookie.serialize(Session.cookieName, "", {

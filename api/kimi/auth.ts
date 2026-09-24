@@ -113,7 +113,7 @@ export function createOAuthCallbackHandler() {
         clientId: env.appId,
       });
 
-      const cookieOpts = getSessionCookieOptions(c.req.raw.headers);
+      const cookieOpts = getSessionCookieOptions(c.req.raw);
       setCookie(c, Session.cookieName, token, {
         ...cookieOpts,
         maxAge: Session.maxAgeMs / 1000,

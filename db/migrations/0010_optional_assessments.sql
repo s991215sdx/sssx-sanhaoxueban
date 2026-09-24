@@ -1,0 +1,1 @@
+ALTER TABLE `assessment_results` MODIFY COLUMN `kind` enum('mbti','disc','e3','multi','multi5','anchor','holland','mental') NOT NULL;
