@@ -23,6 +23,10 @@ import { MULTI5_QUESTIONS, MULTI5_DIM_LABEL } from "@contracts/multi5";
 
 const LIFE_EVENT_LEVEL = ["没发生", "轻度", "中度", "重度"] as const;
 
+/** 各 Likert 量表 1-5 分选项文案（与作答端按钮一致）。 */
+const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
+const FIT5 = ["完全不符合", "不太符合", "一般", "比较符合", "完全符合"] as const;
+
 /** 二选一（mbti/disc）逐题明细：选中的选项高亮。 */
 function ChoiceDetail({ kind, answers }: { kind: "mbti" | "disc"; answers: number[] }) {
   const questions = kind === "mbti" ? MBTI_QUESTIONS : DISC_QUESTIONS;
@@ -58,31 +62,46 @@ function ChoiceDetail({ kind, answers }: { kind: "mbti" | "disc"; answers: numbe
   );
 }
 
-/** Likert 评分题（e3/multi）逐题明细。 */
+/** Likert 评分题（e3/multi）逐题明细：显示原答案+选项文案；反向题保留原答案并标注换算分。 */
 function RatingDetail({
   questions,
   ratings,
+  labels,
 }: {
   questions: { text: string; reverse: boolean }[];
   ratings: number[];
+  labels: readonly string[];
 }) {
   return (
     <div className="max-h-96 space-y-1.5 overflow-y-auto pr-1">
-      {questions.map((q, i) => (
-        <div
-          key={i}
-          className="flex items-center justify-between gap-3 rounded-lg bg-cream/60 px-3 py-2 text-[12.5px]"
-        >
-          <span className="text-olive-soft">
-            <span className="mono mr-1.5 text-olive-mute">{i + 1}.</span>
-            {q.text}
-            {q.reverse && (
-              <span className="ml-1.5 rounded bg-butter/60 px-1 py-0.5 text-[10.5px] text-olive-mute">反向计分</span>
-            )}
-          </span>
-          <span className="mono shrink-0 font-semibold text-olive">{ratings[i] ?? "-"}/5</span>
-        </div>
-      ))}
+      {questions.map((q, i) => {
+        const v = ratings[i];
+        const adj = q.reverse ? 6 - v : v;
+        return (
+          <div
+            key={i}
+            className="flex items-center justify-between gap-3 rounded-lg bg-cream/60 px-3 py-2 text-[12.5px]"
+          >
+            <span className="text-olive-soft">
+              <span className="mono mr-1.5 text-olive-mute">{i + 1}.</span>
+              {q.text}
+              {q.reverse && (
+                <span className="ml-1.5 rounded bg-butter/60 px-1 py-0.5 text-[10.5px] text-olive-mute">反向计分</span>
+              )}
+            </span>
+            <span className={`shrink-0 font-semibold ${v != null && adj <= 2 ? "text-terra" : "text-olive"}`}>
+              {v != null && v >= 1 && v <= 5 ? (
+                <>
+                  <span className="mono">{v}/5</span> · {labels[v - 1]}
+                  {q.reverse && <span className="ml-1 text-[10.5px] text-olive-mute">（计 {adj} 分）</span>}
+                </>
+              ) : (
+                <span className="mono">-</span>
+              )}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -107,7 +126,7 @@ function E3Detail({ answers }: { answers: E3V27Input }) {
       <div>
         <h4 className="text-[13px] font-semibold text-olive">评分题（73 题）</h4>
         <div className="mt-2">
-          <RatingDetail questions={ratingQuestions} ratings={answers.ratings} />
+          <RatingDetail questions={ratingQuestions} ratings={answers.ratings} labels={FREQ5} />
         </div>
       </div>
 
@@ -224,7 +243,7 @@ function E3V37Detail({ answers }: { answers: E3V37Input }) {
       <div>
         <h4 className="text-[13px] font-semibold text-olive">评分题（70 题，68-70 为学能三项·单独报告不进总分）</h4>
         <div className="mt-2">
-          <RatingDetail questions={questions} ratings={answers.ratings} />
+          <RatingDetail questions={questions} ratings={answers.ratings} labels={FREQ5} />
         </div>
       </div>
 
@@ -386,7 +405,7 @@ export default function AnswerDetail({
           ) : kind === "multi5" ? (
             <Multi5Detail answers={answers as number[]} />
           ) : (
-            <RatingDetail questions={MULTI_RATINGS} ratings={answers as number[]} />
+            <RatingDetail questions={MULTI_RATINGS} ratings={answers as number[]} labels={FIT5} />
           )}
         </div>
       )}

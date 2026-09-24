@@ -50,6 +50,18 @@ import {
 export type AnswerRow = { no: number | string; text: string; ans: string; bad?: boolean };
 export type AnswerBlock = { key: string; title: string; note?: string; rows: AnswerRow[] };
 
+/** 各 Likert 量表 1-5 分的选项文案（与作答端按钮一致）。 */
+const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
+const FIT5 = ["完全不符合", "不太符合", "一般", "比较符合", "非常符合"] as const;
+const LIKE5 = ["完全不喜欢", "不太喜欢", "一般", "比较喜欢", "非常喜欢"] as const;
+
+/** 原答案+选项文案；反向题保留原答案、括号标注换算后的计分。 */
+function likertAns(v: number, labels: readonly string[], reverse = false): string {
+  if (!v || v < 1 || v > 5) return "未答";
+  const base = `${v} · ${labels[v - 1]}`;
+  return reverse ? `${base}（反向题，计 ${6 - v} 分）` : base;
+}
+
 export type RawAnswer = { kind: string; answers: unknown; createdAt: Date | string };
 
 /**
@@ -149,9 +161,9 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
           .map((q) => {
             const v = a[q.no - 1] ?? 0;
             const adj = q.reverse ? 6 - v : v;
-            return { no: q.no, text: `[${q.kp}] ${q.text}`, ans: `${v} 分`, bad: adj <= 2 };
+            return { no: q.no, text: `[${q.kp}] ${q.text}`, ans: likertAns(v, FREQ5, q.reverse), bad: adj <= 2 };
           });
-      const RATE_NOTE = "1-5 分自评；红色为换算后 ≤2 分的题（明显短板）。";
+      const RATE_NOTE = "1=从不 / 2=很少 / 3=有时 / 4=经常 / 5=总是；显示的是你选的原答案，红色为换算后 ≤2 分的题（明显短板），反向题括号内为换算后的计分。";
       if (wantSeg("乐学")) {
         blocks.push({ key: "e3-lexue", title: `E3 学业诊断 · 乐学（动力系统）第 1-21 题（${date}）`, note: RATE_NOTE, rows: mkRows(1, 21) });
       }
@@ -198,7 +210,7 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
           blocks.push({
             key: "e3-kuaisao",
             title: `学科快速扫描（${date}）`,
-            note: "喜欢/掌握/发挥 1-5 自评；各科成绩与目标在「个人中心 · 成绩与目标」填写，快扫不含成绩分。",
+            note: "喜欢/掌握/发挥按 1=从不 … 5=总是 自评；各科成绩与目标在「个人中心 · 成绩与目标」填写，快扫不含成绩分。",
             rows,
           });
         }
@@ -267,11 +279,11 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
       blocks.push({
         key: "anchor",
         title: `职业锚 · ${a.length} 题（${date}）`,
-        note: "1-5 分评分；红色为换算后 ≤2 分的题。",
+        note: "1=完全不符合 / 2=不太符合 / 3=一般 / 4=比较符合 / 5=非常符合；显示的是你选的原答案，红色为换算后 ≤2 分的题，反向题括号内为换算后的计分。",
         rows: ANCHOR_RATINGS.map((q, i) => {
           const v = a[i] ?? 0;
           const adj = q.reverse ? 6 - v : v;
-          return { no: q.no, text: q.text, ans: `${v} 分`, bad: adj <= 2 };
+          return { no: q.no, text: q.text, ans: likertAns(v, FIT5, q.reverse), bad: adj <= 2 };
         }),
       });
     } else if (r.kind === "holland" && Array.isArray(r.answers)) {
@@ -279,13 +291,11 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
       blocks.push({
         key: "holland",
         title: `霍兰德职业兴趣 · ${a.length} 题（${date}）`,
-        note: "1-5 分兴趣评分；红色为 ≤2 分（不感兴趣）的题。",
-        rows: HOLLAND_RATINGS.map((q, i) => ({
-          no: q.no,
-          text: q.text,
-          ans: `${a[i] ?? 0} 分`,
-          bad: (a[i] ?? 0) <= 2,
-        })),
+        note: "1=完全不喜欢 / 2=不太喜欢 / 3=一般 / 4=比较喜欢 / 5=非常喜欢；红色为 ≤2 分（不感兴趣）的题。",
+        rows: HOLLAND_RATINGS.map((q, i) => {
+          const v = a[i] ?? 0;
+          return { no: q.no, text: q.text, ans: likertAns(v, LIKE5), bad: v > 0 && v <= 2 };
+        }),
       });
     } else if (r.kind === "mentalpa" && Array.isArray(r.answers)) {
       /* 学生版 B：PHQ-A（1-9 题）+ GAD-7 标准版（10-16 题），0-3 四级评分 */
@@ -351,13 +361,11 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
         blocks.push({
           key: "mental",
           title: `心理健康筛查（旧版十因子，量表已升级）· ${a.length} 题（${date}）`,
-          note: "1-5 分状态自评（近一周）；红色为 ≥4 分的题。量表已升级为 PHQ-9+GAD-7 专业版（16 题），建议重新测评。",
-          rows: MENTAL_RATINGS.map((q, i) => ({
-            no: q.no,
-            text: q.text,
-            ans: `${a[i] ?? 0} 分`,
-            bad: (a[i] ?? 0) >= 4,
-          })),
+          note: "1=从不 / 2=很少 / 3=有时 / 4=经常 / 5=总是（近一周状态）；红色为 ≥4 分的题。量表已升级为 PHQ-9+GAD-7 专业版（16 题），建议重新测评。",
+          rows: MENTAL_RATINGS.map((q, i) => {
+            const v = a[i] ?? 0;
+            return { no: q.no, text: q.text, ans: likertAns(v, FREQ5), bad: v >= 4 };
+          }),
         });
       }
     }

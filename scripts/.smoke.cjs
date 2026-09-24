@@ -54419,9 +54419,9 @@ var require_path = __commonJS({
           this._ += "A" + r + "," + r + ",0,0," + +(y01 * x20 > x01 * y20) + "," + (this._x1 = x1 + t21 * x21) + "," + (this._y1 = y1 + t21 * y21);
         }
       },
-      arc: function(x, y, r, a0, a1, ccw) {
+      arc: function(x, y, r, a0, a12, ccw) {
         x = +x, y = +y, r = +r, ccw = !!ccw;
-        var dx = r * Math.cos(a0), dy = r * Math.sin(a0), x0 = x + dx, y0 = y + dy, cw = 1 ^ ccw, da = ccw ? a0 - a1 : a1 - a0;
+        var dx = r * Math.cos(a0), dy = r * Math.sin(a0), x0 = x + dx, y0 = y + dy, cw = 1 ^ ccw, da = ccw ? a0 - a12 : a12 - a0;
         if (r < 0) throw new Error("negative radius: " + r);
         if (this._x1 === null) {
           this._ += "M" + x0 + "," + y0;
@@ -54433,7 +54433,7 @@ var require_path = __commonJS({
         if (da > tauEpsilon) {
           this._ += "A" + r + "," + r + ",0,1," + cw + "," + (x - dx) + "," + (y - dy) + "A" + r + "," + r + ",0,1," + cw + "," + (this._x1 = x0) + "," + (this._y1 = y0);
         } else if (da > epsilon) {
-          this._ += "A" + r + "," + r + ",0," + +(da >= pi) + "," + cw + "," + (this._x1 = x + r * Math.cos(a1)) + "," + (this._y1 = y + r * Math.sin(a1));
+          this._ += "A" + r + "," + r + ",0," + +(da >= pi) + "," + cw + "," + (this._x1 = x + r * Math.cos(a12)) + "," + (this._y1 = y + r * Math.sin(a12));
         }
       },
       rect: function(x, y, w, h) {
@@ -54576,25 +54576,25 @@ var require_arc = __commonJS({
     function _default() {
       var innerRadius = arcInnerRadius, outerRadius = arcOuterRadius, cornerRadius = (0, _constant.default)(0), padRadius = null, startAngle = arcStartAngle, endAngle = arcEndAngle, padAngle = arcPadAngle, context = null;
       function arc() {
-        var buffer, r, r0 = +innerRadius.apply(this, arguments), r1 = +outerRadius.apply(this, arguments), a0 = startAngle.apply(this, arguments) - _math.halfPi, a1 = endAngle.apply(this, arguments) - _math.halfPi, da = (0, _math.abs)(a1 - a0), cw = a1 > a0;
+        var buffer, r, r0 = +innerRadius.apply(this, arguments), r1 = +outerRadius.apply(this, arguments), a0 = startAngle.apply(this, arguments) - _math.halfPi, a12 = endAngle.apply(this, arguments) - _math.halfPi, da = (0, _math.abs)(a12 - a0), cw = a12 > a0;
         if (!context) context = buffer = (0, _index.path)();
         if (r1 < r0) r = r1, r1 = r0, r0 = r;
         if (!(r1 > _math.epsilon)) context.moveTo(0, 0);
         else if (da > _math.tau - _math.epsilon) {
           context.moveTo(r1 * (0, _math.cos)(a0), r1 * (0, _math.sin)(a0));
-          context.arc(0, 0, r1, a0, a1, !cw);
+          context.arc(0, 0, r1, a0, a12, !cw);
           if (r0 > _math.epsilon) {
-            context.moveTo(r0 * (0, _math.cos)(a1), r0 * (0, _math.sin)(a1));
-            context.arc(0, 0, r0, a1, a0, cw);
+            context.moveTo(r0 * (0, _math.cos)(a12), r0 * (0, _math.sin)(a12));
+            context.arc(0, 0, r0, a12, a0, cw);
           }
         } else {
-          var a01 = a0, a11 = a1, a00 = a0, a10 = a1, da0 = da, da1 = da, ap = padAngle.apply(this, arguments) / 2, rp = ap > _math.epsilon && (padRadius ? +padRadius.apply(this, arguments) : (0, _math.sqrt)(r0 * r0 + r1 * r1)), rc = (0, _math.min)((0, _math.abs)(r1 - r0) / 2, +cornerRadius.apply(this, arguments)), rc0 = rc, rc1 = rc, t0, t1;
+          var a01 = a0, a11 = a12, a00 = a0, a10 = a12, da0 = da, da1 = da, ap = padAngle.apply(this, arguments) / 2, rp = ap > _math.epsilon && (padRadius ? +padRadius.apply(this, arguments) : (0, _math.sqrt)(r0 * r0 + r1 * r1)), rc = (0, _math.min)((0, _math.abs)(r1 - r0) / 2, +cornerRadius.apply(this, arguments)), rc0 = rc, rc1 = rc, t0, t1;
           if (rp > _math.epsilon) {
             var p0 = (0, _math.asin)(rp / r0 * (0, _math.sin)(ap)), p1 = (0, _math.asin)(rp / r1 * (0, _math.sin)(ap));
             if ((da0 -= p0 * 2) > _math.epsilon) p0 *= cw ? 1 : -1, a00 += p0, a10 -= p0;
-            else da0 = 0, a00 = a10 = (a0 + a1) / 2;
+            else da0 = 0, a00 = a10 = (a0 + a12) / 2;
             if ((da1 -= p1 * 2) > _math.epsilon) p1 *= cw ? 1 : -1, a01 += p1, a11 -= p1;
-            else da1 = 0, a01 = a11 = (a0 + a1) / 2;
+            else da1 = 0, a01 = a11 = (a0 + a12) / 2;
           }
           var x01 = r1 * (0, _math.cos)(a01), y01 = r1 * (0, _math.sin)(a01), x10 = r0 * (0, _math.cos)(a10), y10 = r0 * (0, _math.sin)(a10);
           if (rc > _math.epsilon) {
@@ -54939,7 +54939,7 @@ var require_pie = __commonJS({
     function _default() {
       var value = _identity.default, sortValues = _descending.default, sort = null, startAngle = (0, _constant.default)(0), endAngle = (0, _constant.default)(_math.tau), padAngle = (0, _constant.default)(0);
       function pie(data3) {
-        var i, n = (data3 = (0, _array.default)(data3)).length, j, k, sum = 0, index = new Array(n), arcs = new Array(n), a0 = +startAngle.apply(this, arguments), da = Math.min(_math.tau, Math.max(-_math.tau, endAngle.apply(this, arguments) - a0)), a1, p = Math.min(Math.abs(da) / n, padAngle.apply(this, arguments)), pa2 = p * (da < 0 ? -1 : 1), v;
+        var i, n = (data3 = (0, _array.default)(data3)).length, j, k, sum = 0, index = new Array(n), arcs = new Array(n), a0 = +startAngle.apply(this, arguments), da = Math.min(_math.tau, Math.max(-_math.tau, endAngle.apply(this, arguments) - a0)), a12, p = Math.min(Math.abs(da) / n, padAngle.apply(this, arguments)), pa2 = p * (da < 0 ? -1 : 1), v;
         for (i = 0; i < n; ++i) {
           if ((v = arcs[index[i] = i] = +value(data3[i], i, data3)) > 0) {
             sum += v;
@@ -54951,13 +54951,13 @@ var require_pie = __commonJS({
         else if (sort != null) index.sort(function(i2, j2) {
           return sort(data3[i2], data3[j2]);
         });
-        for (i = 0, k = sum ? (da - n * pa2) / sum : 0; i < n; ++i, a0 = a1) {
-          j = index[i], v = arcs[j], a1 = a0 + (v > 0 ? v * k : 0) + pa2, arcs[j] = {
+        for (i = 0, k = sum ? (da - n * pa2) / sum : 0; i < n; ++i, a0 = a12) {
+          j = index[i], v = arcs[j], a12 = a0 + (v > 0 ? v * k : 0) + pa2, arcs[j] = {
             data: data3[j],
             index: i,
             value: v,
             startAngle: a0,
-            endAngle: a1,
+            endAngle: a12,
             padAngle: p
           };
         }
@@ -90387,7 +90387,7 @@ var require_eventemitter3 = __commonJS({
       if (listeners.fn) return 1;
       return listeners.length;
     };
-    EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
+    EventEmitter.prototype.emit = function emit(event, a12, a2, a3, a4, a5) {
       var evt = prefix ? prefix + event : event;
       if (!this._events[evt]) return false;
       var listeners = this._events[evt], len = arguments.length, args, i;
@@ -90397,15 +90397,15 @@ var require_eventemitter3 = __commonJS({
           case 1:
             return listeners.fn.call(listeners.context), true;
           case 2:
-            return listeners.fn.call(listeners.context, a1), true;
+            return listeners.fn.call(listeners.context, a12), true;
           case 3:
-            return listeners.fn.call(listeners.context, a1, a2), true;
+            return listeners.fn.call(listeners.context, a12, a2), true;
           case 4:
-            return listeners.fn.call(listeners.context, a1, a2, a3), true;
+            return listeners.fn.call(listeners.context, a12, a2, a3), true;
           case 5:
-            return listeners.fn.call(listeners.context, a1, a2, a3, a4), true;
+            return listeners.fn.call(listeners.context, a12, a2, a3, a4), true;
           case 6:
-            return listeners.fn.call(listeners.context, a1, a2, a3, a4, a5), true;
+            return listeners.fn.call(listeners.context, a12, a2, a3, a4, a5), true;
         }
         for (i = 1, args = new Array(len - 1); i < len; i++) {
           args[i - 1] = arguments[i];
@@ -90420,13 +90420,13 @@ var require_eventemitter3 = __commonJS({
               listeners[i].fn.call(listeners[i].context);
               break;
             case 2:
-              listeners[i].fn.call(listeners[i].context, a1);
+              listeners[i].fn.call(listeners[i].context, a12);
               break;
             case 3:
-              listeners[i].fn.call(listeners[i].context, a1, a2);
+              listeners[i].fn.call(listeners[i].context, a12, a2);
               break;
             case 4:
-              listeners[i].fn.call(listeners[i].context, a1, a2, a3);
+              listeners[i].fn.call(listeners[i].context, a12, a2, a3);
               break;
             default:
               if (!args) for (j = 1, args = new Array(len - 1); j < len; j++) {
@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v57.tsx
+// scripts/smoke-render-v58.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -103565,10 +103565,10 @@ function buildCombinedReport(mbti2, mbtiReport, disc2, discReport, e32, opts) {
   }
   const anchor = opts?.anchor;
   if (anchor) {
-    const [a1, a2] = anchor.top2;
+    const [a12, a2] = anchor.top2;
     overviewCards.push({
       label: "\u804C\u4E1A\u951A",
-      value: `${ANCHOR_LABEL[a1]} ${anchor.dims[a1].toFixed(1)} \u5206`,
+      value: `${ANCHOR_LABEL[a12]} ${anchor.dims[a12].toFixed(1)} \u5206`,
       note: `\u7B2C\u4E8C\u951A\uFF1A${ANCHOR_LABEL[a2]} ${anchor.dims[a2].toFixed(1)} \u5206\uFF085 \u5206\u5236\u5747\u5206\uFF09`,
       tone: "green"
     });
@@ -110686,6 +110686,14 @@ function DiscParentCompare({
 }
 
 // src/components/reports/answerBlocks.ts
+var FREQ5 = ["\u4ECE\u4E0D", "\u5F88\u5C11", "\u6709\u65F6", "\u7ECF\u5E38", "\u603B\u662F"];
+var FIT5 = ["\u5B8C\u5168\u4E0D\u7B26\u5408", "\u4E0D\u592A\u7B26\u5408", "\u4E00\u822C", "\u6BD4\u8F83\u7B26\u5408", "\u975E\u5E38\u7B26\u5408"];
+var LIKE5 = ["\u5B8C\u5168\u4E0D\u559C\u6B22", "\u4E0D\u592A\u559C\u6B22", "\u4E00\u822C", "\u6BD4\u8F83\u559C\u6B22", "\u975E\u5E38\u559C\u6B22"];
+function likertAns(v, labels, reverse = false) {
+  if (!v || v < 1 || v > 5) return "\u672A\u7B54";
+  const base = `${v} \xB7 ${labels[v - 1]}`;
+  return reverse ? `${base}\uFF08\u53CD\u5411\u9898\uFF0C\u8BA1 ${6 - v} \u5206\uFF09` : base;
+}
 function answerKindsForSection(title, hasAcadSec) {
   const modSys = ["\u4E50\u5B66", "\u4F1A\u5B66", "\u5584\u5B66"].find((k) => title.includes(`${k}\u6A21\u5757`));
   if (modSys) return [`e3:${modSys}`];
@@ -110756,9 +110764,9 @@ function buildAnswerBlocks(raw, kinds) {
       const mkRows = (min, max) => qs.filter((q) => q.no >= min && q.no <= max).map((q) => {
         const v = a[q.no - 1] ?? 0;
         const adj = q.reverse ? 6 - v : v;
-        return { no: q.no, text: `[${q.kp}] ${q.text}`, ans: `${v} \u5206`, bad: adj <= 2 };
+        return { no: q.no, text: `[${q.kp}] ${q.text}`, ans: likertAns(v, FREQ5, q.reverse), bad: adj <= 2 };
       });
-      const RATE_NOTE = "1-5 \u5206\u81EA\u8BC4\uFF1B\u7EA2\u8272\u4E3A\u6362\u7B97\u540E \u22642 \u5206\u7684\u9898\uFF08\u660E\u663E\u77ED\u677F\uFF09\u3002";
+      const RATE_NOTE = "1=\u4ECE\u4E0D / 2=\u5F88\u5C11 / 3=\u6709\u65F6 / 4=\u7ECF\u5E38 / 5=\u603B\u662F\uFF1B\u663E\u793A\u7684\u662F\u4F60\u9009\u7684\u539F\u7B54\u6848\uFF0C\u7EA2\u8272\u4E3A\u6362\u7B97\u540E \u22642 \u5206\u7684\u9898\uFF08\u660E\u663E\u77ED\u677F\uFF09\uFF0C\u53CD\u5411\u9898\u62EC\u53F7\u5185\u4E3A\u6362\u7B97\u540E\u7684\u8BA1\u5206\u3002";
       if (wantSeg("\u4E50\u5B66")) {
         blocks.push({ key: "e3-lexue", title: `E3 \u5B66\u4E1A\u8BCA\u65AD \xB7 \u4E50\u5B66\uFF08\u52A8\u529B\u7CFB\u7EDF\uFF09\u7B2C 1-21 \u9898\uFF08${date}\uFF09`, note: RATE_NOTE, rows: mkRows(1, 21) });
       }
@@ -110801,7 +110809,7 @@ function buildAnswerBlocks(raw, kinds) {
           blocks.push({
             key: "e3-kuaisao",
             title: `\u5B66\u79D1\u5FEB\u901F\u626B\u63CF\uFF08${date}\uFF09`,
-            note: "\u559C\u6B22/\u638C\u63E1/\u53D1\u6325 1-5 \u81EA\u8BC4\uFF1B\u5404\u79D1\u6210\u7EE9\u4E0E\u76EE\u6807\u5728\u300C\u4E2A\u4EBA\u4E2D\u5FC3 \xB7 \u6210\u7EE9\u4E0E\u76EE\u6807\u300D\u586B\u5199\uFF0C\u5FEB\u626B\u4E0D\u542B\u6210\u7EE9\u5206\u3002",
+            note: "\u559C\u6B22/\u638C\u63E1/\u53D1\u6325\u6309 1=\u4ECE\u4E0D \u2026 5=\u603B\u662F \u81EA\u8BC4\uFF1B\u5404\u79D1\u6210\u7EE9\u4E0E\u76EE\u6807\u5728\u300C\u4E2A\u4EBA\u4E2D\u5FC3 \xB7 \u6210\u7EE9\u4E0E\u76EE\u6807\u300D\u586B\u5199\uFF0C\u5FEB\u626B\u4E0D\u542B\u6210\u7EE9\u5206\u3002",
             rows
           });
         }
@@ -110863,11 +110871,11 @@ function buildAnswerBlocks(raw, kinds) {
       blocks.push({
         key: "anchor",
         title: `\u804C\u4E1A\u951A \xB7 ${a.length} \u9898\uFF08${date}\uFF09`,
-        note: "1-5 \u5206\u8BC4\u5206\uFF1B\u7EA2\u8272\u4E3A\u6362\u7B97\u540E \u22642 \u5206\u7684\u9898\u3002",
+        note: "1=\u5B8C\u5168\u4E0D\u7B26\u5408 / 2=\u4E0D\u592A\u7B26\u5408 / 3=\u4E00\u822C / 4=\u6BD4\u8F83\u7B26\u5408 / 5=\u975E\u5E38\u7B26\u5408\uFF1B\u663E\u793A\u7684\u662F\u4F60\u9009\u7684\u539F\u7B54\u6848\uFF0C\u7EA2\u8272\u4E3A\u6362\u7B97\u540E \u22642 \u5206\u7684\u9898\uFF0C\u53CD\u5411\u9898\u62EC\u53F7\u5185\u4E3A\u6362\u7B97\u540E\u7684\u8BA1\u5206\u3002",
         rows: ANCHOR_RATINGS.map((q, i) => {
           const v = a[i] ?? 0;
           const adj = q.reverse ? 6 - v : v;
-          return { no: q.no, text: q.text, ans: `${v} \u5206`, bad: adj <= 2 };
+          return { no: q.no, text: q.text, ans: likertAns(v, FIT5, q.reverse), bad: adj <= 2 };
         })
       });
     } else if (r.kind === "holland" && Array.isArray(r.answers)) {
@@ -110875,13 +110883,11 @@ function buildAnswerBlocks(raw, kinds) {
       blocks.push({
         key: "holland",
         title: `\u970D\u5170\u5FB7\u804C\u4E1A\u5174\u8DA3 \xB7 ${a.length} \u9898\uFF08${date}\uFF09`,
-        note: "1-5 \u5206\u5174\u8DA3\u8BC4\u5206\uFF1B\u7EA2\u8272\u4E3A \u22642 \u5206\uFF08\u4E0D\u611F\u5174\u8DA3\uFF09\u7684\u9898\u3002",
-        rows: HOLLAND_RATINGS.map((q, i) => ({
-          no: q.no,
-          text: q.text,
-          ans: `${a[i] ?? 0} \u5206`,
-          bad: (a[i] ?? 0) <= 2
-        }))
+        note: "1=\u5B8C\u5168\u4E0D\u559C\u6B22 / 2=\u4E0D\u592A\u559C\u6B22 / 3=\u4E00\u822C / 4=\u6BD4\u8F83\u559C\u6B22 / 5=\u975E\u5E38\u559C\u6B22\uFF1B\u7EA2\u8272\u4E3A \u22642 \u5206\uFF08\u4E0D\u611F\u5174\u8DA3\uFF09\u7684\u9898\u3002",
+        rows: HOLLAND_RATINGS.map((q, i) => {
+          const v = a[i] ?? 0;
+          return { no: q.no, text: q.text, ans: likertAns(v, LIKE5), bad: v > 0 && v <= 2 };
+        })
       });
     } else if (r.kind === "mentalpa" && Array.isArray(r.answers)) {
       const a = r.answers;
@@ -110942,13 +110948,11 @@ function buildAnswerBlocks(raw, kinds) {
         blocks.push({
           key: "mental",
           title: `\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5\uFF08\u65E7\u7248\u5341\u56E0\u5B50\uFF0C\u91CF\u8868\u5DF2\u5347\u7EA7\uFF09\xB7 ${a.length} \u9898\uFF08${date}\uFF09`,
-          note: "1-5 \u5206\u72B6\u6001\u81EA\u8BC4\uFF08\u8FD1\u4E00\u5468\uFF09\uFF1B\u7EA2\u8272\u4E3A \u22654 \u5206\u7684\u9898\u3002\u91CF\u8868\u5DF2\u5347\u7EA7\u4E3A PHQ-9+GAD-7 \u4E13\u4E1A\u7248\uFF0816 \u9898\uFF09\uFF0C\u5EFA\u8BAE\u91CD\u65B0\u6D4B\u8BC4\u3002",
-          rows: MENTAL_RATINGS.map((q, i) => ({
-            no: q.no,
-            text: q.text,
-            ans: `${a[i] ?? 0} \u5206`,
-            bad: (a[i] ?? 0) >= 4
-          }))
+          note: "1=\u4ECE\u4E0D / 2=\u5F88\u5C11 / 3=\u6709\u65F6 / 4=\u7ECF\u5E38 / 5=\u603B\u662F\uFF08\u8FD1\u4E00\u5468\u72B6\u6001\uFF09\uFF1B\u7EA2\u8272\u4E3A \u22654 \u5206\u7684\u9898\u3002\u91CF\u8868\u5DF2\u5347\u7EA7\u4E3A PHQ-9+GAD-7 \u4E13\u4E1A\u7248\uFF0816 \u9898\uFF09\uFF0C\u5EFA\u8BAE\u91CD\u65B0\u6D4B\u8BC4\u3002",
+          rows: MENTAL_RATINGS.map((q, i) => {
+            const v = a[i] ?? 0;
+            return { no: q.no, text: q.text, ans: likertAns(v, FREQ5), bad: v >= 4 };
+          })
         });
       }
     }
@@ -111074,6 +111078,7 @@ function E3V37OverviewCard({ e3: e32 }) {
 
 // src/components/reports/AbilityScoreTable.tsx
 var import_jsx_runtime12 = __toESM(require_jsx_runtime(), 1);
+var FREQ52 = ["\u4ECE\u4E0D", "\u5F88\u5C11", "\u6709\u65F6", "\u7ECF\u5E38", "\u603B\u662F"];
 function GroupRows({
   subs,
   items,
@@ -111105,6 +111110,7 @@ function GroupRows({
           "\uFF09"
         ] }) : null
       ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: "border border-border px-2 py-1.5 text-center text-[11.5px] text-olive-mute", children: items.length > 0 ? "\u2014" : "" }),
       /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1.5 text-center mono font-bold ${s.level ? e3v37LevelTextClass(s.level) : "text-olive"}`, children: s.score ?? "-" }),
       /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1.5 text-center text-[11.5px] font-semibold ${s.level ? e3v37LevelTextClass(s.level) : ""}`, children: s.level ?? "-" })
     ] }, s.key);
@@ -111118,6 +111124,12 @@ function GroupRows({
         /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "font-medium", children: it.kp }),
         /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mt-0.5 block text-[11px] leading-snug text-olive-mute", children: it.text })
       ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: "border border-border px-2 py-1 text-center text-[12px] text-olive-soft", children: it.raw >= 1 && it.raw <= 5 ? /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mono", children: it.raw }),
+        " \xB7 ",
+        FREQ52[it.raw - 1],
+        it.raw !== it.score && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "ml-1 rounded bg-butter/60 px-1 py-0.5 text-[10px] text-olive-mute", children: "\u53CD\u5411\u8BA1\u5206" })
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-olive-mute", children: "\u672A\u7B54" }) }),
       /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1 text-center mono text-[12px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.score }),
       /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1 text-center text-[11px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.level })
     ] }, `q${it.no}`));
@@ -111133,7 +111145,7 @@ function AbilityScoreTable({
   return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "paper-card p-5", children: [
     /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("h3", { className: "font-bold text-olive", children: "\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868" }),
     /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
-      "\u6BCF\u80FD\u4E00\u884C\u5C0F\u8BA1\uFF0C\u4E0B\u6302\u8BE5\u80FD\u6BCF\u9053\u9898\u7684\u5F97\u5206\uFF08\u53CD\u5411\u9898\u5DF2\u6362\u7B97\uFF0C5 \u5206\u5236\uFF0C\u8D8A\u4F4E\u8D8A\u9700\u5173\u6CE8\uFF09\uFF1A",
+      "\u6BCF\u80FD\u4E00\u884C\u5C0F\u8BA1\uFF0C\u4E0B\u6302\u8BE5\u80FD\u6BCF\u9053\u9898\u7684\u4F5C\u7B54\u4E0E\u5F97\u5206\uFF1A\u4F5C\u7B54\u662F\u4F60\u9009\u7684\u539F\u7B54\u6848\uFF081=\u4ECE\u4E0D / 2=\u5F88\u5C11 / 3=\u6709\u65F6 / 4=\u7ECF\u5E38 / 5=\u603B\u662F\uFF09\uFF0C\u5F97\u5206\u6309 5 \u5206\u5236\u6362\u7B97\uFF08\u53CD\u5411\u9898\u5DF2\u6362\u7B97\uFF0C\u8D8A\u4F4E\u8D8A\u9700\u5173\u6CE8\uFF09\uFF1A",
       E3V37_LEVEL_CAPTION,
       "\u3002",
       items.length === 0 && "\uFF08\u672C\u6B21\u8BB0\u5F55\u672A\u4FDD\u5B58\u9010\u9898\u4F5C\u7B54\uFF0C\u4EC5\u663E\u793A\u80FD\u7EA7\u5C0F\u8BA1\uFF1B\u91CD\u65B0\u5B8C\u6210\u4E00\u6B21\u8BCA\u65AD\u5373\u53EF\u770B\u5230\u9010\u9898\u660E\u7EC6\u3002\uFF09"
@@ -111142,7 +111154,8 @@ function AbilityScoreTable({
       /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tr", { className: "bg-cream-deep/60 text-olive", children: [
         /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u5927\u7C7B" }),
         /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u80FD\u529B / \u9898\u76EE" }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5F97\u5206" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u4F5C\u7B54\uFF08\u539F\u7B54\u6848\uFF09" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5F97\u5206\uFF08\u6362\u7B97\uFF09" }),
         /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5224\u5B9A" })
       ] }) }),
       /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tbody", { children: [
@@ -117934,7 +117947,7 @@ function TrainingPlanLibrary() {
   ] });
 }
 
-// scripts/smoke-render-v57.tsx
+// scripts/smoke-render-v58.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118592,7 +118605,64 @@ var assignSrc57 = readSrc57("../src/components/TutorAssignButton.tsx");
 need(assignSrc57, "toggleOpen", "\u6253\u5F00\u65F6\u521D\u59CB\u5316\u52FE\u9009");
 if (/useEffect/.test(assignSrc57)) throw new Error("\u5206\u914D\u6309\u94AE\u4E0D\u5E94\u518D\u4F9D\u8D56 useEffect \u521D\u59CB\u5316");
 console.log("OK v57 \u966A\u8DD1\u8BAD\u7EC3\u4E13\u680F + AI \u95EE\u8BCA + \u6309\u5B66\u5458\u75C7\u72B6\u5BF9\u7B56 + v56 \u5BB9\u9519\u4FEE\u590D");
-console.log("RENDER_SMOKE_V57_OK");
+console.log("RENDER_SMOKE_V57_OK_BASE");
+var readSrc58 = (rel) => (0, import_node_fs.readFileSync)((0, import_node_path.join)(__dirname, rel), "utf8");
+var assert58 = { ok: (cond, msg) => {
+  if (!cond) throw new Error(msg);
+} };
+var abSrc = readSrc58("../src/components/reports/answerBlocks.ts");
+need(abSrc, "likertAns", "\u660E\u7EC6\u7B54\u6848\u6587\u6848\u5316\u51FD\u6570");
+need(abSrc, '"\u4ECE\u4E0D", "\u5F88\u5C11", "\u6709\u65F6", "\u7ECF\u5E38", "\u603B\u662F"', "\u9891\u7387\u91CF\u8868\u6587\u6848");
+need(abSrc, '"\u5B8C\u5168\u4E0D\u7B26\u5408", "\u4E0D\u592A\u7B26\u5408", "\u4E00\u822C", "\u6BD4\u8F83\u7B26\u5408", "\u975E\u5E38\u7B26\u5408"', "\u804C\u4E1A\u951A\u91CF\u8868\u6587\u6848");
+need(abSrc, '"\u5B8C\u5168\u4E0D\u559C\u6B22", "\u4E0D\u592A\u559C\u6B22", "\u4E00\u822C", "\u6BD4\u8F83\u559C\u6B22", "\u975E\u5E38\u559C\u6B22"', "\u970D\u5170\u5FB7\u91CF\u8868\u6587\u6848");
+need(abSrc, "\u53CD\u5411\u9898\uFF0C\u8BA1 ${6 - v} \u5206", "\u53CD\u5411\u9898\u6807\u6CE8\u6362\u7B97\u5206");
+need(abSrc, "ans: likertAns(v, FREQ5, q.reverse)", "E3 \u660E\u7EC6\u7528\u539F\u7B54\u6848+\u6362\u7B97\u5206");
+need(abSrc, "ans: likertAns(v, FIT5, q.reverse)", "\u804C\u4E1A\u951A\u660E\u7EC6\u7528\u539F\u7B54\u6848+\u6362\u7B97\u5206");
+need(abSrc, "ans: likertAns(v, LIKE5)", "\u970D\u5170\u5FB7\u660E\u7EC6\u7528\u539F\u7B54\u6848");
+var astSrc = readSrc58("../src/components/reports/AbilityScoreTable.tsx");
+need(astSrc, "\u4F5C\u7B54\uFF08\u539F\u7B54\u6848\uFF09", "\u9644\u5F55\u4F5C\u7B54\u5217");
+need(astSrc, "\u5F97\u5206\uFF08\u6362\u7B97\uFF09", "\u9644\u5F55\u5F97\u5206\u5217\u6807\u6CE8\u6362\u7B97");
+need(astSrc, "\u53CD\u5411\u8BA1\u5206", "\u9644\u5F55\u53CD\u5411\u9898\u6807\u6CE8");
+var adSrc = readSrc58("../src/components/companion/AnswerDetail.tsx");
+need(adSrc, "labels={FREQ5}", "E3 \u660E\u7EC6\u4F20\u9891\u7387\u6587\u6848");
+need(adSrc, "labels={FIT5}", "\u667A\u80FD\u4E94\u9879\u660E\u7EC6\u6587\u6848");
+need(adSrc, "\uFF08\u8BA1 {adj} \u5206\uFF09", "\u53CD\u5411\u9898\u663E\u793A\u6362\u7B97\u5206");
+var blk58 = buildAnswerBlocks([
+  {
+    kind: "e3",
+    createdAt: "2026-09-20T08:00:00Z",
+    answers: {
+      stage: "junior",
+      ratings: [
+        ...Array.from({ length: 69 }, (_, i) => i === 13 ? 5 : 4)
+        // 第 14 题=反向题，选 5(总是)
+      ],
+      motivation: "B",
+      lifeEvents: [],
+      openAnswers: []
+    }
+  }
+]);
+var lexue = blk58.find((b) => b.key === "e3-lexue");
+if (!lexue) throw new Error("\u7F3A\u4E50\u5B66\u660E\u7EC6\u5757");
+var q14 = lexue.rows.find((r) => r.no === 14);
+if (!q14) throw new Error("\u7F3A\u7B2C 14 \u9898\u884C");
+assert58.ok(q14.ans.includes("\u603B\u662F"), "\u53CD\u5411\u9898\u7B54\u6848\u5E94\u663E\u793A\u539F\u586B\u9009\u9879\u6587\u6848: " + q14.ans);
+assert58.ok(q14.ans.includes("\u8BA1 1 \u5206"), "\u53CD\u5411\u9898\u5E94\u6807\u6CE8\u6362\u7B97\u5206: " + q14.ans);
+assert58.ok(q14.bad, "5(\u603B\u662F) \u53CD\u5411\u9898\u6362\u7B97 1 \u5206\u5E94\u6807\u7EA2");
+var q1 = lexue.rows.find((r) => r.no === 1);
+assert58.ok(q1 && q1.ans.includes("\u7ECF\u5E38") && !q1.ans.includes("\u53CD\u5411"), "\u6B63\u5411\u9898\u5E94\u663E\u793A 4 \xB7 \u7ECF\u5E38: " + (q1 && q1.ans));
+var anchorBlk = buildAnswerBlocks([
+  { kind: "anchor", createdAt: "2026-09-20T08:00:00Z", answers: Array.from({ length: 40 }, (_, i) => i === 0 ? 1 : 3) }
+]);
+var a1 = anchorBlk[0]?.rows.find((r) => r.no === 1);
+assert58.ok(a1 && a1.ans.includes("\u5B8C\u5168\u4E0D\u7B26\u5408"), "\u804C\u4E1A\u951A\u5E94\u663E\u793A\u9009\u9879\u6587\u6848: " + (a1 && a1.ans));
+var rdSrc58 = readSrc58("../src/pages/ReportDetail.tsx");
+need(rdSrc58, "!profile || !!profile.reportReleased", "\u65E0\u6863\u6848\u884C\u89C6\u4E3A\u672A\u9501\u5B9A\uFF08fail-open\uFF09");
+need(rdSrc58, "isLoading || profileLoading", "\u7B49\u6863\u6848\u52A0\u8F7D\u5B8C\u518D\u5224\u5B9A\uFF0C\u907F\u514D\u95EA\u9501");
+console.log("OK v58 \u7B54\u9898\u660E\u7EC6\u663E\u793A\u539F\u7B54\u6848\uFF08\u53CD\u5411\u9898\u6807\u6CE8\u6362\u7B97\u5206\uFF09");
+console.log("OK v58-fix \u62A5\u544A\u95E8\u7981 fail-open \u4E0E\u95E8\u7981\u7EC4\u4EF6\u53E3\u5F84\u4E00\u81F4");
+console.log("RENDER_SMOKE_V58_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

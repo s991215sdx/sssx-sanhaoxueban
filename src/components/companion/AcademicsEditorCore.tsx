@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ACADEMIC_SUBJECTS, SELF_LEVELS, subjectsForGrade, defaultFullScore, isMainSubject, type AcademicsData } from "@contracts/academics";
+import { ACADEMIC_SUBJECTS, SELF_LEVELS, subjectsForGrade, defaultFullScore, isMainSubject, type AcademicsData, type AcademicSubject } from "@contracts/academics";
 import { GraduationCap, Save } from "lucide-react";
 
 export type AcademicsSubmit = {
   examName: string;
   subjects: {
-    name: string;
+    name: AcademicSubject;
     selfLevel: number | null;
     fullScore: number | null;
     lastScore: number | null;

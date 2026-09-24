@@ -8,6 +8,9 @@ import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
 import { e3v37LevelTextClass, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
+/** 1-5 分选项文案（与作答端一致）：显示原答案，得分列显示换算后的有效分。 */
+const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
+
 type SubRow = { key: string; label: string; score: number | null; level: E3V37Level | null; note?: string };
 
 function GroupRows({
@@ -51,6 +54,9 @@ function GroupRows({
               {s.label}
               {s.note ? <span className="ml-1 text-[10.5px] font-normal text-olive-mute">（{s.note}）</span> : null}
             </td>
+            <td className="border border-border px-2 py-1.5 text-center text-[11.5px] text-olive-mute">
+              {items.length > 0 ? "—" : ""}
+            </td>
             <td className={`border border-border px-2 py-1.5 text-center mono font-bold ${s.level ? e3v37LevelTextClass(s.level) : "text-olive"}`}>
               {s.score ?? "-"}
             </td>
@@ -65,6 +71,18 @@ function GroupRows({
               <span className="mono text-[11px] text-olive-mute">{it.no}.</span>{" "}
               <span className="font-medium">{it.kp}</span>
               <span className="mt-0.5 block text-[11px] leading-snug text-olive-mute">{it.text}</span>
+            </td>
+            <td className="border border-border px-2 py-1 text-center text-[12px] text-olive-soft">
+              {it.raw >= 1 && it.raw <= 5 ? (
+                <>
+                  <span className="mono">{it.raw}</span> · {FREQ5[it.raw - 1]}
+                  {it.raw !== it.score && (
+                    <span className="ml-1 rounded bg-butter/60 px-1 py-0.5 text-[10px] text-olive-mute">反向计分</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-olive-mute">未答</span>
+              )}
             </td>
             <td className={`border border-border px-2 py-1 text-center mono text-[12px] font-semibold ${e3v37LevelTextClass(it.level)}`}>
               {it.score}
@@ -94,7 +112,7 @@ export default function AbilityScoreTable({
     <div className="paper-card p-5">
       <h3 className="font-bold text-olive">附录 · 三阶九能观察点得分表</h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
-        每能一行小计，下挂该能每道题的得分（反向题已换算，5 分制，越低越需关注）：{E3V37_LEVEL_CAPTION}。
+        每能一行小计，下挂该能每道题的作答与得分：作答是你选的原答案（1=从不 / 2=很少 / 3=有时 / 4=经常 / 5=总是），得分按 5 分制换算（反向题已换算，越低越需关注）：{E3V37_LEVEL_CAPTION}。
         {items.length === 0 && "（本次记录未保存逐题作答，仅显示能级小计；重新完成一次诊断即可看到逐题明细。）"}
       </p>
       <div className="mt-3 overflow-x-auto">
@@ -103,7 +121,8 @@ export default function AbilityScoreTable({
             <tr className="bg-cream-deep/60 text-olive">
               <th className="border border-border px-2 py-1.5 text-left">大类</th>
               <th className="border border-border px-2 py-1.5 text-left">能力 / 题目</th>
-              <th className="border border-border px-2 py-1.5 text-center">得分</th>
+              <th className="border border-border px-2 py-1.5 text-center">作答（原答案）</th>
+              <th className="border border-border px-2 py-1.5 text-center">得分（换算）</th>
               <th className="border border-border px-2 py-1.5 text-center">判定</th>
             </tr>
           </thead>

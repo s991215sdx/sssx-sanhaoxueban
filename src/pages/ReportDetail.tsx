@@ -12,13 +12,15 @@ const OPEN_TABS = ["mbti", "disc", "parent", "discparent"];
 
 export default function ReportDetail() {
   const { data, isLoading } = trpc.assessment.latest.useQuery();
-  const { data: profile } = trpc.profile.get.useQuery();
+  const { data: profile, isLoading: profileLoading } = trpc.profile.get.useQuery();
   const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab") ?? "combined";
-  const released = !!profile && !!profile.reportReleased;
+  /* 与 ReportLockedGate 同口径：无档案行视为未推送限制不生效（fail-open），
+     避免老学员缺档案行时被永久锁死、推送也无法解除。 */
+  const released = !profile || !!profile.reportReleased;
   const locked = !released && !OPEN_TABS.includes(tab);
 
-  if (isLoading) {
+  if (isLoading || profileLoading) {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
   }
   if (locked) {
