@@ -6,7 +6,7 @@
  * 分页作答：每页 10 题 × 9 页；草稿可恢复。
  */
 import { useState } from "react";
-import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
@@ -63,7 +63,9 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
   });
 
   const [answers, setAnswers] = useDraftState<(number | null)[]>("scl90", "answers", []);
-  const [resumed] = useState(() => draftValid && ((loadQuizDraft(user?.id, "scl90")?.answers as unknown[] | undefined)?.length ?? 0) > 0);
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const [resumed] = useDraftResumed(user?.id, "scl90", "answers");
+  const resumedShow = resumed && draftValid;
   const [page, setPage] = useState(() => {
     const d = loadQuizDraft(user?.id, "scl90");
     const a = (d?.answers as unknown[] | undefined) ?? [];
@@ -191,7 +193,7 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
         </button>
       </div>
 
-      {resumed && answeredCount > 0 && answeredCount < MENTAL_SCL90_QUESTION_COUNT && (
+      {resumedShow && answeredCount > 0 && answeredCount < MENTAL_SCL90_QUESTION_COUNT && (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-lime/50 bg-lime-pale/60 px-3 py-2">
           <span className="text-[12.5px] text-olive">已恢复上次进度，从第 {page * PAGE_SIZE + 1} 题继续。</span>
           <button

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { DISC_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
-import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft, Compass } from "lucide-react";
 
@@ -150,16 +150,15 @@ export default function DiscV2Quiz({
   onNext: () => void;
   onSkip?: () => void;
 }) {
-  const { user } = useAuth();
+  const { user, isFetching: authRefreshing } = useAuth();
   const utils = trpc.useUtils();
   const { isLoading } = trpc.assessment.questions.useQuery({ kind: "disc" } as never);
 
   const [idx, setIdx] = useDraftState<number>(DRAFT, "idx", 0);
   const [most, setMost] = useDraftState<number[]>(DRAFT, "most", []);
   const [least, setLeast] = useDraftState<number[]>(DRAFT, "least", []);
-  const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(user?.id, DRAFT)?.most as unknown[] | undefined)?.length ?? 0) > 0,
-  );
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const [resumed, setResumed] = useDraftResumed(user?.id, DRAFT, "most");
   const resetAll = () => {
     clearQuizDraft(user?.id, DRAFT);
     setIdx(0);
@@ -198,9 +197,14 @@ export default function DiscV2Quiz({
     submit.mutate({ kind: "disc", answers: { most: m, least: l } } as never);
   };
 
+  /* v70：每次作答先清掉上一个 pending 的跳组定时器再决定是否重挂。
+     旧逻辑里"选满→挂定时器→260ms 内取消某个选择"会留下一个看不见的洞（该组实际没选满却照跳），
+     答完 24 组后 finish 的 firstIncomplete 找到这个洞，把用户"随机"跳回那一组。 */
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advance = (m: number[], l: number[], cur: number) => {
+    if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
     if (m[cur] == null || l[cur] == null) return;
-    window.setTimeout(() => {
+    advanceTimer.current = window.setTimeout(() => {
       if (cur + 1 < total) {
         setIdx(cur + 1);
       } else {
@@ -211,19 +215,26 @@ export default function DiscV2Quiz({
   };
 
   /* V65 恢复进度兜底：草稿若已全答完（上次在提交前被中断，如关掉页面），
-     进入页面自动补提交一次，避免学生卡在"全选完却没有任何按钮"的第 24 组。 */
+     进入页面自动补提交一次，避免学生卡在"全选完却没有任何按钮"的第 24 组。
+     v70：等账号稳定（user 明确且 auth.me 不再刷新）再判断——换号瞬间缓存还是旧账号，
+     直接读当前账号自己的草稿，绝不拿内存里可能属于旧账号的 most/least 提交。 */
   const autoTriedRef = useRef(false);
   useEffect(() => {
     if (autoTriedRef.current) return;
+    if (!user?.id || authRefreshing) return;
     autoTriedRef.current = true;
-    if (firstIncomplete(most, least) === -1 && most.length >= total) finish(most, least);
+    const d = loadQuizDraft(user.id, DRAFT);
+    const dm = (d?.most as number[] | undefined) ?? [];
+    const dl = (d?.least as number[] | undefined) ?? [];
+    if (firstIncomplete(dm, dl) === -1 && dm.length >= total) finish(dm, dl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id, authRefreshing]);
 
   const pick = (wi: number) => {
     const next = pickDiscV2(most, least, idx, wi);
     setMost(next.most);
     setLeast(next.least);
+    setResumed(false); // 已开始新作答，"已恢复进度"提示条使命完成
     advance(next.most, next.least, idx);
   };
 

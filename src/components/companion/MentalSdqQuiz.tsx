@@ -4,7 +4,7 @@
  * 逐题作答。最后一题为安全预警题（自伤念头），不计分、≥1 触发红线提示。
  */
 import { useState } from "react";
-import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
@@ -62,9 +62,9 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
   // 作答进度挂草稿：误退出/刷新后回来接着答，不用重测
   const [idx, setIdx] = useDraftState<number>("mentalsdq", "idx", 0);
   const [answers, setAnswers] = useDraftState<number[]>("mentalsdq", "answers", []);
-  const [resumed, setResumed] = useState(
-    () => draftValid && ((loadQuizDraft(user?.id, "mentalsdq")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
-  );
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const [resumed, setResumed] = useDraftResumed(user?.id, "mentalsdq", "answers");
+  const resumedShow = resumed && draftValid;
   const resetAll = () => {
     clearQuizDraft(user?.id, "mentalsdq");
     setIdx(0);
@@ -94,6 +94,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
     const next = [...answers];
     next[idx] = value;
     setAnswers(next);
+    setResumed(false); // 已开始新作答，"已恢复进度"提示条使命完成
     if (idx + 1 < total) {
       setIdx(idx + 1);
     } else if (next.length === total) {
@@ -182,7 +183,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
         </button>
       </div>
 
-      {resumed && (
+      {resumedShow && (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-lime/50 bg-lime-pale/60 px-3 py-2">
           <span className="text-[12.5px] text-olive">已恢复上次进度（第 {idx + 1} 题），接着答就好。</span>
           <button onClick={resetAll} className="shrink-0 text-[12px] text-olive-mute underline hover:text-olive">

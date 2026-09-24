@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import {
   E3V37P_FAMILY_QUESTIONS,
@@ -48,9 +48,10 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
   const [wish, setWish] = useDraftState<string>(DRAFT, "wish", "");
   const [condObserve, setCondObserve] = useDraftState<Record<string, number>>(DRAFT, "condObserve", {});
   const [mirror, setMirror] = useDraftState<number[]>(DRAFT, "mirror", () => Array(16).fill(-1)); // -1 未答（提交时 0=不了解）
-  const [resumed, setResumed] = useState(() => {
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const computeResumed = (u: string | number | null | undefined) => {
     if (!draftValid) return false;
-    const d = loadQuizDraft(user?.id, DRAFT);
+    const d = loadQuizDraft(u, DRAFT);
     if (!d) return false;
     const fam = (d.family as Record<string, number> | undefined) ?? {};
     const mir = (d.mirror as number[] | undefined) ?? [];
@@ -61,7 +62,12 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
       Object.keys(cond).length > 0 ||
       mir.some((v) => v >= 0)
     );
-  });
+  };
+  const [resumed, setResumed] = useState(() => computeResumed(user?.id));
+  useEffect(() => {
+    setResumed(computeResumed(user?.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
   const resetAll = () => {
     clearQuizDraft(user?.id, DRAFT);
     setFamily({});

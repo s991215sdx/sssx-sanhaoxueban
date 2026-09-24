@@ -19,6 +19,7 @@ export function useAuth(options?: UseAuthOptions) {
   const {
     data: user,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = trpc.auth.me.useQuery(undefined, {
@@ -50,10 +51,12 @@ export function useAuth(options?: UseAuthOptions) {
       user: user ?? null,
       isAuthenticated: !!user,
       isLoading: isLoading || logoutMutation.isPending,
+      /** auth.me 是否正在后台刷新（含 staleTime 内缓存命中后的重新拉取）。换号瞬间缓存还是旧账号，用它来判断"账号已稳定"。 */
+      isFetching,
       error,
       logout,
       refresh: refetch,
     }),
-    [user, isLoading, logoutMutation.isPending, error, logout, refetch],
+    [user, isLoading, isFetching, logoutMutation.isPending, error, logout, refetch],
   );
 }

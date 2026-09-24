@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { DISC_PARENT_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
-import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { DiscV2GroupsUI, pickDiscV2 } from "@/components/companion/DiscV2Quiz";
 import { Users } from "lucide-react";
@@ -27,9 +27,8 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
   const [idx, setIdx] = useDraftState<number>(DRAFT, "idx", 0);
   const [most, setMost] = useDraftState<number[]>(DRAFT, "most", []);
   const [least, setLeast] = useDraftState<number[]>(DRAFT, "least", []);
-  const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(user?.id, DRAFT)?.most as unknown[] | undefined)?.length ?? 0) > 0,
-  );
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const [resumed, setResumed] = useDraftResumed(user?.id, DRAFT, "most");
   const resetAll = () => {
     clearQuizDraft(user?.id, DRAFT);
     setLabel("");
@@ -74,9 +73,12 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
     submit.mutate({ kind: "discparent", answers: { label: finalLabel, answers: { most: m, least: l } } } as never);
   };
 
+  /* v70：先清 pending 定时器再决定重挂——260ms 内取消选择不再留下"没选满却照跳"的洞 */
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advance = (m: number[], l: number[], cur: number) => {
+    if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
     if (m[cur] == null || l[cur] == null) return;
-    window.setTimeout(() => {
+    advanceTimer.current = window.setTimeout(() => {
       if (cur + 1 < total) {
         setIdx(cur + 1);
       } else {
@@ -90,6 +92,7 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
     const next = pickDiscV2(most, least, idx, wi);
     setMost(next.most);
     setLeast(next.least);
+    setResumed(false); // 已开始新作答，"已恢复进度"提示条使命完成
     advance(next.most, next.least, idx);
   };
 

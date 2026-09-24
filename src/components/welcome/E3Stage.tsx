@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { trpc } from "@/providers/trpc";
-import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import {
   E3V37_QUESTIONS,
@@ -203,11 +203,9 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
   const [phase, setPhase] = useDraftState<Phase>(E3_DRAFT, "phase", { kind: "intro", part: 0 });
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /* 是否从草稿恢复（有实质进度）：用于显示「已恢复进度」提示条 */
-  const [resumed, setResumed] = useState(
-    () =>
-      draftValid &&
-      ((loadQuizDraft(user?.id, E3_DRAFT)?.ratings as (number | null)[] | undefined)?.some((r) => r !== null) ?? false),
-  );
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const [resumed, setResumed] = useDraftResumed(user?.id, E3_DRAFT, "ratings");
+  const resumedShow = resumed && draftValid;
 
   /** 清空草稿并从头再来一遍。 */
   const resetAll = () => {
@@ -373,6 +371,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
     if (phase.kind !== "quiz" || currentNo == null) return;
     const already = ratings[currentNo - 1] !== null;
     setRatings((arr) => arr.map((x, i) => (i === currentNo - 1 ? v : x)));
+    setResumed(false); // 已开始新作答，"已恢复进度"提示条使命完成
     if (already) return;
     const part = PARTS[phase.part];
     const isLast = currentNo >= part.max;
@@ -404,7 +403,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
         </div>
         <span className="mono shrink-0 text-[12px] text-olive-mute">{answeredCount} / {E3V37_RATING_COUNT}</span>
       </div>
-      {resumed && (
+      {resumedShow && (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-lime/50 bg-lime-pale/60 px-3 py-2">
           <span className="text-[12.5px] text-olive">已恢复你上次的作答进度（已答 {answeredCount} / {E3V37_RATING_COUNT}），接着做就好，不用重测。</span>
           <button onClick={resetAll} className="shrink-0 text-[12px] text-olive-mute underline hover:text-olive">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
@@ -18,9 +18,8 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
   // 作答进度挂草稿：误退出/刷新后回来接着答，不用重测
   const [idx, setIdx] = useDraftState<number>("anchor", "idx", 0);
   const [answers, setAnswers] = useDraftState<number[]>("anchor", "answers", []);
-  const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(user?.id, "anchor")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
-  );
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const [resumed, setResumed] = useDraftResumed(user?.id, "anchor", "answers");
   const resetAll = () => {
     clearQuizDraft(user?.id, "anchor");
     setIdx(0);
@@ -42,6 +41,7 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
     const next = [...answers];
     next[idx] = value;
     setAnswers(next);
+    setResumed(false); // 已开始新作答，"已恢复进度"提示条使命完成
     if (idx + 1 < total) {
       setIdx(idx + 1);
     } else if (questions && next.length === total) {

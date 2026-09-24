@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { trpc } from "@/providers/trpc";
-import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft, Sparkles } from "lucide-react";
 
@@ -39,9 +38,8 @@ export default function ChoiceStage({
   // 作答进度挂草稿：误退出后回来接着答，不用重测
   const [idx, setIdx] = useDraftState<number>(kind, "idx", 0);
   const [answers, setAnswers] = useDraftState<(0 | 1)[]>(kind, "answers", []);
-  const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(user?.id, kind)?.answers as unknown[] | undefined)?.length ?? 0) > 0,
-  );
+  // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
+  const [resumed, setResumed] = useDraftResumed(user?.id, kind, "answers");
   const resetAll = () => {
     clearQuizDraft(user?.id, kind);
     setIdx(0);
@@ -65,6 +63,7 @@ export default function ChoiceStage({
     const next = [...answers];
     next[idx] = choice;
     setAnswers(next);
+    setResumed(false); // 已开始新作答，"已恢复进度"提示条使命完成
     if (idx + 1 < total) {
       setIdx(idx + 1);
     } else if (questions && next.length === total) {
