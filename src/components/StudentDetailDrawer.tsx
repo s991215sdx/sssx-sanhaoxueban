@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import CoachingPlanCard from "@/components/CoachingPlanCard";
 import V37CoachingPlanCard from "@/components/V37CoachingPlanCard";
 import ReportView from "@/components/reports/ReportView";
+import AnswerSheetsPanel from "@/components/AnswerSheetsPanel";
 import AcademicsEditorCore from "@/components/companion/AcademicsEditorCore";
 import type { AcademicsSubmit } from "@/components/companion/AcademicsEditorCore";
 import type { AcademicsData } from "@contracts/academics";
@@ -193,6 +194,13 @@ export default function StudentDetailDrawer({
                 </div>
               )}
             </div>
+
+            {/* V62：答题卷 · 得分表——全部测评逐题作答 + 三阶九能得分表，可整套/单卷打印 */}
+            <AnswerSheetsPanel
+              raw={(data.assessments.raw ?? []) as never}
+              e3={data.assessments.e3}
+              studentName={(data.profile?.name || data.user.name) ?? undefined}
+            />
 
             {/* 学习力陪跑训练方案（V3.7 三阶九能） */}
             {data.assessments.e3 && isE3V37Result(data.assessments.e3) && (

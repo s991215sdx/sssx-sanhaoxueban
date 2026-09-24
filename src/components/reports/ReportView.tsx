@@ -3762,7 +3762,22 @@ function AnswerBlocksView({ blocks }: { blocks: AnswerBlock[] }) {
               <li key={`${row.no}-${ri}`} className="flex gap-2 text-[12.5px] leading-relaxed text-olive-soft">
                 <span className="mono shrink-0 text-olive-mute">{row.no}.</span>
                 <span className="flex-1">{row.text}</span>
-                <span className={`shrink-0 font-semibold ${row.bad ? "text-terra" : "text-olive"}`}>{row.ans}</span>
+                {/* V62：带分数段(band)的题按 红<3.0/黄3.0-3.7/绿≥3.8 着色；无 band 的保持旧逻辑（仅警示标红） */}
+                <span
+                  className={`shrink-0 font-semibold ${
+                    row.band === "bad"
+                      ? "text-[#8f1313]"
+                      : row.band === "mid"
+                        ? "text-[#8a6d1a]"
+                        : row.band === "ok"
+                          ? "text-[#5a9326]"
+                          : row.bad
+                            ? "text-terra"
+                            : "text-olive"
+                  }`}
+                >
+                  {row.ans}
+                </span>
               </li>
             ))}
           </ol>

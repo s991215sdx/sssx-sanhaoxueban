@@ -145,7 +145,8 @@ export default function Tutor() {
               <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            /* V62：学员卡一行一个（去掉 sm:grid-cols-2），方便逐个扫读 */
+            <div className="grid gap-3">
               {filtered.map((s) => (
                 <div
                   key={s.userId}

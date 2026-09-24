@@ -89,7 +89,18 @@ function RatingDetail({
                 <span className="ml-1.5 rounded bg-butter/60 px-1 py-0.5 text-[10.5px] text-olive-mute">反向计分</span>
               )}
             </span>
-            <span className={`shrink-0 font-semibold ${v != null && adj <= 2 ? "text-terra" : "text-olive"}`}>
+            {/* V62：分数段着色 红<3.0 / 黄3.0-3.7 / 绿≥3.8 */}
+            <span
+              className={`shrink-0 font-semibold ${
+                v == null || v < 1
+                  ? "text-olive"
+                  : adj < 3
+                    ? "text-[#8f1313]"
+                    : adj < 3.8
+                      ? "text-[#8a6d1a]"
+                      : "text-[#5a9326]"
+              }`}
+            >
               {v != null && v >= 1 && v <= 5 ? (
                 <>
                   <span className="mono">{v}/5</span> · {labels[v - 1]}

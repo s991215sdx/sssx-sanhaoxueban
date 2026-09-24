@@ -52,7 +52,8 @@ export default function TrainingPlanLibrary() {
                 <span className="text-[11.5px] text-olive-mute">{st.sub}</span>
               </div>
               {/* V61：两列布局，详情展开后更宽更好读 */}
-              <div className="mt-2.5 grid gap-3 lg:grid-cols-2">
+              {/* V62：一栏布局，卡片更宽更好读 */}
+              <div className="mt-2.5 grid gap-3">
                 {plans.map((p) => (
                   <AbilityPlanCard
                     key={p.ability}

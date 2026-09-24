@@ -397,6 +397,67 @@ export function e3V37PrintHtml(e3: E3V37Result, studentName?: string): string {
   ].join("\n");
 }
 
+/* ---------------- V62 答题卷 · 得分表打印 ---------------- */
+
+/** 答题卷打印 HTML：逐题作答表（分数段着色）+ 可选 E3 三阶九能得分速览表。 */
+export function answerSheetsPrintHtml(
+  blocks: {
+    title: string;
+    note?: string;
+    rows: { no: number | string; text: string; ans: string; bad?: boolean; band?: "bad" | "mid" | "ok" }[];
+  }[],
+  e3?: E3V37Result | null,
+): string {
+  const ansColor = (r: { bad?: boolean; band?: "bad" | "mid" | "ok" }) =>
+    r.band === "bad" ? "#8f1313" : r.band === "mid" ? "#8a6d1a" : r.band === "ok" ? "#5a9326" : r.bad ? "#c25e3a" : "#35421e";
+  const parts: string[] = [];
+  /* E3 三阶九能得分速览（得分表口径：每能一行 小计+判定） */
+  if (e3 && isE3V37Result(e3)) {
+    const lvColor = (lv: string) => (lv === "卡点" ? "#8f1313" : lv === "待提升" ? "#8a6d1a" : "#5a9326");
+    const sectionRows = (label: string, list: { label: string; score: number; level: string }[], note?: string) =>
+      `<tr><td colspan="3" style="border:1px solid #e4e6cd;padding:5px 8px;background:#f5f3e6;font-weight:700">${esc(label)}${note ? `<span style="font-weight:400;font-size:11px;color:#8b9468">（${esc(note)}）</span>` : ""}</td></tr>` +
+      list
+        .map(
+          (r) =>
+            `<tr><td style="border:1px solid #e4e6cd;padding:5px 8px">${esc(r.label)}</td><td style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center;font-family:monospace;font-weight:700;color:${lvColor(r.level)}">${r.score}/5</td><td style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center;font-weight:700;color:${lvColor(r.level)}">${esc(r.level)}</td></tr>`,
+        )
+        .join("");
+    parts.push(
+      h2(`三阶九能得分表（${e3.stageLabel}）`),
+      `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr>
+          <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:left">能力 / 观测点</th>
+          <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center">得分</th>
+          <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center">判定</th>
+        </tr></thead>
+        <tbody>${[
+          sectionRows("乐学 · 动力系统", e3.abilities.filter((a) => a.system === "乐学")),
+          sectionRows("会学 · 行为系统", e3.abilities.filter((a) => a.system === "会学")),
+          sectionRows("善学 · 加速系统", e3.abilities.filter((a) => a.system === "善学")),
+          sectionRows("条件系统", e3.systems.condition.cells, "单独报告不进总分"),
+          sectionRows("学能三项", e3.aptitude, "单独报告不进总分"),
+        ].join("")}</tbody>
+      </table>`,
+    );
+  }
+  for (const b of blocks) {
+    parts.push(h2(b.title));
+    if (b.note) parts.push(para(b.note));
+    parts.push(
+      `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <tbody>${b.rows
+          .map(
+            (r) =>
+              `<tr style="page-break-inside:avoid"><td style="border-bottom:1px solid #eef0dc;padding:4px 6px;width:52px;font-family:monospace;color:#8b9468;vertical-align:top">${esc(r.no)}.</td><td style="border-bottom:1px solid #eef0dc;padding:4px 6px;vertical-align:top">${esc(r.text)}</td><td style="border-bottom:1px solid #eef0dc;padding:4px 6px;width:200px;text-align:right;font-weight:700;color:${ansColor(r)};vertical-align:top">${esc(r.ans)}</td></tr>`,
+          )
+          .join("")}</tbody>
+      </table>`,
+    );
+  }
+  parts.push(para("分数段口径：红 <3.0 卡点 · 黄 3.0-3.7 待提升 · 绿 ≥3.8 正常（仅 1-5 分制题目按段着色；对错型与心理筛查题目只保留红色警示）。"));
+  return parts.join("\n");
+}
+
 /* ---------------- 打印窗口 ---------------- */
 
 const PRINT_CSS = `

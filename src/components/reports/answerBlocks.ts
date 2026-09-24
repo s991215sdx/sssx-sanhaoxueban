@@ -47,8 +47,15 @@ import {
   SCL90_FACTOR_LABEL,
 } from "@contracts/mentalHealth";
 
-export type AnswerRow = { no: number | string; text: string; ans: string; bad?: boolean };
+/** V62 分数段：bad=<3.0 卡点(红) / mid=3.0-3.7 待提升(黄) / ok=≥3.8 正常(绿)。仅 1-5 分制「越高越好」的题目带 band。 */
+export type AnswerBand = "bad" | "mid" | "ok";
+export type AnswerRow = { no: number | string; text: string; ans: string; bad?: boolean; band?: AnswerBand };
 export type AnswerBlock = { key: string; title: string; note?: string; rows: AnswerRow[] };
+
+/** 1-5 分 → 分数段（红 <3.0 · 黄 3.0-3.7 · 绿 ≥3.8）。 */
+export function bandOf(score: number): AnswerBand {
+  return score < 3 ? "bad" : score < 3.8 ? "mid" : "ok";
+}
 
 /** 各 Likert 量表 1-5 分的选项文案（与作答端按钮一致）。 */
 const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
@@ -161,9 +168,9 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
           .map((q) => {
             const v = a[q.no - 1] ?? 0;
             const adj = q.reverse ? 6 - v : v;
-            return { no: q.no, text: `[${q.kp}] ${q.text}`, ans: likertAns(v, FREQ5, q.reverse), bad: adj <= 2 };
+            return { no: q.no, text: `[${q.kp}] ${q.text}`, ans: likertAns(v, FREQ5, q.reverse), bad: adj <= 2, band: v >= 1 ? bandOf(adj) : undefined };
           });
-      const RATE_NOTE = "1=从不 / 2=很少 / 3=有时 / 4=经常 / 5=总是；显示的是你选的原答案，红色为换算后 ≤2 分的题（明显短板），反向题括号内为换算后的计分。";
+      const RATE_NOTE = "1=从不 / 2=很少 / 3=有时 / 4=经常 / 5=总是；显示的是你选的原答案，反向题括号内为换算后的计分；按换算得分着色：红 <3.0 卡点 · 黄 3.0-3.7 待提升 · 绿 ≥3.8 正常。";
       if (wantSeg("乐学")) {
         blocks.push({ key: "e3-lexue", title: `E3 学业诊断 · 乐学（动力系统）第 1-21 题（${date}）`, note: RATE_NOTE, rows: mkRows(1, 21) });
       }
@@ -176,7 +183,7 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
       if (wantSeg("条件")) {
         const rows = mkRows(50, 67);
         const mo = E3V37_MOTIVATION_OPTIONS.find((o) => o.key === ans.motivation);
-        if (mo) rows.push({ no: "状态", text: `学习状态单选：${mo.text}`, ans: `${mo.key} · ${mo.label}（${mo.score}/5）`, bad: mo.score <= 2 });
+        if (mo) rows.push({ no: "状态", text: `学习状态单选：${mo.text}`, ans: `${mo.key} · ${mo.label}（${mo.score}/5）`, bad: mo.score <= 2, band: bandOf(mo.score) });
         const events = E3V37_LIFE_EVENTS[stage] ?? E3V37_LIFE_EVENTS.junior;
         (ans.lifeEvents ?? []).forEach((v, i) => {
           const ev = events[i];
@@ -279,11 +286,11 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
       blocks.push({
         key: "anchor",
         title: `职业锚 · ${a.length} 题（${date}）`,
-        note: "1=完全不符合 / 2=不太符合 / 3=一般 / 4=比较符合 / 5=非常符合；显示的是你选的原答案，红色为换算后 ≤2 分的题，反向题括号内为换算后的计分。",
+        note: "1=完全不符合 / 2=不太符合 / 3=一般 / 4=比较符合 / 5=非常符合；显示的是你选的原答案，反向题括号内为换算后的计分；按换算得分着色：红 <3.0 · 黄 3.0-3.7 · 绿 ≥3.8。",
         rows: ANCHOR_RATINGS.map((q, i) => {
           const v = a[i] ?? 0;
           const adj = q.reverse ? 6 - v : v;
-          return { no: q.no, text: q.text, ans: likertAns(v, FIT5, q.reverse), bad: adj <= 2 };
+          return { no: q.no, text: q.text, ans: likertAns(v, FIT5, q.reverse), bad: adj <= 2, band: v >= 1 ? bandOf(adj) : undefined };
         }),
       });
     } else if (r.kind === "holland" && Array.isArray(r.answers)) {
@@ -291,10 +298,10 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
       blocks.push({
         key: "holland",
         title: `霍兰德职业兴趣 · ${a.length} 题（${date}）`,
-        note: "1=完全不喜欢 / 2=不太喜欢 / 3=一般 / 4=比较喜欢 / 5=非常喜欢；红色为 ≤2 分（不感兴趣）的题。",
+        note: "1=完全不喜欢 / 2=不太喜欢 / 3=一般 / 4=比较喜欢 / 5=非常喜欢；按得分着色：红 <3.0（不感兴趣）· 黄 3.0-3.7 · 绿 ≥3.8。",
         rows: HOLLAND_RATINGS.map((q, i) => {
           const v = a[i] ?? 0;
-          return { no: q.no, text: q.text, ans: likertAns(v, LIKE5), bad: v > 0 && v <= 2 };
+          return { no: q.no, text: q.text, ans: likertAns(v, LIKE5), bad: v > 0 && v <= 2, band: v >= 1 ? bandOf(v) : undefined };
         }),
       });
     } else if (r.kind === "mentalpa" && Array.isArray(r.answers)) {
