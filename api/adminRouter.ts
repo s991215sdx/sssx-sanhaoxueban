@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { attempts, dailyPlans, errorLogs, moodEntries, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
+import { attempts, dailyPlans, errorLogs, moodEntries, organizations, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
 import { getStudentDetail, listStudents } from "./studentDetail";
 import { isPlatformAdmin, sameOrg } from "./tenant";
 
@@ -60,13 +60,13 @@ export const adminRouter = createRouter({
       return getStudentDetail(getDb(), input.userId, ctx.user.orgId);
     }),
 
-  /** 伴学师列表：每人名下学员数与学员活跃度（V56：含多对多分配，去重；V59：限本机构）。 */
+  /** 伴学师列表：每人名下学员数与学员活跃度（V56：含多对多分配，去重；V59：限本机构；V60 超管看全部）。 */
   tutors: adminQuery.query(async ({ ctx }) => {
     const db = getDb();
     const orgId = ctx.user.orgId;
     const tutors =
       orgId == null
-        ? [] // 平台超管无机构数据权限
+        ? await db.select().from(users).where(eq(users.role, "tutor")) // 平台超管：全部机构
         : await db.select().from(users).where(and(eq(users.role, "tutor"), eq(users.orgId, orgId)));
     const profiles = await db.select().from(studentProfile);
     const { listStudentTutorLinks } = await import("./tutorAccess");
@@ -139,12 +139,35 @@ export const adminRouter = createRouter({
       return { ok: true, tutorIds: ids };
     }),
 
-  /** 全局总览：用户数与关键业务量（V59：限本机构；平台超管见总系统面板——此处返回 0，机构管理另有统计）。 */
+  /** 总览：用户数与关键业务量（V59：限本机构；V60：平台超管看全系统合计）。 */
   overview: adminQuery.query(async ({ ctx }) => {
     const db = getDb();
     const orgId = ctx.user.orgId;
     if (orgId == null) {
-      return { userCount: 0, attemptCount: 0, errorCount: 0, paperCount: 0, moodCount: 0, previewCount: 0 };
+      /* 平台超管：全系统总量（不过滤机构） */
+      const count = async <T>(table: T): Promise<number> => {
+        const rows = await db.select({ c: sql<number>`count(*)` }).from(table as never);
+        return Number((rows[0] as { c: number }).c ?? 0);
+      };
+      const [userCount, attemptCount, errorCount, paperCount, moodCount, previewRows] = await Promise.all([
+        count(users),
+        count(attempts),
+        count(errorLogs),
+        count(papers),
+        count(moodEntries),
+        db
+          .select({ c: sql<number>`count(*)` })
+          .from(previewSessions)
+          .where(eq(previewSessions.completed, true)),
+      ]);
+      return {
+        userCount,
+        attemptCount,
+        errorCount,
+        paperCount,
+        moodCount,
+        previewCount: Number((previewRows[0] as { c: number }).c ?? 0),
+      };
     }
     /* 业务量按用户归属机构统计：业务表 inner join users 过滤 orgId */
     const joinCount = async (table: never, col: never): Promise<number> => {
@@ -177,14 +200,17 @@ export const adminRouter = createRouter({
     };
   }),
 
-  /** 用户列表：每人一行的学习概览（V59：限本机构）。 */
+  /** 用户列表：每人一行的学习概览（V59：限本机构；V60 超管看全部并带机构名）。 */
   users: adminQuery.query(async ({ ctx }) => {
     const db = getDb();
     const orgId = ctx.user.orgId;
     const allUsers =
       orgId == null
-        ? await db.select().from(users).where(isNull(users.orgId)).orderBy(desc(users.createdAt))
+        ? await db.select().from(users).orderBy(desc(users.createdAt)) // 平台超管：全部机构
         : await db.select().from(users).where(eq(users.orgId, orgId)).orderBy(desc(users.createdAt));
+    /* V60：机构名映射（超管看全量时分辨归属） */
+    const orgRows = await db.select().from(organizations);
+    const orgNameMap = new Map(orgRows.map((o) => [o.id, o.brandName]));
     const [errRows, attRows, planRows] = await Promise.all([
       db.select({ userId: errorLogs.userId, c: sql<number>`count(*)` }).from(errorLogs).groupBy(errorLogs.userId),
       db.select({ userId: attempts.userId, c: sql<number>`count(*)` }).from(attempts).groupBy(attempts.userId),
@@ -200,6 +226,7 @@ export const adminRouter = createRouter({
       role: u.role,
       createdAt: u.createdAt,
       lastSignInAt: u.lastSignInAt,
+      orgName: u.orgId != null ? (orgNameMap.get(u.orgId) ?? null) : null,
       errors: errMap.get(u.id) ?? 0,
       attempts: attMap.get(u.id) ?? 0,
       plans: planMap.get(u.id) ?? 0,

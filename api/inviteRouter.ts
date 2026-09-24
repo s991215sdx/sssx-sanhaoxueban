@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { desc, eq, isNull, or, sql } from "drizzle-orm";
+import { desc, eq, or, sql } from "drizzle-orm";
 import { INVITE_CHANNEL_KINDS, normalizeInviteCode } from "@contracts/invite";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
 import { inviteChannels, inviteRegistrations, studentProfile, users } from "@db/schema";
@@ -51,13 +51,13 @@ export const inviteRouter = createRouter({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "生成渠道码失败，请再试一次" });
     }),
 
-  /** 管理员看本机构全部渠道（平台超管看自己直属的 null 机构码）；伴学师只看自己创建的（含各渠道累计注册数 + 最近 50 条注册记录）。 */
+  /** 管理员看本机构全部渠道（V60：平台超管看全部机构渠道）；伴学师只看自己创建的（含各渠道累计注册数 + 最近 50 条注册记录）。 */
   channels: tutorQuery.query(async ({ ctx }) => {
     const db = getDb();
     const where =
       ctx.user.role === "admin"
         ? ctx.user.orgId == null
-          ? isNull(inviteChannels.orgId)
+          ? undefined /* 平台超管 god mode：全部渠道 */
           : eq(inviteChannels.orgId, ctx.user.orgId)
         : or(eq(inviteChannels.tutorId, ctx.user.id), eq(inviteChannels.createdBy, ctx.user.id));
     const [channels, counts, recent] = await Promise.all([
@@ -87,10 +87,10 @@ export const inviteRouter = createRouter({
         if (!ch || (ch.tutorId !== ctx.user.id && ch.createdBy !== ctx.user.id)) {
           badRequest("这张二维码不在你名下");
         }
-      } else {
-        /* V59：管理员只能停用本机构的码（平台超管管 null 机构码） */
+      } else if (ctx.user.orgId != null) {
+        /* V59/V60：机构管理员只能动本机构的码；平台超管（orgId=null）可管全部 */
         const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.id, input.id)).limit(1))[0];
-        if (!ch || (ch.orgId ?? null) !== (ctx.user.orgId ?? null)) badRequest("这张二维码不在你机构内");
+        if (!ch || (ch.orgId ?? null) !== ctx.user.orgId) badRequest("这张二维码不在你机构内");
       }
       await db.update(inviteChannels).set({ active: !!input.active }).where(eq(inviteChannels.id, input.id));
       return { ok: true as const };

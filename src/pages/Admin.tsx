@@ -18,11 +18,8 @@ export default function Admin() {
   if (!isAdmin) {
     return <ClaimAdminCard onClaimed={() => refresh()} />;
   }
-  /* V59 SaaS 总系统：平台超管登录后台即机构管理面板 */
-  if (isPlatformAdmin) {
-    return <OrgAdminTab />;
-  }
-  return <AdminPanel selfId={user.id} onRefresh={refresh} />;
+  /* V60：平台超管 = 机构管理 + 全系统数据（god mode）；机构管理员 = 本机构四 tab */
+  return <AdminPanel selfId={user.id} onRefresh={refresh} platform={isPlatformAdmin} />;
 }
 
 /** 系统还没有管理员时，当前用户可一键自任管理员（bootstrap）。 */
@@ -67,7 +64,7 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Users; label: str
   );
 }
 
-type AdminTab = "overview" | "students" | "tutors" | "invites";
+type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "overview", label: "总览" },
@@ -76,9 +73,10 @@ const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "invites", label: "注册邀请" },
 ];
 
-function AdminPanel({ selfId, onRefresh }: { selfId: number; onRefresh: () => void }) {
+function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; onRefresh: () => void; platform?: boolean }) {
   const refresh = onRefresh;
-  const [tab, setTab] = useState<AdminTab>("overview");
+  const [tab, setTab] = useState<AdminTab>(platform ? "orgs" : "overview");
+  const tabs = platform ? [{ key: "orgs" as AdminTab, label: "机构管理" }, ...ADMIN_TABS] : ADMIN_TABS;
   const [detailId, setDetailId] = useState<number | null>(null);
   const utils = trpc.useUtils();
   const { data: overview } = trpc.admin.overview.useQuery();
@@ -97,22 +95,30 @@ function AdminPanel({ selfId, onRefresh }: { selfId: number; onRefresh: () => vo
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight text-olive">后台管理</h1>
-        <p className="mt-1 text-[13px] text-olive-mute">所有账号的学习概览。树洞内容属于隐私，这里只看得到心情曲线，看不到具体文字。</p>
-        <button
-          onClick={() => claimPlatform.mutate()}
-          disabled={claimPlatform.isPending}
-          className="mt-2 text-[12px] text-olive-mute underline decoration-dotted underline-offset-2 hover:text-olive disabled:opacity-40"
-          title="若系统还没有平台超管（总系统），点这里接管"
-        >
-          {claimPlatform.isPending ? "处理中…" : "我是平台负责人，升级为平台超管"}
-        </button>
-        {claimPlatform.error && <p className="mt-1 text-[11.5px] text-terra">{claimPlatform.error.message}</p>}
+        <h1 className="text-[22px] font-bold tracking-tight text-olive">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
+        <p className="mt-1 text-[13px] text-olive-mute">
+          {platform
+            ? "平台超管：可查看所有机构的数据，并可给任意账号开通管理员。树洞内容属于隐私，只看得到心情曲线。"
+            : "所有账号的学习概览。树洞内容属于隐私，这里只看得到心情曲线，看不到具体文字。"}
+        </p>
+        {!platform && (
+          <>
+            <button
+              onClick={() => claimPlatform.mutate()}
+              disabled={claimPlatform.isPending}
+              className="mt-2 text-[12px] text-olive-mute underline decoration-dotted underline-offset-2 hover:text-olive disabled:opacity-40"
+              title="若系统还没有平台超管（总系统），点这里接管"
+            >
+              {claimPlatform.isPending ? "处理中…" : "我是平台负责人，升级为平台超管"}
+            </button>
+            {claimPlatform.error && <p className="mt-1 text-[11.5px] text-terra">{claimPlatform.error.message}</p>}
+          </>
+        )}
       </header>
 
       {/* Tab 切换 */}
       <div className="flex rounded-xl bg-cream-deep p-1">
-        {ADMIN_TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -125,6 +131,7 @@ function AdminPanel({ selfId, onRefresh }: { selfId: number; onRefresh: () => vo
         ))}
       </div>
 
+      {tab === "orgs" && <OrgAdminTab />}
       {tab === "invites" && <InviteChannelsTab />}
       {tab === "overview" && (
         <>
@@ -160,6 +167,10 @@ function AdminPanel({ selfId, onRefresh }: { selfId: number; onRefresh: () => vo
                         <span className="truncate text-[14.5px] font-semibold text-olive">{u.name}</span>
                         {u.role === "admin" && <span className="chip !py-0.5 !text-[10.5px] text-olive">管理员</span>}
                         {u.role === "tutor" && <span className="chip !py-0.5 !text-[10.5px] text-olive">伴学师</span>}
+                        {/* V60：超管看全量列表时标注所属机构 */}
+                        {platform && u.orgName && (
+                          <span className="chip !py-0.5 !text-[10.5px] text-olive-soft">{u.orgName}</span>
+                        )}
                         {u.id === selfId && <span className="text-[11px] text-olive-mute">（我）</span>}
                       </div>
                       <div className="mono mt-0.5 text-[11px] text-olive-mute">
@@ -179,7 +190,16 @@ function AdminPanel({ selfId, onRefresh }: { selfId: number; onRefresh: () => vo
                       </button>
                       {u.id !== selfId && (
                         <>
-                          {/* V59：管理员只能由平台超管在机构管理中开通，机构后台不再提供「设为管理员」 */}
+                          {/* V60：平台超管可给任意账号开通/取消管理员；机构后台不提供此按钮 */}
+                          {platform && (
+                            <button
+                              onClick={() => setRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" })}
+                              disabled={setRole.isPending}
+                              className="rounded-lg border border-border bg-cream px-3 py-1.5 text-[12.5px] font-medium text-olive-soft hover:border-olive/40 disabled:opacity-40"
+                            >
+                              {u.role === "admin" ? "取消管理员" : "设为管理员"}
+                            </button>
+                          )}
                           <button
                             onClick={() => setRole.mutate({ userId: u.id, role: u.role === "tutor" ? "user" : "tutor" })}
                             disabled={setRole.isPending}
@@ -201,14 +221,14 @@ function AdminPanel({ selfId, onRefresh }: { selfId: number; onRefresh: () => vo
         </>
       )}
 
-      {tab === "students" && <StudentsTab />}
+      {tab === "students" && <StudentsTab platform={platform} />}
       {tab === "tutors" && <TutorsTab />}
     </div>
   );
 }
 
-/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。 */
-function StudentsTab() {
+/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注。 */
+function StudentsTab({ platform = false }: { platform?: boolean }) {
   const [detailId, setDetailId] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const { data: students, isLoading } = trpc.admin.students.useQuery();
@@ -253,6 +273,10 @@ function StudentsTab() {
                   {s.disc && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.disc}</span>}
                   {s.hasMulti && <span className="chip !py-0.5 !text-[10.5px] text-olive">多元✓</span>}
                   {s.hasAcademics && <span className="chip !py-0.5 !text-[10.5px] text-olive">学业✓</span>}
+                  {/* V60：超管看全量列表时标注所属机构 */}
+                  {platform && s.orgName && (
+                    <span className="chip !py-0.5 !text-[10.5px] text-olive-soft">{s.orgName}</span>
+                  )}
                 </div>
                 {/* V56：名下伴学师（可多选） */}
                 <div className="mt-1 flex flex-wrap items-center gap-1">

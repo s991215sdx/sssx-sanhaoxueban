@@ -96656,7 +96656,7 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v59.tsx
+// scripts/smoke-render-v60.tsx
 var import_react6 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
@@ -117947,7 +117947,7 @@ function TrainingPlanLibrary() {
   ] });
 }
 
-// scripts/smoke-render-v59.tsx
+// scripts/smoke-render-v60.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118688,7 +118688,7 @@ assert58.ok(sameOrgCount59 >= 5, "coachRouter \u7BA1\u7406\u5458\u8DEF\u5F84\u5E
 var invSrc59 = readSrc59("../api/inviteRouter.ts");
 need(invSrc59, "orgId: ch.orgId ?? null", "\u6CE8\u518C\u5B66\u5458\u7EE7\u627F\u6E20\u9053\u673A\u6784");
 need(invSrc59, "const orgId = ctx.user.orgId ?? null;", "\u53D1\u7801\u8BB0\u5F55\u673A\u6784");
-need(invSrc59, "isNull(inviteChannels.orgId)", "\u5E73\u53F0\u8D85\u7BA1\u770B\u76F4\u5C5E\u7801");
+need(invSrc59, "\u5E73\u53F0\u8D85\u7BA1 god mode\uFF1A\u5168\u90E8\u6E20\u9053", "\u8D85\u7BA1\u770B\u5168\u90E8\u6E20\u9053");
 need(invSrc59, "\u8FD9\u5F20\u4E8C\u7EF4\u7801\u4E0D\u5728\u4F60\u673A\u6784\u5185", "\u505C\u7528\u7801\u673A\u6784\u6821\u9A8C");
 need(invSrc59, "recent.filter((r) => mine.has(r.channelId))", "\u6CE8\u518C\u8BB0\u5F55\u9650\u6743\u9650\u8303\u56F4");
 var meSrc59 = readSrc59("../api/auth-router.ts");
@@ -118701,7 +118701,7 @@ need(layoutSrc59, "\u5E73\u53F0\u8D85\u7BA1", "\u5E73\u53F0\u8D85\u7BA1\u8EAB\u4
 var adminSrc59 = readSrc59("../src/pages/Admin.tsx");
 need(adminSrc59, "<OrgAdminTab />", "\u5E73\u53F0\u8D85\u7BA1\u8DEF\u7531\u5230\u673A\u6784\u7BA1\u7406");
 need(adminSrc59, "claimPlatformAdmin", "\u673A\u6784\u7BA1\u7406\u5458\u5347\u7EA7\u5E73\u53F0\u8D85\u7BA1\u5165\u53E3");
-need(adminSrc59, "\u673A\u6784\u540E\u53F0\u4E0D\u518D\u63D0\u4F9B\u300C\u8BBE\u4E3A\u7BA1\u7406\u5458\u300D", "\u673A\u6784\u5185\u7981\u8BBE\u7BA1\u7406\u5458");
+need(adminSrc59, "\u673A\u6784\u540E\u53F0\u4E0D\u63D0\u4F9B\u6B64\u6309\u94AE", "\u673A\u6784\u5185\u7981\u8BBE\u7BA1\u7406\u5458");
 var orgTabSrc59 = readSrc59("../src/components/admin/OrgAdminTab.tsx");
 need(orgTabSrc59, "trpc.org.list.useQuery", "\u673A\u6784\u5217\u8868\u67E5\u8BE2");
 need(orgTabSrc59, "trpc.org.create.useMutation", "\u5F00\u901A\u673A\u6784");
@@ -118714,7 +118714,26 @@ need(orgRouterSrc59, "orgId,", "\u7BA1\u7406\u5458\u8D26\u53F7\u6302\u673A\u6784
 need(orgRouterSrc59, "hashPassword(password)", "\u7BA1\u7406\u5458\u521D\u59CB\u5BC6\u7801\u6563\u5217");
 var routerSrc59 = readSrc59("../api/router.ts");
 need(routerSrc59, "org: orgRouter", "orgRouter \u6CE8\u518C");
-need(routerSrc59, "v59-2026-09-24", "BUILD_TAG \u5347 v59");
+need(routerSrc59, "v60-2026-09-24", "BUILD_TAG \u5347 v60");
+need(tenantSrc, "if (me.orgId == null) return true;", "\u8D85\u7BA1 sameOrg \u6052\u771F\uFF08god mode\uFF09");
+need(tenantSrc, "\u5E73\u53F0\u8D85\u7BA1\uFF08orgId=null\uFF09\u53EF\u7BA1\u7406\u4EFB\u610F\u8D26\u53F7", "tenant \u6CE8\u91CA god mode");
+var sdSrc60 = readSrc59("../api/studentDetail.ts");
+need(sdSrc60, "orgId == null ? await db.select().from(users)", "listStudents null=\u5168\u91CF");
+need(sdSrc60, "if (orgId != null)", "getStudentDetail null \u4E0D\u6821\u9A8C\uFF08\u8D85\u7BA1\uFF09");
+need(sdSrc60, "orgName: u.orgId != null ? (orgNameMap.get(u.orgId) ?? null) : null", "\u5B66\u5458\u5E26\u673A\u6784\u540D");
+need(admSrc59, "\u5E73\u53F0\u8D85\u7BA1\uFF1A\u5168\u90E8\u673A\u6784", "tutors \u8D85\u7BA1\u5168\u91CF");
+need(admSrc59, "\u5E73\u53F0\u8D85\u7BA1\uFF1A\u5168\u7CFB\u7EDF\u603B\u91CF\uFF08\u4E0D\u8FC7\u6EE4\u673A\u6784\uFF09", "overview \u8D85\u7BA1\u5168\u5C40");
+need(admSrc59, "\u5E73\u53F0\u8D85\u7BA1\uFF1A\u5168\u90E8\u673A\u6784", "users \u8D85\u7BA1\u5168\u91CF");
+need(admSrc59, "orgName: u.orgId != null ? (orgNameMap.get(u.orgId) ?? null) : null", "\u7528\u6237\u5E26\u673A\u6784\u540D");
+need(admSrc59, "\u4EC5\u5E73\u53F0\u8D85\u7BA1\u53EF\u8BBE\u7F6E\u7BA1\u7406\u5458", "\u673A\u6784\u5185\u4ECD\u7981\u8BBE\u7BA1\u7406\u5458");
+need(adminSrc59, "platform={isPlatformAdmin}", "\u8D85\u7BA1\u9762\u677F god mode \u6807\u8BB0");
+need(adminSrc59, '{ key: "orgs" as AdminTab, label: "\u673A\u6784\u7BA1\u7406" }', "\u8D85\u7BA1\u52A0\u673A\u6784\u7BA1\u7406 tab");
+need(adminSrc59, "\u8BBE\u4E3A\u7BA1\u7406\u5458", "\u8D85\u7BA1\u53EF\u7ED9\u4EFB\u610F\u8D26\u53F7\u5F00\u7BA1\u7406\u5458");
+need(adminSrc59, "\u603B\u7CFB\u7EDF \xB7 \u540E\u53F0\u7BA1\u7406", "\u8D85\u7BA1\u9762\u677F\u6807\u9898");
+need(adminSrc59, "platform && u.orgName", "\u7528\u6237\u5217\u8868\u673A\u6784\u6807\u6CE8");
+need(adminSrc59, "platform && s.orgName", "\u5B66\u5458\u5217\u8868\u673A\u6784\u6807\u6CE8");
+need(invSrc59, "ctx.user.orgId != null", "\u673A\u6784\u7BA1\u7406\u5458\u624D\u6821\u9A8C\u6E20\u9053\u5F52\u5C5E");
+console.log("OK v60 \u5E73\u53F0\u8D85\u7BA1 god mode\uFF1A\u5168\u7CFB\u7EDF\u6570\u636E\u53EF\u8BFB + \u4EFB\u610F\u8D26\u53F7\u8BBE\u7BA1\u7406\u5458");
 var migFile59 = readSrc59("../db/migrations/0021_organizations.sql");
 need(migFile59, "CREATE TABLE `organizations`", "0021 \u5EFA\u673A\u6784\u8868");
 need(migFile59, "ALTER TABLE `users` ADD `org_id`", "0021 users \u52A0 org_id");
@@ -118725,7 +118744,8 @@ need(embedSrc59, '"0021_organizations"', "\u5185\u5D4C\u8FC1\u79FB\u542B 0021");
 console.log("OK v59 SaaS \u79DF\u6237\u9694\u79BB\uFF08\u884C\u7EA7 orgId\uFF09\u5168\u8DEF\u7531\u8FC7\u6EE4");
 console.log("OK v59 \u5E73\u53F0\u8D85\u7BA1\u603B\u7CFB\u7EDF\uFF08orgRouter + \u673A\u6784\u7BA1\u7406\u9762\u677F + \u81EA\u4E3E\uFF09");
 console.log("OK v59 \u7BA1\u7406\u5458\u517C\u4F34\u5B66\u5E08\uFF1A\u5168\u673A\u6784\u5B66\u5458\u95EE\u8BCA\u8C41\u514D");
-console.log("RENDER_SMOKE_V59_OK");
+console.log("OK v60 \u5E73\u53F0\u8D85\u7BA1 god mode\uFF1A\u5168\u7CFB\u7EDF\u6570\u636E\u53EF\u8BFB + \u4EFB\u610F\u8D26\u53F7\u8BBE\u7BA1\u7406\u5458");
+console.log("RENDER_SMOKE_V60_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:
