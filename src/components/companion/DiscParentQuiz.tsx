@@ -52,13 +52,34 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
   /** 最终称呼：预设身份或「其他家人」的自定义称呼（≤12 字）。 */
   const finalLabel = label === "其他家人" ? customLabel.trim() : label;
 
+  /** 第一组未答完的组号（0 起），全部答完返回 -1 */
+  const firstIncomplete = (m: number[], l: number[]) => {
+    for (let i = 0; i < total; i++) if (m[i] == null || l[i] == null) return i;
+    return -1;
+  };
+
+  const [submitHint, setSubmitHint] = useState<string | null>(null);
+
+  /** 统一提交入口：全答完→提交；有漏组→跳到漏组并提示 */
+  const finish = (m: number[], l: number[]) => {
+    const bad = firstIncomplete(m, l);
+    if (bad >= 0) {
+      setIdx(bad);
+      setSubmitHint(`第 ${bad + 1} 组还没选完（最像、最不像各选 1 个），已帮你跳过去`);
+      return;
+    }
+    setSubmitHint(null);
+    submit.mutate({ kind: "discparent", answers: { label: finalLabel, answers: { most: m, least: l } } } as never);
+  };
+
   const advance = (m: number[], l: number[], cur: number) => {
     if (m[cur] == null || l[cur] == null) return;
     window.setTimeout(() => {
       if (cur + 1 < total) {
         setIdx(cur + 1);
-      } else if (m.filter((x) => x != null).length === total && l.filter((x) => x != null).length === total) {
-        submit.mutate({ kind: "discparent", answers: { label: finalLabel, answers: { most: m, least: l } } } as never);
+      } else {
+        /* V65：最后一组不再静默——走统一提交入口（漏组会跳过去并提示） */
+        finish(m, l);
       }
     }, 260);
   };
@@ -205,9 +226,16 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
             most={most}
             least={least}
             onPick={pick}
-            onPrev={() => setIdx((i) => Math.max(0, i - 1))}
+            onPrev={() => {
+              setSubmitHint(null);
+              setIdx((i) => Math.max(0, i - 1));
+            }}
             pending={submit.isPending}
             error={submit.isError}
+            showSubmit={idx === total - 1}
+            onSubmit={() => finish(most, least)}
+            submitPending={submit.isPending}
+            submitHint={submitHint}
           />
         )}
       </div>

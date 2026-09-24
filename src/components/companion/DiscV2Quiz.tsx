@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { DISC_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
@@ -20,6 +20,10 @@ export function DiscV2GroupsUI({
   onPrev,
   pending,
   error,
+  showSubmit,
+  onSubmit,
+  submitPending,
+  submitHint,
 }: {
   groups: DiscWordGroup[];
   idx: number;
@@ -29,6 +33,11 @@ export function DiscV2GroupsUI({
   onPrev: () => void;
   pending: boolean;
   error: boolean;
+  /** 最后一组显示「完成提交」手动按钮（防止恢复进度/漏组时无法提交） */
+  showSubmit?: boolean;
+  onSubmit?: () => void;
+  submitPending?: boolean;
+  submitHint?: string | null;
 }) {
   const total = groups.length;
   const g = groups[Math.min(idx, total - 1)];
@@ -91,6 +100,17 @@ export function DiscV2GroupsUI({
 
       {pending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在生成结果…</p>}
       {error && <p className="mt-3 text-center text-[13px] text-terra">提交没成功，请检查每组都选了最像和最不像后再试。</p>}
+
+      {showSubmit && (
+        <button
+          onClick={onSubmit}
+          disabled={submitPending}
+          className="mt-4 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
+        >
+          {submitPending ? "正在生成结果…" : "完成提交 →"}
+        </button>
+      )}
+      {submitHint && <p className="mt-2 text-center text-[13px] text-terra">{submitHint}</p>}
     </>
   );
 }
@@ -156,16 +176,47 @@ export default function DiscV2Quiz({
   const groups = DISC_V2_GROUPS;
   const total = groups.length;
 
+  /** 第一组未答完的组号（0 起），全部答完返回 -1 */
+  const firstIncomplete = (m: number[], l: number[]) => {
+    for (let i = 0; i < total; i++) if (m[i] == null || l[i] == null) return i;
+    return -1;
+  };
+
+  const [submitHint, setSubmitHint] = useState<string | null>(null);
+
+  /** 统一提交入口：全答完→提交；有漏组→跳到漏组并提示 */
+  const finish = (m: number[], l: number[]) => {
+    const bad = firstIncomplete(m, l);
+    if (bad >= 0) {
+      setIdx(bad);
+      setSubmitHint(`第 ${bad + 1} 组还没选完（最像、最不像各选 1 个），已帮你跳过去`);
+      return;
+    }
+    setSubmitHint(null);
+    submit.mutate({ kind: "disc", answers: { most: m, least: l } } as never);
+  };
+
   const advance = (m: number[], l: number[], cur: number) => {
     if (m[cur] == null || l[cur] == null) return;
     window.setTimeout(() => {
       if (cur + 1 < total) {
         setIdx(cur + 1);
-      } else if (m.filter((x) => x != null).length === total && l.filter((x) => x != null).length === total) {
-        submit.mutate({ kind: "disc", answers: { most: m, least: l } } as never);
+      } else {
+        /* V65：最后一组不再静默——走统一提交入口（漏组会跳过去并提示） */
+        finish(m, l);
       }
     }, 260);
   };
+
+  /* V65 恢复进度兜底：草稿若已全答完（上次在提交前被中断，如关掉页面），
+     进入页面自动补提交一次，避免学生卡在"全选完却没有任何按钮"的第 24 组。 */
+  const autoTriedRef = useRef(false);
+  useEffect(() => {
+    if (autoTriedRef.current) return;
+    autoTriedRef.current = true;
+    if (firstIncomplete(most, least) === -1 && most.length >= total) finish(most, least);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pick = (wi: number) => {
     const next = pickDiscV2(most, least, idx, wi);
@@ -232,9 +283,16 @@ export default function DiscV2Quiz({
             most={most}
             least={least}
             onPick={pick}
-            onPrev={() => setIdx((i) => Math.max(0, i - 1))}
+            onPrev={() => {
+              setSubmitHint(null);
+              setIdx((i) => Math.max(0, i - 1));
+            }}
             pending={submit.isPending}
             error={submit.isError}
+            showSubmit={idx === total - 1}
+            onSubmit={() => finish(most, least)}
+            submitPending={submit.isPending}
+            submitHint={submitHint}
           />
         )}
       </div>
