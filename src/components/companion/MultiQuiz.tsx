@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { MULTI_DIM_LABEL } from "@contracts/multi";
@@ -16,6 +17,7 @@ const LIKERT = [
 
 /** 多元智能测评（选做）：40 题 Likert 5 点逐题作答。 */
 export default function MultiQuiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "multi" });
@@ -23,10 +25,10 @@ export default function MultiQuiz({ onDone }: { onDone: () => void }) {
   const [idx, setIdx] = useDraftState<number>("multi", "idx", 0);
   const [answers, setAnswers] = useDraftState<number[]>("multi", "answers", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft("multi")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, "multi")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft("multi");
+    clearQuizDraft(user?.id, "multi");
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -34,7 +36,7 @@ export default function MultiQuiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft("multi"); // 提交成功，清除草稿
+      clearQuizDraft(user?.id, "multi"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
     },
   });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft, Sparkles } from "lucide-react";
 
 type ChoiceKind = "mbti" | "disc";
@@ -32,16 +33,17 @@ export default function ChoiceStage({
   onNext: () => void;
   onSkip: () => void;
 }) {
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind });
   // 作答进度挂草稿：误退出后回来接着答，不用重测
   const [idx, setIdx] = useDraftState<number>(kind, "idx", 0);
   const [answers, setAnswers] = useDraftState<(0 | 1)[]>(kind, "answers", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(kind)?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, kind)?.answers as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft(kind);
+    clearQuizDraft(user?.id, kind);
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -49,7 +51,7 @@ export default function ChoiceStage({
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft(kind);
+      clearQuizDraft(user?.id, kind);
       utils.assessment.latest.invalidate();
       utils.profile.get.invalidate();
     },

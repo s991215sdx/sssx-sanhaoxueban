@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { trpc } from "@/providers/trpc";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import {
   E3V37_QUESTIONS,
   E3V37_SCAN_SUBJECTS,
@@ -164,6 +165,7 @@ function StageConfirm({ defaultName, onDone }: { defaultName: string; onDone: ()
 
 /** 向导第 4 阶段：E3 学业诊断 V3.7 三阶九能（一次一题，分段进行，每段有预计用时与完成鼓励）。 */
 export default function E3Stage({ renderAction, onSkip }: { renderAction: () => ReactNode; onSkip: () => void }) {
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const { data: profile, isLoading: profileLoading } = trpc.profile.get.useQuery();
   const stageKnown = !!profile?.grade && stageOfGrade(profile.grade) !== null;
@@ -172,11 +174,11 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
   /* 旧版（V2.7）草稿的 ratings 是 73 题，与 V3.7 的 70 题不兼容：
      首个 state 初始化时校验，长度不对直接清草稿从头开始（在其余草稿字段读取之前执行）。 */
   const [draftValid] = useState(() => {
-    const d = loadQuizDraft(E3_DRAFT);
+    const d = loadQuizDraft(user?.id, E3_DRAFT);
     if (!d) return true;
     const r = d.ratings;
     if (!Array.isArray(r) || r.length !== E3V37_RATING_COUNT) {
-      clearQuizDraft(E3_DRAFT);
+      clearQuizDraft(user?.id, E3_DRAFT);
       return false;
     }
     return true;
@@ -196,7 +198,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
   const [subjectsInit, setSubjectsInit] = useDraftState<boolean>(
     E3_DRAFT,
     "subjectsInit",
-    () => ((loadQuizDraft(E3_DRAFT)?.subjects as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, E3_DRAFT)?.subjects as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const [phase, setPhase] = useDraftState<Phase>(E3_DRAFT, "phase", { kind: "intro", part: 0 });
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -204,12 +206,12 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
   const [resumed, setResumed] = useState(
     () =>
       draftValid &&
-      ((loadQuizDraft(E3_DRAFT)?.ratings as (number | null)[] | undefined)?.some((r) => r !== null) ?? false),
+      ((loadQuizDraft(user?.id, E3_DRAFT)?.ratings as (number | null)[] | undefined)?.some((r) => r !== null) ?? false),
   );
 
   /** 清空草稿并从头再来一遍。 */
   const resetAll = () => {
-    clearQuizDraft(E3_DRAFT);
+    clearQuizDraft(user?.id, E3_DRAFT);
     setRatings(Array(E3V37_RATING_COUNT).fill(null));
     setMotivation(null);
     setSubjects([]);
@@ -224,7 +226,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft(E3_DRAFT); // 提交成功，草稿使命完成
+      clearQuizDraft(user?.id, E3_DRAFT); // 提交成功，草稿使命完成
       utils.assessment.latest.invalidate();
       utils.profile.get.invalidate();
     },

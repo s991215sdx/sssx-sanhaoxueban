@@ -7,6 +7,7 @@
  */
 import { useState } from "react";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
@@ -40,13 +41,14 @@ const PAGE_SIZE = 10;
 const PAGE_COUNT = Math.ceil(MENTAL_SCL90_QUESTION_COUNT / PAGE_SIZE);
 
 export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "scl90" });
 
   /* 草稿校验：题数越界或分值越界直接清草稿从头开始。 */
   const [draftValid] = useState(() => {
-    const d = loadQuizDraft("scl90");
+    const d = loadQuizDraft(user?.id, "scl90");
     if (!d) return true;
     const a = d.answers as unknown[] | undefined;
     const bad =
@@ -54,16 +56,16 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
       (a.length > MENTAL_SCL90_QUESTION_COUNT ||
         a.some((v) => v != null && (!Number.isInteger(v) || (v as number) < 1 || (v as number) > 5)));
     if (bad) {
-      clearQuizDraft("scl90");
+      clearQuizDraft(user?.id, "scl90");
       return false;
     }
     return true;
   });
 
   const [answers, setAnswers] = useDraftState<(number | null)[]>("scl90", "answers", []);
-  const [resumed] = useState(() => draftValid && ((loadQuizDraft("scl90")?.answers as unknown[] | undefined)?.length ?? 0) > 0);
+  const [resumed] = useState(() => draftValid && ((loadQuizDraft(user?.id, "scl90")?.answers as unknown[] | undefined)?.length ?? 0) > 0);
   const [page, setPage] = useState(() => {
-    const d = loadQuizDraft("scl90");
+    const d = loadQuizDraft(user?.id, "scl90");
     const a = (d?.answers as unknown[] | undefined) ?? [];
     const firstUnanswered = a.findIndex((v) => v == null);
     const p = firstUnanswered === -1 ? 0 : Math.floor(firstUnanswered / PAGE_SIZE);
@@ -72,7 +74,7 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft("scl90");
+      clearQuizDraft(user?.id, "scl90");
       utils.assessment.latest.invalidate();
     },
   });
@@ -194,7 +196,7 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
           <span className="text-[12.5px] text-olive">已恢复上次进度，从第 {page * PAGE_SIZE + 1} 题继续。</span>
           <button
             onClick={() => {
-              clearQuizDraft("scl90");
+              clearQuizDraft(user?.id, "scl90");
               setAnswers([]);
               setPage(0);
             }}

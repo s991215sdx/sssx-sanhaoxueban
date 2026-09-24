@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { ANCHOR_ORDER, ANCHOR_LABEL } from "@contracts/careerAnchor";
@@ -10,6 +11,7 @@ const OPTIONS = ["完全不符合", "不太符合", "一般", "比较符合", "�
 
 /** 职业锚测评（选做）：40 道 Likert 五级题逐题作答。 */
 export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "anchor" });
@@ -17,10 +19,10 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
   const [idx, setIdx] = useDraftState<number>("anchor", "idx", 0);
   const [answers, setAnswers] = useDraftState<number[]>("anchor", "answers", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft("anchor")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, "anchor")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft("anchor");
+    clearQuizDraft(user?.id, "anchor");
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -28,7 +30,7 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft("anchor"); // 提交成功，清除草稿
+      clearQuizDraft(user?.id, "anchor"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
     },
   });

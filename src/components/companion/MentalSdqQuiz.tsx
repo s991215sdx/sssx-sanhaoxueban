@@ -5,6 +5,7 @@
  */
 import { useState } from "react";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
@@ -35,13 +36,14 @@ const BAND_STYLE: Record<SdqBand, string> = {
 const SDQ_DIMS: SdqDim[] = ["emotion", "conduct", "hyper", "peer", "prosocial"];
 
 export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "mentalsdq" });
 
   /* 草稿校验：题数越界或分值越界直接清草稿从头开始。 */
   const [draftValid] = useState(() => {
-    const d = loadQuizDraft("mentalsdq");
+    const d = loadQuizDraft(user?.id, "mentalsdq");
     if (!d) return true;
     const a = d.answers as unknown[] | undefined;
     const i = d.idx as number | undefined;
@@ -51,7 +53,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
           a.some((v) => !Number.isInteger(v) || (v as number) < 0 || (v as number) > 2))) ||
       (typeof i === "number" && i > MENTAL_SDQ_QUESTION_COUNT - 1);
     if (bad) {
-      clearQuizDraft("mentalsdq");
+      clearQuizDraft(user?.id, "mentalsdq");
       return false;
     }
     return true;
@@ -61,10 +63,10 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
   const [idx, setIdx] = useDraftState<number>("mentalsdq", "idx", 0);
   const [answers, setAnswers] = useDraftState<number[]>("mentalsdq", "answers", []);
   const [resumed, setResumed] = useState(
-    () => draftValid && ((loadQuizDraft("mentalsdq")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => draftValid && ((loadQuizDraft(user?.id, "mentalsdq")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft("mentalsdq");
+    clearQuizDraft(user?.id, "mentalsdq");
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -72,7 +74,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft("mentalsdq");
+      clearQuizDraft(user?.id, "mentalsdq");
       utils.assessment.latest.invalidate();
     },
   });

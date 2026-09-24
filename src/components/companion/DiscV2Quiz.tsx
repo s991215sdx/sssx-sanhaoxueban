@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { DISC_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft, Compass } from "lucide-react";
 
 /**
@@ -149,6 +150,7 @@ export default function DiscV2Quiz({
   onNext: () => void;
   onSkip?: () => void;
 }) {
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const { isLoading } = trpc.assessment.questions.useQuery({ kind: "disc" } as never);
 
@@ -156,10 +158,10 @@ export default function DiscV2Quiz({
   const [most, setMost] = useDraftState<number[]>(DRAFT, "most", []);
   const [least, setLeast] = useDraftState<number[]>(DRAFT, "least", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(DRAFT)?.most as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, DRAFT)?.most as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft(DRAFT);
+    clearQuizDraft(user?.id, DRAFT);
     setIdx(0);
     setMost([]);
     setLeast([]);
@@ -168,7 +170,7 @@ export default function DiscV2Quiz({
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft(DRAFT);
+      clearQuizDraft(user?.id, DRAFT);
       void utils.assessment.latest.invalidate();
     },
   });

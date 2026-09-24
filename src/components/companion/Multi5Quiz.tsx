@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { MULTI5_DIM_ORDER, MULTI5_DIM_LABEL } from "@contracts/multi5";
@@ -10,6 +11,7 @@ const OPTION_LETTER = ["A", "B", "C", "D"] as const;
 
 /** 多元智能五项客观题测评（选做）：40 道单选题逐题作答，有唯一正确答案。 */
 export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "multi5" });
@@ -17,10 +19,10 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
   const [idx, setIdx] = useDraftState<number>("multi5", "idx", 0);
   const [answers, setAnswers] = useDraftState<number[]>("multi5", "answers", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft("multi5")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, "multi5")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft("multi5");
+    clearQuizDraft(user?.id, "multi5");
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -28,7 +30,7 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft("multi5"); // 提交成功，清除草稿
+      clearQuizDraft(user?.id, "multi5"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
     },
   });

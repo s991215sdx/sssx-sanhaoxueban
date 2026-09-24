@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { HOLLAND_ORDER, HOLLAND_LABEL } from "@contracts/holland";
@@ -10,6 +11,7 @@ const OPTIONS = ["完全不喜欢", "不太喜欢", "一般", "比较喜欢", "�
 
 /** 霍兰德职业兴趣测评（选做）：36 道 Likert 五级题逐题作答。 */
 export default function HollandQuiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "holland" });
@@ -17,10 +19,10 @@ export default function HollandQuiz({ onDone }: { onDone: () => void }) {
   const [idx, setIdx] = useDraftState<number>("holland", "idx", 0);
   const [answers, setAnswers] = useDraftState<number[]>("holland", "answers", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft("holland")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, "holland")?.answers as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft("holland");
+    clearQuizDraft(user?.id, "holland");
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -28,7 +30,7 @@ export default function HollandQuiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft("holland"); // 提交成功，清除草稿
+      clearQuizDraft(user?.id, "holland"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
     },
   });

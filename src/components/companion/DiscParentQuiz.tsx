@@ -2,6 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { DISC_PARENT_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { DiscV2GroupsUI, pickDiscV2 } from "@/components/companion/DiscV2Quiz";
 import { Users } from "lucide-react";
 
@@ -16,6 +17,7 @@ const LABELS = ["爸爸", "妈妈", "爷爷", "奶奶", "其他家人"] as const
  * 开始前先选家长身份（多位家长可各测一次，结果与孩子校园 DISC 做冲突对照分析）。
  */
 export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "discparent" } as never);
 
@@ -26,10 +28,10 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
   const [most, setMost] = useDraftState<number[]>(DRAFT, "most", []);
   const [least, setLeast] = useDraftState<number[]>(DRAFT, "least", []);
   const [resumed, setResumed] = useState(
-    () => ((loadQuizDraft(DRAFT)?.most as unknown[] | undefined)?.length ?? 0) > 0,
+    () => ((loadQuizDraft(user?.id, DRAFT)?.most as unknown[] | undefined)?.length ?? 0) > 0,
   );
   const resetAll = () => {
-    clearQuizDraft(DRAFT);
+    clearQuizDraft(user?.id, DRAFT);
     setLabel("");
     setCustomLabel("");
     setIdx(0);
@@ -40,7 +42,7 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft(DRAFT); // 提交成功，草稿使命完成（状态保留供成功卡展示）
+      clearQuizDraft(user?.id, DRAFT); // 提交成功，草稿使命完成（状态保留供成功卡展示）
       void utils.assessment.latest.invalidate();
     },
   });

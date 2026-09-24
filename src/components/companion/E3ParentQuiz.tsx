@@ -8,6 +8,7 @@ import {
   type E3V37ParentResult,
 } from "@contracts/assessments";
 import { clearQuizDraft, loadQuizDraft, useDraftState } from "@/lib/quizDraft";
+import { useAuth } from "@/hooks/useAuth";
 import { Users } from "lucide-react";
 
 const CHIP_BASE =
@@ -23,17 +24,18 @@ const DRAFT = "e3parent";
  * 进入系统后可随时补填；用于家庭支持系统了解 + 家长观察与孩子自评对照。
  */
 export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "e3parent" });
 
   /* 旧版（V2.7）草稿结构不同（family 用的是旧 keys，mirror 的 -1=未答语义也不同）：
      首个 state 初始化时校验 family 是否含新版 key「fatherRole」，不含则视为旧草稿直接丢弃。 */
   const [draftValid] = useState(() => {
-    const d = loadQuizDraft(DRAFT);
+    const d = loadQuizDraft(user?.id, DRAFT);
     if (!d) return true;
     const fam = d.family as Record<string, number> | undefined;
     if (fam && Object.keys(fam).length > 0 && !("fatherRole" in fam)) {
-      clearQuizDraft(DRAFT);
+      clearQuizDraft(user?.id, DRAFT);
       return false;
     }
     return true;
@@ -48,7 +50,7 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
   const [mirror, setMirror] = useDraftState<number[]>(DRAFT, "mirror", () => Array(16).fill(-1)); // -1 未答（提交时 0=不了解）
   const [resumed, setResumed] = useState(() => {
     if (!draftValid) return false;
-    const d = loadQuizDraft(DRAFT);
+    const d = loadQuizDraft(user?.id, DRAFT);
     if (!d) return false;
     const fam = (d.family as Record<string, number> | undefined) ?? {};
     const mir = (d.mirror as number[] | undefined) ?? [];
@@ -61,7 +63,7 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
     );
   });
   const resetAll = () => {
-    clearQuizDraft(DRAFT);
+    clearQuizDraft(user?.id, DRAFT);
     setFamily({});
     setDistractions([]);
     setFamilyChangeNote("");
@@ -73,7 +75,7 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft(DRAFT); // 提交成功，清除草稿
+      clearQuizDraft(user?.id, DRAFT); // 提交成功，清除草稿
       void utils.assessment.latest.invalidate();
     },
   });
