@@ -8,22 +8,27 @@ function inviteUrl(code: string): string {
   return `${window.location.origin}/invite/${code}`;
 }
 
-/** 单个渠道的二维码（canvas 渲染 + 下载 PNG）。 */
+/** 单个渠道的二维码（canvas 渲染 + 下载 PNG），固定宽度放渠道行右侧。 */
 function ChannelQr({ code, name }: { code: string; name: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (!canvasRef.current) return;
     QRCode.toCanvas(canvasRef.current, inviteUrl(code), { width: 480, margin: 2 })
-      .then(() => setReady(true))
+      .then(() => {
+        // qrcode 库会写死内联 width/height=480px,清掉让 CSS 类控制显示尺寸(下载仍是 480 高清图)
+        canvasRef.current!.style.width = "";
+        canvasRef.current!.style.height = "";
+        setReady(true);
+      })
       .catch(() => setReady(false));
   }, [code]);
   return (
-    <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border border-border bg-white p-3">
-      <canvas ref={canvasRef} className="h-auto w-full max-w-[240px]" />
+    <div className="flex w-[190px] shrink-0 flex-col items-center gap-2 self-start rounded-xl border border-border bg-white p-3">
+      <canvas ref={canvasRef} className="h-auto w-full" />
       {ready && (
         <>
-          <p className="mono break-all text-center text-[10.5px] text-olive-mute">{inviteUrl(code)}</p>
+          <p className="mono w-full break-all text-center text-[10px] leading-snug text-olive-mute">{inviteUrl(code)}</p>
           <button
             onClick={() => {
               const a = document.createElement("a");
@@ -31,10 +36,10 @@ function ChannelQr({ code, name }: { code: string; name: string }) {
               a.download = `注册二维码-${name}.png`;
               a.click();
             }}
-            className="flex items-center gap-1.5 rounded-lg bg-olive px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime"
+            className="flex items-center gap-1.5 rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime"
           >
-            <Download size={14} />
-            下载二维码（打印/发给家长）
+            <Download size={13} />
+            下载二维码
           </button>
         </>
       )}
@@ -139,48 +144,58 @@ export default function InviteChannelsTab() {
           <div className="mt-3 space-y-3">
             {data.channels.map((c) => (
               <div key={c.id} className={`rounded-xl border p-4 ${c.active ? "border-border bg-cream/60" : "border-border/60 bg-cream/30 opacity-70"}`}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[14.5px] font-bold text-olive">{c.name}</span>
-                  <span className="chip !text-[11px]">{c.kind}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${c.active ? "bg-lime-pale text-olive" : "bg-olive-mute/15 text-olive-mute"}`}>
-                    {c.active ? "投放中" : "已停用"}
-                  </span>
-                  <span className="ml-auto text-[12px] text-olive-mute">
-                    累计注册 <b className="mono text-[14px] text-olive">{c.registrations}</b> 人
-                  </span>
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  {/* 左侧：渠道信息 + 操作 */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[14.5px] font-bold text-olive">{c.name}</span>
+                      <span className="chip !text-[11px]">{c.kind}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${c.active ? "bg-lime-pale text-olive" : "bg-olive-mute/15 text-olive-mute"}`}>
+                        {c.active ? "投放中" : "已停用"}
+                      </span>
+                      <span className="ml-auto text-[12px] text-olive-mute">
+                        累计注册 <b className="mono text-[14px] text-olive">{c.registrations}</b> 人
+                      </span>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-olive-mute">
+                      <span className="mono">码：{c.code}</span>
+                      <span>{new Date(c.createdAt).toLocaleDateString("zh-CN")} 创建</span>
+                      {c.note && <span>备注：{c.note}</span>}
+                    </div>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setQrFor(qrFor === c.id ? null : c.id)}
+                        className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
+                          qrFor === c.id
+                            ? "border-lime bg-lime-pale text-olive"
+                            : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                        }`}
+                      >
+                        <QrCode size={13} />
+                        {qrFor === c.id ? "收起二维码" : "显示二维码"}
+                      </button>
+                      <button
+                        onClick={() => copyLink(c.id, c.code)}
+                        className="flex items-center gap-1 rounded-lg border border-border bg-cream-card px-2.5 py-1.5 text-[12px] font-semibold text-olive hover:bg-lime-pale"
+                      >
+                        <Link2 size={13} />
+                        {copied === c.id ? "已复制链接 ✓" : "复制注册链接"}
+                      </button>
+                      <button
+                        onClick={() => toggle.mutate({ id: c.id, active: !c.active })}
+                        className={`rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
+                          c.active
+                            ? "border-terra/40 text-terra hover:bg-terra/10"
+                            : "border-lime/50 text-olive hover:bg-lime-pale"
+                        }`}
+                      >
+                        {c.active ? "停用（二维码立即失效）" : "重新启用"}
+                      </button>
+                    </div>
+                  </div>
+                  {/* 右侧：二维码（点击「显示二维码」展开，再点收起） */}
+                  {qrFor === c.id && <ChannelQr code={c.code} name={c.name} />}
                 </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-olive-mute">
-                  <span className="mono">码：{c.code}</span>
-                  <span>{new Date(c.createdAt).toLocaleDateString("zh-CN")} 创建</span>
-                  {c.note && <span>备注：{c.note}</span>}
-                </div>
-                <div className="mt-2.5 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setQrFor(qrFor === c.id ? null : c.id)}
-                    className="flex items-center gap-1 rounded-lg border border-border bg-cream-card px-2.5 py-1.5 text-[12px] font-semibold text-olive hover:bg-lime-pale"
-                  >
-                    <QrCode size={13} />
-                    {qrFor === c.id ? "收起二维码" : "显示二维码"}
-                  </button>
-                  <button
-                    onClick={() => copyLink(c.id, c.code)}
-                    className="flex items-center gap-1 rounded-lg border border-border bg-cream-card px-2.5 py-1.5 text-[12px] font-semibold text-olive hover:bg-lime-pale"
-                  >
-                    <Link2 size={13} />
-                    {copied === c.id ? "已复制链接 ✓" : "复制注册链接"}
-                  </button>
-                  <button
-                    onClick={() => toggle.mutate({ id: c.id, active: !c.active })}
-                    className={`rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
-                      c.active
-                        ? "border-terra/40 text-terra hover:bg-terra/10"
-                        : "border-lime/50 text-olive hover:bg-lime-pale"
-                    }`}
-                  >
-                    {c.active ? "停用（二维码立即失效）" : "重新启用"}
-                  </button>
-                </div>
-                {qrFor === c.id && <ChannelQr code={c.code} name={c.name} />}
               </div>
             ))}
           </div>
