@@ -36407,7 +36407,7 @@ var require_lucide_react = __commonJS({
     ];
     var ChessQueen = createLucideIcon("chess-queen", __iconNode$kW);
     var __iconNode$kV = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-    var ChevronDown3 = createLucideIcon("chevron-down", __iconNode$kV);
+    var ChevronDown4 = createLucideIcon("chevron-down", __iconNode$kV);
     var __iconNode$kU = [
       [
         "path",
@@ -36434,7 +36434,7 @@ var require_lucide_react = __commonJS({
     var __iconNode$kR = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
     var ChevronLeft = createLucideIcon("chevron-left", __iconNode$kR);
     var __iconNode$kQ = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-    var ChevronRight = createLucideIcon("chevron-right", __iconNode$kQ);
+    var ChevronRight2 = createLucideIcon("chevron-right", __iconNode$kQ);
     var __iconNode$kP = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
     var ChevronUp2 = createLucideIcon("chevron-up", __iconNode$kP);
     var __iconNode$kO = [
@@ -50002,11 +50002,11 @@ var require_lucide_react = __commonJS({
       ChessPawn,
       ChessQueen,
       ChessRook,
-      ChevronDown: ChevronDown3,
+      ChevronDown: ChevronDown4,
       ChevronFirst,
       ChevronLast,
       ChevronLeft,
-      ChevronRight,
+      ChevronRight: ChevronRight2,
       ChevronUp: ChevronUp2,
       ChevronsDown,
       ChevronsDownUp,
@@ -52108,10 +52108,10 @@ var require_lucide_react = __commonJS({
     exports2.ChessQueenIcon = ChessQueen;
     exports2.ChessRook = ChessRook;
     exports2.ChessRookIcon = ChessRook;
-    exports2.ChevronDown = ChevronDown3;
+    exports2.ChevronDown = ChevronDown4;
     exports2.ChevronDownCircle = CircleChevronDown;
     exports2.ChevronDownCircleIcon = CircleChevronDown;
-    exports2.ChevronDownIcon = ChevronDown3;
+    exports2.ChevronDownIcon = ChevronDown4;
     exports2.ChevronDownSquare = SquareChevronDown;
     exports2.ChevronDownSquareIcon = SquareChevronDown;
     exports2.ChevronFirst = ChevronFirst;
@@ -52124,10 +52124,10 @@ var require_lucide_react = __commonJS({
     exports2.ChevronLeftIcon = ChevronLeft;
     exports2.ChevronLeftSquare = SquareChevronLeft;
     exports2.ChevronLeftSquareIcon = SquareChevronLeft;
-    exports2.ChevronRight = ChevronRight;
+    exports2.ChevronRight = ChevronRight2;
     exports2.ChevronRightCircle = CircleChevronRight;
     exports2.ChevronRightCircleIcon = CircleChevronRight;
-    exports2.ChevronRightIcon = ChevronRight;
+    exports2.ChevronRightIcon = ChevronRight2;
     exports2.ChevronRightSquare = SquareChevronRight;
     exports2.ChevronRightSquareIcon = SquareChevronRight;
     exports2.ChevronUp = ChevronUp2;
@@ -53863,7 +53863,7 @@ var require_lucide_react = __commonJS({
     exports2.LucideChessPawn = ChessPawn;
     exports2.LucideChessQueen = ChessQueen;
     exports2.LucideChessRook = ChessRook;
-    exports2.LucideChevronDown = ChevronDown3;
+    exports2.LucideChevronDown = ChevronDown4;
     exports2.LucideChevronDownCircle = CircleChevronDown;
     exports2.LucideChevronDownSquare = SquareChevronDown;
     exports2.LucideChevronFirst = ChevronFirst;
@@ -53871,7 +53871,7 @@ var require_lucide_react = __commonJS({
     exports2.LucideChevronLeft = ChevronLeft;
     exports2.LucideChevronLeftCircle = CircleChevronLeft;
     exports2.LucideChevronLeftSquare = SquareChevronLeft;
-    exports2.LucideChevronRight = ChevronRight;
+    exports2.LucideChevronRight = ChevronRight2;
     exports2.LucideChevronRightCircle = CircleChevronRight;
     exports2.LucideChevronRightSquare = SquareChevronRight;
     exports2.LucideChevronUp = ChevronUp2;
@@ -102323,8 +102323,8 @@ var require_lib3 = __commonJS({
   }
 });
 
-// scripts/smoke-render-v62.tsx
-var import_react7 = __toESM(require_react(), 1);
+// scripts/smoke-render-v63.tsx
+var import_react8 = __toESM(require_react(), 1);
 var import_server = __toESM(require_server_node(), 1);
 
 // node_modules/react-router/dist/development/chunk-BV7QT456.mjs
@@ -105065,7 +105065,7 @@ function useViewTransitionState(to, { relative } = {}) {
 }
 
 // src/components/reports/ReportView.tsx
-var import_react4 = __toESM(require_react(), 1);
+var import_react5 = __toESM(require_react(), 1);
 init_reports();
 init_combined();
 
@@ -111808,128 +111808,122 @@ function E3V37OverviewCard({ e3: e32 }) {
 }
 
 // src/components/reports/AbilityScoreTable.tsx
+var import_react4 = __toESM(require_react(), 1);
+var import_lucide_react3 = __toESM(require_lucide_react(), 1);
 init_e3v37();
 var import_jsx_runtime12 = __toESM(require_jsx_runtime(), 1);
 var FREQ52 = ["\u4ECE\u4E0D", "\u5F88\u5C11", "\u6709\u65F6", "\u7ECF\u5E38", "\u603B\u662F"];
-function GroupRows({
-  subs,
+function AbilityGroup({
+  sub,
   items,
-  groupLabel,
-  groupScore,
-  groupNote,
-  firstGroupCell
+  systemOf,
+  expanded,
+  onToggle
 }) {
-  const systemOf = () => groupLabel === "\u6761\u4EF6" ? "\u6761\u4EF6" : groupLabel === "\u5B66\u80FD" ? "\u5B66\u80FD" : groupLabel;
-  const itemsOf = (label) => items.filter((it) => it.ability === label && it.system === systemOf()).sort((a, b) => a.no - b.no);
-  const rowCount = subs.reduce((n, s) => n + 1 + itemsOf(s.label).length, 0);
-  let groupCellDone = false;
-  return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(import_jsx_runtime12.Fragment, { children: subs.flatMap((s) => {
-    const qItems = itemsOf(s.label);
-    const headRow = /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tr", { className: `bg-cream/70 ${s.level && s.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/50" : ""}`, children: [
-      firstGroupCell && !groupCellDone && (() => {
-        groupCellDone = true;
-        return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("td", { rowSpan: rowCount, className: "w-16 border border-border px-2 py-1.5 align-top font-bold text-olive", children: [
-          groupLabel,
-          groupScore ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mono ml-1 font-semibold", children: groupScore }) : null,
-          groupNote ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mt-0.5 block text-[10.5px] font-normal leading-snug text-olive-mute", children: groupNote }) : null
-        ] });
-      })(),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("td", { className: "border border-border px-2 py-1.5 font-semibold text-olive", children: [
-        s.label,
-        s.note ? /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: "ml-1 text-[10.5px] font-normal text-olive-mute", children: [
-          "\uFF08",
-          s.note,
-          "\uFF09"
-        ] }) : null
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: "border border-border px-2 py-1.5 text-center text-[11.5px] text-olive-mute", children: items.length > 0 ? "\u2014" : "" }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1.5 text-center mono font-bold ${s.level ? e3v37LevelTextClass(s.level) : "text-olive"}`, children: s.score ?? "-" }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1.5 text-center text-[11.5px] font-semibold ${s.level ? e3v37LevelTextClass(s.level) : ""}`, children: s.level ?? "-" })
-    ] }, s.key);
-    const qRows = qItems.map((it) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tr", { className: it.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/40" : "", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("td", { className: "border border-border px-2 py-1 text-olive-soft", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: "mono text-[11px] text-olive-mute", children: [
-          it.no,
-          "."
+  const qItems = items.filter((it) => it.ability === sub.label && it.system === systemOf()).sort((a, b) => a.no - b.no);
+  const hasItems = qItems.length > 0;
+  return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "overflow-hidden rounded-lg border border-border", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
+      "button",
+      {
+        type: "button",
+        onClick: onToggle,
+        className: `flex w-full items-center gap-2 px-3 py-2 text-left transition ${sub.level && sub.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/40" : "bg-cream/70 hover:bg-cream"}`,
+        children: [
+          hasItems ? expanded ? /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(import_lucide_react3.ChevronDown, { size: 14, className: "shrink-0 text-olive-mute" }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(import_lucide_react3.ChevronRight, { size: 14, className: "shrink-0 text-olive-mute" }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "w-3.5 shrink-0" }),
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: "min-w-0 flex-1", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-[13px] font-semibold text-olive", children: sub.label }),
+            sub.note && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: "ml-1 text-[10.5px] text-olive-mute", children: [
+              "\uFF08",
+              sub.note,
+              "\uFF09"
+            ] }),
+            hasItems && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "ml-1.5 text-[10.5px] text-olive-mute", children: expanded ? "\u6536\u8D77\u660E\u7EC6" : `\u9010\u9898\u660E\u7EC6 ${qItems.length} \u9898` })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: `mono text-[13px] font-bold ${sub.level ? e3v37LevelTextClass(sub.level) : "text-olive"}`, children: sub.score ?? "-" }),
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: `w-14 text-right text-[11.5px] font-semibold ${sub.level ? e3v37LevelTextClass(sub.level) : "text-olive"}`, children: sub.level ?? "-" })
+        ]
+      }
+    ),
+    hasItems && expanded && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("table", { className: "w-full border-collapse border-t border-border text-[12.5px]", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tr", { className: "bg-cream-deep/50 text-[11px] text-olive-mute", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "px-3 py-1.5 text-left font-medium", children: "\u9898\u76EE" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "w-28 px-2 py-1.5 text-center font-medium", children: "\u4F5C\u7B54\uFF08\u539F\u7B54\u6848\uFF09" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "w-16 px-2 py-1.5 text-center font-medium", children: "\u5F97\u5206\uFF08\u6362\u7B97\uFF09" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "w-16 px-2 py-1.5 text-center font-medium", children: "\u5224\u5B9A" })
+      ] }) }),
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("tbody", { children: qItems.map((it) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tr", { className: it.level !== "\u6B63\u5E38" ? "bg-[#fbe3df]/30" : "", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("td", { className: "border-t border-border px-3 py-1.5 text-olive-soft", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: "mono text-[11px] text-olive-mute", children: [
+            it.no,
+            "."
+          ] }),
+          " ",
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "font-medium", children: it.kp }),
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mt-0.5 block text-[11px] leading-snug text-olive-mute", children: it.text })
         ] }),
-        " ",
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "font-medium", children: it.kp }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mt-0.5 block text-[11px] leading-snug text-olive-mute", children: it.text })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: "border border-border px-2 py-1 text-center text-[12px] text-olive-soft", children: it.raw >= 1 && it.raw <= 5 ? /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mono", children: it.raw }),
-        " \xB7 ",
-        FREQ52[it.raw - 1],
-        it.raw !== it.score && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "ml-1 rounded bg-butter/60 px-1 py-0.5 text-[10px] text-olive-mute", children: "\u53CD\u5411\u8BA1\u5206" })
-      ] }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-olive-mute", children: "\u672A\u7B54" }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1 text-center mono text-[12px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.score }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border border-border px-2 py-1 text-center text-[11px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.level })
-    ] }, `q${it.no}`));
-    return [headRow, ...qRows];
-  }) });
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: "border-t border-border px-2 py-1.5 text-center text-[12px] text-olive-soft", children: it.raw >= 1 && it.raw <= 5 ? /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "mono", children: it.raw }),
+          " \xB7 ",
+          FREQ52[it.raw - 1],
+          it.raw !== it.score && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "ml-1 rounded bg-butter/60 px-1 py-0.5 text-[10px] text-olive-mute", children: "\u53CD\u5411\u8BA1\u5206" })
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-olive-mute", children: "\u672A\u7B54" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border-t border-border px-2 py-1.5 text-center mono text-[12px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.score }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("td", { className: `border-t border-border px-2 py-1.5 text-center text-[11px] font-semibold ${e3v37LevelTextClass(it.level)}`, children: it.level })
+      ] }, it.no)) })
+    ] })
+  ] });
 }
 function AbilityScoreTable({
   e3: e32,
   ratings
 }) {
   const items = ratings && ratings.length === E3V37_RATING_COUNT ? scoreE3V37Items(e32.stage, ratings) : [];
+  const [open, setOpen] = (0, import_react4.useState)(/* @__PURE__ */ new Set());
+  const toggle = (key) => setOpen((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    return next;
+  });
   const coreScore = (sys) => e32.systems.core.find((c) => c.key === sys)?.score;
+  const groupOf = (label) => label === "\u6761\u4EF6" ? "\u6761\u4EF6" : label === "\u5B66\u80FD" ? "\u5B66\u80FD" : label;
+  const group = (label, subs, groupNote) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-3 first:mt-0", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "flex flex-wrap items-baseline gap-2", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-[13.5px] font-bold text-olive", children: label }),
+      coreScore(label) != null && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { className: "mono text-[12px] font-semibold text-olive-soft", children: [
+        coreScore(label),
+        "/5"
+      ] }),
+      groupNote && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "text-[11px] text-olive-mute", children: groupNote })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-1.5 space-y-1.5", children: subs.map((s) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+      AbilityGroup,
+      {
+        sub: s,
+        items,
+        systemOf: () => groupOf(label),
+        expanded: open.has(`${label}:${s.key}`),
+        onToggle: () => toggle(`${label}:${s.key}`)
+      },
+      s.key
+    )) })
+  ] }, label);
   return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "paper-card p-5", children: [
     /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("h3", { className: "font-bold text-olive", children: "\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868" }),
     /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("p", { className: "mt-1 text-[12.5px] text-olive-mute", children: [
-      "\u6BCF\u80FD\u4E00\u884C\u5C0F\u8BA1\uFF0C\u4E0B\u6302\u8BE5\u80FD\u6BCF\u9053\u9898\u7684\u4F5C\u7B54\u4E0E\u5F97\u5206\uFF1A\u4F5C\u7B54\u662F\u4F60\u9009\u7684\u539F\u7B54\u6848\uFF081=\u4ECE\u4E0D / 2=\u5F88\u5C11 / 3=\u6709\u65F6 / 4=\u7ECF\u5E38 / 5=\u603B\u662F\uFF09\uFF0C\u5F97\u5206\u6309 5 \u5206\u5236\u6362\u7B97\uFF08\u53CD\u5411\u9898\u5DF2\u6362\u7B97\uFF0C\u8D8A\u4F4E\u8D8A\u9700\u5173\u6CE8\uFF09\uFF1A",
+      "\u6BCF\u80FD\u4E00\u884C\u5C0F\u8BA1\uFF08\u5206\u6570+\u5224\u5B9A\uFF09\u76F4\u63A5\u53EF\u770B\uFF1B\u70B9\u80FD\u529B\u884C\u5C55\u5F00\u8BE5\u80FD\u9010\u9898\u660E\u7EC6\uFF1A\u4F5C\u7B54\u662F\u4F60\u9009\u7684\u539F\u7B54\u6848\uFF081=\u4ECE\u4E0D / 2=\u5F88\u5C11 / 3=\u6709\u65F6 / 4=\u7ECF\u5E38 / 5=\u603B\u662F\uFF09\uFF0C\u5F97\u5206\u6309 5 \u5206\u5236\u6362\u7B97\uFF08\u53CD\u5411\u9898\u5DF2\u6362\u7B97\uFF0C\u8D8A\u4F4E\u8D8A\u9700\u5173\u6CE8\uFF09\uFF1A",
       E3V37_LEVEL_CAPTION,
       "\u3002",
       items.length === 0 && "\uFF08\u672C\u6B21\u8BB0\u5F55\u672A\u4FDD\u5B58\u9010\u9898\u4F5C\u7B54\uFF0C\u4EC5\u663E\u793A\u80FD\u7EA7\u5C0F\u8BA1\uFF1B\u91CD\u65B0\u5B8C\u6210\u4E00\u6B21\u8BCA\u65AD\u5373\u53EF\u770B\u5230\u9010\u9898\u660E\u7EC6\u3002\uFF09"
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "mt-3 overflow-x-auto", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("table", { className: "w-full min-w-[460px] border-collapse text-[12.5px]", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tr", { className: "bg-cream-deep/60 text-olive", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u5927\u7C7B" }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-left", children: "\u80FD\u529B / \u9898\u76EE" }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u4F5C\u7B54\uFF08\u539F\u7B54\u6848\uFF09" }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5F97\u5206\uFF08\u6362\u7B97\uFF09" }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("th", { className: "border border-border px-2 py-1.5 text-center", children: "\u5224\u5B9A" })
-      ] }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("tbody", { children: [
-        ["\u4E50\u5B66", "\u4F1A\u5B66", "\u5584\u5B66"].map((sys) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-          GroupRows,
-          {
-            groupLabel: sys,
-            groupScore: coreScore(sys) != null ? `${coreScore(sys)}/5` : void 0,
-            firstGroupCell: true,
-            items,
-            subs: e32.abilities.filter((a) => a.system === sys).map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level }))
-          },
-          sys
-        )),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-          GroupRows,
-          {
-            groupLabel: "\u6761\u4EF6",
-            groupNote: "\u652F\u6301\u7CFB\u7EDF\uFF0C\u4E0D\u8FDB\u603B\u5206",
-            firstGroupCell: true,
-            items,
-            subs: e32.systems.condition.cells.map((c) => ({ key: c.key, label: c.label, score: c.score, level: c.level }))
-          }
-        ),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-          GroupRows,
-          {
-            groupLabel: "\u5B66\u80FD",
-            groupNote: "\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206",
-            firstGroupCell: true,
-            items,
-            subs: e32.aptitude.map((a) => ({
-              key: a.key,
-              label: a.label,
-              score: a.score,
-              level: a.level,
-              note: "\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206"
-            }))
-          }
-        )
-      ] })
-    ] }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "mt-3", children: [
+      group("\u4E50\u5B66", e32.abilities.filter((a) => a.system === "\u4E50\u5B66").map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level }))),
+      group("\u4F1A\u5B66", e32.abilities.filter((a) => a.system === "\u4F1A\u5B66").map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level }))),
+      group("\u5584\u5B66", e32.abilities.filter((a) => a.system === "\u5584\u5B66").map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level }))),
+      group("\u6761\u4EF6", e32.systems.condition.cells.map((c) => ({ key: c.key, label: c.label, score: c.score, level: c.level })), "\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206"),
+      group("\u5B66\u80FD", e32.aptitude.map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level, note: "\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206" })), "\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206")
+    ] }),
     /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { className: "mt-2 text-[11.5px] leading-relaxed text-olive-mute", children: "\u5B66\u80FD\u4E09\u9879\uFF08\u6CE8\u610F\u529B/\u5DE5\u4F5C\u8BB0\u5FC6/\u52A0\u5DE5\u901F\u5EA6\uFF09\u53CD\u6620\u5F53\u524D\u52A0\u5DE5\u6548\u7387\uFF0C\u5355\u72EC\u62A5\u544A\u4E0D\u8FDB\u603B\u5206\uFF0C\u4E0D\u662F\u667A\u529B\u3001\u4E5F\u4E0D\u4EE3\u8868\u6F5C\u529B\u4E0A\u9650\uFF1B\u6761\u4EF6\u7CFB\u7EDF\uFF08\u72B6\u6001/\u5173\u7CFB/\u8D44\u6E90\uFF09\u540C\u6837\u5355\u72EC\u62A5\u544A\u3002" })
   ] });
 }
@@ -112155,18 +112149,18 @@ function AnchorBarChart({ anchor }) {
 
 // src/components/reports/ReportView.tsx
 var import_recharts3 = __toESM(require_lib3(), 1);
-var import_lucide_react6 = __toESM(require_lucide_react(), 1);
+var import_lucide_react7 = __toESM(require_lucide_react(), 1);
 
 // src/components/reports/AnchorDetail.tsx
 init_careerAnchor();
-var import_lucide_react3 = __toESM(require_lucide_react(), 1);
+var import_lucide_react4 = __toESM(require_lucide_react(), 1);
 var import_jsx_runtime15 = __toESM(require_jsx_runtime(), 1);
 function AnchorDetail({ result }) {
   const report = buildAnchorReport(result);
   return /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "space-y-4", children: [
     /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "paper-card p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("h2", { className: "flex items-center gap-2 text-[16px] font-bold text-olive", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react3.Anchor, { size: 17, className: "text-lime" }),
+        /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react4.Anchor, { size: 17, className: "text-lime" }),
         "\u804C\u4E1A\u951A \xB7 \u65BD\u6069\u516B\u578B"
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { className: "mt-2 text-[13.5px] leading-relaxed text-olive-soft", children: /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(RichText, { text: result.summary }) }),
@@ -112212,21 +112206,21 @@ function AnchorDetail({ result }) {
       /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "mt-3 space-y-2.5", children: [
         /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "rounded-xl bg-cream p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react3.Briefcase, { size: 13, className: "text-lime" }),
+            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react4.Briefcase, { size: 13, className: "text-lime" }),
             "\u66F4\u613F\u610F\u4ECE\u4E8B\u7684\u5DE5\u4F5C"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { className: "mt-1 text-[13px] leading-relaxed text-olive-soft", children: t.workStyle })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "rounded-xl bg-cream p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react3.Heart, { size: 13, className: "text-lime" }),
+            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react4.Heart, { size: 13, className: "text-lime" }),
             "\u671F\u671B\u88AB\u8BA4\u53EF\u7684\u65B9\u5F0F"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("p", { className: "mt-1 text-[13px] leading-relaxed text-olive-soft", children: t.recognition })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "rounded-xl bg-cream p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react3.BookOpen, { size: 13, className: "text-lime" }),
+            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react4.BookOpen, { size: 13, className: "text-lime" }),
             "\u5BF9\u5B66\u4E60\u7684\u5F71\u54CD\u4E0E\u5EFA\u8BAE"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("ul", { className: "mt-1 space-y-1", children: t.studyImpact.map((s, i) => /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("li", { className: "flex gap-1.5 text-[13px] leading-relaxed text-olive-soft", children: [
@@ -112236,7 +112230,7 @@ function AnchorDetail({ result }) {
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("div", { className: "rounded-xl bg-cream p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime15.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react3.Sparkles, { size: 13, className: "text-lime" }),
+            /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(import_lucide_react4.Sparkles, { size: 13, className: "text-lime" }),
             "\u4E3B\u8981\u804C\u4E1A\u9886\u57DF"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("div", { className: "mt-1.5 flex flex-wrap gap-1.5", children: t.careerFields.map((f) => /* @__PURE__ */ (0, import_jsx_runtime15.jsx)("span", { className: "chip", children: f }, f)) })
@@ -112271,7 +112265,7 @@ function AnchorDetail({ result }) {
 
 // src/components/reports/HollandDetail.tsx
 init_holland();
-var import_lucide_react4 = __toESM(require_lucide_react(), 1);
+var import_lucide_react5 = __toESM(require_lucide_react(), 1);
 var import_recharts2 = __toESM(require_lib3(), 1);
 var import_jsx_runtime16 = __toESM(require_jsx_runtime(), 1);
 function HollandDetail({ result }) {
@@ -112295,7 +112289,7 @@ function HollandDetail({ result }) {
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: "paper-card p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("h2", { className: "flex items-center gap-2 text-[16px] font-bold text-olive", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react4.Map, { size: 17, className: "text-lime" }),
+        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react5.Map, { size: 17, className: "text-lime" }),
         "\u970D\u5170\u5FB7\u804C\u4E1A\u5174\u8DA3 \xB7 RIASEC"
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: "mt-3 flex items-center gap-3", children: [
@@ -112325,7 +112319,7 @@ function HollandDetail({ result }) {
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: "paper-card accent-l border-butter bg-butter/20 p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("h3", { className: "flex items-center gap-1.5 text-[14.5px] font-bold text-olive", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react4.Star, { size: 15, className: "text-lime" }),
+        /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react5.Star, { size: 15, className: "text-lime" }),
         "\u5174\u8DA3\u4EE3\u7801\u300C",
         report.code,
         "\u300D\u91CD\u70B9\u89E3\u8BFB"
@@ -112362,7 +112356,7 @@ function HollandDetail({ result }) {
       /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: "mt-3 space-y-2.5", children: [
         /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: "rounded-xl bg-cream p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react4.BookOpen, { size: 13, className: "text-lime" }),
+            /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react5.BookOpen, { size: 13, className: "text-lime" }),
             "\u5BF9\u5B66\u4E60\u7684\u5F71\u54CD\u4E0E\u5B66\u79D1\u5173\u8054"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("ul", { className: "mt-1 space-y-1", children: d.studyImpact.map((s, i) => /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("li", { className: "flex gap-1.5 text-[13px] leading-relaxed text-olive-soft", children: [
@@ -112372,14 +112366,14 @@ function HollandDetail({ result }) {
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: "rounded-xl bg-cream p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react4.Briefcase, { size: 13, className: "text-lime" }),
+            /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react5.Briefcase, { size: 13, className: "text-lime" }),
             "\u5339\u914D\u804C\u4E1A\u65B9\u5411"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: "mt-1.5 flex flex-wrap gap-1.5", children: d.careers.map((c) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: "chip", children: c }, c)) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("div", { className: "rounded-xl bg-cream p-3.5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime16.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react4.GraduationCap, { size: 13, className: "text-lime" }),
+            /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(import_lucide_react5.GraduationCap, { size: 13, className: "text-lime" }),
             "\u5BF9\u5E94\u5927\u5B66\u4E13\u4E1A\u4E3E\u4F8B"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("div", { className: "mt-1.5 flex flex-wrap gap-1.5", children: d.majors.map((m) => /* @__PURE__ */ (0, import_jsx_runtime16.jsx)("span", { className: "chip", children: m }, m)) })
@@ -112392,7 +112386,7 @@ function HollandDetail({ result }) {
 
 // src/components/reports/MentalDetail.tsx
 init_mentalHealth();
-var import_lucide_react5 = __toESM(require_lucide_react(), 1);
+var import_lucide_react6 = __toESM(require_lucide_react(), 1);
 var import_jsx_runtime17 = __toESM(require_jsx_runtime(), 1);
 var BAND_STYLE = {
   \u65E0: "text-olive-mute",
@@ -112410,14 +112404,14 @@ function MentalDetail({ result }) {
   return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "space-y-4", children: [
     /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card accent-l border-butter bg-butter/20 p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("h3", { className: "flex items-center gap-1.5 text-[14px] font-bold text-olive", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react5.AlertTriangle, { size: 15, className: "text-terra" }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react6.AlertTriangle, { size: 15, className: "text-terra" }),
         "\u514D\u8D23\u58F0\u660E"
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-1.5 text-[12.5px] leading-relaxed text-olive-soft", children: report.disclaimer })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "paper-card p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("h2", { className: "flex items-center gap-2 text-[16px] font-bold text-olive", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react5.HeartHandshake, { size: 17, className: "text-lime" }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react6.HeartHandshake, { size: 17, className: "text-lime" }),
         "\u5FC3\u7406\u5065\u5EB7\u7B5B\u67E5 \xB7 \u8FD1\u4E00\u5468\u72B6\u6001"
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-3 flex flex-wrap items-center gap-2", children: [
@@ -112475,12 +112469,12 @@ function MentalDetail({ result }) {
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "mt-2 text-[13.5px] leading-relaxed text-olive-soft", children: r.meaning }),
       r.score > 2 && /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-2.5 flex items-start gap-2 rounded-xl border border-terra/30 bg-terra/5 p-3", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react5.ShieldAlert, { size: 14, className: "mt-0.5 shrink-0 text-terra" }),
+        /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react6.ShieldAlert, { size: 14, className: "mt-0.5 shrink-0 text-terra" }),
         /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("p", { className: "text-[12.5px] leading-relaxed text-olive-soft", children: r.riskText })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-2.5 rounded-xl bg-cream p-3.5", children: [
         /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("p", { className: "flex items-center gap-1.5 text-[12.5px] font-bold text-olive", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react5.Lightbulb, { size: 13, className: "text-lime" }),
+          /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(import_lucide_react6.Lightbulb, { size: 13, className: "text-lime" }),
           "\u6539\u5584\u5EFA\u8BAE"
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime17.jsx)("ul", { className: "mt-1 space-y-1", children: r.advice.map((a, i) => /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("li", { className: "flex gap-1.5 text-[13px] leading-relaxed text-olive-soft", children: [
@@ -112546,7 +112540,7 @@ function Fold({ title, children, defaultOpen }) {
   return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("details", { open: defaultOpen || void 0, className: "group mt-3 overflow-hidden rounded-xl border border-border bg-cream/50", children: [
     /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("summary", { className: "flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-lime-pale/50", children: [
       /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { children: title }),
-      /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.ChevronDown, { size: 15, className: "shrink-0 text-olive-mute transition-transform group-open:rotate-180" })
+      /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.ChevronDown, { size: 15, className: "shrink-0 text-olive-mute transition-transform group-open:rotate-180" })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: "border-t border-border/70 px-3.5 py-3", children })
   ] });
@@ -112711,7 +112705,7 @@ function RoadmapSection({
     return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("details", { className: "group mt-1.5 overflow-hidden rounded-lg border border-border/70 bg-white/60 print:hidden", children: [
       /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("summary", { className: "flex cursor-pointer select-none items-center justify-between gap-2 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-lime-pale/50", children: [
         /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { children: title ?? (filtered ? "\u7B54\u9898\u660E\u7EC6\uFF08\u4EC5\u5BF9\u5E94\u95EE\u9898\uFF0C\u70B9\u51FB\u5C55\u5F00\uFF09" : "\u7B54\u9898\u660E\u7EC6\uFF08\u70B9\u51FB\u5C55\u5F00\uFF09") }),
-        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.ChevronDown, { size: 13, className: "shrink-0 text-olive-mute transition-transform group-open:rotate-180" })
+        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.ChevronDown, { size: 13, className: "shrink-0 text-olive-mute transition-transform group-open:rotate-180" })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: "border-t border-border/60 px-1 py-1", children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(AnswerBlocksView, { blocks }) })
     ] });
@@ -113085,7 +113079,7 @@ function BriefSummary({ items }) {
                   list.length,
                   " \u9898"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.ChevronDown, { size: 15, className: "shrink-0 transition-transform group-open:rotate-180", style: { color: b.tone.text } })
+                /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.ChevronDown, { size: 15, className: "shrink-0 transition-transform group-open:rotate-180", style: { color: b.tone.text } })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("p", { className: "mt-0.5 text-[11.5px] leading-relaxed", style: { color: b.tone.text }, children: [
                 list.length ? b.summary(topKps, list.length) : "\u672C\u6863\u6CA1\u6709\u9898\u76EE\u3002",
@@ -113181,7 +113175,7 @@ function MbtiDetail({ result, onGoCombined }) {
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(ListCard, { title: "\u5B66\u4E60\u4E2D\u7684\u4F60 \xB7 \u53EF\u80FD\u7684\u76F2\u70B9", items: report.studyBlindspots, ordered: true }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "paper-card p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.BookOpen, { size: 16, className: "text-olive" }),
+        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.BookOpen, { size: 16, className: "text-olive" }),
         /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("h3", { className: "font-bold text-olive", children: "\u6821\u56ED\u91CC\u7684\u4F60 \xB7 \u4E94\u4E2A\u573A\u666F" })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: "mt-3 space-y-2.5", children: report.scenes.map((s) => /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "rounded-xl border border-cream-deep bg-cream/60 px-3.5 py-3", children: [
@@ -113196,7 +113190,7 @@ function MbtiDetail({ result, onGoCombined }) {
         onClick: onGoCombined,
         className: "flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep",
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.Sparkles, { size: 16 }),
+          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.Sparkles, { size: 16 }),
           "\u770B\u770B MBTI \xD7 DISC \xD7 \u5B66\u4E60\u529B \u4E09\u5408\u4E00\u7EFC\u5408\u62A5\u544A \u2192"
         ]
       }
@@ -113246,7 +113240,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }) {
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "paper-card p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.BookOpen, { size: 16, className: "text-olive" }),
+        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.BookOpen, { size: 16, className: "text-olive" }),
         /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("h3", { className: "font-bold text-olive", children: "\u6821\u56ED\u91CC\u7684\u4F60 \xB7 \u4E94\u4E2A\u573A\u666F" })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: "mt-3 space-y-2.5", children: report.scenes.map((s) => /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "rounded-xl border border-cream-deep bg-cream/60 px-3.5 py-3", children: [
@@ -113270,7 +113264,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }) {
         onClick: onGoCombined,
         className: "flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep",
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.Sparkles, { size: 16 }),
+          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.Sparkles, { size: 16 }),
           "\u770B\u770B MBTI \xD7 DISC \xD7 \u5B66\u4E60\u529B \u4E09\u5408\u4E00\u7EFC\u5408\u62A5\u544A \u2192"
         ]
       }
@@ -113573,13 +113567,13 @@ function Multi5SubCard({ title, items }) {
   ] });
 }
 function Multi5Detail({ result }) {
-  const report = (0, import_react4.useMemo)(() => buildMulti5Report(result), [result]);
+  const report = (0, import_react5.useMemo)(() => buildMulti5Report(result), [result]);
   const topDim = report.dims.find((d) => d.key === report.topKey);
   const radarData = report.dims.map((d) => ({ dim: d.label, \u5F97\u5206: d.score }));
   return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "space-y-4", children: [
     /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "paper-card accent-l border-lime p-5", children: [
       /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.Puzzle, { size: 16, className: "text-olive" }),
+        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.Puzzle, { size: 16, className: "text-olive" }),
         /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("h3", { className: "font-bold text-olive", children: "\u591A\u5143\u667A\u80FD\u4E94\u9879 \xB7 \u5BA2\u89C2\u9898\u6D4B\u8BC4" })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "mt-3 grid grid-cols-3 gap-2", children: [
@@ -114257,7 +114251,7 @@ function Scl90ReportCard({ result }) {
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("p", { className: "mt-2 text-[11.5px] leading-relaxed text-olive-mute", children: MENTAL_SCL90_RULES.note }),
       result.selfHarm && /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "mt-3 flex items-start gap-2 rounded-xl border border-terra/60 bg-terra/10 p-3.5", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.PhoneCall, { size: 16, className: "mt-0.5 shrink-0 text-terra" }),
+        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.PhoneCall, { size: 16, className: "mt-0.5 shrink-0 text-terra" }),
         /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("p", { className: "text-[12.5px] leading-relaxed text-terra", children: [
           /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("b", { children: "\u7B2C 15 \u9898\uFF08\u60F3\u7ED3\u675F\u81EA\u5DF1\u7684\u751F\u547D\uFF09\u9009\u62E9\u4E86\u300C\u5F88\u8F7B\u300D\u6216\u4EE5\u4E0A" }),
           "\u2014\u2014\u8FD9\u4E00\u9879\u7684\u4F18\u5148\u7EA7\u9AD8\u4E8E\u6240\u6709\u5206\u6570\uFF1A\u8BF7\u4E00\u5B9A\u544A\u8BC9\u5BB6\u957F\u6216\u4FE1\u4EFB\u7684\u8001\u5E08\uFF0C\u5FC5\u8981\u65F6\u62E8\u6253\u5168\u56FD\u5FC3\u7406\u63F4\u52A9\u70ED\u7EBF 12356 \u6216\u524D\u5F80\u4E13\u4E1A\u673A\u6784\u3002\u8FD9\u4E0D\u662F\u77EB\u60C5\uFF0C\u662F\u5BF9\u81EA\u5DF1\u8D1F\u8D23\u3002"
@@ -114297,7 +114291,7 @@ function Scl90ReportCard({ result }) {
       }) })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: "paper-card border-butter bg-butter/20 p-5", children: /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "flex items-start gap-2", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.AlertTriangle, { size: 16, className: "mt-0.5 shrink-0 text-terra" }),
+      /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.AlertTriangle, { size: 16, className: "mt-0.5 shrink-0 text-terra" }),
       /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("p", { className: "text-[12px] leading-relaxed text-olive-soft", children: MENTAL_SCL90_DISCLAIMER })
     ] }) })
   ] });
@@ -114356,8 +114350,8 @@ function ReportView({
   const tabs = viewer === "tutor" ? TABS.filter((t) => t.key !== "profile") : TABS;
   const e3v37 = isE3V37Result(data3?.e3) ? data3.e3 : null;
   const e3Legacy = !!data3?.e3 && !isE3V37Result(data3.e3);
-  const [combinedView, setCombinedView] = (0, import_react4.useState)(params.get("view") === "lite" ? "lite" : "full");
-  (0, import_react4.useEffect)(() => {
+  const [combinedView, setCombinedView] = (0, import_react5.useState)(params.get("view") === "lite" ? "lite" : "full");
+  (0, import_react5.useEffect)(() => {
     let closed = [];
     const openAll = () => {
       closed = Array.from(document.querySelectorAll("#report-print-root details:not([open])"));
@@ -114372,14 +114366,14 @@ function ReportView({
     };
   }, []);
   const parentResult = isE3V37ParentResult(data3?.e3parent) ? data3.e3parent : null;
-  const discParents = (0, import_react4.useMemo)(() => {
+  const discParents = (0, import_react5.useMemo)(() => {
     const v = data3?.discParents;
     return Array.isArray(v) ? v.filter((p) => p && p.result && p.result.dims) : [];
   }, [data3]);
   const mentalSdq = data3?.mentalSdq ?? void 0;
   const mentalPa = data3?.mentalPa ?? void 0;
   const mentalScl90 = data3?.mentalScl90 ?? void 0;
-  const combined2 = (0, import_react4.useMemo)(() => {
+  const combined2 = (0, import_react5.useMemo)(() => {
     if (!data3?.mbti || !data3?.disc || !e3v37) return null;
     const mr = MBTI_REPORTS[data3.mbti.type];
     const dr = DISC_REPORTS[data3.disc.primary];
@@ -114397,7 +114391,7 @@ function ReportView({
       discParents
     });
   }, [data3, profile, e3v37, parentResult, discParents]);
-  const e3Ratings = (0, import_react4.useMemo)(() => {
+  const e3Ratings = (0, import_react5.useMemo)(() => {
     const raw = data3?.raw?.find((r) => r.kind === "e3")?.answers;
     if (!raw || !Array.isArray(raw.ratings) || raw.ratings.length !== E3V37_RATING_COUNT) return null;
     return raw.ratings;
@@ -114416,7 +114410,7 @@ function ReportView({
     if (l.kind === "assess") reveal({ kind: "assess", start: l.start });
     else reveal({ kind: "fill-academics" });
   };
-  const canDownload = (0, import_react4.useMemo)(() => {
+  const canDownload = (0, import_react5.useMemo)(() => {
     if (tab === "e3") return !!e3v37;
     if (tab === "mbti") return !!(data3?.mbti && MBTI_REPORTS[data3.mbti.type]);
     if (tab === "disc") return !!(data3?.disc && DISC_REPORTS[data3.disc.primary]);
@@ -114469,7 +114463,7 @@ function ReportView({
   const holland = data3?.holland ?? void 0;
   const mental = data3?.mental ?? void 0;
   const academics2 = profile?.academics ?? void 0;
-  const frameworkStatus = (0, import_react4.useMemo)(() => {
+  const frameworkStatus = (0, import_react5.useMemo)(() => {
     const r1 = (x) => Math.round(x * 10) / 10;
     const units = {};
     if (e3v37) {
@@ -114539,7 +114533,7 @@ function ReportView({
         onClick: () => navigate("/assessments"),
         className: "flex items-center gap-1.5 text-[13px] text-olive-mute hover:text-olive",
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.ArrowLeft, { size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.ArrowLeft, { size: 14 }),
           " \u8FD4\u56DE\u6D4B\u8BC4\u4E2D\u5FC3"
         ]
       }
@@ -114570,7 +114564,7 @@ function ReportView({
         onClick: onDownload,
         className: "flex w-full items-center justify-center gap-2 rounded-xl border border-lime/60 bg-lime-pale py-2.5 text-[13.5px] font-semibold text-olive transition-colors hover:bg-lime/20",
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.Download, { size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.Download, { size: 15 }),
           "\u4E0B\u8F7D\u62A5\u544A\uFF08\u53EF\u53E6\u5B58\u4E3A PDF\uFF09"
         ]
       }
@@ -114601,7 +114595,7 @@ function ReportView({
       ) : /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "space-y-4", children: [
         /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "paper-card accent-l border-lime p-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.Target, { size: 16, className: "text-olive" }),
+            /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.Target, { size: 16, className: "text-olive" }),
             /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("h3", { className: "font-bold text-olive", children: "\u6210\u7EE9\u73B0\u72B6\u53CA\u76EE\u6807\u5206\u6570" })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("p", { className: "mt-1.5 text-[13px] text-olive-mute", children: [
@@ -114656,7 +114650,7 @@ function ReportView({
       ) : !e3v37 ? /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(MissingCard, { text: "\u8FD8\u6CA1\u6709\u5B66\u4E60\u529B\u8BCA\u65AD\u7ED3\u679C\u3002E3 \u5B66\u4E1A\u8BCA\u65AD\uFF08\u4E09\u9636\u4E5D\u80FD V3.7\uFF09\u7EA6 16-18 \u5206\u949F\uFF0C\u4E00\u6B21\u4E00\u9053\u9898\uFF0C\u505A\u5B8C\u4E00\u4E2A\u90E8\u5206\u4F1A\u6709\u9F13\u52B1\u3002", actionText: "\u8FD8\u672A\u6D4B\u8BC4\uFF0C\u5F00\u59CB\u6D4B\u8BC4 \u2192", to: "/assessments?start=e3" }) : /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "space-y-4", children: [
         /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "paper-card accent-l border-lime p-5", children: [
           /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.Compass, { size: 17, className: "text-olive" }),
+            /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.Compass, { size: 17, className: "text-olive" }),
             /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("h3", { className: "font-bold text-olive", children: [
               "\u4E09\u9636\u4E5D\u80FD\u4F53\u68C0 \xB7 ",
               e3v37.stageLabel
@@ -114932,7 +114926,7 @@ function ReportView({
         ] }) : /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(import_jsx_runtime18.Fragment, { children: [
           /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "paper-card accent-l border-lime p-5", children: [
             /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react6.Compass, { size: 17, className: "text-olive" }),
+              /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(import_lucide_react7.Compass, { size: 17, className: "text-olive" }),
               /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)("h2", { className: "text-[17px] font-bold text-olive", children: [
                 profile?.name ? `${profile.name} \u7684` : "",
                 combined2.title
@@ -115517,7 +115511,7 @@ function MissingCard({ text, actionText, to }) {
   ] });
 }
 
-// scripts/smoke-render-v62.tsx
+// scripts/smoke-render-v63.tsx
 init_assessments();
 init_e3v37();
 init_holland();
@@ -115575,8 +115569,8 @@ function sanitizeModules(modules) {
 }
 
 // src/components/TrainingPlanLibrary.tsx
-var import_react6 = __toESM(require_react(), 1);
-var import_lucide_react8 = __toESM(require_lucide_react(), 1);
+var import_react7 = __toESM(require_react(), 1);
+var import_lucide_react9 = __toESM(require_lucide_react(), 1);
 
 // src/data/training/threeTierPlans.ts
 var THREE_TIER_PLANS = [
@@ -115681,8 +115675,8 @@ var THREE_TIER_STYLE = {
 };
 
 // src/components/training/AbilityPlanCard.tsx
-var import_react5 = __toESM(require_react(), 1);
-var import_lucide_react7 = __toESM(require_lucide_react(), 1);
+var import_react6 = __toESM(require_react(), 1);
+var import_lucide_react8 = __toESM(require_lucide_react(), 1);
 
 // src/data/training/e3v37Training.ts
 var E3V37_ABILITY_TRAINING = {
@@ -118606,8 +118600,8 @@ function AbilityPlanCard({
   selectedIds,
   onToggleSelect
 }) {
-  const [open, setOpen] = (0, import_react5.useState)(false);
-  const [closedMethods, setClosedMethods] = (0, import_react5.useState)(/* @__PURE__ */ new Set());
+  const [open, setOpen] = (0, import_react6.useState)(false);
+  const [closedMethods, setClosedMethods] = (0, import_react6.useState)(/* @__PURE__ */ new Set());
   const plan = THREE_TIER_PLANS.find((p) => p.tier === tier && p.ability === ability);
   const rx = E3V37_ABILITY_TRAINING[ability];
   const methods = (rx?.methodIds ?? []).map((id) => METHOD_BY_ID.get(id)).filter((m) => m != null);
@@ -118621,7 +118615,7 @@ function AbilityPlanCard({
   return /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("div", { className: "flex flex-col rounded-xl border border-[#a8b08c]/50 bg-white/80 p-3.5", children: [
     /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { className: "text-[14.5px] font-bold text-olive", children: plan.ability }),
     /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("ul", { className: "mt-1.5 space-y-1", children: plan.questions.map((q) => /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("li", { className: "flex items-start gap-1.5 text-[12.5px] leading-relaxed text-olive-soft", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.CircleHelp, { size: 12, className: "mt-0.5 shrink-0 text-olive-mute/70" }),
+      /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react8.CircleHelp, { size: 12, className: "mt-0.5 shrink-0 text-olive-mute/70" }),
       q
     ] }, q)) }),
     /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(
@@ -118634,7 +118628,7 @@ function AbilityPlanCard({
           /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("span", { className: "block text-[10.5px] font-semibold tracking-wide text-olive-mute", children: "\u7B80\u8981\u65B9\u6848 \xB7 \u70B9\u5F00\u770B\u8BE6\u7EC6\u505A\u6CD5" }),
           /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)("span", { className: "mt-0.5 flex items-start justify-between gap-1.5 text-[13px] font-semibold leading-snug text-olive", children: [
             rx?.rationale ?? "\u7ED3\u5408\u5B66\u5458\u8BCA\u65AD\u7ED3\u679C\u5339\u914D\u8BAD\u7EC3\u65B9\u6CD5\u3002",
-            open ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronUp, { size: 14, className: "mt-0.5 shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronDown, { size: 14, className: "mt-0.5 shrink-0" })
+            open ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react8.ChevronUp, { size: 14, className: "mt-0.5 shrink-0" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react8.ChevronDown, { size: 14, className: "mt-0.5 shrink-0" })
           ] })
         ]
       }
@@ -118653,7 +118647,7 @@ function AbilityPlanCard({
                 title: selected ? "\u4ECE\u5F00\u65B9\u6E05\u5355\u79FB\u9664" : "\u52A0\u5165\u5F00\u65B9\u6E05\u5355",
                 onClick: () => onToggleSelect(m, ability),
                 className: `flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${selected ? "border-olive bg-olive text-cream" : "border-border bg-white text-transparent hover:border-lime"}`,
-                children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.Check, { size: 13, strokeWidth: 3 })
+                children: /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react8.Check, { size: 13, strokeWidth: 3 })
               }
             ),
             /* @__PURE__ */ (0, import_jsx_runtime19.jsxs)(
@@ -118675,7 +118669,7 @@ function AbilityPlanCard({
                       "\uFF09"
                     ] })
                   ] }),
-                  mOpen ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronUp, { size: 13, className: "shrink-0 text-olive-mute" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react7.ChevronDown, { size: 13, className: "shrink-0 text-olive-mute" })
+                  mOpen ? /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react8.ChevronUp, { size: 13, className: "shrink-0 text-olive-mute" }) : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(import_lucide_react8.ChevronDown, { size: 13, className: "shrink-0 text-olive-mute" })
                 ]
               }
             )
@@ -118710,18 +118704,18 @@ function AbilityPlanCard({
 init_reportDownload();
 var import_jsx_runtime20 = __toESM(require_jsx_runtime(), 1);
 function TrainingPlanLibrary() {
-  const [selected, setSelected] = (0, import_react6.useState)(/* @__PURE__ */ new Map());
-  const [composerOpen, setComposerOpen] = (0, import_react6.useState)(false);
+  const [selected, setSelected] = (0, import_react7.useState)(/* @__PURE__ */ new Map());
+  const [composerOpen, setComposerOpen] = (0, import_react7.useState)(false);
   const toggleSelect = (m, ability) => setSelected((cur) => {
     const next = new Map(cur);
     if (next.has(m.id)) next.delete(m.id);
     else next.set(m.id, { ...m, ability });
     return next;
   });
-  const selectedIds = (0, import_react6.useMemo)(() => new Set(selected.keys()), [selected]);
+  const selectedIds = (0, import_react7.useMemo)(() => new Set(selected.keys()), [selected]);
   return /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("section", { className: "paper-card p-5", children: [
     /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "flex items-center gap-2", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.ClipboardList, { size: 16, className: "text-olive" }),
+      /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react9.ClipboardList, { size: 16, className: "text-olive" }),
       /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("h2", { className: "text-[16px] font-bold text-olive", children: "\u5B66\u4E60\u529B\u966A\u8DD1\u8BAD\u7EC3\u65B9\u6848\uFF08\u4E09\u9636\u4E5D\u80FD\uFF09" })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("p", { className: "mt-1 text-[12.5px] leading-relaxed text-olive-mute", children: "\u5BF9\u7167\u5B66\u5458\u7684\u8868\u73B0\u627E\u5230\u5BF9\u5E94\u7684\u95EE\u9898\uFF0C\u5148\u770B\u300C\u7B80\u8981\u65B9\u6848\u300D\uFF0C\u611F\u5174\u8DA3\u518D\u70B9\u5F00\u770B\u8BE6\u7EC6\u505A\u6CD5\uFF08\u6B65\u9AA4\u3001\u9891\u7387\u3001\u5DE5\u5177\uFF09\u3002 \u52FE\u9009\u65B9\u6CD5\u53EF\u5F00\u6210\u300C\u4F34\u5B66\u5904\u65B9\u300D\u63A8\u9001\u7ED9\u5B66\u5458\u7AEF\u3002\u4E0E\u5B66\u5458\u62A5\u544A\u4E2D\u7684\u8BAD\u7EC3\u65B9\u6848\u53E3\u5F84\u4E00\u81F4\u3002" }),
@@ -118746,7 +118740,7 @@ function TrainingPlanLibrary() {
       ] }, tier);
     }) }),
     selected.size > 0 && /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "sticky bottom-4 z-20 mt-4 flex items-center gap-3 rounded-2xl border border-lime/60 bg-olive px-4 py-3 text-cream shadow-lg", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.FileSignature, { size: 17 }),
+      /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react9.FileSignature, { size: 17 }),
       /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("span", { className: "text-[13.5px] font-semibold", children: [
         "\u5DF2\u52FE\u9009 ",
         selected.size,
@@ -118784,8 +118778,8 @@ function PrescriptionComposer({
   onDone
 }) {
   const { data: students } = trpc.coach.myStudents.useQuery();
-  const [userId, setUserId] = (0, import_react6.useState)("");
-  const [customText, setCustomText] = (0, import_react6.useState)("");
+  const [userId, setUserId] = (0, import_react7.useState)("");
+  const [customText, setCustomText] = (0, import_react7.useState)("");
   const create = trpc.coach.createPrescription.useMutation();
   const studentName = (students ?? []).find((s) => s.userId === Number(userId))?.name ?? "";
   const payload = methods.map((m) => ({ id: m.id, name: m.name, sub: m.sub, board: m.board, ability: m.ability }));
@@ -118821,10 +118815,10 @@ ${full2?.tool && full2.tool !== "\u65E0" ? `<p><b>\u5DE5\u5177\uFF1A</b>${esc(fu
       children: [
         /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "flex items-center justify-between", children: [
           /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("h2", { className: "flex items-center gap-2 text-[17px] font-bold text-olive", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.FileSignature, { size: 18 }),
+            /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react9.FileSignature, { size: 18 }),
             " \u5F00\u65B9\u786E\u8BA4"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("button", { onClick: onClose, className: "rounded-lg p-1.5 text-olive-mute hover:bg-lime-pale hover:text-olive", children: /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.X, { size: 18 }) })
+          /* @__PURE__ */ (0, import_jsx_runtime20.jsx)("button", { onClick: onClose, className: "rounded-lg p-1.5 text-olive-mute hover:bg-lime-pale hover:text-olive", children: /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react9.X, { size: 18 }) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "mt-4", children: [
           /* @__PURE__ */ (0, import_jsx_runtime20.jsxs)("div", { className: "text-[12.5px] font-semibold text-olive", children: [
@@ -118886,7 +118880,7 @@ ${full2?.tool && full2.tool !== "\u65E0" ? `<p><b>\u5DE5\u5177\uFF1A</b>${esc(fu
               onClick: download,
               className: "flex items-center justify-center gap-1.5 rounded-xl border border-border bg-cream px-4 py-3 text-[13.5px] font-semibold text-olive transition-colors hover:border-lime",
               children: [
-                /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.Download, { size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react9.Download, { size: 15 }),
                 " \u4E0B\u8F7D\u5F00\u65B9\u5355"
               ]
             }
@@ -118898,7 +118892,7 @@ ${full2?.tool && full2.tool !== "\u65E0" ? `<p><b>\u5DE5\u5177\uFF1A</b>${esc(fu
               disabled: create.isPending || userId === "",
               className: "flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-olive py-3 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40",
               children: [
-                create.isPending ? /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.Loader2, { size: 15, className: "animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react8.FileSignature, { size: 15 }),
+                create.isPending ? /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react9.Loader2, { size: 15, className: "animate-spin" }) : /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(import_lucide_react9.FileSignature, { size: 15 }),
                 create.isPending ? "\u63A8\u9001\u4E2D\u2026" : "\u786E\u8BA4\u5F00\u65B9\uFF0C\u63A8\u9001\u7ED9\u5B66\u5458\u7AEF"
               ]
             }
@@ -118909,7 +118903,7 @@ ${full2?.tool && full2.tool !== "\u65E0" ? `<p><b>\u5DE5\u5177\uFF1A</b>${esc(fu
   ) });
 }
 
-// scripts/smoke-render-v62.tsx
+// scripts/smoke-render-v63.tsx
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_node_fs2 = require("node:fs");
@@ -118957,10 +118951,10 @@ var data2 = {
   discParents: []
 };
 var render = (tab, opts = {}) => (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: [`/report-detail?tab=${tab}`] },
-    import_react7.default.createElement(ReportView, {
+    import_react8.default.createElement(ReportView, {
       data: data2,
       profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics: opts.withAcad === false ? void 0 : academics },
       viewer: opts.viewer ?? "student",
@@ -119040,10 +119034,10 @@ if (!blkV2.some((b) => (b.note ?? "").includes("\u65E7\u7248\u9898\u76EE"))) thr
 console.log("OK \u7B54\u9898\u660E\u7EC6 V2/\u65E7\u7248\u517C\u5BB9\uFF08\u5B66\u751F+\u5BB6\u957F+\u65E7\u7248\uFF09");
 var dataV2 = { ...data2, disc: dv2, raw: [...data2.raw, { kind: "disc", answers: { most: mostD, least: leastC }, createdAt: /* @__PURE__ */ new Date() }] };
 var discHtml = (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: ["/report-detail?tab=disc"] },
-    import_react7.default.createElement(ReportView, { data: dataV2, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    import_react8.default.createElement(ReportView, { data: dataV2, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
     } })
   )
 );
@@ -119089,10 +119083,10 @@ var dataParent = {
   raw: [...data2.raw, { kind: "e3parent", answers: { family: {}, condObserve: {}, mirror: [] }, createdAt: /* @__PURE__ */ new Date() }]
 };
 var renderP = (tab) => (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: [`/report-detail?tab=${tab}`] },
-    import_react7.default.createElement(ReportView, { data: dataParent, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    import_react8.default.createElement(ReportView, { data: dataParent, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
     } })
   )
 );
@@ -119159,10 +119153,10 @@ var dataMental = {
   ]
 };
 var renderM = (tab) => (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: [`/report-detail?tab=${tab}`] },
-    import_react7.default.createElement(ReportView, { data: dataMental, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    import_react8.default.createElement(ReportView, { data: dataMental, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
     } })
   )
 );
@@ -119227,10 +119221,10 @@ if (discBand(80) !== "\u5F3A" || discBand(60) !== "\u660E\u663E" || discBand(30)
 if (discTendencyText(50) !== "+50%" || discTendencyText(-66) !== "-66%" || discTendencyText(0) !== "0%") throw new Error("discTendencyText \u683C\u5F0F\u9519\u8BEF");
 console.log("OK v44 DISC \u503E\u5411\u5EA6\u5951\u7EA6\u5C42");
 var discTab = (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: ["/report-detail?tab=disc"] },
-    import_react7.default.createElement(ReportView, { data: dataV2, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    import_react8.default.createElement(ReportView, { data: dataV2, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
     } })
   )
 );
@@ -119279,10 +119273,10 @@ var dataScl90 = {
   raw: [...dataMental.raw, { kind: "scl90", answers: Array.from({ length: MENTAL_SCL90_QUESTION_COUNT }, () => 3), createdAt: /* @__PURE__ */ new Date() }]
 };
 var renderS = (tab) => (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: [`/report-detail?tab=${tab}`] },
-    import_react7.default.createElement(ReportView, { data: dataScl90, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u9AD8\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    import_react8.default.createElement(ReportView, { data: dataScl90, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u9AD8\u4E00", academics }, viewer: "student", onEditAcademics: () => {
     } })
   )
 );
@@ -119311,10 +119305,10 @@ need(discHtml, "\u4E0A\u4E0B\u4E24\u4E2A\u7070\u8272\u300C\u53CD\u5F39\u533A\u30
 need(parentHtml, "\u4E0A\u4E0B\u4E24\u4E2A\u7070\u8272\u300C\u53CD\u5F39\u533A\u300D\u600E\u4E48\u770B", "\u5BB6\u957F\u8BE6\u7248\u53CD\u5F39\u533A\u8BF4\u660E\u5361");
 var dataNr = { ...data2, disc: { primary: "S", dims: { D: 13, I: 12, S: 14, C: 11 }, version: 2 } };
 var nrHtml = (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: ["/report-detail?tab=disc"] },
-    import_react7.default.createElement(ReportView, { data: dataNr, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
+    import_react8.default.createElement(ReportView, { data: dataNr, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "student", onEditAcademics: () => {
     } })
   )
 );
@@ -119343,10 +119337,10 @@ if (moduleForPath("/admin") !== null || moduleForPath("/tutor") !== null || modu
 if (sanitizeModules(["preview", "hack", "gaps", 1]).join(",") !== "preview,gaps") throw new Error("\u6A21\u5757\u8FC7\u6EE4\u5F02\u5E38");
 console.log("OK v50 \u5B66\u5458\u529F\u80FD\u5F00\u5173\u5951\u7EA6\u5C42");
 var fwHtml = (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(SystemFramework, { status: void 0 })
+  import_react8.default.createElement(SystemFramework, { status: void 0 })
 );
 var fwWithStatus = (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(SystemFramework, {
+  import_react8.default.createElement(SystemFramework, {
     status: {
       academics: { filled: true, note: "\u671F\u4E2D", subjects: [{ name: "\u6570\u5B66", last: 100, target: 112 }] },
       e3: {
@@ -119371,7 +119365,7 @@ for (const seg of [fwHtml, fwWithStatus]) {
 need(fwWithStatus, "\u4E50\u5B66 \xB7 \u52A8\u529B\u7CFB\u7EDF", "\u6846\u67B6\u56FE\u4E50\u5B66\u6BB5");
 need(fwWithStatus, "\u591A\u5143\u4E94\u9879 \xB7 \u7EFC\u5408 3.8", "\u6846\u67B6\u56FE\u4E94\u9879\u5FBD\u6807");
 if (/多元智能八维|多元八维/.test(full)) throw new Error("\u62A5\u544A\u4ECD\u51FA\u73B0\u591A\u5143\u667A\u80FD\u516B\u7EF4");
-var libHtml = (0, import_server.renderToStaticMarkup)(import_react7.default.createElement(TrainingPlanLibrary));
+var libHtml = (0, import_server.renderToStaticMarkup)(import_react8.default.createElement(TrainingPlanLibrary));
 need(libHtml, "\u5B66\u4E60\u529B\u966A\u8DD1\u8BAD\u7EC3\u65B9\u6848\uFF08\u4E09\u9636\u4E5D\u80FD\uFF09", "\u8BAD\u7EC3\u65B9\u6848\u5E93\u6807\u9898");
 need(libHtml, "\u7B80\u8981\u65B9\u6848 \xB7 \u70B9\u5F00\u770B\u8BE6\u7EC6\u505A\u6CD5", "\u7B80\u8981\u65B9\u6848\u6309\u94AE");
 need(libHtml, "1 \u9636 \xB7 \u4E50\u5B66 \xB7 \u52A8\u529B\u7CFB\u7EDF", "\u4E50\u5B66\u6BB5");
@@ -119399,7 +119393,7 @@ var journalSrc = (0, import_node_fs2.readFileSync)((0, import_node_path.join)(__
 need(journalSrc, "0017_invite_v51_minimal", "journal 0017");
 console.log("OK v51 \u6846\u67B6\u56FE\u53BB\u4E8C\u7EA7\u5173\u6CE8\u70B9 + \u516B\u7EF4\u4E0B\u7EBF + \u6781\u7B80\u6CE8\u518C + \u4E09\u9636\u4E5D\u80FD\u8BAD\u7EC3\u65B9\u6848\u5E93");
 var fw52 = (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(SystemFramework, {
+  import_react8.default.createElement(SystemFramework, {
     status: {
       e3: {
         done: true,
@@ -119676,7 +119670,7 @@ need(orgRouterSrc59, "orgId,", "\u7BA1\u7406\u5458\u8D26\u53F7\u6302\u673A\u6784
 need(orgRouterSrc59, "hashPassword(password)", "\u7BA1\u7406\u5458\u521D\u59CB\u5BC6\u7801\u6563\u5217");
 var routerSrc59 = readSrc59("../api/router.ts");
 need(routerSrc59, "org: orgRouter", "orgRouter \u6CE8\u518C");
-need(routerSrc59, "v62-2026-09-24", "BUILD_TAG \u5347 v62");
+need(routerSrc59, "v63-2026-09-24", "BUILD_TAG \u5347 v63");
 need(tenantSrc, "if (me.orgId == null) return true;", "\u8D85\u7BA1 sameOrg \u6052\u771F\uFF08god mode\uFF09");
 need(tenantSrc, "\u5E73\u53F0\u8D85\u7BA1\uFF08orgId=null\uFF09\u53EF\u7BA1\u7406\u4EFB\u610F\u8D26\u53F7", "tenant \u6CE8\u91CA god mode");
 var sdSrc60 = readSrc59("../api/studentDetail.ts");
@@ -119817,10 +119811,10 @@ var data62 = {
   raw: [{ kind: "e3", answers: { stage: "junior", ratings: Array.from({ length: 70 }, (_, i) => [1, 3, 5][i % 3]), motivation: "B", lifeEvents: [], openAnswers: [] }, createdAt: /* @__PURE__ */ new Date() }]
 };
 var html62 = (0, import_server.renderToStaticMarkup)(
-  import_react7.default.createElement(
+  import_react8.default.createElement(
     MemoryRouter,
     { initialEntries: ["/report-detail?tab=combined"] },
-    import_react7.default.createElement(ReportView, { data: data62, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "tutor", onEditAcademics: () => {
+    import_react8.default.createElement(ReportView, { data: data62, profile: { name: "\u6D4B\u8BD5\u5458", grade: "\u521D\u4E00", academics }, viewer: "tutor", onEditAcademics: () => {
     } })
   )
 );
@@ -119860,6 +119854,25 @@ var libSrc62b = readSrc62("../src/components/TrainingPlanLibrary.tsx");
 assert58.ok(!libSrc62b.includes("lg:grid-cols-2"), "\u65B9\u6848\u5E93\u5E94\u4E3A\u4E00\u680F\u5E03\u5C40");
 console.log("OK v62 \u5B66\u5458\u5361\u4E00\u884C\u4E00\u4E2A + \u65B9\u6848\u5E93\u4E00\u680F");
 console.log("RENDER_SMOKE_V62_OK");
+var astSrc63 = readSrc62("../src/components/reports/AbilityScoreTable.tsx");
+need(astSrc63, "\u9010\u9898\u660E\u7EC6\u9ED8\u8BA4\u5168\u90E8\u6298\u53E0", "\u660E\u7EC6\u9ED8\u8BA4\u6298\u53E0\u6CE8\u91CA");
+need(astSrc63, "useState<Set<string>>", "\u6298\u53E0\u72B6\u6001\u7BA1\u7406");
+need(astSrc63, "\u9010\u9898\u660E\u7EC6", "\u5C55\u5F00\u5165\u53E3\u6587\u6848");
+need(astSrc63, "AbilityGroup", "\u80FD\u529B\u7EC4\u6298\u53E0\u7EC4\u4EF6");
+var astHtml63 = (0, import_server.renderToStaticMarkup)(
+  import_react8.default.createElement(AbilityScoreTable, {
+    e3,
+    ratings: Array.from({ length: 70 }, (_, i) => i % 5 + 1)
+  })
+);
+need(astHtml63, "\u9644\u5F55 \xB7 \u4E09\u9636\u4E5D\u80FD\u89C2\u5BDF\u70B9\u5F97\u5206\u8868", "\u5F97\u5206\u8868\u6807\u9898");
+need(astHtml63, "\u4E50\u5B66", "\u4E50\u5B66\u7EC4\u5C0F\u8BA1");
+need(astHtml63, "\u52A8\u529B", "\u80FD\u529B\u5C0F\u8BA1\u884C");
+for (const kp of ["\u5B66\u4E60\u5174\u8DA3", "\u81EA\u4FE1\u5FC3", "\u60C5\u7EEA\u7BA1\u7406"]) {
+  if (astHtml63.includes(kp)) throw new Error(`\u6298\u53E0\u6001\u4E0D\u5E94\u6E32\u67D3\u9010\u9898 kp\uFF1A${kp}`);
+}
+console.log("OK v63 \u5F97\u5206\u8868\u660E\u7EC6\u9ED8\u8BA4\u6298\u53E0\uFF08\u5C0F\u8BA1\u76F4\u51FA\uFF0C\u70B9\u5F00\u770B\u9010\u9898\uFF09");
+console.log("RENDER_SMOKE_V63_OK");
 /*! Bundled license information:
 
 react/cjs/react.production.js:

@@ -20,7 +20,7 @@ import { analyzeRouter } from "./analyzeRouter";
 import { orgRouter } from "./orgRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v62-2026-09-24";
+const BUILD_TAG = "v63-2026-09-24";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),
