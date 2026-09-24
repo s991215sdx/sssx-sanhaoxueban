@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { CheckCircle2, ClipboardList, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
@@ -27,12 +27,36 @@ type StepKey = (typeof STEPS)[number]["key"];
 export default function CombinedSuite({ onExit }: { onExit: () => void }) {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
-  const { data } = trpc.assessment.latest.useQuery();
-  const { data: profile } = trpc.profile.get.useQuery();
+  const latestQuery = trpc.assessment.latest.useQuery();
+  const profileQuery = trpc.profile.get.useQuery();
+  const { data } = latestQuery;
+  const { data: profile } = profileQuery;
   const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5>(0);
   const [basicsDone, setBasicsDone] = useState(false);
   const [finished, setFinished] = useState(false);
   const latest: any = data ?? {};
+
+  // V68：进入向导时跳过已完成步骤，直接从第一个未完成项继续（不重复填基本信息/重做 MBTI、DISC）
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (resumedRef.current) return;
+    if (latestQuery.isLoading || profileQuery.isLoading) return;
+    resumedRef.current = true;
+    const hasBasics = !!(profile as { name?: string } | null)?.name;
+    setBasicsDone(hasBasics);
+    const doneFlags: Record<StepKey, boolean> = {
+      basics: hasBasics,
+      mbti: !!latest.mbti,
+      disc: !!latest.disc,
+      e3: !!latest.e3,
+      academics: !!(profile as { academics?: unknown } | null)?.academics,
+      multi5: !!latest.multi5,
+    };
+    const firstIncomplete = STEPS.findIndex((s) => !doneFlags[s.key]);
+    if (firstIncomplete === -1) setStep(5); // 全部完成：停在最后一项的结果页
+    else if (firstIncomplete > 0) setStep(firstIncomplete as 0 | 1 | 2 | 3 | 4 | 5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestQuery.isLoading, profileQuery.isLoading]);
   const doneOf = (k: StepKey): boolean => {
     if (k === "basics") return basicsDone;
     if (k === "academics") return !!(profile as unknown as { academics?: unknown } | undefined)?.academics;
