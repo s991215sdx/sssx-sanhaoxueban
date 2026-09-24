@@ -293,6 +293,8 @@ export default function AssessmentCenter() {
     return def?.doneOf ? def.doneOf(latest) : !!latest[kind];
   };
   const allRequired = !!latest.mbti && !!latest.disc && !!latest.e3;
+  /* V66：必测完成进度（未完成时顶部入口显示进度） */
+  const requiredDone = [latest.mbti, latest.disc, latest.e3].filter(Boolean).length;
 
   if (isLoading) {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
@@ -305,8 +307,30 @@ export default function AssessmentCenter() {
 
   return (
     <div className="space-y-4">
+      {/* V66：三项必测全部完成后，顶部入口变为报告直达（不再显示"开始"造成"要重做"的误解） */}
+      {!testing && allRequired && (
+        <button
+          onClick={() => navigate("/report-detail?tab=combined")}
+          className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime text-cream">
+            <Sparkles size={24} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-2">
+              <h3 className="text-[17px] font-bold text-olive">综合学习力系统测评 · 已完成 ✓</h3>
+            </span>
+            <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+              MBTI、DISC、学习力诊断都已做完，点开看你的专属综合学习力报告 →
+            </p>
+          </span>
+          <span className="shrink-0 rounded-xl bg-olive px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+            查看报告 →
+          </span>
+        </button>
+      )}
       {/* V56：综合学习力系统测评（最顶部入口，一条龙） */}
-      {!testing && (
+      {!testing && !allRequired && (
         <button
           onClick={() => setSuiteOpen(true)}
           className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
@@ -320,7 +344,10 @@ export default function AssessmentCenter() {
               <span className="rounded-full bg-olive px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
             </span>
             <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-              第一次来？点这里一次走完：基本信息 → MBTI 性格 → DISC 学生版 → 学习力诊断 → 学业目标 → 智能五项，全程约 25 分钟，做完自动生成综合学习力报告。
+              {requiredDone > 0
+                ? `已完成 ${requiredDone}/3 项必测，点这里把剩下的走完：`
+                : "第一次来？点这里一次走完："}{" "}
+              基本信息 → MBTI 性格 → DISC 学生版 → 学习力诊断 → 学业目标 → 智能五项，全程约 25 分钟，做完自动生成综合学习力报告。
             </p>
           </span>
           <span className="shrink-0 rounded-xl bg-olive px-4 py-2.5 text-[13.5px] font-semibold text-cream">
