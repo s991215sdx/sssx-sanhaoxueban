@@ -23,10 +23,16 @@ function draftKey(uid: string | number | null | undefined, kind: string) {
  */
 export function loadQuizDraft<T extends Record<string, unknown> = Record<string, unknown>>(uid: string | number | null | undefined, kind: string): Partial<T> | null {
   try {
-    const raw = localStorage.getItem(draftKey(uid, kind));
+    const key = draftKey(uid, kind);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (parsed._w === undefined || String(parsed._w) !== String(uid ?? "anon")) return null;
+    if (parsed._w === undefined || String(parsed._w) !== String(uid ?? "anon")) {
+      // v71：旧版无归属标记、或归属不符的草稿（典型为换号污染残留）不仅视为无草稿，
+      // 还顺手物理清掉——免得它一直留在存储里，被旧包/异常路径再次当成有效草稿恢复。
+      localStorage.removeItem(key);
+      return null;
+    }
     return parsed as Partial<T>;
   } catch {
     return null;

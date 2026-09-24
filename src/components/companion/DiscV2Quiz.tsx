@@ -199,17 +199,26 @@ export default function DiscV2Quiz({
 
   /* v70：每次作答先清掉上一个 pending 的跳组定时器再决定是否重挂。
      旧逻辑里"选满→挂定时器→260ms 内取消某个选择"会留下一个看不见的洞（该组实际没选满却照跳），
-     答完 24 组后 finish 的 firstIncomplete 找到这个洞，把用户"随机"跳回那一组。 */
+     答完 24 组后 finish 的 firstIncomplete 找到这个洞，把用户"随机"跳回那一组。
+     v71：定时器到期时再复核一次（拿 ref 里的最新数组），防御任何绕过 pick 的状态变化。 */
+  const mostRef = useRef(most);
+  mostRef.current = most;
+  const leastRef = useRef(least);
+  leastRef.current = least;
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advance = (m: number[], l: number[], cur: number) => {
     if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
     if (m[cur] == null || l[cur] == null) return;
     advanceTimer.current = window.setTimeout(() => {
+      advanceTimer.current = null;
+      const fm = mostRef.current;
+      const fl = leastRef.current;
+      if (fm[cur] == null || fl[cur] == null) return; // 到期复核：该组已被改动/清空，不跳
       if (cur + 1 < total) {
         setIdx(cur + 1);
       } else {
         /* V65：最后一组不再静默——走统一提交入口（漏组会跳过去并提示） */
-        finish(m, l);
+        finish(fm, fl);
       }
     }, 260);
   };

@@ -73,17 +73,26 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
     submit.mutate({ kind: "discparent", answers: { label: finalLabel, answers: { most: m, least: l } } } as never);
   };
 
-  /* v70：先清 pending 定时器再决定重挂——260ms 内取消选择不再留下"没选满却照跳"的洞 */
+  /* v70：先清 pending 定时器再决定重挂——260ms 内取消选择不再留下"没选满却照跳"的洞。
+     v71：到期复核（ref 最新数组），防御绕过 pick 的状态变化。 */
+  const mostRef = useRef(most);
+  mostRef.current = most;
+  const leastRef = useRef(least);
+  leastRef.current = least;
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advance = (m: number[], l: number[], cur: number) => {
     if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
     if (m[cur] == null || l[cur] == null) return;
     advanceTimer.current = window.setTimeout(() => {
+      advanceTimer.current = null;
+      const fm = mostRef.current;
+      const fl = leastRef.current;
+      if (fm[cur] == null || fl[cur] == null) return; // 到期复核：该组已被改动/清空，不跳
       if (cur + 1 < total) {
         setIdx(cur + 1);
       } else {
         /* V65：最后一组不再静默——走统一提交入口（漏组会跳过去并提示） */
-        finish(m, l);
+        finish(fm, fl);
       }
     }, 260);
   };
