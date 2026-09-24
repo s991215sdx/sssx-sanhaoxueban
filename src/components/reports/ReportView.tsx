@@ -58,6 +58,17 @@ import {
 } from "@contracts/mentalHealth";
 import type { AcademicsData } from "@contracts/academics";
 import { SELF_LEVELS } from "@contracts/academics";
+import {
+  downloadReport,
+  mbtiPrintHtml,
+  discPrintHtml,
+  multi5PrintHtml,
+  anchorPrintHtml,
+  hollandPrintHtml,
+  mentalPrintHtml,
+  combinedPrintHtml,
+  e3V37PrintHtml,
+} from "@/lib/reportDownload";
 import { buildAnswerBlocks, answerKindsForSection } from "@/components/reports/answerBlocks";
 import type { AnswerBlock, RawAnswer } from "@/components/reports/answerBlocks";
 import { RichText } from "@/components/RichText";
@@ -2551,8 +2562,35 @@ export default function ReportView({
       parent: "家长报告（亲子对照与沟通建议）",
       combined: "综合学习力报告",
     };
+    const title = TAB_TITLE[tab];
+    const studentName = profile?.name ?? undefined;
+    /* V61：优先用独立打印窗口生成器（reportDownload.ts，干净内联样式 HTML），
+       修复 window.print 打印实时页面导致的元素重叠/乱码（绝对定位徽章与网格在打印介质下错位）。 */
+    const html =
+      tab === "e3" && e3v37
+        ? e3V37PrintHtml(e3v37, studentName)
+        : tab === "mbti" && data?.mbti && MBTI_REPORTS[data.mbti.type]
+          ? mbtiPrintHtml(data.mbti)
+          : tab === "disc" && data?.disc && DISC_REPORTS[data.disc.primary]
+            ? discPrintHtml(data.disc)
+            : tab === "multi5" && data?.multi5
+              ? multi5PrintHtml(data.multi5)
+              : tab === "anchor" && data?.anchor
+                ? anchorPrintHtml(data.anchor as AnchorResult)
+                : tab === "holland" && data?.holland
+                  ? hollandPrintHtml(data.holland as HollandResult)
+                  : tab === "mental" && data?.mental
+                    ? mentalPrintHtml(data.mental as MentalResult)
+                    : tab === "combined" && combined
+                      ? combinedPrintHtml(combined, { e3: data?.e3, academics: profile?.academics ?? undefined })
+                      : null;
+    if (html != null) {
+      downloadReport(title, html, studentName);
+      return;
+    }
+    /* 家长报告（discparent）与心理新量表变体（SDQ/PHQ-A/GAD-7/SCL-90）暂无独立打印版，沿用页面打印 */
     const prevTitle = document.title;
-    document.title = `${profile?.name ? `${profile.name} - ` : ""}${TAB_TITLE[tab]}`;
+    document.title = `${profile?.name ? `${profile.name} - ` : ""}${title}`;
     /* 打印前强制展开所有折叠块（否则 PDF 里折叠内容是空的），打印后恢复原状 */
     const root = document.getElementById("report-print-root");
     const closedFolds = Array.from(root?.querySelectorAll("details:not([open])") ?? []);

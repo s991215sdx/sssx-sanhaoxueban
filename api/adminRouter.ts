@@ -48,22 +48,31 @@ export const adminRouter = createRouter({
       return { ok: true };
     }),
 
-  /** 学员列表：档案 + 测评标签 + 学习概览 + 已分配伴学师（V59：限本机构）。 */
-  students: adminQuery.query(async ({ ctx }) => {
-    return listStudents(getDb(), ctx.user.orgId);
-  }),
+  /**
+   * 学员列表：档案 + 测评标签 + 学习概览 + 已分配伴学师。
+   * V59：限本机构；V60：超管可看全部；V61：超管可传 orgId 按系统（机构）查看。
+   */
+  students: adminQuery
+    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null }))
+    .query(async ({ ctx, input }) => {
+      /* 机构管理员强制本机构；平台超管：orgId 为数字=该系统，空=全部 */
+      const scope = ctx.user.orgId ?? input.orgId ?? null;
+      return listStudents(getDb(), scope);
+    }),
 
-  /** 学员详情：档案 + 学业目标 + 全部测评（含答题明细）+ 学习数据（V59：限本机构）。 */
+  /** 学员详情：档案 + 学业目标 + 全部测评（含答题明细）+ 学习数据（V59：限本机构；V60 超管不校验）。 */
   studentDetail: adminQuery
     .input((v: unknown) => v as { userId: number })
     .query(async ({ ctx, input }) => {
       return getStudentDetail(getDb(), input.userId, ctx.user.orgId);
     }),
 
-  /** 伴学师列表：每人名下学员数与学员活跃度（V56：含多对多分配，去重；V59：限本机构；V60 超管看全部）。 */
-  tutors: adminQuery.query(async ({ ctx }) => {
+  /** 伴学师列表：每人名下学员数与学员活跃度（V56：含多对多分配，去重；V59：限本机构；V60 超管看全部；V61 超管可按系统查看）。 */
+  tutors: adminQuery
+    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null }))
+    .query(async ({ ctx, input }) => {
     const db = getDb();
-    const orgId = ctx.user.orgId;
+    const orgId = ctx.user.orgId ?? input.orgId ?? null;
     const tutors =
       orgId == null
         ? await db.select().from(users).where(eq(users.role, "tutor")) // 平台超管：全部机构
@@ -139,10 +148,12 @@ export const adminRouter = createRouter({
       return { ok: true, tutorIds: ids };
     }),
 
-  /** 总览：用户数与关键业务量（V59：限本机构；V60：平台超管看全系统合计）。 */
-  overview: adminQuery.query(async ({ ctx }) => {
+  /** 总览：用户数与关键业务量（V59：限本机构；V60：平台超管看全系统合计；V61：超管可传 orgId 按系统查看）。 */
+  overview: adminQuery
+    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null }))
+    .query(async ({ ctx, input }) => {
     const db = getDb();
-    const orgId = ctx.user.orgId;
+    const orgId = ctx.user.orgId ?? input.orgId ?? null;
     if (orgId == null) {
       /* 平台超管：全系统总量（不过滤机构） */
       const count = async <T>(table: T): Promise<number> => {
@@ -200,10 +211,12 @@ export const adminRouter = createRouter({
     };
   }),
 
-  /** 用户列表：每人一行的学习概览（V59：限本机构；V60 超管看全部并带机构名）。 */
-  users: adminQuery.query(async ({ ctx }) => {
+  /** 用户列表：每人一行的学习概览（V59：限本机构；V60 超管看全部并带机构名；V61 超管可按系统查看）。 */
+  users: adminQuery
+    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null }))
+    .query(async ({ ctx, input }) => {
     const db = getDb();
-    const orgId = ctx.user.orgId;
+    const orgId = ctx.user.orgId ?? input.orgId ?? null;
     const allUsers =
       orgId == null
         ? await db.select().from(users).orderBy(desc(users.createdAt)) // 平台超管：全部机构

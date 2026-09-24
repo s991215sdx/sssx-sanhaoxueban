@@ -64,7 +64,7 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Users; label: str
   );
 }
 
-type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs";
+type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs" | "dash";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "overview", label: "总览" },
@@ -75,12 +75,23 @@ const ADMIN_TABS: { key: AdminTab; label: string }[] = [
 
 function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; onRefresh: () => void; platform?: boolean }) {
   const refresh = onRefresh;
-  const [tab, setTab] = useState<AdminTab>(platform ? "orgs" : "overview");
-  const tabs = platform ? [{ key: "orgs" as AdminTab, label: "机构管理" }, ...ADMIN_TABS] : ADMIN_TABS;
+  const [tab, setTab] = useState<AdminTab>(platform ? "dash" : "overview");
+  const tabs = platform
+    ? [
+        { key: "orgs" as AdminTab, label: "机构管理" },
+        { key: "dash" as AdminTab, label: "数据仪表盘" },
+        ...ADMIN_TABS,
+      ]
+    : ADMIN_TABS;
+  /* V61：平台超管的系统选择器——选某个机构=只看该系统的数据；默认全部 */
+  const [orgSel, setOrgSel] = useState<number | "all">("all");
+  /* 始终传对象（tRPC input 非可选）；机构管理员的 orgId 会被后端强制为本机构，传 null 无影响 */
+  const orgScope = { orgId: platform ? (orgSel === "all" ? null : orgSel) : null };
+  const { data: orgsForSel } = trpc.org.list.useQuery(undefined, { enabled: platform });
   const [detailId, setDetailId] = useState<number | null>(null);
   const utils = trpc.useUtils();
-  const { data: overview } = trpc.admin.overview.useQuery();
-  const { data: users, isLoading } = trpc.admin.users.useQuery();
+  const { data: overview } = trpc.admin.overview.useQuery(orgScope);
+  const { data: users, isLoading } = trpc.admin.users.useQuery(orgScope);
   const setRole = trpc.admin.setRole.useMutation({
     onSuccess: () => {
       utils.admin.users.invalidate();
@@ -132,7 +143,29 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       </div>
 
       {tab === "orgs" && <OrgAdminTab />}
+      {tab === "dash" && <PlatformDashboard onPickOrg={(id) => { setOrgSel(id); setTab("overview"); }} />}
       {tab === "invites" && <InviteChannelsTab />}
+      {/* V61：超管分系统查看——数据类 tab 上方的系统选择器（机构管理员无此条，恒看本机构） */}
+      {platform && (tab === "overview" || tab === "students" || tab === "tutors") && (
+        <div className="paper-card flex flex-wrap items-center gap-2.5 px-4 py-2.5">
+          <span className="text-[12.5px] font-semibold text-olive">查看系统</span>
+          <select
+            value={orgSel === "all" ? "all" : String(orgSel)}
+            onChange={(e) => setOrgSel(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="rounded-lg border border-border bg-cream px-2.5 py-1.5 text-[12.5px] text-olive outline-none focus:border-lime"
+          >
+            <option value="all">全部系统（跨机构合计）</option>
+            {(orgsForSel ?? []).map((o) => (
+              <option key={o.id} value={String(o.id)}>
+                {o.brandName || o.name}
+              </option>
+            ))}
+          </select>
+          {orgSel !== "all" && (
+            <span className="text-[11.5px] text-olive-mute">当前只显示该系统（机构）的数据</span>
+          )}
+        </div>
+      )}
       {tab === "overview" && (
         <>
           {overview && (
@@ -221,18 +254,18 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
         </>
       )}
 
-      {tab === "students" && <StudentsTab platform={platform} />}
-      {tab === "tutors" && <TutorsTab />}
+      {tab === "students" && <StudentsTab platform={platform} orgScope={orgScope} />}
+      {tab === "tutors" && <TutorsTab orgScope={orgScope} />}
     </div>
   );
 }
 
-/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注。 */
-function StudentsTab({ platform = false }: { platform?: boolean }) {
+/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注；orgScope=超管分系统筛选。 */
+function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgScope: { orgId: number | null } }) {
   const [detailId, setDetailId] = useState<number | null>(null);
   const [q, setQ] = useState("");
-  const { data: students, isLoading } = trpc.admin.students.useQuery();
-  const { data: tutors } = trpc.admin.tutors.useQuery();
+  const { data: students, isLoading } = trpc.admin.students.useQuery(orgScope);
+  const { data: tutors } = trpc.admin.tutors.useQuery(orgScope);
   const kw = q.trim();
   const filtered = (students ?? []).filter(
     (s) => !kw || s.name.includes(kw) || (s.phone ?? "").includes(kw),
@@ -327,10 +360,10 @@ function StudentsTab({ platform = false }: { platform?: boolean }) {
   );
 }
 
-/** 伴学师 tab：admin.tutors 列表，行内学员可调整伴学师分配（多对多）。 */
-function TutorsTab() {
-  const { data: tutors, isLoading } = trpc.admin.tutors.useQuery();
-  const { data: students } = trpc.admin.students.useQuery();
+/** 伴学师 tab：admin.tutors 列表，行内学员可调整伴学师分配（多对多）。orgScope=超管分系统筛选。 */
+function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
+  const { data: tutors, isLoading } = trpc.admin.tutors.useQuery(orgScope);
+  const { data: students } = trpc.admin.students.useQuery(orgScope);
   const assignedOf = (userId: number) => students?.find((s) => s.userId === userId)?.tutors ?? [];
 
   return (
@@ -451,6 +484,82 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
                 ))}
               </div>
             </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+/** V61：平台超管数据仪表盘——全系统合计 + 各机构（独立系统）对比；点机构行可跳到该系统的数据视图。 */
+function PlatformDashboard({ onPickOrg }: { onPickOrg: (orgId: number) => void }) {
+  const { data: rows, isLoading } = trpc.org.dashboard.useQuery();
+  const total = (rows ?? []).reduce(
+    (acc, r) => ({
+      students: acc.students + r.studentCount,
+      tutors: acc.tutors + r.tutorCount,
+      attempts: acc.attempts + r.attemptCount,
+      errors: acc.errors + r.errorCount,
+      moods: acc.moods + r.moodCount,
+      previews: acc.previews + r.previewCount,
+    }),
+    { students: 0, tutors: 0, attempts: 0, errors: 0, moods: 0, previews: 0 },
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* 全系统合计 */}
+      <div>
+        <p className="mb-2 text-[12.5px] font-semibold text-olive-mute">全部系统合计（{(rows ?? []).length} 个独立系统）</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <StatCard icon={Users} label="学员总数" value={total.students} />
+          <StatCard icon={HeartHandshake} label="伴学师" value={total.tutors} />
+          <StatCard icon={PenLine} label="答题记录" value={total.attempts} />
+          <StatCard icon={Bandage} label="错题总数" value={total.errors} />
+          <StatCard icon={HeartHandshake} label="树洞条数" value={total.moods} />
+          <StatCard icon={BookOpenCheck} label="完成预习" value={total.previews} />
+        </div>
+      </div>
+
+      {/* 各独立系统对比 */}
+      <div className="paper-card overflow-hidden">
+        <div className="border-b border-border px-5 py-3.5">
+          <span className="text-[14.5px] font-semibold text-olive">各独立系统数据</span>
+          <span className="ml-2 text-[11.5px] text-olive-mute">点「查看」可按系统筛选总览/学员/伴学师数据</span>
+        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {(rows ?? []).map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[14.5px] font-semibold text-olive">{r.brandName || r.name}</span>
+                    {!r.active && <span className="chip !py-0.5 !text-[10.5px] text-terra">已停用</span>}
+                  </div>
+                  <div className="mono mt-0.5 text-[11px] text-olive-mute">
+                    学员 {r.studentCount} · 伴学师 {r.tutorCount} · 管理员 {r.adminCount}
+                    {r.lastActiveAt && <> · 最近活跃 {new Date(r.lastActiveAt).toLocaleDateString("zh-CN")}</>}
+                  </div>
+                </div>
+                <div className="mono hidden text-[12px] text-olive-soft sm:block">
+                  答题 {r.attemptCount} · 错题 {r.errorCount} · 树洞 {r.moodCount} · 预习 {r.previewCount}
+                </div>
+                <button
+                  onClick={() => onPickOrg(r.id)}
+                  className="rounded-lg border border-border bg-cream px-3 py-1.5 text-[12.5px] font-medium text-olive hover:border-lime"
+                >
+                  查看该系统
+                </button>
+              </div>
+            ))}
+            {(rows ?? []).length === 0 && (
+              <p className="px-5 py-8 text-center text-[13px] text-olive-mute">还没有任何机构，先在「机构管理」里创建。</p>
+            )}
           </div>
         )}
       </div>

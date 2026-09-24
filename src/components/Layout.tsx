@@ -69,6 +69,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   /* V59 SaaS：机构品牌名（商标）；平台超管与未登录一律显示平台品牌 */
   const brand = user?.org?.brandName ?? "三好学伴";
   const orgPaused = !!user?.org && !user.org.active;
+  /* V61 三系统分离：管理员/伴学师用工作台，不显示学员端服务功能导航 */
+  const isStaff = user?.role === "admin" || user?.role === "tutor";
   /* 学员端功能开关（v50）：null=全功能；数组=只显示这些模块（测评中心恒显示） */
   const { data: profile } = trpc.profile.get.useQuery();
   const enabledModules = profile?.enabledModules ?? null;
@@ -117,7 +119,8 @@ export default function Layout({ children }: { children: ReactNode }) {
           <Logo brand={brand} />
         )}
         <nav className={`mt-10 flex flex-col gap-1.5 ${collapsed ? "items-center" : ""}`}>
-          {NAV.filter((n) => navVisible(n.module)).map((n) => (
+          {/* V61：管理员/伴学师不显示学员端功能（预习/查漏/测评/树洞/报告等），只看工作台 */}
+          {!isStaff && NAV.filter((n) => navVisible(n.module)).map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
@@ -177,14 +180,16 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         ) : (
           <div className="mt-auto space-y-3">
-            <div className="rounded-xl border border-border bg-butter/50 p-3.5">
-              <div className="mono text-[10px] tracking-wider text-olive-mute">学习心法</div>
-              <p className="mt-1 text-[13px] leading-relaxed text-olive">
-                先预习，带着问题听课；
-                <br />
-                错题找根因，间隔来复习。
-              </p>
-            </div>
+            {!isStaff && (
+              <div className="rounded-xl border border-border bg-butter/50 p-3.5">
+                <div className="mono text-[10px] tracking-wider text-olive-mute">学习心法</div>
+                <p className="mt-1 text-[13px] leading-relaxed text-olive">
+                  先预习，带着问题听课；
+                  <br />
+                  错题找根因，间隔来复习。
+                </p>
+              </div>
+            )}
             {/* 当前用户 */}
             <div className="flex items-center gap-2.5 rounded-xl border border-border bg-cream-card p-3">
               <Avatar name={displayName} />
@@ -239,7 +244,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-5xl px-4 pt-6 md:px-8 md:pt-8">{children}</div>
       </main>
 
-      {/* 移动底部导航 */}
+      {/* 移动底部导航（V61：管理员/伴学师没有学员端功能，不显示底部学员导航） */}
+      {!isStaff && (
       <nav
         className="fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-cream-card/95 backdrop-blur md:hidden"
         style={{ gridTemplateColumns: `repeat(${MOBILE_NAV.filter((n) => navVisible(n.module)).length}, minmax(0, 1fr))` }}
@@ -258,6 +264,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </NavLink>
         ))}
       </nav>
+      )}
     </div>
   );
 }

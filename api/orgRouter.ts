@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { createRouter, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { organizations, studentProfile, users } from "@db/schema";
+import { attempts, errorLogs, moodEntries, organizations, previewSessions, studentProfile, users } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { isPlatformAdmin } from "./tenant";
 
@@ -50,6 +50,47 @@ export const orgRouter = createRouter({
     const db = getDb();
     const orgs = await db.select().from(organizations).orderBy(organizations.id);
     return Promise.all(orgs.map((o) => orgRow(db, o)));
+  }),
+
+  /**
+   * V61 数据仪表盘（平台超管）：每个机构的关键业务量（学员/伴学师/管理员 +
+   * 答题/错题/树洞/预习完成数）+ 最近活跃，供总系统一屏对比各系统运营情况。
+   */
+  dashboard: adminQuery.query(async ({ ctx }) => {
+    requirePlatformAdmin(ctx.user);
+    const db = getDb();
+    const orgs = await db.select().from(organizations).orderBy(organizations.id);
+    /* 业务量 = 该机构用户产生的记录数（业务表 join users 按 orgId 分组） */
+    const joinCountByOrg = async (table: never, col: never, extra?: ReturnType<typeof eq>) => {
+      const rows = await db
+        .select({ orgId: users.orgId, c: sql<number>`count(*)` })
+        .from(table as never)
+        .innerJoin(users, eq(col as never, users.id))
+        .where(extra)
+        .groupBy(users.orgId);
+      return new Map((rows as { orgId: number | null; c: number }[]).map((r) => [Number(r.orgId), Number(r.c)]));
+    };
+    const [attMap, errMap, moodMap, prevMap, lastActiveRows] = await Promise.all([
+      joinCountByOrg(attempts as never, attempts.userId as never),
+      joinCountByOrg(errorLogs as never, errorLogs.userId as never),
+      joinCountByOrg(moodEntries as never, moodEntries.userId as never),
+      joinCountByOrg(previewSessions as never, previewSessions.userId as never, eq(previewSessions.completed, true)),
+      db.select({ orgId: users.orgId, last: sql<string>`max(${users.lastSignInAt})` }).from(users).groupBy(users.orgId),
+    ]);
+    const lastActiveMap = new Map(lastActiveRows.map((r) => [Number(r.orgId), r.last]));
+    return Promise.all(
+      orgs.map(async (o) => {
+        const base = await orgRow(db, o);
+        return {
+          ...base,
+          attemptCount: attMap.get(o.id) ?? 0,
+          errorCount: errMap.get(o.id) ?? 0,
+          moodCount: moodMap.get(o.id) ?? 0,
+          previewCount: prevMap.get(o.id) ?? 0,
+          lastActiveAt: lastActiveMap.get(o.id) ?? null,
+        };
+      }),
+    );
   }),
 
   /**

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { createRouter, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { studentProfile, users } from "@db/schema";
+import { studentPrescriptions, studentProfile, users } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
@@ -150,6 +150,82 @@ export const coachRouter = createRouter({
       return { ok: true as const, modules: value };
     }),
 
+  /**
+   * V61：开方——伴学师勾选方案库训练方法（+自写补充方案），推送到学员端。
+   * 伴学师限名下学员；管理员限本机构学员。
+   */
+  createPrescription: tutorQuery
+    .input(
+      z.object({
+        userId: z.number().int(),
+        methods: z
+          .array(
+            z.object({
+              id: z.string().max(16),
+              name: z.string().max(64),
+              sub: z.string().max(64),
+              board: z.string().max(4),
+              ability: z.string().max(32).optional(),
+            }),
+          )
+          .min(1)
+          .max(30),
+        customText: z.string().max(4000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      if (ctx.user.role !== "admin") {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
+      }
+      const target = (await db.select({ id: users.id }).from(users).where(eq(users.id, input.userId)).limit(1))[0];
+      if (!target) throw new Error("学员账号不存在");
+      await db.insert(studentPrescriptions).values({
+        studentUserId: input.userId,
+        tutorUserId: ctx.user.id,
+        methods: input.methods,
+        customText: input.customText?.trim() || null,
+      });
+      return { ok: true as const };
+    }),
+
+  /** V61：某学员的开方记录（伴学师限名下，管理员限本机构）。 */
+  listPrescriptions: tutorQuery
+    .input((v: unknown) => v as { userId: number })
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      if (ctx.user.role !== "admin") {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
+      }
+      const rows = await db
+        .select()
+        .from(studentPrescriptions)
+        .where(eq(studentPrescriptions.studentUserId, input.userId))
+        .orderBy(studentPrescriptions.createdAt);
+      const tutorIds = [...new Set(rows.map((r) => r.tutorUserId))];
+      const tutorRows = tutorIds.length
+        ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, tutorIds))
+        : [];
+      const tutorName = new Map(tutorRows.map((t) => [t.id, t.name ?? `伴学师${t.id}`]));
+      return rows
+        .map((r) => ({
+          id: r.id,
+          tutorName: tutorName.get(r.tutorUserId) ?? "伴学师",
+          methods: (r.methods ?? []) as { id: string; name: string; sub: string; board: string; ability?: string }[],
+          customText: r.customText ?? null,
+          createdAt: r.createdAt,
+        }))
+        .reverse();
+    }),
+
   /** V57：AI 陪跑问诊——描述孩子近期遇到的问题，AI 结合三阶九能训练方案库给对策。
    *  AI 不可用时降级为规则匹配（按关键词命中能力 → 典型问题 + 简要方案 + 训练方法），功能永不硬失败。 */
   askAdvice: tutorQuery
@@ -217,6 +293,14 @@ export const coachRouter = createRouter({
         `孩子近期遇到的问题：\n${input.question}`,
       ].filter(Boolean).join("\n\n");
 
+      /* V61：无论 AI 还是规则兜底，都附带命中能力的方案库方法（结构化，前端可点开看详细做法） */
+      const hit = matchAbility(input.question, input.ability ?? null);
+      const rx = E3V37_ABILITY_TRAINING[hit.ability];
+      const methods = (rx?.methodIds ?? [])
+        .map((id) => METHOD_BY_ID.get(id))
+        .filter((m) => m != null)
+        .map((m) => ({ id: m.id, name: m.name, sub: m.sub, board: m.board }));
+
       const ai = await tryChat(
         [
           { role: "system", content: sysPrompt },
@@ -224,17 +308,11 @@ export const coachRouter = createRouter({
         ],
         { timeoutMs: 45000, maxTokens: 2500 },
       );
-      if (ai) return { answer: ai, ai: true as const };
+      if (ai) return { answer: ai, ai: true as const, ability: hit.ability, methods };
 
       /* —— AI 不可用：规则兜底 —— */
-      const hit = matchAbility(input.question, input.ability ?? null);
-      const rx = E3V37_ABILITY_TRAINING[hit.ability];
       const plan = THREE_TIER_PLANS.find((p) => p.ability === hit.ability);
-      const methodNames = (rx?.methodIds ?? [])
-        .map((id) => METHOD_BY_ID.get(id))
-        .filter((m) => m != null)
-        .map((m) => `${m.name}（${m.sub}）`)
-        .join("、");
+      const methodNames = methods.map((m) => `${m.name}（${m.sub}）`).join("、");
       const fallback = [
         `（AI 通道暂不可用，以下为方案库规则匹配结果）`,
         `问题判断：主要对应【${hit.tier}·${hit.ability}】。`,
@@ -243,7 +321,7 @@ export const coachRouter = createRouter({
         methodNames ? `建议训练方法：${methodNames}` : null,
         rx?.note ? `补充约定：${rx.note}` : null,
       ].filter(Boolean).join("\n");
-      return { answer: fallback, ai: false as const };
+      return { answer: fallback, ai: false as const, ability: hit.ability, methods };
     }),
 });
 

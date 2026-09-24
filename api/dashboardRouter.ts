@@ -1,7 +1,7 @@
 import { asc, eq, gte, and, lte, inArray } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { attempts, errorLogs, knowledgePoints, previewSessions, reviewItems } from "@db/schema";
+import { attempts, errorLogs, knowledgePoints, previewSessions, reviewItems, studentPrescriptions, users } from "@db/schema";
 import { dayStr, getMasteryMap, scopeKpsToUserGrade } from "./helpers";
 
 export const dashboardRouter = createRouter({
@@ -129,5 +129,29 @@ export const dashboardRouter = createRouter({
       },
       suggestions,
     };
+  }),
+
+  /** V61：我的伴学处方（学员端首页展示）：伴学师勾选的训练方法 + 自写补充方案。 */
+  myPrescriptions: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(studentPrescriptions)
+      .where(eq(studentPrescriptions.studentUserId, ctx.user.id))
+      .orderBy(studentPrescriptions.createdAt);
+    const tutorIds = [...new Set(rows.map((r) => r.tutorUserId))];
+    const tutorRows = tutorIds.length
+      ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, tutorIds))
+      : [];
+    const tutorName = new Map(tutorRows.map((t) => [t.id, t.name ?? `伴学师${t.id}`]));
+    return rows
+      .map((r) => ({
+        id: r.id,
+        tutorName: tutorName.get(r.tutorUserId) ?? "伴学师",
+        methods: (r.methods ?? []) as { id: string; name: string; sub: string; board: string; ability?: string }[],
+        customText: r.customText ?? null,
+        createdAt: r.createdAt,
+      }))
+      .reverse();
   }),
 });

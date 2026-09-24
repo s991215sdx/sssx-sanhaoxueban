@@ -418,3 +418,22 @@ export const inviteRegistrations = mysqlTable("invite_registrations", {
 });
 
 export type InviteRegistration = typeof inviteRegistrations.$inferSelect;
+
+/* ---------------------------------- 伴学处方（开方） --------------------------------- */
+
+/** V61：伴学师开方——勾选方案库训练方法 + 自写补充方案，推送给学员端查看。 */
+export const studentPrescriptions = mysqlTable("student_prescriptions", {
+  id: serial("id").primaryKey(),
+  /** 学员（users.id） */
+  studentUserId: bigint("student_user_id", { mode: "number", unsigned: true }).notNull(),
+  /** 开方的伴学师/管理员（users.id） */
+  tutorUserId: bigint("tutor_user_id", { mode: "number", unsigned: true }).notNull(),
+  /** 勾选的训练方法快照：[{id,name,sub,board,ability}] */
+  methods: json("methods").notNull(),
+  /** 伴学师自写的补充方案（可空） */
+  customText: text("custom_text"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type StudentPrescription = typeof studentPrescriptions.$inferSelect;
+export type InsertStudentPrescription = typeof studentPrescriptions.$inferInsert;

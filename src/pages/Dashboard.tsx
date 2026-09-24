@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { MasteryBar, scoreLabel, scoreColor } from "@/components/ScoreRing";
 import OmniBox from "@/components/OmniBox";
+import PrescriptionsCard from "@/components/PrescriptionsCard";
 import {
   Flame,
   AlarmClock,
@@ -327,6 +328,9 @@ export default function Dashboard() {
 
       {/* 心情小条 */}
       <MoodStrip />
+
+      {/* V61：伴学处方（伴学师开方推送） */}
+      <PrescriptionsCard />
 
       {/* 今日计划 */}
       <TodayPlan />

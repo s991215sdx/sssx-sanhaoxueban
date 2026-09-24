@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Sparkles, SendHorizonal, Loader2 } from "lucide-react";
+import { Sparkles, SendHorizonal, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { THREE_TIER_PLANS } from "@/data/training/threeTierPlans";
+import { METHOD_BY_ID, BOARD_LABEL } from "@/data/training/methods";
 import { RichText } from "@/components/RichText";
 
 /**
@@ -98,8 +99,57 @@ export default function AiCoachPanel() {
           <div className="mt-2.5 whitespace-pre-line text-[13px] leading-relaxed text-olive">
             <RichText text={ask.data.answer} />
           </div>
+          {/* V61：推荐训练方法可点开看详细做法（适用/目的/步骤/频率/工具） */}
+          {(ask.data.methods?.length ?? 0) > 0 && (
+            <div className="mt-3">
+              <div className="text-[12px] font-semibold text-olive-mute">
+                方案库推荐方法{ask.data.ability ? `（对应能力：${ask.data.ability}）` : ""} · 点开看详细做法
+              </div>
+              <div className="mt-2 space-y-2">
+                {ask.data.methods.map((m) => (
+                  <MethodDetailCard key={m.id} methodId={m.id} name={m.name} sub={m.sub} board={m.board} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>
+  );
+}
+
+/** 问诊答案下的单个训练方法卡：点击展开/收起详细做法。 */
+function MethodDetailCard({ methodId, name, sub, board }: { methodId: string; name: string; sub: string; board: "N" | "D" | "X" | "P" }) {
+  const [open, setOpen] = useState(false);
+  const m = METHOD_BY_ID.get(methodId);
+  return (
+    <div className="rounded-lg border border-cream-deep bg-cream/70">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-1.5 px-3 py-2 text-left"
+      >
+        <span className="text-[12.5px] font-semibold text-olive">
+          {name}
+          <span className="ml-1 font-normal text-olive-mute">（{BOARD_LABEL[board]} · {sub}）</span>
+        </span>
+        {open ? <ChevronUp size={14} className="shrink-0 text-olive-mute" /> : <ChevronDown size={14} className="shrink-0 text-olive-mute" />}
+      </button>
+      {open && m && (
+        <div className="space-y-1.5 border-t border-cream-deep px-3 py-2.5 text-[12.5px] leading-relaxed text-olive-soft">
+          {m.problems && <p className="whitespace-pre-line"><b className="text-olive">适用：</b>{m.problems}</p>}
+          {m.purpose && <p className="whitespace-pre-line"><b className="text-olive">目的：</b>{m.purpose}</p>}
+          {m.steps.length > 0 && (
+            <ol className="list-decimal space-y-1 pl-5">
+              {m.steps.map((s, si) => (
+                <li key={si}>{s}</li>
+              ))}
+            </ol>
+          )}
+          {m.schedule && <p><b className="text-olive">频率：</b>{m.schedule}</p>}
+          {m.tool && m.tool !== "无" && <p><b className="text-olive">工具：</b>{m.tool}</p>}
+        </div>
+      )}
+    </div>
   );
 }

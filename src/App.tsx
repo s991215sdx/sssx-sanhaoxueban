@@ -48,10 +48,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 档案守卫：无档案，或未走完引导且未点过「稍后再测」→ 先去 /welcome。 */
+/** 档案守卫：无档案，或未走完引导且未点过「稍后再测」→ 先去 /welcome。V61：管理员/伴学师不走学员引导。 */
 function ProfileGuard({ children }: { children: React.ReactNode }) {
-  const { data: profile, isLoading } = trpc.profile.get.useQuery();
+  const { user } = useAuth();
+  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  const { data: profile, isLoading } = trpc.profile.get.useQuery(undefined, { enabled: !isStaff });
 
+  if (isStaff) return <>{children}</>;
   if (isLoading) return <FullScreenLoading text="正在打开你的学习档案…" />;
   const skipped = typeof window !== "undefined" && localStorage.getItem("onboardingSkipped");
   if (!profile || (!profile.onboarded && !skipped)) {
@@ -60,16 +63,35 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 模块门禁：受限学员（enabledModules 非空）只能访问已开启模块；首页直落测评中心。 */
+/** 模块门禁：受限学员（enabledModules 非空）只能访问已开启模块；首页直落测评中心。V61：staff 不受限。 */
 function ModuleGate({ children }: { children: React.ReactNode }) {
-  const { data: profile } = trpc.profile.get.useQuery();
+  const { user } = useAuth();
+  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  const { data: profile } = trpc.profile.get.useQuery(undefined, { enabled: !isStaff });
   const location = useLocation();
+  if (isStaff) return <>{children}</>;
   const mods = profile?.enabledModules;
   if (mods != null) {
     const key = moduleForPath(location.pathname);
     if (key === "home" || (key != null && key !== "assessments" && !mods.includes(key))) {
       return <Navigate to="/assessments" replace />;
     }
+  }
+  return <>{children}</>;
+}
+
+/**
+ * V61 三系统分离·角色门禁：
+ * 管理员/伴学师只用工作台（/tutor）与后台（/admin），访问学员端页面一律重定向到伴学工作台。
+ */
+function RoleGate({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  const staffPaths = ["/tutor", "/admin"];
+  const onStaffPath = staffPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`));
+  if (isStaff && !onStaffPath) {
+    return <Navigate to="/tutor" replace />;
   }
   return <>{children}</>;
 }
@@ -96,6 +118,7 @@ export default function App() {
           <AuthGate>
             <ProfileGuard>
               <ModuleGate>
+                <RoleGate>
                 <Layout>
                 <Suspense fallback={<PageSpinner />}>
                   <Routes>
@@ -116,6 +139,7 @@ export default function App() {
                   </Routes>
                 </Suspense>
                 </Layout>
+                </RoleGate>
               </ModuleGate>
             </ProfileGuard>
           </AuthGate>
