@@ -35,8 +35,7 @@ export type FrameworkStatus = {
   multi5?: { done: boolean; note?: string; subs?: string[] }; // 五项维度分
   mbti?: { done: boolean; note?: string; subs?: string[] };
   disc?: { done: boolean; note?: string; subs?: string[] };
-  holland?: { done: boolean; note?: string; subs?: string[] };
-  anchor?: { done: boolean; note?: string; subs?: string[] };
+  /* V72：霍兰德/职业锚已迁入升学指导报告，冰山深层特质行只保留 MBTI/DISC。 */
 };
 
 /** 三阶递进配置（V52 起不再用绿/蓝/金底色，统一按红黄绿档着色）。 */
@@ -52,12 +51,10 @@ const BASES: { name: string; key: "条件" | "学能"; sub: string; abilities: s
   { name: "学能 · 能力系统", key: "学能", sub: "加工效率 · 单独报告，不进总分", abilities: ["注意力", "工作记忆", "加工速度"] },
 ];
 
-/** 深层特质行四小框（特质无三档评分，保持中性暖灰）。 */
-const DEEP_TRAITS: { key: "mbti" | "disc" | "holland" | "anchor"; label: string }[] = [
+/** 深层特质行小框（特质无三档评分，保持中性暖灰）。V72：只保留性格行为两项。 */
+const DEEP_TRAITS: { key: "mbti" | "disc"; label: string }[] = [
   { key: "mbti", label: "MBTI 性格" },
   { key: "disc", label: "DISC 行为" },
-  { key: "holland", label: "霍兰德兴趣" },
-  { key: "anchor", label: "职业锚" },
 ];
 
 /** 状态徽标：done=绿底实线（纯展示）；未完成=灰虚线，给了 onClick 时可点击（去测评/去填）。 */
@@ -139,7 +136,7 @@ export default function SystemFramework({
   const e3Done = !!status?.e3?.done;
   const assessE3 = onOpen ? () => open({ kind: "assess", start: "e3" }) : undefined;
   const unitOf = (label: string): FrameworkUnit | undefined => status?.e3?.units?.[label];
-  const showDeep = !!(status?.mbti || status?.disc || status?.holland || status?.anchor);
+  const showDeep = !!(status?.mbti || status?.disc);
   const tierLevel = (score?: number) => (e3Done && score != null ? frameworkScoreLevel(score) : undefined);
   const condLevel = tierLevel(status?.e3?.conditionAvg);
   const aptLevel = tierLevel(status?.e3?.aptitudeAvg);

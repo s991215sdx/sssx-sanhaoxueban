@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { GRADES } from "@contracts/constants";
 import { Minus, Plus, RotateCcw, Target, KeyRound } from "lucide-react";
 
-/** 伴学师 · 我的档案：基础信息 + 每日时长可改 + 测评标签。 */
+/** 伴学师 · 我的档案：基础信息（可改）+ 每日时长可改 + 测评标签。V72：基本信息支持随时修改。 */
 export default function ProfileCard() {
-  const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data: profile, isLoading } = trpc.profile.get.useQuery();
 
@@ -16,6 +15,26 @@ export default function ProfileCard() {
 
   const update = trpc.profile.updateMinutes.useMutation({
     onSuccess: () => utils.profile.get.invalidate(),
+  });
+
+  /* V72：基本信息编辑（姓名/年级/学校/目标学校），复用 profile.setup（有档案则更新） */
+  const [editOpen, setEditOpen] = useState(false);
+  const [fName, setFName] = useState("");
+  const [fGrade, setFGrade] = useState("初一");
+  const [fSchool, setFSchool] = useState("");
+  const [fTarget, setFTarget] = useState("");
+  const openEdit = () => {
+    setFName(profile?.name ?? "");
+    setFGrade(profile?.grade ?? "初一");
+    setFSchool(profile?.school ?? "");
+    setFTarget(profile?.targetSchool ?? "");
+    setEditOpen(true);
+  };
+  const saveBasic = trpc.profile.setup.useMutation({
+    onSuccess: () => {
+      utils.profile.get.invalidate();
+      setEditOpen(false);
+    },
   });
 
   /* V53：修改登录密码 */
@@ -80,13 +99,69 @@ export default function ProfileCard() {
           </p>
         </div>
         <button
-          onClick={() => navigate("/welcome")}
+          onClick={openEdit}
           className="flex items-center gap-1.5 rounded-xl border border-olive px-3.5 py-2 text-[13px] font-medium text-olive hover:bg-lime-pale"
         >
           <RotateCcw size={14} />
-          重新测评
+          编辑基本信息
         </button>
       </div>
+
+      {/* V72：基本信息编辑表单 */}
+      {editOpen && (
+        <div className="mt-4 space-y-3 rounded-xl border border-lime/50 bg-lime-pale/30 p-4">
+          <div>
+            <label className="mono text-[11px] tracking-wider text-olive-mute">怎么称呼你？</label>
+            <input
+              value={fName}
+              onChange={(e) => setFName(e.target.value)}
+              maxLength={32}
+              className="mt-1 w-full rounded-xl border border-input bg-cream px-3.5 py-2.5 text-[14px] text-olive outline-none focus:border-lime"
+            />
+          </div>
+          <div>
+            <label className="mono text-[11px] tracking-wider text-olive-mute">年级</label>
+            <select value={fGrade} onChange={(e) => setFGrade(e.target.value)} className="mt-1 w-full rounded-xl border border-input bg-cream px-3.5 py-2.5 text-[14px] text-olive outline-none focus:border-lime">
+              {GRADES.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mono text-[11px] tracking-wider text-olive-mute">学校</label>
+              <input value={fSchool} onChange={(e) => setFSchool(e.target.value)} maxLength={64} className="mt-1 w-full rounded-xl border border-input bg-cream px-3.5 py-2.5 text-[14px] text-olive outline-none focus:border-lime" />
+            </div>
+            <div>
+              <label className="mono text-[11px] tracking-wider text-olive-mute">目标学校</label>
+              <input value={fTarget} onChange={(e) => setFTarget(e.target.value)} maxLength={64} className="mt-1 w-full rounded-xl border border-input bg-cream px-3.5 py-2.5 text-[14px] text-olive outline-none focus:border-lime" />
+            </div>
+          </div>
+          {saveBasic.isError && <p className="text-[12.5px] text-terra">保存失败，请再试一次。</p>}
+          <div className="flex gap-2">
+            <button
+              disabled={saveBasic.isPending || !fName.trim()}
+              onClick={() =>
+                saveBasic.mutate({
+                  name: fName.trim(),
+                  grade: fGrade,
+                  school: fSchool.trim() || undefined,
+                  targetSchool: fTarget.trim() || undefined,
+                  dailyMinutes: profile?.dailyMinutes ?? 45,
+                })
+              }
+              className="flex-1 rounded-xl bg-olive py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
+            >
+              {saveBasic.isPending ? "保存中…" : "保存基本信息"}
+            </button>
+            <button onClick={() => setEditOpen(false)} className="rounded-xl border border-border px-4 py-2.5 text-sm text-olive-mute hover:text-olive">
+              取消
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 测评标签 */}
       <div className="mt-4 flex flex-wrap gap-2">

@@ -17,7 +17,7 @@ import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import CombinedSuite from "@/components/assessment/CombinedSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass, Rocket } from "lucide-react";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
 type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental";
@@ -372,11 +372,8 @@ export default function AssessmentCenter() {
       {!testing && (
         <div className="grid gap-3 sm:grid-cols-2">
           <button
-            onClick={() => allRequired && navigate("/report-detail?tab=combined")}
-            disabled={!allRequired}
-            className={`paper-card flex items-center gap-3.5 p-5 text-left ${
-              allRequired ? "accent-l border-lime shadow-sm hover:bg-lime-pale/40" : "opacity-70"
-            }`}
+            onClick={() => navigate("/report-detail?tab=combined")}
+            className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-lime-pale/40"
           >
             <Sparkles size={30} className="shrink-0 text-lime-deep" />
             <div>
@@ -384,7 +381,20 @@ export default function AssessmentCenter() {
               <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
                 {allRequired
                   ? "MBTI × DISC × 学习力诊断 三合一，点开看你的专属综合报告 →"
-                  : "三项必测（MBTI / DISC / E3）都完成后即可查看，先去补齐吧。"}
+                  : "三项必测（MBTI / DISC / E3）都完成后即可查看完整版；没做完也能看进度和补缺入口 →"}
+              </p>
+            </div>
+          </button>
+          {/* V72：升学指导综合报告（霍兰德×职业锚×MBTI×DISC×五项智能） */}
+          <button
+            onClick={() => navigate("/report-detail?tab=guidance")}
+            className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-lime-pale/40"
+          >
+            <Compass size={30} className="shrink-0 text-terra" />
+            <div>
+              <h3 className="text-[16.5px] font-bold text-olive">升学指导报告</h3>
+              <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                选什么科 · 学什么专业 · 进什么行业：霍兰德×职业锚×性格×能力 交叉分析 →
               </p>
             </div>
           </button>
@@ -467,6 +477,13 @@ export default function AssessmentCenter() {
       {/* 底部入口 */}
       {!testing && (
         <div className="space-y-3">
+          <button
+            onClick={() => navigate("/report-detail?tab=profile")}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-cream-card py-2.5 text-[13px] text-olive-mute hover:border-lime/60 hover:text-olive"
+          >
+            <RotateCcw size={14} />
+            修改基本信息 / 成绩
+          </button>
           <button
             onClick={() => navigate("/report-detail")}
             className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-cream-card py-2.5 text-[13px] text-olive-mute hover:border-lime/60 hover:text-olive"

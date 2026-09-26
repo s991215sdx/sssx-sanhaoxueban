@@ -3,7 +3,7 @@ import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { assessmentResults, studentProfile, users, type StudentProfile } from "@db/schema";
+import { academicRecords, assessmentResults, studentProfile, users, type StudentProfile } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import {
   MBTI_QUESTIONS,
@@ -294,8 +294,41 @@ export const profileRouter = createRouter({
       } else {
         await db.insert(studentProfile).values({ userId, academics: value });
       }
+      /* V72：成绩多次记录——只要这次保存里有任何一科填了「最近分」，就追加一条历史（曲线图数据源）。
+         只改目标分/自评、没填分数的不产生记录，避免把编辑误当一次新考试。 */
+      const hasAnyScore = input.subjects.some((s) => s.lastScore != null);
+      if (hasAnyScore) {
+        await db.insert(academicRecords).values({
+          userId,
+          examName: input.examName ?? "",
+          subjects: input.subjects as unknown as Record<string, unknown>[],
+        });
+      }
       return { ok: true as const };
     }),
+
+  /** V72：成绩历史（新→旧），成绩变化曲线数据源。 */
+  academicRecords: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(academicRecords)
+      .where(eq(academicRecords.userId, ctx.user.id))
+      .orderBy(desc(academicRecords.id))
+      .limit(50);
+    return rows.map((r) => ({
+      id: r.id,
+      examName: r.examName,
+      subjects: (r.subjects ?? []) as {
+        name: string;
+        selfLevel: number | null;
+        fullScore: number | null;
+        lastScore: number | null;
+        targetScore: number | null;
+      }[],
+      createdAt: r.createdAt,
+    }));
+  }),
 });
 
 export const assessmentRouter = createRouter({

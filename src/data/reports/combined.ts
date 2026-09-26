@@ -24,12 +24,8 @@ import type { E3V37Result } from "@contracts/e3v37";
 import type { E3V37ParentResult } from "@contracts/e3v37Parent";
 import type { AcademicsData } from "@contracts/academics";
 import { calcGaps, summarizeGaps } from "@contracts/academics";
-import type { AnchorResult, AnchorKey } from "@contracts/careerAnchor";
-import { ANCHOR_LABEL, ANCHOR_ORDER, buildAnchorReport } from "@contracts/careerAnchor";
 import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_DIM_LABEL } from "@contracts/multi5";
-import type { HollandResult } from "@contracts/holland";
-import { HOLLAND_LABEL, buildHollandReport } from "@contracts/holland";
 import type { MentalResult, MentalV2Result, MentalV2Band, MentalSdqResult, MentalPaResult, Scl90Result } from "@contracts/mentalHealth";
 import { SCL90_FACTOR_LABEL, SCL90_FACTOR_ORDER } from "@contracts/mentalHealth";
 import { MENTAL_FACTOR_LABEL, isMentalV2, SDQ_DIM_LABEL } from "@contracts/mentalHealth";
@@ -433,11 +429,9 @@ const DISC_CONFLICT: Record<DiscType, Record<DiscType, string>> = {
 
 /* ------------------------- 主函数 ------------------------- */
 
-/** 综合报告可选扩展数据（多元智能八维已下线，仅保留客观五项）。 */
+/** 综合报告可选扩展数据（多元智能八维已下线，仅保留客观五项；霍兰德/职业锚 V72 起迁入升学指导报告）。 */
 export type CombinedReportOptions = {
   multi5?: Multi5Result;
-  anchor?: AnchorResult;
-  holland?: HollandResult;
   /** 心理健康：V2 通用版（PHQ-9+GAD-7）或旧版 V1 结果（历史数据兼容展示）。 */
   mental?: MentalResult | MentalV2Result;
   /** 心理健康 · 学生版 A（SDQ 学生自评）。 */
@@ -532,26 +526,7 @@ export function buildCombinedReport(
       tone: multi5.carefulIndex < 70 ? "amber" : "green",
     });
   }
-  const anchor = opts?.anchor;
-  if (anchor) {
-    const [a1, a2] = anchor.top2;
-    overviewCards.push({
-      label: "职业锚",
-      value: `${ANCHOR_LABEL[a1]} ${anchor.dims[a1].toFixed(1)} 分`,
-      note: `第二锚：${ANCHOR_LABEL[a2]} ${anchor.dims[a2].toFixed(1)} 分（5 分制均分）`,
-      tone: "green",
-    });
-  }
-  const holland = opts?.holland;
-  if (holland) {
-    const h1 = holland.top3[0];
-    overviewCards.push({
-      label: "霍兰德职业兴趣",
-      value: `代码 ${holland.code}`,
-      note: `首位 ${HOLLAND_LABEL[h1]} ${holland.dims[h1].toFixed(1)} 分（5 分制均分）`,
-      tone: "green",
-    });
-  }
+  /* V72：霍兰德与职业锚已从学习力综合报告移出，迁入「升学指导综合报告」（data/reports/guidance.ts）。 */
   const mental = opts?.mental;
   const mentalV2 = mental && isMentalV2(mental) ? mental : null;
   const mentalLegacy = mental && !isMentalV2(mental) ? mental : null;
@@ -1128,51 +1103,7 @@ export function buildCombinedReport(
     items: secAptItems.length > 0 ? secAptItems : undefined,
   };
 
-  /* ⑥. 兴趣与方向（霍兰德 + 职业锚，分值降序 + 代码/top3） */
-  let secCareer: CombinedSection | null = null;
-  if (anchor || holland) {
-    const paras: string[] = [
-      "这一章回答「**什么样的努力方式最适合你**」：职业锚看你内心最在乎的驱动力，霍兰德看你的兴趣类型——它们不谈天赋高低，只帮你把劲用在对的地方。",
-    ];
-    const items: NonNullable<CombinedSection["items"]> = [];
-    if (anchor) {
-      const ar = buildAnchorReport(anchor);
-      const sorted = ANCHOR_ORDER.map((k: AnchorKey) => ({ k, v: anchor.dims[k] })).sort((a, b) => b.v - a.v);
-      paras.push(
-        `**职业锚八型得分（从高到低）**：${sorted.map((x) => `${ANCHOR_LABEL[x.k]} ${x.v.toFixed(1)}`).join(" · ")}。第一锚「**${ANCHOR_LABEL[sorted[0].k]}**」是你最强的学习驱动——${ar.top2[0]?.studyImpact[0] ?? ""}`,
-      );
-      ar.top2.forEach((t, i) => {
-        items.push({
-          heading: `**职业锚 · ${t.label}** ${t.score.toFixed(1)} 分 · 第 ${i + 1} 锚`,
-          text:
-            `**① 这是什么**：${t.feature}\n` +
-            `**② 数据分析**：八型得分 ${sorted.map((x) => `${ANCHOR_LABEL[x.k]} ${x.v.toFixed(1)}`).join(" · ")}（5 分制均分，从高到低）——「**${t.label}**」排第 ${i + 1}，是你最看重的驱动力之一。\n` +
-            `**③ 详细建议 · 学习上的优势驱动**：${t.studyImpact[0]}。` +
-            t.studyImpact.slice(1).map((s) => `\n· ${s}。`).join("") +
-            `\n**更容易投入的方向**：${t.workStyle}；被认可的方式：${t.recognition}。相关职业领域参考：${t.careerFields.slice(0, 4).join("、")}。`,
-        });
-      });
-    }
-    if (holland) {
-      const hr = buildHollandReport(holland);
-      paras.push(
-        `**霍兰德职业兴趣代码 ${holland.code}**：${holland.top3.map((k, i) => `${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)} 分（第 ${i + 1} 位）`).join("、")}。`,
-      );
-      holland.top3.forEach((key, i) => {
-        const dd = hr.dims.find((x) => x.key === key);
-        if (!dd) return;
-        items.push({
-          heading: `**霍兰德 · ${dd.label}** ${dd.score.toFixed(1)} 分 · 代码第 ${i + 1} 位`,
-          text:
-            `**① 这是什么**：${dd.trait}\n` +
-            `**② 数据分析**：六型得分 ${hr.dims.map((x) => `${x.label} ${x.score.toFixed(1)}`).join(" · ")}（5 分制均分）——你的兴趣代码「${hr.code}」，本型位列第 ${i + 1}。${hr.top3[i]?.focus ?? ""}\n` +
-            `**③ 详细建议 · 对学习的影响**：\n${dd.studyImpact.map((s) => `· ${s}`).join("\n")}\n` +
-            `**方向参考**：匹配职业方向 ${dd.careers.slice(0, 4).join("、")}；大学专业举例 ${dd.majors.slice(0, 4).join("、")}。`,
-        });
-      });
-    }
-    secCareer = { title: "兴趣与方向", paragraphs: paras, items: items.length > 0 ? items : undefined };
-  }
+  /* V72：原「⑥. 兴趣与方向」（霍兰德+职业锚）已迁入升学指导综合报告，学习力报告不再展示。 */
 
   /* ⑧. 需要温柔关注的信号（心理红线 + 生活事件高风险并入） */
   const flagBullets: string[] = [...e3.redFlags];
@@ -1358,10 +1289,9 @@ export function buildCombinedReport(
     ],
   };
 
-  /* 章节组装：综合结论 → 乐学/会学/善学模块 → 学能模块 → 条件模块 → 亲子对照（条件大类）→ 兴趣与方向 → 信号 → 家长 → 训练点子速查 → 附录 */
+  /* 章节组装：综合结论 → 乐学/会学/善学模块 → 学能模块 → 条件模块 → 亲子对照（条件大类）→ 信号 → 家长 → 训练点子速查 → 附录 */
   const sections: CombinedSection[] = [secConclusion, ...secModules, secApt, secCond];
   if (secParentChild) sections.push(secParentChild);
-  if (secCareer) sections.push(secCareer);
   sections.push(secFlags, secParents, secIdeas, secAppendix);
 
   return {

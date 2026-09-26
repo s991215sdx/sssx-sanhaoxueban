@@ -10,6 +10,9 @@ import { MBTI_REPORTS, DISC_REPORTS, buildCombinedReport, getDiscCombo, buildDis
 import { buildE3Report } from "@/data/reports/combined";
 import ProfileCard from "@/components/companion/ProfileCard";
 import AcademicsForm from "@/components/companion/AcademicsForm";
+import GuidanceTab from "@/components/reports/GuidanceTab";
+import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
+import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
 import { DISC_BIPOLAR, DISC_REBOUND_PCT, DISC_ANIMAL_BADGE, DISC_ANIMAL_FULL, discBand, discTendencyFromDims, discTendencyText } from "@contracts/assessments";
@@ -94,7 +97,7 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import MentalDetail from "@/components/reports/MentalDetail";
@@ -114,13 +117,14 @@ export type ReportAssessmentData = {
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
-type Tab = "combined" | "profile" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "discparent" | "parent";
+type Tab = "combined" | "guidance" | "profile" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "discparent" | "parent";
 
 /** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
 type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "combined", label: "综合学习力报告" },
+  { key: "guidance", label: "升学指导报告" },
   { key: "profile", label: "我的档案" },
   { key: "academics", label: "成绩与目标" },
   { key: "e3", label: "学业诊断报告" },
@@ -298,8 +302,6 @@ function RoadmapSection({
   mbti,
   disc,
   multi5,
-  anchor,
-  holland,
   mental,
   mentalSdq,
   mentalPa,
@@ -317,8 +319,6 @@ function RoadmapSection({
   mbti?: MbtiResult;
   disc?: DiscResult;
   multi5?: Multi5Result;
-  anchor?: AnchorResult;
-  holland?: HollandResult;
   mental?: MentalResult | MentalV2Result;
   mentalSdq?: MentalSdqResult;
   mentalPa?: MentalPaResult;
@@ -568,34 +568,7 @@ function RoadmapSection({
       ),
     });
   }
-  if (anchor) {
-    underRows.push({
-      key: "anchor",
-      label: "职业锚",
-      content: (
-        <>
-          <Chip label={`第一锚 · ${ANCHOR_LABEL[anchor.top2[0]]} ${anchor.dims[anchor.top2[0]].toFixed(1)}`} trait />
-          <Chip label={`第二锚 · ${ANCHOR_LABEL[anchor.top2[1]]} ${anchor.dims[anchor.top2[1]].toFixed(1)}`} trait />
-          <AnswersFold kinds={["anchor"]} />
-        </>
-      ),
-    });
-  }
-  if (holland) {
-    underRows.push({
-      key: "holland",
-      label: "霍兰德兴趣",
-      content: (
-        <>
-          <Chip label={`代码 ${holland.code}`} trait />
-          {HOLLAND_ORDER.map((k) => (
-            <Chip key={k} label={`${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)}`} trait={holland.top3.includes(k)} />
-          ))}
-          <AnswersFold kinds={["holland"]} />
-        </>
-      ),
-    });
-  }
+  /* V72：职业锚/霍兰德的 underRows 展示已迁入升学指导报告，学习力报告不再展示。 */
   /* 第三步「建议进步方案」按冰山同序倒序渲染：学能、善学、会学、乐学、条件（LAYER_PLAN_TEXT 按层名取值）。 */
   const planLayers = [layers[4], layers[2], layers[1], layers[0], layers[3]];
 
@@ -2002,6 +1975,25 @@ function Multi5Radar({ multi5 }: { multi5: Multi5Result }) {
 }
 
 /** 霍兰德六型雷达。 */
+/** V72：成绩变化曲线数据壳（成绩 tab / 我的档案共用）：取成绩历史记录 → ScoreTrendChart。 */
+function ScoreTrendCard() {
+  const { data: records } = trpc.profile.academicRecords.useQuery();
+  if (!records || records.length === 0) {
+    return (
+      <div className="paper-card p-5">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={16} className="text-olive" />
+          <h3 className="font-bold text-olive">成绩变化曲线</h3>
+        </div>
+        <p className="mt-2 text-[13px] leading-relaxed text-olive-mute">
+          每保存一次带分数的成绩，这里就多一个点——多次录入后就能看到各科成绩的变化曲线。
+        </p>
+      </div>
+    );
+  }
+  return <ScoreTrendChart records={records} />;
+}
+
 function HollandRadar({ holland }: { holland: HollandResult }) {
   return (
     <div className="paper-card p-5">
@@ -2488,8 +2480,7 @@ export default function ReportView({
     return buildCombinedReport(data.mbti, mr, data.disc, dr, e3v37, {
       academics: profile?.academics ?? undefined,
       multi5: data.multi5 ?? undefined,
-      anchor: data.anchor ?? undefined,
-      holland: data.holland ?? undefined,
+      // V72：霍兰德/职业锚已迁入升学指导报告，不再混入学习力综合报告
       mental: data.mental ?? undefined,
       mentalSdq: mentalSdq ?? undefined,
       mentalPa: mentalPa ?? undefined,
@@ -2539,7 +2530,7 @@ export default function ReportView({
     if (tab === "disc") return !!(data?.disc && DISC_REPORTS[data.disc.primary]);
     if (tab === "multi5") return !!data?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
-    if (tab === "academics" || tab === "profile") return false; // 档案/成绩 tab 不提供下载
+    if (tab === "academics" || tab === "profile" || tab === "guidance") return false; // 档案/成绩/升学指导 tab 不提供下载（升学指导可系统打印）
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
     if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);
     return !!combined;
@@ -2561,6 +2552,7 @@ export default function ReportView({
       discparent: "家长报告（亲子对照与沟通建议）",
       parent: "家长报告（亲子对照与沟通建议）",
       combined: "综合学习力报告",
+      guidance: "升学指导综合报告",
     };
     const title = TAB_TITLE[tab];
     const studentName = profile?.name ?? undefined;
@@ -2676,22 +2668,9 @@ export default function ReportView({
             subs: (["D", "I", "S", "C"] as const).map((k) => `${k} ${disc.dims[k]}`),
           }
         : { done: false },
-      holland: holland
-        ? {
-            done: true,
-            note: holland.code,
-            subs: HOLLAND_ORDER.map((k) => `${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)}`),
-          }
-        : { done: false },
-      anchor: anchor
-        ? {
-            done: true,
-            note: anchor.top2.map((k) => ANCHOR_LABEL[k]).join("、"),
-            subs: anchor.top2.map((k) => `${ANCHOR_LABEL[k]} ${anchor.dims[k].toFixed(1)}`),
-          }
-        : { done: false },
+      /* V72：霍兰德/职业锚不再进入学习力框架图（已迁入升学指导报告）。 */
     };
-  }, [academics, e3v37, mental, multi5, mbti, disc, holland, anchor]);
+  }, [academics, e3v37, mental, multi5, mbti, disc]);
 
   return (
     <div className="space-y-4">
@@ -2742,9 +2721,14 @@ export default function ReportView({
 
       {/* 打印根：window.print() 时仅显示此区域，保证 PDF 与页面所见完全一致 */}
       <div id="report-print-root" className="space-y-4">
+      {tab === "guidance" && (
+        <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} onAssess={(start) => reveal({ kind: "assess", start })} />
+      )}
+
       {tab === "profile" && viewer === "student" && (
         <div className="space-y-4">
           <ProfileCard />
+          <ScoreTrendCard />
           <AcademicsForm />
         </div>
       )}
@@ -2773,6 +2757,7 @@ export default function ReportView({
           )
         ) : (
           <div className="space-y-4">
+            <ScoreTrendCard />
             <div className="paper-card accent-l border-lime p-5">
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-olive" />
@@ -3153,8 +3138,6 @@ export default function ReportView({
                 e3={e3v37!}
                 academics={academics}
                 multi5={data?.multi5 ?? undefined}
-                anchor={anchor}
-                holland={holland}
                 mental={mental}
                 status={frameworkStatus}
                 onOpen={openFramework}
@@ -3172,8 +3155,6 @@ export default function ReportView({
                   mbti={data?.mbti}
                   disc={data?.disc}
                   multi5={data?.multi5 ?? undefined}
-                  anchor={anchor}
-                  holland={holland}
                   mental={mental}
                   mentalSdq={mentalSdq}
                   mentalPa={mentalPa}
@@ -3229,8 +3210,6 @@ export default function ReportView({
                     mbti={data?.mbti}
                     disc={data?.disc}
                     multi5={data?.multi5 ?? undefined}
-                    anchor={anchor}
-                    holland={holland}
                     mental={mental}
                     mentalSdq={mentalSdq}
                     mentalPa={mentalPa}
@@ -3293,15 +3272,8 @@ export default function ReportView({
                       )}
                     </div>
                   ) : undefined;
-              } else if (s.title.includes("兴趣与方向")) {
-                chartNode =
-                  data?.holland || data?.anchor ? (
-                    <div className="space-y-4">
-                      {data?.holland && <HollandRadar holland={data.holland} />}
-                      {data?.anchor && <AnchorBarChart anchor={data.anchor} />}
-                    </div>
-                  ) : undefined;
               }
+              /* V72：「兴趣与方向」章节已整体迁入升学指导报告，此处雷达/条形图随之下线。 */
               /* 附录章只留观察点得分表（detail）；答题明细按模块下沉到各章，经 answers 作为独立折叠上移一级。
                  章节 → kinds 单一事实源在 answerBlocks.answerKindsForSection；
                  学科快扫明细在「成绩现状」章缺省时并入条件章（answerBlocks 内置 hasAcadSec 逻辑）。 */
@@ -3404,9 +3376,6 @@ function AssessmentChartsLite({
 
   const m5r = multi5 ? buildMulti5Report(multi5) : null;
   const m5sorted = m5r ? [...m5r.dims].sort((a, b) => b.score - a.score) : [];
-  const anchorSorted = anchor ? [...ANCHOR_ORDER].sort((a, b) => anchor.dims[b] - anchor.dims[a]) : [];
-  const anchorTop = anchor ? anchor.top2.map((k) => ANCHOR_LABEL[k]).join("、") : "";
-  const hollandSorted = holland ? HOLLAND_ORDER.map((k) => ({ k, label: HOLLAND_LABEL[k], v: holland.dims[k] })).sort((a, b) => b.v - a.v) : [];
   const mentalLegacy = mental && !isMentalV2(mental) ? mental : null;
   const mentalPos = mentalLegacy ? MENTAL_FACTOR_ORDER.filter((f) => (mentalLegacy.factors[f] ?? 0) >= 2) : [];
   const mentalTop = mentalLegacy
@@ -3493,52 +3462,7 @@ function AssessmentChartsLite({
         </div>
       )}
 
-      {/* 职业锚（从高到低降序，Top2 标琥珀） */}
-      {anchor && (
-        <div className="paper-card p-5">
-          <h3 className="font-bold text-olive">职业锚 · 主导锚：{anchorTop}</h3>
-          <MiniBars
-            max={5}
-            rows={anchorSorted.map((k) => ({
-              label: ANCHOR_LABEL[k],
-              value: anchor.dims[k],
-              display: anchor.dims[k].toFixed(1),
-              state: (anchor.top2.includes(k) ? "trait" : "ok") as "trait" | "ok",
-            }))}
-          />
-          <p className="mt-3 text-[12.5px] leading-relaxed text-olive-soft">
-            琥珀条是你最看重的两样东西（{anchorTop}）——它们决定你长期坚持一件事时需要什么回报。
-          </p>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-olive">
-            <b>对学习力：</b>把学习目标和「{ANCHOR_LABEL[anchor.top2[0]]}」挂上钩（让努力看得见这方面的回报），动力会比单纯催分更持久。
-          </p>
-        </div>
-      )}
-
-      {/* 霍兰德兴趣（雷达图） */}
-      {holland && (
-        <div className="paper-card p-5">
-          <h3 className="font-bold text-olive">霍兰德职业兴趣 · 代码 {holland.code}</h3>
-          <div className="mt-2 h-[240px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart
-                data={HOLLAND_ORDER.map((k) => ({ dim: `${k}·${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)}`, 得分: holland.dims[k] }))}
-                outerRadius="70%"
-              >
-                <PolarGrid stroke="#d9dcb8" />
-                <PolarAngleAxis dataKey="dim" tick={{ fill: "#556339", fontSize: 11 }} />
-                <Radar dataKey="得分" stroke="#cf6a3c" fill="#cf6a3c" fillOpacity={0.3} strokeWidth={2.5} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="mt-3 text-[12.5px] leading-relaxed text-olive-soft">
-            雷达上外凸最明显的三个方向组成你的兴趣代码 {holland.code}，「{hollandSorted[0]?.label}」得分最高——兴趣类型没有好坏。
-          </p>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-olive">
-            <b>对学习力：</b>课外拓展、选科与竞赛方向优先往「{holland.top3.map((k) => HOLLAND_LABEL[k]).join("、")}」靠，兴趣在线时更扛得住枯燥的基本功。
-          </p>
-        </div>
-      )}
+      {/* V72：职业锚/霍兰德卡片已迁入「升学指导报告」tab，简版学习力报告不再展示。 */}
 
       {/* 心理健康（V2 PHQ-9+GAD-7 / 旧版十因子兼容） */}
       {mental && isMentalV2(mental) && (
@@ -3595,8 +3519,6 @@ function CombinedLite({
   e3,
   academics,
   multi5,
-  anchor,
-  holland,
   mental,
   status,
   onOpen,
@@ -3609,8 +3531,6 @@ function CombinedLite({
   e3: E3V37Result;
   academics?: AcademicsData;
   multi5?: Multi5Result;
-  anchor?: AnchorResult;
-  holland?: HollandResult;
   mental?: MentalResult | MentalV2Result;
   status?: FrameworkStatus;
   /** 框架图节点点击（已测→图表 / 未测→测评 / 成绩未填→填写）。 */

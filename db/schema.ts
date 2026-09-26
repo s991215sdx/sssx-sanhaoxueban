@@ -192,6 +192,18 @@ export const studentProfile = mysqlTable("student_profile", {
 
 export type StudentProfile = typeof studentProfile.$inferSelect;
 
+/** V72：成绩多次记录——每次保存「学业目标/成绩」都追加一条历史（含考试名与各科分数），
+ *  用于成绩变化曲线；student_profile.academics 始终为最近一次（报告计算口径不变）。 */
+export const academicRecords = mysqlTable("academic_records", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
+  examName: varchar("exam_name", { length: 64 }).notNull().default(""),
+  subjects: json("subjects").$type<Record<string, unknown>[]>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type AcademicRecord = typeof academicRecords.$inferSelect;
+
 /** V56：学员-伴学师多对多分配。一个学员可挂多位伴学师（管理员在后台分配）；
  *  student_profile.tutor_id 保留为主管伴学师（= 本表第一条，向后兼容旧逻辑）。 */
 export const studentTutor = mysqlTable("student_tutor", {

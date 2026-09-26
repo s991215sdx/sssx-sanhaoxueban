@@ -16,6 +16,7 @@ import Admin from "./pages/Admin";
 import Tutor from "./pages/Tutor";
 import { trpc } from "./providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import ProfileStage from "@/components/welcome/ProfileStage";
 
 const Report = lazy(() => import("./pages/Report"));
 const ReportDetail = lazy(() => import("./pages/ReportDetail"));
@@ -59,6 +60,31 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
   const skipped = typeof window !== "undefined" && localStorage.getItem("onboardingSkipped");
   if (!profile || (!profile.onboarded && !skipped)) {
     return <Navigate to="/welcome" replace />;
+  }
+  return <>{children}</>;
+}
+
+/** V72 基本信息门禁：没填姓名（基础档案）一律先去补全，才能进入任何测评。 */
+function BasicsGate({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  const { data: profile, isLoading } = trpc.profile.get.useQuery(undefined, { enabled: !isStaff });
+  if (isStaff) return <>{children}</>;
+  if (isLoading) return <FullScreenLoading text="正在打开你的学习档案…" />;
+  if (!profile || !profile.name || profile.name === "同学") {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-10">
+        <div className="paper-card p-6">
+          <h2 className="text-lg font-bold text-olive">先认识一下你</h2>
+          <p className="mt-1 text-[14px] text-olive-soft">
+            测评需要基于你的基本情况才能给出贴合的解读。花两分钟填好基本信息，就能开始测评。
+          </p>
+        </div>
+        <div className="mt-4">
+          <ProfileStage onNext={() => window.location.reload()} />
+        </div>
+      </div>
+    );
   }
   return <>{children}</>;
 }
@@ -126,7 +152,14 @@ export default function App() {
                     <Route path="/preview" element={<PreviewList />} />
                     <Route path="/preview/:code" element={<PreviewSession />} />
                     <Route path="/gaps" element={<Gaps />} />
-                    <Route path="/assessments" element={<AssessmentCenter />} />
+                    <Route
+                      path="/assessments"
+                      element={
+                        <BasicsGate>
+                          <AssessmentCenter />
+                        </BasicsGate>
+                      }
+                    />
                     <Route path="/learn/:errorId" element={<LearnFlow />} />
                     <Route path="/papers" element={<Papers />} />
                     <Route path="/treehole" element={<Treehole />} />
