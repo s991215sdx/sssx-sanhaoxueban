@@ -25,13 +25,11 @@ import {
 import type { E3V37Result, E3V37Stage, E3V37ItemScore } from "@contracts/e3v37";
 import { E3V37P_MIRROR_QUESTIONS, isE3V37ParentResult, type E3V37ParentResult } from "@contracts/e3v37Parent";
 import { DISC_DIM_PLAIN, PARENT_DISC_ADJUST } from "./DiscParentCompare";
-import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { AnchorResult } from "@contracts/careerAnchor";
 import type { MultiResult } from "@contracts/multi";
 import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_THEORY_NOTE, MULTI5_DIM_ORDER, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { HollandResult } from "@contracts/holland";
-import { HOLLAND_ORDER, HOLLAND_LABEL } from "@contracts/holland";
 import type { MentalResult, MentalV2Result, MentalSdqResult, MentalPaResult, Scl90Result, Scl90FactorKey } from "@contracts/mentalHealth";
 import {
   MENTAL_FACTOR_ORDER,
@@ -81,7 +79,6 @@ import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import SystemFramework from "@/components/reports/SystemFramework";
 import type { FrameworkStatus, FrameworkUnit, FrameworkLink } from "@/components/reports/SystemFramework";
 import DiscParentCompare from "@/components/reports/DiscParentCompare";
-import AnchorBarChart from "@/components/reports/AnchorBarChart";
 import { E3V37_LEVEL_CLASS, E3V37_LEVEL_CAPTION, E3V37_LEVEL_STYLE, e3v37LevelTextClass } from "@/components/reports/e3v37Theme";
 import {
   Radar,
@@ -1994,26 +1991,6 @@ function ScoreTrendCard() {
   return <ScoreTrendChart records={records} />;
 }
 
-function HollandRadar({ holland }: { holland: HollandResult }) {
-  return (
-    <div className="paper-card p-5">
-      <h3 className="font-bold text-olive">霍兰德职业兴趣 · 六型雷达</h3>
-      <p className="mt-1 text-[12.5px] text-olive-mute">
-        兴趣代码 <b className="text-olive">{holland.code}</b>：六型均分（1-5），外凸最明显的就是你的主导兴趣方向。
-      </p>
-      <div className="mt-2 h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={HOLLAND_ORDER.map((k) => ({ dim: `${k}·${HOLLAND_LABEL[k]} ${holland.dims[k]}`, 得分: holland.dims[k] }))} outerRadius="72%">
-            <PolarGrid stroke="#d9dcb8" />
-            <PolarAngleAxis dataKey="dim" tick={{ fill: "#556339", fontSize: 11.5 }} />
-            <Radar dataKey="得分" stroke="#cf6a3c" fill="#cf6a3c" fillOpacity={0.3} strokeWidth={2.5} />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
 /** 心理健康 V2（PHQ-9 + GAD-7）双量表条形卡：分级口径 0-4 良好 / 5-9 关注 / 10-14 预警 / ≥15 高风险。 */
 function MentalV2Bars({
   mental,
@@ -2601,6 +2578,7 @@ export default function ReportView({
   const holland = data?.holland ?? undefined;
   const mental = data?.mental ?? undefined;
   const academics = profile?.academics ?? undefined;
+  const { data: academicRecords } = trpc.profile.academicRecords.useQuery();
 
   /** 学习力系统框架图的测评完成状态（全部由 props 数据计算，学生端/伴学师端口径一致）。 */
   const frameworkStatus = useMemo<FrameworkStatus>(() => {
@@ -2722,7 +2700,7 @@ export default function ReportView({
       {/* 打印根：window.print() 时仅显示此区域，保证 PDF 与页面所见完全一致 */}
       <div id="report-print-root" className="space-y-4">
       {tab === "guidance" && (
-        <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} onAssess={(start) => reveal({ kind: "assess", start })} />
+        <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
       )}
 
       {tab === "profile" && viewer === "student" && (
@@ -3347,15 +3325,11 @@ function AssessmentChartsLite({
   mbti,
   disc,
   multi5,
-  anchor,
-  holland,
   mental,
 }: {
   mbti: MbtiResult;
   disc: DiscResult;
   multi5?: Multi5Result;
-  anchor?: AnchorResult;
-  holland?: HollandResult;
   mental?: MentalResult | MentalV2Result;
 }) {
   const mr = MBTI_REPORTS[mbti.type];
@@ -3627,8 +3601,6 @@ function CombinedLite({
         mbti={mbti}
         disc={disc}
         multi5={multi5}
-        anchor={anchor}
-        holland={holland}
         mental={mental}
       />
 

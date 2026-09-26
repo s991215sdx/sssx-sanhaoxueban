@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { GRADES } from "@contracts/constants";
 import { Minus, Plus, RotateCcw, Target, KeyRound } from "lucide-react";
@@ -6,6 +7,7 @@ import { Minus, Plus, RotateCcw, Target, KeyRound } from "lucide-react";
 /** 伴学师 · 我的档案：基础信息（可改）+ 每日时长可改 + 测评标签。V72：基本信息支持随时修改。 */
 export default function ProfileCard() {
   const utils = trpc.useUtils();
+  const navigate = useNavigate();
   const { data: profile, isLoading } = trpc.profile.get.useQuery();
 
   const [minutes, setMinutes] = useState<number | null>(null);

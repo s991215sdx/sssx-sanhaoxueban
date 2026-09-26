@@ -79,7 +79,7 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
   mostRef.current = most;
   const leastRef = useRef(least);
   leastRef.current = least;
-  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceTimer = useRef<number | null>(null);
   const advance = (m: number[], l: number[], cur: number) => {
     if (advanceTimer.current) window.clearTimeout(advanceTimer.current);
     if (m[cur] == null || l[cur] == null) return;

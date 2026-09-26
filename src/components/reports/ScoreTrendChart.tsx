@@ -108,7 +108,7 @@ export default function ScoreTrendChart({ records }: { records: ScoreRecord[] })
             const r = chron[hover.ri];
             const name = subjects[hover.si];
             const s = r?.subjects.find((x) => x.name === name && x.lastScore != null);
-            if (!r || !s) return null;
+            if (!r || !s || s.lastScore == null) return null;
             const full = s.fullScore ?? 100;
             return (
               <g>
