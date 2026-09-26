@@ -69,6 +69,6 @@ needSrc(pcSrc, "trpc.profile.setup.useMutation", "编辑复用 setup");
 const acSrc = readFileSync("src/pages/AssessmentCenter.tsx", "utf8");
 needSrc(acSrc, "tab=guidance", "测评中心升学报告入口");
 need(!acSrc.includes("disabled={!allRequired}"), "综合报告卡不得再禁用");
-needSrc(readFileSync("api/router.ts", "utf8"), "v73-2026-09-24", "BUILD_TAG v73");
+needSrc(readFileSync("api/router.ts", "utf8"), "v74-2026-09-26", "BUILD_TAG v74");
 
 console.log("RENDER_SMOKE_V72_OK");

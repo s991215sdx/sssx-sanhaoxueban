@@ -68,10 +68,53 @@ need(cs?.req === "物理+化学", "计算机必须标注选科要求 物理+化�
 const chemGate = g!.majors.find((m) => m.req?.includes("化学"))?.gateNote;
 need(chemGate == null || typeof chemGate === "string", "门槛提示字段可空但类型正确");
 
-/* 5. 升学路径：逻辑/数理双 80+ + 数理 ≥75 → 强基适配 */
+/* 5. 升学路径：逻辑/数理双 80+ + 数理 ≥75 → 强基适配；六大类框架 */
 const qiangji = g!.pathway.find((p) => p.name.includes("强基"));
 need(qiangji !== undefined && qiangji.fit === "适配", "强基计划应判适配");
-need(g!.pathway.some((p) => p.fit === "主力"), "必须有主力路径");
+need(g!.pathway.some((p) => p.fit === "主力" && p.cat === "主力路径"), "必须有主力路径");
+need(g!.pathway.some((p) => p.name.includes("高校专项")), "高校专项必须出现（条件性提示）");
+need(g!.pathway.some((p) => p.name.includes("体育单招")), "体育单招必须出现（条件性提示）");
+need(g!.pathway.some((p) => p.name.includes("招飞")), "招飞必须出现（条件性提示）");
+need(g!.pathway.some((p) => p.name.includes("定向医学生")), "定向医学生必须出现（条件性提示）");
+need(g!.pathway.every((p) => "cat" in p && "cond" in p), "路径条目必须带 cat/cond 字段");
+
+/* 5b. 英语强 → 港澳/国际路线触发 */
+const gEng = buildGuidanceReport({
+  grade: "高一", mbti,
+  academics: { examName: "期末", updatedAt: "2026-09-20", subjects: [
+    { name: "语文", fullScore: 150, lastScore: 100, targetScore: null, selfLevel: 3 },
+    { name: "数学", fullScore: 150, lastScore: 100, targetScore: null, selfLevel: 3 },
+    { name: "英语", fullScore: 150, lastScore: 132, targetScore: null, selfLevel: 5 },
+  ] },
+  multi5: { dims: { reasoning: 60, detail: 60, number: 60, verbal: 88, spatial: 60 }, overall: 66, carefulIndex: 80, perDim: [] },
+});
+need(gEng!.pathway.some((p) => p.cat === "国际路线" && p.fit === "适配"), "英语/语言智能突出 → 港澳路线应判适配");
+
+/* 5c. 低分 → 高职单招关注 */
+const gLow = buildGuidanceReport({
+  grade: "高一", mbti,
+  academics: { examName: "期中", updatedAt: "2026-09-20", subjects: [
+    { name: "语文", fullScore: 150, lastScore: 80, targetScore: null, selfLevel: 2 },
+    { name: "数学", fullScore: 150, lastScore: 70, targetScore: null, selfLevel: 2 },
+    { name: "英语", fullScore: 150, lastScore: 75, targetScore: null, selfLevel: 2 },
+  ] },
+});
+need(gLow!.pathway.some((p) => p.name.includes("高职单招") && p.fit === "关注"), "均分<60 → 高职单招应判关注");
+
+/* 5d. 高分非数理 → 强基关注而非适配 */
+const gNoSci = buildGuidanceReport({
+  grade: "高一",
+  academics: { examName: "期中", updatedAt: "2026-09-20", subjects: [
+    { name: "语文", fullScore: 150, lastScore: 130, targetScore: null, selfLevel: 5 },
+    { name: "数学", fullScore: 150, lastScore: 100, targetScore: null, selfLevel: 4 },
+    { name: "英语", fullScore: 150, lastScore: 128, targetScore: null, selfLevel: 5 },
+    { name: "历史", fullScore: 100, lastScore: 90, targetScore: null, selfLevel: 5 },
+  ] },
+});
+const qj2 = gNoSci!.pathway.find((p) => p.name.includes("强基"));
+need(qj2 !== undefined && qj2.fit === "关注", "高分但数理不拔尖 → 强基应判关注");
+need(gNoSci!.pathway.some((p) => p.cat === "拔尖升学"), "拔尖升学类必须存在");
+
 need(g!.parentTips.length >= 3, "给家长的话 ≥3 条");
 need(g!.actionTips.length >= 3, "分阶段行动建议 ≥3 条");
 

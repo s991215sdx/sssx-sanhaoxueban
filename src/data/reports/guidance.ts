@@ -27,6 +27,9 @@ export type GuidanceRecord = {
 };
 
 type Quadrant = "优势学科" | "潜能学科" | "稳健学科" | "谨慎学科" | "待观察";
+type PathCat = "主力路径" | "拔尖升学" | "特长升学" | "定向就业" | "国际路线" | "务实备选";
+type PathFit = "主力" | "适配" | "关注" | "参考";
+export const PATHWAY_CATS: readonly PathCat[] = ["主力路径", "拔尖升学", "特长升学", "定向就业", "国际路线", "务实备选"];
 
 export type GuidanceReport = {
   /** 报告生成依据（已完成的测评）。 */
@@ -65,8 +68,8 @@ export type GuidanceReport = {
   majors: { name: string; why: string; req: string | null; gateNote: string | null }[];
   /** 推荐行业方向。 */
   industries: { name: string; why: string }[];
-  /** 升学路径适配度。 */
-  pathway: { name: string; fit: "主力" | "适配" | "参考"; note: string }[];
+  /** 升学路径适配（六大类全路径，按数据触发 + 条件提示）。 */
+  pathway: { cat: PathCat; name: string; fit: PathFit; cond: string | null; note: string }[];
   /** 给家长的话。 */
   parentTips: string[];
   /** 分阶段行动建议。 */
@@ -564,25 +567,72 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
     .slice(0, 6)
     .map((name) => ({ name, why: (industryWhys.get(name) ?? []).slice(0, 2).join("、") || "综合匹配" }));
 
-  /* ---- 升学路径 ---- */
+  /* ---- 升学路径（六大类全路径：数据触发 + 条件性提示）---- */
   const pathway: GuidanceReport["pathway"] = [];
-  if (academicsBlock?.avgPct != null && academicsBlock.avgPct >= 78) {
-    pathway.push({ name: "普通高考 · 目标尖子段", fit: "主力", note: `目前平均得分率 ${academicsBlock.avgPct}%，具备冲重点校段的实力。建议以「目标校往年录取线 + 10 分」为锚倒推每科目标。` });
-  } else {
-    pathway.push({ name: "普通高考", fit: "主力", note: "无论选哪条路，高考都是主战场；其余路径（综评/强基等）都是锦上添花，先把总分抬上去。" });
-  }
+  const avg = academicsBlock?.avgPct ?? null;
+  const rowPct = (n: string) => academicsBlock?.rows.find((r) => r.name === n)?.pct ?? null;
+  const engP = rowPct("英语");
+
+  /* 主力路径：普通高考（人人适用，按平均得分率分档话术）。 */
+  pathway.push({
+    cat: "主力路径",
+    name: "普通高考",
+    fit: "主力",
+    cond: null,
+    note:
+      avg == null
+        ? "无论选哪条路，高考都是主战场；其余路径（综评/强基/专项等）都是锦上添花，先把总分抬上去。"
+        : avg >= 78
+          ? `当前平均得分率 ${avg}%，具备冲重点校段的实力。建议以「目标校往年录取线 +10 分」为锚，倒推到每科的目标分。`
+          : avg >= 65
+            ? `当前平均得分率 ${avg}%，处于中上段：把「优势学科」再抬 5-8 分，比面面俱到更有效；同时别让任何一科低于 60%。`
+            : `当前平均得分率 ${avg}%，先保基本盘：稳住大三门、逐科消灭低于 60% 的短板——总分抬一档，比攻难题更实际。`,
+  });
+
+  /* 拔尖升学。 */
   const reasonScore = multi5 ? Math.max(multi5.dims.reasoning ?? 0, multi5.dims.number ?? 0) : 0;
-  if (reasonScore >= 80 && ((academicsBlock?.rows.find((r) => r.name === "数学")?.pct ?? 0) >= 75 || (academicsBlock?.rows.find((r) => r.name === "物理")?.pct ?? 0) >= 75)) {
-    pathway.push({ name: "强基计划 / 理科竞赛", fit: "适配", note: "逻辑/数理智能突出且数理成绩过硬，可关注强基计划与数学/物理/信息学竞赛——既是升学通道，也是能力证明。" });
+  if (reasonScore >= 80 && ((rowPct("数学") ?? 0) >= 75 || (rowPct("物理") ?? 0) >= 75)) {
+    pathway.push({ cat: "拔尖升学", name: "强基计划（39 所 985 基础学科）", fit: "适配", cond: "数理突出 / 竞赛潜力", note: "逻辑数理双强且数理成绩过硬：强基「高考成绩 85% + 校测 15%」，入围看高考。数/理/化/生/信息学竞赛只选一个深耕，省一以上有望破格入围。" });
+  } else if ((avg ?? 0) >= 72) {
+    pathway.push({ cat: "拔尖升学", name: "强基计划", fit: "关注", cond: "需数理拔尖或竞赛奖项", note: "平均成绩够看但数理还未到拔尖：若对基础学科真有兴趣，可先接触竞赛内容再定；别为用不上强基而焦虑，它本就是少数人的通道。" });
   }
   if ((disc?.primary ?? "") === "I" || mbti?.type.endsWith("F") || (hollandBlock?.top3.some((t) => t.key === "E") ?? false)) {
-    pathway.push({ name: "综合素质评价招生", fit: "适配", note: "表达与展示是你的加分项：面试、综合材料、社会实践都容易出彩。提前积累活动与成果记录。" });
+    pathway.push({ cat: "拔尖升学", name: "综合评价招生", fit: "适配", cond: "表达 / 面试优势", note: "「高考约 60% + 校测约 30% + 学考约 10%」（各省比例不同）：面试与综合素质档案是你的加分项——从现在起有意识地积累活动、研究性学习成果与获奖记录。" });
+  } else if ((avg ?? 0) >= 70) {
+    pathway.push({ cat: "拔尖升学", name: "综合评价招生", fit: "关注", cond: "综合素质材料丰富者", note: "综评看高考，也看综合素质档案与校测表达。若考虑这条路，活动记录和研究性学习要趁早攒，高三再补就晚了。" });
   }
+  pathway.push({ cat: "拔尖升学", name: "高校专项计划（国家 / 高校专项）", fit: "参考", cond: "农村或脱贫地区户籍", note: "面向农村学生的降分通道（高校专项常见降 10-60 分），单独报名不占统招志愿。若户籍符合条件务必申报——很多人不是不够格，是压根没报。" });
+
+  /* 特长升学。 */
   if (hollandBlock?.top3[0]?.key === "A") {
-    pathway.push({ name: "艺考 / 作品集路线", fit: "参考", note: "艺术兴趣排第一。若考虑艺考，文化课不能放——艺术生的文化课门槛逐年走高，两手抓才是护城河。" });
+    pathway.push({ cat: "特长升学", name: "艺术类统考 / 校考", fit: "适配", cond: "艺术兴趣第一", note: "艺考「专业 + 文化」双线过线才算：高三上 12 月省级统考，部分院校另有校考。文化课门槛逐年走高，两手抓才是护城河——千万别 all-in 专业丢了文化。" });
+  } else if (hollandBlock?.top3.slice(1).some((t) => t.key === "A")) {
+    pathway.push({ cat: "特长升学", name: "艺术类统考 / 校考", fit: "参考", cond: "若另有多年艺术功底", note: "艺术兴趣进前三：若确有绘画/音乐/播音特长且练过多年，艺考值得认真评估；如果只是「有点喜欢」，当作业余爱好更划算。" });
   }
-  if (anchorBlock?.some((a) => a.label === ANCHOR_LABEL.SE)) {
-    pathway.push({ name: "公费师范 / 军警院校 / 定向培养", fit: "参考", note: "你的安全感锚明显：带编制、有定向培养的路径值得重点了解，就业确定性高。" });
+  pathway.push({ cat: "特长升学", name: "体育单招 / 高水平运动队", fit: "参考", cond: "需运动员等级证书", note: "国家一级/二级运动员可报体育单招（文化单独划线，远低于普通高考）；高水平运动队要求一级运动员且专业测试全国统考。若已具备等级证，这是一条被严重低估的捷径。" });
+  pathway.push({ cat: "特长升学", name: "三大招飞（空军 / 海军 / 民航）", fit: "参考", cond: "视力、身高、体质达标", note: "身体条件是硬门槛（如 C 字表视力 0.8+、身高约 168cm+），成绩过特殊类型控制线即可。空军/海军招飞免学费且毕业即任职，若身体条件好，值得专门去初检一次。" });
+
+  /* 定向就业。 */
+  const seAnchor = anchorBlock?.some((a) => a.label === ANCHOR_LABEL.SE) ?? false;
+  if (seAnchor || (hollandBlock?.top3.some((t) => t.key === "S") ?? false)) {
+    pathway.push({ cat: "定向就业", name: "公费师范生（部属 / 省属）", fit: "适配", cond: "安稳锚 / 教育兴趣", note: "两免一补 + 毕业即有编有岗：部属 6 所（北师大、华东师大等）面向全省，省属面向本地。代价是任教服务期 6 年——把「确定性」排第一的话，这条路匹配度很高。" });
+  }
+  if (seAnchor || (disc?.primary ?? "") === "D") {
+    pathway.push({ cat: "定向就业", name: "军警院校 / 定向培养军士", fit: seAnchor ? "适配" : "关注", cond: "需通过体检、政审、体测", note: "公安院校公安专业毕业可参加联考入警（入警率普遍 90%+）；定向培养军士入学即定向、毕业入伍授衔。都是「入学≈入职」的路线，纪律性与身体是硬要求。" });
+  }
+  pathway.push({ cat: "定向就业", name: "订单定向医学生（免费医学生）", fit: "参考", cond: "物化双选 + 接受基层服务 6 年", note: "免学费住宿费另有生活补助，毕业入编到乡镇卫生院服务 6 年。适合想要确定编制、化生成绩不错（或愿意补）的孩子——录取线通常比同校临床低 20-40 分。" });
+
+  /* 国际路线。 */
+  if ((engP ?? 0) >= 80 || (multi5 ? (multi5.dims.verbal ?? 0) >= 80 : false)) {
+    pathway.push({ cat: "国际路线", name: "港澳高校 / 中外合作办学", fit: "适配", cond: "英语突出", note: "港澳高校独立招生不占内地志愿（可两手准备）；中外合作办学（港中深、上纽、昆杜等）走综评或统招。英语是你的硬通货：保持 130+/150，这条路就一直开着。" });
+  }
+  if ((engP ?? 0) >= 75) {
+    pathway.push({ cat: "国际路线", name: "出国留学（本科）", fit: "参考", cond: "需提前 1-2 年规划语言与申请", note: "若家庭预算允许（每年约 25-50 万），英语优势 + 自主性强的孩子很适合海外本科：高二前考出托福/雅思，活动与文书趁早积累。注意这是「提前分叉」的路——定了就别摇摆。" });
+  }
+
+  /* 务实备选。 */
+  if (avg != null && avg < 60) {
+    pathway.push({ cat: "务实备选", name: "高职单招 / 分类考试", fit: "关注", cond: "春季提前录取", note: `当前平均得分率 ${avg}%，若到高三仍在这个区间，高职单招值得认真了解：3-4 月考试、难度低于高考、提前锁定好专业（轨道交通、护理、电力、口腔医学技术等专业就业很硬）。这不是退路，是另一条赛道——入学后还有专升本、职业本科的上升阶梯。` });
   }
 
   /* ---- 行动建议（分阶段）---- */

@@ -1,5 +1,5 @@
 import { Compass, Flame, GraduationCap, Heart, Route, Star, Target, TrendingUp, Users } from "lucide-react";
-import { buildGuidanceReport } from "@/data/reports/guidance";
+import { buildGuidanceReport, PATHWAY_CATS } from "@/data/reports/guidance";
 import type { GuidanceRecord } from "@/data/reports/guidance";
 import type { ReportAssessmentData, ReportProfileInfo } from "@/components/reports/ReportView";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
@@ -297,29 +297,51 @@ export default function GuidanceTab({
         </div>
       )}
 
-      {/* 升学路径 */}
+      {/* 升学路径（六大类全路径） */}
       {g.pathway.length > 0 && (
         <div className="paper-card p-5">
           <div className="flex items-center gap-2">
             <Route size={16} className="text-olive" />
             <h3 className="font-bold text-olive">升学路径适配</h3>
+            <span className="ml-auto text-[11px] text-olive-mute">主力 = 当前主战场 · 适配 = 数据支持 · 关注 = 值得了解 · 参考 = 看条件</span>
           </div>
-          <div className="mt-3 space-y-2.5">
-            {g.pathway.map((p) => (
-              <div key={p.name} className="flex items-start gap-2.5">
-                <span
-                  className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                    p.fit === "主力" ? "bg-lime text-cream" : p.fit === "适配" ? "bg-sky text-cream" : "bg-olive/20 text-olive"
-                  }`}
-                >
-                  {p.fit}
-                </span>
-                <div>
-                  <p className="text-[13px] font-bold text-olive">{p.name}</p>
-                  <p className="text-[12.5px] leading-relaxed text-olive-soft">{p.note}</p>
+          <div className="mt-3 space-y-3.5">
+            {PATHWAY_CATS.map((cat) => {
+              const items = g.pathway.filter((p) => p.cat === cat);
+              if (items.length === 0) return null;
+              return (
+                <div key={cat} className="border-t border-olive/10 pt-3 first:border-0 first:pt-0">
+                  <p className="text-[12px] font-bold tracking-wide text-olive-mute">{cat}</p>
+                  <div className="mt-1.5 space-y-2.5">
+                    {items.map((p) => (
+                      <div key={p.name} className="flex items-start gap-2.5">
+                        <span
+                          className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                            p.fit === "主力" ? "bg-lime text-cream"
+                            : p.fit === "适配" ? "bg-sky text-cream"
+                            : p.fit === "关注" ? "bg-amber text-cream"
+                            : "bg-olive/15 text-olive"
+                          }`}
+                        >
+                          {p.fit}
+                        </span>
+                        <div>
+                          <p className="text-[13px] font-bold text-olive">
+                            {p.name}
+                            {p.cond && (
+                              <span className="ml-1.5 rounded-full bg-olive/8 px-2 py-0.5 align-middle text-[10.5px] font-semibold text-olive-mute">
+                                {p.cond}
+                              </span>
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-[12.5px] leading-relaxed text-olive-soft">{p.note}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
