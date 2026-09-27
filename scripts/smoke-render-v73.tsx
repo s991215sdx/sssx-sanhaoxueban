@@ -1,5 +1,7 @@
 /* v73 冒烟：升学指导报告 2.0——成绩因子（得分率/趋势/目标差距）+ 四象限 + 3+1+2 组合 + 升学路径 */
 import { buildGuidanceReport } from "../src/data/reports/guidance";
+import { isPlaceholderName } from "../contracts/constants";
+import { factorTip, subjectMethodsFor, balancePlansFor } from "../src/data/reports/subjectAdvice";
 
 const need = (cond: boolean, msg: string) => {
   if (!cond) {
@@ -131,6 +133,17 @@ need(g!.disciplines.every((d) => d.groups.length > 0 && d.majors.length > 0 && d
 need(g!.disciplines.some((d) => d.key === "engineering" || d.name === "工学"), "I+R 兴趣+数理强 → 工学应进入推荐门类");
 need(g!.disciplines.every((d) => d.matchPct >= 55), "门槛 ≥55");
 
+/* 6a. v76 首选/再选决策（广东 3+1+2） */
+const fd = g!.firstDecision!;
+need(fd !== null && fd.pick === "物理", "本数据集首选应决策为物理");
+need(fd.physScore === sc.rows.find((r) => r.subject === "物理")!.total, "首选决策物理分=平衡卡物理总分");
+need(fd.histScore === sc.rows.find((r) => r.subject === "历史")!.total, "首选决策历史分=平衡卡历史总分");
+need(fd.margin === Math.abs(fd.physScore - fd.histScore), "margin=两科分差");
+need(fd.text.length > 10, "首选决策必须带解读文案");
+const sd = g!.secondDecision!;
+need(sd !== null && sd.picks.length === 2 && sd.dropped.length === 2, "再选决策必须 2 选 + 2 备选");
+need([...sd.picks, ...sd.dropped].sort().join(",") === ["化学", "地理", "生物", "道德与法治"].sort().join(","), "再选池必须是化生政地四科");
+
 const sp = g!.schoolPlan!;
 need(sp !== null, "高中有成绩必须出冲稳保规划");
 need(sp.first === "物理", "本数据集首选应为物理");
@@ -159,5 +172,18 @@ const scMid = gMid!.scorecard!;
 need(scMid !== null && scMid.rows.length === 9, "初中平衡卡必须覆盖 9 科");
 need(gMid!.schoolPlan === null, "初中不得出院校规划");
 need(gMid!.disciplines.length > 0, "初中也可给门类匹配");
+need(gMid!.firstDecision === null && gMid!.secondDecision === null, "初中不得出首选/再选决策");
+
+/* 8. v76 占位名判定 + 差异化 factorTip */
+need(isPlaceholderName(null) && isPlaceholderName("") && isPlaceholderName("同学") && isPlaceholderName("同学5679"), "占位名必须命中");
+need(!isPlaceholderName("小明") && !isPlaceholderName("晓晓同学"), "真实姓名不得误判");
+need(subjectMethodsFor("小学").length >= 4 && subjectMethodsFor("初中").length >= 8 && subjectMethodsFor("高中").length >= 9, "三学段学法库齐全");
+need(balancePlansFor("高中").length === 4 && balancePlansFor("高中").every((p) => p.tips.length >= 3), "四项平衡规划齐全");
+const f1 = factorTip("数学", { pct: 82, ability: 88, mbtiType: "INTJ", discPrimary: "C", e3MainLabel: "注意力" })!;
+const f2 = factorTip("语文", { pct: 55, ability: 60, mbtiType: "INTJ", discPrimary: "C", e3MainLabel: "注意力" })!;
+need(f1.includes("拳头") || f1.includes("优势"), "高分科应扬长");
+need(f2.includes("保基础") || f2.includes("谨慎") || f2.includes("换学法"), "低分科应补短");
+need(f1 !== f2, "不同科目 tactics 必须差异化");
+need(factorTip("英语", { pct: null, mbtiType: null, discPrimary: null, e3MainLabel: null }) === null, "无测评无成绩时应返回 null");
 
 console.log("RENDER_SMOKE_V73_OK");

@@ -117,6 +117,7 @@ need(hHigh.includes("4.2 高中学科与专业之间关系"), "高中升学 tab 
 need(hHigh.includes("5.2 多元升学目标院校规划"), "高中升学 tab 5.2 院校规划");
 need(hHigh.includes("冲一冲") && hHigh.includes("保一保"), "5.2 冲稳保三档齐全");
 need(hHigh.includes("12 大学科门类匹配度"), "高中升学 tab 门类匹配度");
+need(hHigh.includes("首选决策") && hHigh.includes("再选决策"), "v76 首选/再选决策块");
 need(hHigh.includes("提前批志愿结构"), "提前批结构已渲染（默认折叠）");
 
 console.log("REPORT_RENDER_SMOKE_OK");

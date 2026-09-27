@@ -9,7 +9,7 @@ import { ChevronDown } from "lucide-react";
 import type { AcademicsData } from "@contracts/academics";
 import { stageOfGrade } from "@contracts/constants";
 import type { Multi5Result } from "@contracts/multi5";
-import { balancePlansFor, personalTip, subjectMethodsFor, type PersonalCtx, type Stage } from "@/data/reports/subjectAdvice";
+import { balancePlansFor, factorTip, personalTip, subjectMethodsFor, type PersonalCtx, type Stage } from "@/data/reports/subjectAdvice";
 
 /** 学科 → 相关多元智能维度（与升学平衡卡 abilityOf 映射一致）。 */
 const ABILITY_DIMS: Record<string, (d: Multi5Result["dims"]) => number> = {
@@ -49,10 +49,17 @@ export function SubjectAdviceBlocks({
   grade,
   academics,
   multi5,
+  mbtiType,
+  discPrimary,
+  e3MainLabel,
 }: {
   grade?: string | null;
   academics?: AcademicsData | null;
   multi5?: Multi5Result;
+  /** 测评因子（v76 差异化扬长补短） */
+  mbtiType?: string | null;
+  discPrimary?: string | null;
+  e3MainLabel?: string | null;
 }) {
   const stage: Stage = (grade ? stageOfGrade(grade) : null) ?? "初中";
   const methods = useMemo(() => subjectMethodsFor(stage), [stage]);
@@ -80,6 +87,7 @@ export function SubjectAdviceBlocks({
             const ctx = ctxMap.get(m.subject);
             const ability = multi5 ? (ABILITY_DIMS[m.subject]?.(multi5.dims) ?? null) : null;
             const personal = personalTip(m.subject, { ...ctx, ability });
+            const factor = factorTip(m.subject, { ...ctx, ability, mbtiType, discPrimary, e3MainLabel });
             return (
               <div key={m.subject} className="rounded-lg border border-border/70 bg-cream/60 px-3 py-2.5">
                 <div className="flex items-center justify-between">
@@ -91,6 +99,7 @@ export function SubjectAdviceBlocks({
                   )}
                 </div>
                 {personal && <p className="mt-1.5 rounded-md bg-lime-pale/60 px-2.5 py-1.5 text-[12px] leading-relaxed text-olive"><b>个性化：</b>{personal}</p>}
+                {factor && <p className="mt-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-[12px] leading-relaxed text-sky-800"><b>测评打法：</b>{factor}</p>}
                 <ul className="mt-1.5 space-y-1">
                   {m.methods.map((x, i) => (
                     <li key={i} className="flex gap-1.5 text-[12px] leading-relaxed text-olive-soft">

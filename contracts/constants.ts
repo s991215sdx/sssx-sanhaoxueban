@@ -31,3 +31,8 @@ export function stageOfGrade(grade: string): Stage | null {
   for (const s of STAGES) if ((STAGE_GRADES[s] as readonly string[]).includes(grade)) return s;
   return null;
 }
+
+/** v76：是否为占位姓名（未填真实姓名）——邀请注册默认「同学+手机尾号」，门禁据此强制补全基本信息。 */
+export function isPlaceholderName(name: string | null | undefined): boolean {
+  return !name || name === "同学" || /^同学\d{0,4}$/.test(name);
+}

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router";
 import { moduleForPath } from "@contracts/studentModules";
+import { isPlaceholderName } from "@contracts/constants";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import PreviewList from "./pages/PreviewList";
@@ -64,14 +65,14 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** V72 基本信息门禁：没填姓名（基础档案）一律先去补全，才能进入任何测评。 */
+/** v76 基本信息门禁：占位名（同学/同学+尾号，邀请注册默认名）一律先补全真实姓名，才能进入任何学习与测评页面。 */
 function BasicsGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const isStaff = user?.role === "admin" || user?.role === "tutor";
   const { data: profile, isLoading } = trpc.profile.get.useQuery(undefined, { enabled: !isStaff });
   if (isStaff) return <>{children}</>;
   if (isLoading) return <FullScreenLoading text="正在打开你的学习档案…" />;
-  if (!profile || !profile.name || profile.name === "同学") {
+  if (!profile || isPlaceholderName(profile.name)) {
     return (
       <div className="mx-auto max-w-xl px-4 py-10">
         <div className="paper-card p-6">
@@ -147,19 +148,14 @@ export default function App() {
                 <RoleGate>
                 <Layout>
                 <Suspense fallback={<PageSpinner />}>
+                  {/* v76：基本信息门禁包裹全部学员端页面——占位名一律先补全，才能进入测评与学习内容 */}
+                  <BasicsGate>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/preview" element={<PreviewList />} />
                     <Route path="/preview/:code" element={<PreviewSession />} />
                     <Route path="/gaps" element={<Gaps />} />
-                    <Route
-                      path="/assessments"
-                      element={
-                        <BasicsGate>
-                          <AssessmentCenter />
-                        </BasicsGate>
-                      }
-                    />
+                    <Route path="/assessments" element={<AssessmentCenter />} />
                     <Route path="/learn/:errorId" element={<LearnFlow />} />
                     <Route path="/papers" element={<Papers />} />
                     <Route path="/treehole" element={<Treehole />} />
@@ -170,6 +166,7 @@ export default function App() {
                     <Route path="/tutor" element={<Tutor />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
+                  </BasicsGate>
                 </Suspense>
                 </Layout>
                 </RoleGate>

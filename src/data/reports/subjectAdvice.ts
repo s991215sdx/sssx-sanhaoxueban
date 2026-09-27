@@ -267,6 +267,74 @@ export interface PersonalCtx {
   ability?: number | null;
   /** 学业差距（目标-最近，无目标为 null） */
   gap?: number | null;
+  /** MBTI 类型（如 INTJ），用于学习风格差异化 */
+  mbtiType?: string | null;
+  /** DISC 主导因子（D/I/S/C） */
+  discPrimary?: string | null;
+  /** 三阶九能主卡点标签（如「加工速度」「注意力」） */
+  e3MainLabel?: string | null;
+}
+
+/** 学科粗分类（用于按文理科给不同的测评因子建议）。 */
+function subjectKind(subject: string): "文" | "理" | "地理" {
+  if (subject === "地理") return "地理";
+  return ["语文", "英语", "道德与法治", "历史"].includes(subject) ? "文" : "理";
+}
+
+/** 由得分率与能力分近似四象限（学习力报告无升学报告的四象限数据，本地近似）。 */
+function approxQuadrant(ctx: PersonalCtx): "优势" | "潜能" | "谨慎" | "稳健" | null {
+  if (ctx.pct == null) return null;
+  if (ctx.pct >= 70) return "优势";
+  if (ctx.pct < 60 && (ctx.ability ?? 0) >= 70) return "潜能";
+  if (ctx.pct < 60) return "谨慎";
+  return "稳健";
+}
+
+/**
+ * 测评因子差异化建议（v76「扬长补短」）：结合 MBTI 学习风格、DISC 行为风格、三阶九能主卡点，
+ * 给每科一条与其他科目不同的 tactics。rotate 按学科名散列取 tactics，保证差异化且确定。
+ */
+export function factorTip(subject: string, ctx: PersonalCtx): string | null {
+  const kind = subjectKind(subject);
+  const q = approxQuadrant(ctx);
+  const lines: string[] = [];
+
+  /* 扬长补短主线（由成绩与能力决定）。 */
+  if (q === "优势") lines.push(`${subject}是当前的拳头科目：配竞赛/超前内容把它拉到顶，而不是平均用力`);
+  else if (q === "潜能") lines.push(`${subject}能力在、分数未到——优先换学法（见下方方法清单），别急着加时间`);
+  else if (q === "谨慎") lines.push(`${subject}先保基础题盘：课本例题 + 基础题过关后再谈提高，避免越难越怕`);
+  else if (q === "稳健") lines.push(`${subject}保持现有节奏即可，把增量时间让给拉分科目`);
+
+  /* 测评 tactics 池：按 MBTI / DISC / E3 组合，按学科名散列取两条，做到科科不同。 */
+  const tactics: string[] = [];
+  const t = ctx.mbtiType?.toUpperCase() ?? "";
+  if (t.includes("J")) tactics.push(`你是 J 型（计划型）：给${subject}排固定时段 + 周计划表，完成打勾比临时起意靠谱`);
+  if (t.includes("P")) tactics.push(`你是 P 型（弹性型）：${subject}用番茄钟小步推进，别排死计划——弹性反而更持久`);
+  if (t.includes("E")) tactics.push(`你是 E 型（外向型）：${subject}找学习搭子互讲互考，输出倒逼输入`);
+  if (t.includes("I")) tactics.push(`你是 I 型（内向型）：${subject}适合独立钻研 + 费曼自讲（对着镜子讲明白）`);
+  if (t.includes("T") && kind === "理") tactics.push(`T 型重逻辑：${subject}每个公式/定理自己推一遍，会推才会用`);
+  if (t.includes("F") && kind === "文") tactics.push(`F 型重感受：${subject}用情境记忆（代入故事/场景），比死记牢得多`);
+  if (t.includes("S") && kind === "理") tactics.push(`S 型重细节：${subject}别跳步，草稿规范——会做的题丢分最可惜`);
+  if (t.includes("N") && kind === "文") tactics.push(`N 型重框架：${subject}先搭知识骨架再填细节，思维导图比摘抄有效`);
+  const d = ctx.discPrimary?.toUpperCase() ?? "";
+  if (d === "D") tactics.push(`DISC-D 目标感强：${subject}设一个可量化的挑战目标（如两周内基础题零失误），限时冲刺`);
+  if (d === "I") tactics.push(`DISC-I 表达好：把${subject}的错题讲给同学听，能讲清才是真会`);
+  if (d === "S") tactics.push(`DISC-S 节奏稳：${subject}每天固定 20 分钟不断档，稳定胜过突击`);
+  if (d === "C") tactics.push(`DISC-C 重规范：${subject}建错题本并标注错因（粗心/概念/方法），每周回看一次`);
+  const e3 = ctx.e3MainLabel ?? "";
+  if (e3.includes("注意力")) tactics.push(`三阶九能显示注意力是主卡点：${subject}拆成 25 分钟小段、桌面只留当前科`);
+  if (e3.includes("记忆")) tactics.push(`工作记忆偏弱：${subject}草稿纸分区域用、中间结果写下来，减少脑内负担`);
+  if (e3.includes("速度")) tactics.push(`加工速度偏慢：${subject}每周 2 次限时训练，先提速再求难`);
+  if (e3.includes("乐学")) tactics.push(`乐学是主卡点：先想清楚${subject}「为什么学」（目标/用途），再启动任务`);
+  if (e3.includes("会学")) tactics.push(`会学是主卡点：${subject}每道错题当天归因，方法比题量重要`);
+  if (e3.includes("善学")) tactics.push(`善学是主卡点：给${subject}做周计划并自查完成情况，管理先于努力`);
+
+  /* 按学科名散列选 tactics，保证不同科目给不同组合（差异化）。 */
+  let hash = 0;
+  for (const ch of subject) hash = (hash * 31 + ch.charCodeAt(0)) % 997;
+  if (tactics.length > 0) lines.push(tactics[hash % tactics.length]);
+
+  return lines.length > 0 ? lines.join("；") + "。" : null;
 }
 
 /** 依据成绩与多元智能，为该学科动态生成一条个性化建议（拼在通用方法之前）。 */

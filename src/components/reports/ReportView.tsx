@@ -3272,8 +3272,15 @@ export default function ReportView({
               return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
             });
             })()}
-            {/* v75：学科学习建议（分学段+测评个性化）与四项平衡规划，均默认折叠按需打开 */}
-            <SubjectAdviceBlocks grade={profile?.grade ?? null} academics={academics} multi5={data?.multi5 ?? undefined} />
+            {/* v75/v76：学科学习建议（分学段+测评个性化+差异化扬长补短）与四项平衡规划，均默认折叠按需打开 */}
+            <SubjectAdviceBlocks
+              grade={profile?.grade ?? null}
+              academics={academics}
+              multi5={data?.multi5 ?? undefined}
+              mbtiType={data?.mbti?.type ?? null}
+              discPrimary={data?.disc?.primary ?? null}
+              e3MainLabel={e3v37?.mainBlock?.label ?? null}
+            />
             <p className="text-center text-[12.5px] text-olive-mute">
               报告内容聚焦学习相关因子，随学习数据积累持续更新。
             </p>
@@ -3610,8 +3617,15 @@ function CombinedLite({
         mental={mental}
       />
 
-      {/* v75：学科学习建议（分学段+测评个性化）与四项平衡规划，均默认折叠按需打开 */}
-      <SubjectAdviceBlocks grade={grade} academics={academics} multi5={multi5 ?? undefined} />
+      {/* v75/v76：学科学习建议（分学段+测评个性化+差异化扬长补短）与四项平衡规划，均默认折叠按需打开 */}
+      <SubjectAdviceBlocks
+        grade={grade}
+        academics={academics}
+        multi5={multi5 ?? undefined}
+        mbtiType={mbti?.type ?? null}
+        discPrimary={disc?.primary ?? null}
+        e3MainLabel={e3?.mainBlock?.label ?? null}
+      />
 
       {/* 现状定位（放在图之后） */}
       <div className="paper-card accent-l border-lime p-5 text-center">

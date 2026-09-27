@@ -352,6 +352,56 @@ export default function GuidanceTab({
             <h3 className="font-bold text-olive">4.4 选科规划方案</h3>
           </div>
 
+          {/* 首选决策（物理/历史 2 选 1） */}
+          {g.firstDecision && (
+            <div className="mt-3 rounded-xl border border-olive/12 bg-cream/60 p-3">
+              <p className="text-[13px] font-bold text-olive">
+                首选决策：<span className="text-lime">{g.firstDecision.pick}</span>
+                <span className="ml-1.5 text-[11px] font-normal text-olive-mute">（广东 3+1+2：物理 / 历史 二选一）</span>
+              </p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <div className={`rounded-lg px-3 py-2 ${g.firstDecision.pick === "物理" ? "bg-lime-pale/70" : "bg-cream"}`}>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[12.5px] font-bold text-olive">物理</span>
+                    <b className="mono text-[14px] text-olive">{g.firstDecision.physScore}</b>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-olive/8">
+                    <div className={`h-full rounded-full ${g.firstDecision.pick === "物理" ? "bg-lime" : "bg-olive/25"}`} style={{ width: `${Math.min(100, g.firstDecision.physScore)}%` }} />
+                  </div>
+                </div>
+                <div className={`rounded-lg px-3 py-2 ${g.firstDecision.pick === "历史" ? "bg-lime-pale/70" : "bg-cream"}`}>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[12.5px] font-bold text-olive">历史</span>
+                    <b className="mono text-[14px] text-olive">{g.firstDecision.histScore}</b>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-olive/8">
+                    <div className={`h-full rounded-full ${g.firstDecision.pick === "历史" ? "bg-lime" : "bg-olive/25"}`} style={{ width: `${Math.min(100, g.firstDecision.histScore)}%` }} />
+                  </div>
+                </div>
+              </div>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{g.firstDecision.text}</p>
+            </div>
+          )}
+
+          {/* 再选决策（4 选 2） */}
+          {g.secondDecision && (
+            <div className="mt-2.5 rounded-xl border border-olive/12 bg-cream/60 p-3">
+              <p className="text-[13px] font-bold text-olive">
+                再选决策：{g.secondDecision.picks.join(" + ")}
+                <span className="ml-1.5 text-[11px] font-normal text-olive-mute">（化学 / 生物 / 道法 / 地理 四选二）</span>
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {g.secondDecision.picks.map((p) => (
+                  <span key={p} className="rounded-full bg-lime px-2.5 py-0.5 text-[11.5px] font-bold text-cream">选 {p}</span>
+                ))}
+                {g.secondDecision.dropped.map((p) => (
+                  <span key={p} className="rounded-full bg-olive/10 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-mute">备选 {p}</span>
+                ))}
+              </div>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{g.secondDecision.text}</p>
+            </div>
+          )}
+
           {/* 多测评决策平衡卡 */}
           {g.scorecard && (
             <div className="mt-3">

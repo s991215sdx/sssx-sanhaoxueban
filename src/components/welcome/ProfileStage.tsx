@@ -1,16 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { GRADES } from "@contracts/constants";
 import { Minus, Plus } from "lucide-react";
 
-/** 向导第 1 阶段：认识一下（基础档案）。 */
+/** 向导第 1 阶段：认识一下（基础档案）。v76：已有档案时预填，作为「随时修改」入口同样好用。 */
 export default function ProfileStage({ onNext }: { onNext: () => void }) {
   const utils = trpc.useUtils();
+  const { data: profile } = trpc.profile.get.useQuery();
   const [name, setName] = useState("");
   const [grade, setGrade] = useState("初一");
   const [school, setSchool] = useState("");
   const [targetSchool, setTargetSchool] = useState("");
   const [dailyMinutes, setDailyMinutes] = useState(45);
+  const [prefilled, setPrefilled] = useState(false);
+
+  useEffect(() => {
+    if (profile && !prefilled) {
+      if (profile.name && profile.name !== "同学" && !/^同学\d{0,4}$/.test(profile.name)) setName(profile.name);
+      if (profile.grade) setGrade(profile.grade);
+      if (profile.school) setSchool(profile.school);
+      if (profile.targetSchool) setTargetSchool(profile.targetSchool);
+      setDailyMinutes(profile.dailyMinutes);
+      setPrefilled(true);
+    }
+  }, [profile, prefilled]);
 
   const setup = trpc.profile.setup.useMutation({
     onSuccess: () => {

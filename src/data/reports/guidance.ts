@@ -81,6 +81,10 @@ export type GuidanceReport = {
   disciplines: { key: string; name: string; matchPct: number; groups: string[]; majors: string[]; req: string; note: string; why: string }[];
   /** 目标院校规划（预估分 + 冲稳保，仅高中有成绩时）。 */
   schoolPlan: { estScore: number; first: "物理" | "历史"; tier: string; chong: string[]; wen: string[]; bao: string[]; chongNote: string | null; baoNote: string | null } | null;
+  /** 首选决策（广东 3+1+2：物理/历史 2 选 1，仅高中）。 */
+  firstDecision: { pick: "物理" | "历史"; physScore: number; histScore: number; margin: number; text: string } | null;
+  /** 再选决策（化学/生物/道法/地理 4 选 2，仅高中）。 */
+  secondDecision: { picks: string[]; dropped: string[]; text: string } | null;
   /** 给家长的话。 */
   parentTips: string[];
   /** 分阶段行动建议。 */
@@ -331,6 +335,8 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
   const cardTotal = (n: string) => scorecard!.rows.find((r) => r.subject === n)?.total ?? 55;
   let disciplines: GuidanceReport["disciplines"] = [];
   let schoolPlan: GuidanceReport["schoolPlan"] = null;
+  let firstDecision: GuidanceReport["firstDecision"] = null;
+  let secondDecision: GuidanceReport["secondDecision"] = null;
 
   if (scored.length > 0) {
     const rows = scored.map((s) => {
@@ -376,11 +382,32 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
         return rank[a.quadrant] - rank[b.quadrant] || (b.scorePct ?? -1) - (a.scorePct ?? -1);
       });
 
-    /* 选科组合推荐（基于决策平衡卡得分）。 */
+    /* 选科组合推荐（广东 3+1+2：首选 = 物理/历史 2 选 1，再选 = 化学生物道法地理 4 选 2，均基于决策平衡卡得分）。 */
     if (highSchool) {
-      const first: "物理" | "历史" = cardTotal("物理") + cardTotal("化学") >= cardTotal("历史") + cardTotal("道德与法治") ? "物理" : "历史";
+      /* 首选决策：物理 vs 历史直接对比（专业覆盖维度已计入平衡卡，物理侧天然占优时会在 margin 中体现）。 */
+      const physScore = cardTotal("物理");
+      const histScore = cardTotal("历史");
+      const first: "物理" | "历史" = physScore >= histScore ? "物理" : "历史";
+      const margin = Math.abs(physScore - histScore);
+      firstDecision = {
+        pick: first,
+        physScore,
+        histScore,
+        margin,
+        text: margin >= 10
+          ? `首选${first}（平衡卡 ${first === "物理" ? physScore : histScore} 分 vs ${first === "物理" ? histScore : physScore} 分，领先 ${margin} 分）：${first === "物理" ? "数理兴趣与成绩、专业覆盖（95% 以上专业可报）都指向物理" : "人文兴趣与史政成绩明显占优，历史类是更顺的主场"}，可作为定论推进。`
+          : `物理（${physScore} 分）与历史（${histScore} 分）非常接近（差 ${margin} 分）：两科都可立住，建议再对照目标专业——目标理工医农优先物理，目标人文社科两可；也可与老师各谈一次再定。`,
+      };
+
+      /* 再选决策：4 科按平衡卡排序，取前 2，后 2 列为可替换项。 */
       const pool = ["化学", "生物", "道德与法治", "地理"].map((n) => ({ n, s: cardTotal(n) })).sort((a, b) => b.s - a.s);
       const [a, b] = pool;
+      secondDecision = {
+        picks: [a.n, b.n],
+        dropped: pool.slice(2).map((p) => p.n),
+        text: `再选 ${a.n}（${a.s} 分）+ ${b.n}（${b.s} 分）为最优解；${pool[2].n}（${pool[2].s} 分）、${pool[3].n}（${pool[3].s} 分）作为可替换项——当「学校不开该组合」或「某科高二明显跟不上」时，用高分项替换低分项即可。`,
+      };
+
       const starsOf = (s: number): 1 | 2 | 3 => (s >= 75 ? 3 : s >= 60 ? 2 : 1);
       combos.push({
         title: `${first}+${a.n}+${b.n}`,
@@ -796,6 +823,8 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
     scorecard,
     disciplines,
     schoolPlan,
+    firstDecision,
+    secondDecision,
     parentTips,
     actionTips,
   };
