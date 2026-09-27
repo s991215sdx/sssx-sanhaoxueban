@@ -9,7 +9,8 @@ import type { ScoreRecord } from "@/components/reports/ScoreTrendChart";
 import FullPathwayMap from "@/components/reports/FullPathwayMap";
 import DisciplineTreeChart from "@/components/reports/DisciplineTreeChart";
 import ScorePathMatrix from "@/components/reports/ScorePathMatrix";
-import { AnchorBars, DiscBars, HollandRadar, MbtiBars, Multi5Radar } from "@/components/reports/AssessCharts";
+import { AnchorBars, HollandRadar, MbtiBars, Multi5Radar } from "@/components/reports/AssessCharts";
+import DiscTendencyChart from "@/components/reports/DiscTendencyChart";
 import { stageOfGrade } from "@contracts/constants";
 import { MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { Multi5Key } from "@contracts/multi5";
@@ -237,8 +238,8 @@ export default function GuidanceTab({
                 <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">{g.discBlock.roleStyle}</p>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-olive-mute">{g.discBlock.scene}</p>
                 {data?.disc && (
-                  <div className="mt-2 rounded-xl border border-olive/10 bg-cream/40 p-2">
-                    <DiscBars result={data.disc} />
+                  <div className="mt-2">
+                    <DiscTendencyChart dims={data.disc.dims} version={data.disc.version ?? undefined} />
                   </div>
                 )}
               </div>
