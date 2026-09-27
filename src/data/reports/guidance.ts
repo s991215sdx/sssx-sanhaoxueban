@@ -776,6 +776,16 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
     }
     actionTips.push({ phase: "本学年末", text: "期末后再录一次成绩（基本信息 → 成绩），本报告与成绩曲线图会自动更新，验证选科与学习策略是否有效。" });
     if (pathway.some((p) => p.name.includes("强基"))) actionTips.push({ phase: "本学期末前", text: "若走强基/竞赛：暑假前确定竞赛科目（数/理/化/生/信息学只选一个），找校内教练或校外体系，暑期是分水岭。" });
+  } else if (/小学|一年级|二年级|三年级|四年级|五年级|六年级/.test(grade ?? "")) {
+    /* 小学：重习惯与兴趣启蒙，不出中考话术。 */
+    actionTips.push({ phase: "本学期", text: "固定作息与作业流程，每天 20-30 分钟课外阅读——习惯比抢跑更重要。" });
+    if (multi5Block && multi5Block.length > 0) actionTips.push({ phase: "本学期", text: `顺着最强的智能项（${multi5Block[0].label}）安排体验：参观、社团、小项目，把兴趣先「养」起来。` });
+    if (academicsBlock) {
+      const weak = academicsBlock.rows.filter((r) => r.pct < 60).map((r) => r.name);
+      if (weak.length > 0) actionTips.push({ phase: "本学期", text: `${weak.join("、")}暂时落后：回到课本与基础题，每天补一点比周末突击有效。` });
+      else actionTips.push({ phase: "本学期", text: "各科都在及格线以上：保持节奏，把错题本习惯先立起来。" });
+    }
+    actionTips.push({ phase: "本学期末", text: "期末后录一次成绩看变化，再复测一次兴趣测评——小学阶段的画像越准，初中衔接越顺。" });
   } else {
     actionTips.push({ phase: "本学期", text: "主攻拳头科目保持手感（每周 2 套限时训练），大三门每天不断档——基本盘比偏科突围更重要。" });
     if (academicsBlock) {
@@ -787,11 +797,17 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
   if (mbtiBlock) actionTips.push({ phase: "长期", text: `按「${mbtiBlock.name}」的学习风格执行（见上方升学打法），比盲目刷题效率高得多。` });
 
   /* ---- 给家长的话 ---- */
-  const parentTips: string[] = [
-    "选科建议只是数据视角的参考，不是判决：请结合孩子的真实意愿、学校师资与开班情况一起讨论，共同决策。",
-    "对「谨慎学科」少批评、多换位——双低往往只是还没遇到对的学法；对「优势学科」多给资源（好老师/好资料/参赛机会）。",
-    "每学期复测一次测评并更新成绩，本报告会随数据演化——它是一份「活」的升学地图，不是一次性结论。",
-  ];
+  const parentTips: string[] = highSchool
+    ? [
+        "选科建议只是数据视角的参考，不是判决：请结合孩子的真实意愿、学校师资与开班情况一起讨论，共同决策。",
+        "对「谨慎学科」少批评、多换位——双低往往只是还没遇到对的学法；对「优势学科」多给资源（好老师/好资料/参赛机会）。",
+        "每学期复测一次测评并更新成绩，本报告会随数据演化——它是一份「活」的升学地图，不是一次性结论。",
+      ]
+    : [
+        "测评只是孩子当下的一面镜子，不是标签：小学初中的结果还在变化，多观察、多鼓励，少定性。",
+        "对暂时落后的学科少批评、多换位——往往只是还没遇到对的学法；对优势方向多给体验资源（参观、社团、好老师）。",
+        "每学期复测一次测评并更新成绩，本报告会随数据演化——它是一份「活」的成长地图，不是一次性结论。",
+      ];
   if (academicsBlock?.avgPct != null && academicsBlock.avgPct < 60) {
     parentTips.push(`孩子当前平均得分率约 ${academicsBlock.avgPct}%，与其焦虑排名，不如先抓「优势学科」建立信心，再逐个解决目标差距大的科目。`);
   }
