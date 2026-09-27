@@ -16,6 +16,8 @@ import { ANCHOR_LABEL, buildAnchorReport } from "@contracts/careerAnchor";
 import { MBTI_REPORTS } from "@/data/reports";
 import { DISC_REPORTS } from "@/data/reports/disc";
 import { buildMulti5Report } from "@contracts/multi5";
+import { DISCIPLINE_CATS, SUBJECT_COVERAGE_SCORE, pickSchoolTiers } from "@/data/reports/guidanceData";
+import type { SchoolTier } from "@/data/reports/guidanceData";
 
 /* ---------------------------------- 类型 ---------------------------------- */
 
@@ -70,6 +72,15 @@ export type GuidanceReport = {
   industries: { name: string; why: string }[];
   /** 升学路径适配（六大类全路径，按数据触发 + 条件提示）。 */
   pathway: { cat: PathCat; name: string; fit: PathFit; cond: string | null; note: string }[];
+  /** 多测评决策平衡卡（选科打分表）。 */
+  scorecard: {
+    weights: { name: string; pct: number }[];
+    rows: { subject: string; score: number; interest: number; ability: number; coverage: number; total: number; verdict: "强烈推荐" | "推荐" | "可选" | "慎重" }[];
+  } | null;
+  /** 12 大学科门类匹配度（Top 推荐）。 */
+  disciplines: { key: string; name: string; matchPct: number; groups: string[]; majors: string[]; req: string; note: string; why: string }[];
+  /** 目标院校规划（预估分 + 冲稳保，仅高中有成绩时）。 */
+  schoolPlan: { estScore: number; first: "物理" | "历史"; tier: string; chong: string[]; wen: string[]; bao: string[]; chongNote: string | null; baoNote: string | null } | null;
   /** 给家长的话。 */
   parentTips: string[];
   /** 分阶段行动建议。 */
@@ -272,6 +283,55 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
 
   /* 成绩因子：各科得分率 + 目标差距 + 趋势。 */
   const scored = (academics?.subjects ?? []).filter((s) => s.lastScore != null);
+
+  /* 多测评决策平衡卡：学业成绩 35% + 学科兴趣 30% + 能力匹配 20% + 专业覆盖 15%（无成绩按中位 55 分兜底）。 */
+  const byName = (n: string) => interestMap.get(n) ?? 0;
+  const pctMap = new Map<string, number>();
+  for (const s of scored) {
+    const f = s.fullScore ?? defaultFullScore(s.name, grade);
+    const p = pctOf(s.lastScore, f, grade, s.name);
+    if (p != null) pctMap.set(s.name, p);
+  }
+  const pctOfName = (n: string) => pctMap.get(n) ?? null;
+  const abilityOf = (n: string): number => {
+    if (!multi5) return 55;
+    const d = multi5.dims;
+    const map: Record<string, number[]> = {
+      数学: [d.reasoning ?? 0, d.number ?? 0],
+      物理: [d.reasoning ?? 0, d.spatial ?? 0],
+      化学: [d.reasoning ?? 0, d.detail ?? 0],
+      生物: [d.detail ?? 0],
+      历史: [d.verbal ?? 0, d.detail ?? 0],
+      道德与法治: [d.verbal ?? 0],
+      地理: [d.spatial ?? 0, d.detail ?? 0],
+      语文: [d.verbal ?? 0],
+      英语: [d.verbal ?? 0],
+    };
+    const vals = map[n];
+    return vals ? Math.max(...vals) : 55;
+  };
+  const verdictOf = (t: number): "强烈推荐" | "推荐" | "可选" | "慎重" => (t >= 75 ? "强烈推荐" : t >= 65 ? "推荐" : t >= 55 ? "可选" : "慎重");
+  const scorecardSubjects = highSchool ? ["物理", "化学", "生物", "历史", "道德与法治", "地理"] : ["语文", "数学", "英语", "物理", "化学", "生物", "道德与法治", "历史", "地理"];
+  let scorecard: GuidanceReport["scorecard"] = {
+    weights: [
+      { name: "学业成绩", pct: 35 },
+      { name: "学科兴趣", pct: 30 },
+      { name: "能力匹配", pct: 20 },
+      { name: "专业覆盖", pct: 15 },
+    ],
+    rows: scorecardSubjects.map((s) => {
+      const score = pctOfName(s) ?? 55;
+      const interest = byName(s);
+      const ability = abilityOf(s);
+      const coverage = SUBJECT_COVERAGE_SCORE[s] ?? 55;
+      const total = Math.round(score * 0.35 + interest * 0.3 + ability * 0.2 + coverage * 0.15);
+      return { subject: s, score, interest, ability, coverage, total, verdict: verdictOf(total) };
+    }).sort((a, b) => b.total - a.total),
+  };
+  const cardTotal = (n: string) => scorecard!.rows.find((r) => r.subject === n)?.total ?? 55;
+  let disciplines: GuidanceReport["disciplines"] = [];
+  let schoolPlan: GuidanceReport["schoolPlan"] = null;
+
   if (scored.length > 0) {
     const rows = scored.map((s) => {
       const full = s.fullScore ?? defaultFullScore(s.name, grade);
@@ -316,18 +376,10 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
         return rank[a.quadrant] - rank[b.quadrant] || (b.scorePct ?? -1) - (a.scorePct ?? -1);
       });
 
-    /* 选科组合推荐。 */
-    const byName = (n: string) => interestMap.get(n) ?? 0;
-    const pctOfName = (n: string) => subjMap.get(n)?.pct ?? null;
-    const comboScore = (n: string) => {
-      const p = pctOfName(n);
-      return Math.round(byName(n) * 0.45 + (p ?? 55) * 0.55);
-    };
+    /* 选科组合推荐（基于决策平衡卡得分）。 */
     if (highSchool) {
-      const sci = (byName("物理") + byName("化学") + (pctOfName("物理") ?? 50) + (pctOfName("化学") ?? 50)) / 2;
-      const hum = (byName("历史") + byName("道德与法治") + (pctOfName("历史") ?? 50) + (pctOfName("道德与法治") ?? 50)) / 2;
-      const first: "物理" | "历史" = sci >= hum ? "物理" : "历史";
-      const pool = ["化学", "生物", "道德与法治", "地理"].map((n) => ({ n, s: comboScore(n) })).sort((a, b) => b.s - a.s);
+      const first: "物理" | "历史" = cardTotal("物理") + cardTotal("化学") >= cardTotal("历史") + cardTotal("道德与法治") ? "物理" : "历史";
+      const pool = ["化学", "生物", "道德与法治", "地理"].map((n) => ({ n, s: cardTotal(n) })).sort((a, b) => b.s - a.s);
       const [a, b] = pool;
       const starsOf = (s: number): 1 | 2 | 3 => (s >= 75 ? 3 : s >= 60 ? 2 : 1);
       combos.push({
@@ -635,6 +687,56 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
     pathway.push({ cat: "务实备选", name: "高职单招 / 分类考试", fit: "关注", cond: "春季提前录取", note: `当前平均得分率 ${avg}%，若到高三仍在这个区间，高职单招值得认真了解：3-4 月考试、难度低于高考、提前锁定好专业（轨道交通、护理、电力、口腔医学技术等专业就业很硬）。这不是退路，是另一条赛道——入学后还有专升本、职业本科的上升阶梯。` });
   }
 
+  /* ---- 12 大学科门类匹配度 ---- */
+  const topHollandKeys = hollandBlock?.top3.map((t) => t.key) ?? [];
+  disciplines = DISCIPLINE_CATS.map((dc) => {
+    let score = 50;
+    const whys: string[] = [];
+    topHollandKeys.forEach((k, i) => {
+      if (dc.holland.includes(k)) {
+        const add = [30, 20, 12][i] ?? 8;
+        score += add;
+        whys.push(`${HOLLAND_LABEL[k]}兴趣`);
+      }
+    });
+    const subjPcts = dc.subjects.map((s) => pctOfName(s)).filter((x): x is number => x != null);
+    if (subjPcts.length > 0) {
+      const avg = subjPcts.reduce((a, b) => a + b, 0) / subjPcts.length;
+      score += Math.max(-20, Math.min(25, Math.round((avg - 65) * 0.8)));
+      whys.push(`${dc.subjects.slice(0, 2).join("/")}得分率 ${Math.round(avg)}%`);
+    }
+    if (multi5) {
+      const d = multi5.dims;
+      if ((dc.key === "science" || dc.key === "engineering") && Math.max(d.reasoning ?? 0, d.number ?? 0) >= 75) { score += 10; whys.push("逻辑/数理智能强"); }
+      if ((dc.key === "literature" || dc.key === "arts") && (d.verbal ?? 0) >= 75) { score += 10; whys.push("语言智能强"); }
+      if (dc.key === "engineering" && (d.spatial ?? 0) >= 75) { score += 6; whys.push("空间智能强"); }
+    }
+    return { key: dc.key, name: dc.name, matchPct: Math.max(0, Math.min(98, score)), groups: dc.groups, majors: dc.majors, req: dc.req, note: dc.note, why: whys.slice(0, 3).join(" · ") || "综合匹配" };
+  })
+    .filter((d) => d.matchPct >= 55)
+    .sort((a, b) => b.matchPct - a.matchPct)
+    .slice(0, 5);
+
+  /* ---- 5.2 目标院校规划（预估分 → 冲稳保） ---- */
+  if (highSchool && academicsBlock?.avgPct != null) {
+    const estScore = Math.max(350, Math.min(750, Math.round(academicsBlock.avgPct * 7.5)));
+    const first: "物理" | "历史" = cardTotal("物理") >= cardTotal("历史") ? "物理" : "历史";
+    const picked = pickSchoolTiers(first, estScore);
+    if (picked.wen) {
+      const namesOf = (t: SchoolTier | null) => (t?.gaokao ?? []).slice(0, 8);
+      schoolPlan = {
+        estScore,
+        first,
+        tier: picked.wen.range,
+        chong: namesOf(picked.chong),
+        wen: namesOf(picked.wen),
+        bao: namesOf(picked.bao),
+        chongNote: picked.chong ? `冲一冲：按 ${picked.chong.range} 档准备，需比当前预估再高 15-25 分` : null,
+        baoNote: picked.bao ? `保一保：${picked.bao.range} 档院校兜底，确保有学上` : null,
+      };
+    }
+  }
+
   /* ---- 行动建议（分阶段）---- */
   const actionTips: GuidanceReport["actionTips"] = [];
   if (highSchool) {
@@ -691,6 +793,9 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
     majors,
     industries,
     pathway,
+    scorecard,
+    disciplines,
+    schoolPlan,
     parentTips,
     actionTips,
   };

@@ -11,6 +11,7 @@ import { buildE3Report } from "@/data/reports/combined";
 import ProfileCard from "@/components/companion/ProfileCard";
 import AcademicsForm from "@/components/companion/AcademicsForm";
 import GuidanceTab from "@/components/reports/GuidanceTab";
+import { SubjectAdviceBlocks } from "@/components/reports/SubjectAdviceBlocks";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
@@ -3111,6 +3112,7 @@ export default function ReportView({
               <>
               <CombinedLite
                 name={profile?.name ?? ""}
+                grade={profile?.grade ?? null}
                 mbti={data!.mbti!}
                 disc={data!.disc!}
                 e3={e3v37!}
@@ -3270,6 +3272,8 @@ export default function ReportView({
               return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
             });
             })()}
+            {/* v75：学科学习建议（分学段+测评个性化）与四项平衡规划，均默认折叠按需打开 */}
+            <SubjectAdviceBlocks grade={profile?.grade ?? null} academics={academics} multi5={data?.multi5 ?? undefined} />
             <p className="text-center text-[12.5px] text-olive-mute">
               报告内容聚焦学习相关因子，随学习数据积累持续更新。
             </p>
@@ -3488,6 +3492,7 @@ function AssessmentChartsLite({
 
 function CombinedLite({
   name,
+  grade,
   mbti,
   disc,
   e3,
@@ -3500,6 +3505,7 @@ function CombinedLite({
   discParents,
 }: {
   name: string;
+  grade?: string | null;
   mbti: MbtiResult;
   disc: DiscResult;
   e3: E3V37Result;
@@ -3603,6 +3609,9 @@ function CombinedLite({
         multi5={multi5}
         mental={mental}
       />
+
+      {/* v75：学科学习建议（分学段+测评个性化）与四项平衡规划，均默认折叠按需打开 */}
+      <SubjectAdviceBlocks grade={grade} academics={academics} multi5={multi5 ?? undefined} />
 
       {/* 现状定位（放在图之后） */}
       <div className="paper-card accent-l border-lime p-5 text-center">

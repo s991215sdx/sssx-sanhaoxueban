@@ -115,6 +115,29 @@ const qj2 = gNoSci!.pathway.find((p) => p.name.includes("强基"));
 need(qj2 !== undefined && qj2.fit === "关注", "高分但数理不拔尖 → 强基应判关注");
 need(gNoSci!.pathway.some((p) => p.cat === "拔尖升学"), "拔尖升学类必须存在");
 
+/* 6. v75：多测评决策平衡卡 + 12 门类匹配 + 冲稳保院校规划 */
+const sc = g!.scorecard!;
+need(sc !== null && sc.rows.length === 6, "高中平衡卡必须覆盖 6 科");
+need(sc.weights.map((w) => w.pct).join(",") === "35,30,20,15", "平衡卡权重必须是 35/30/20/15");
+const scPhys = sc.rows.find((r) => r.subject === "物理")!;
+need(scPhys.total >= 40 && scPhys.total <= 100, "总分应为四项加权后的百分制分值");
+need(sc.rows.every((r) => ["强烈推荐", "推荐", "可选", "慎重"].includes(r.verdict)), "结论必须四档之一");
+need(sc.rows[0].total >= sc.rows[sc.rows.length - 1].total, "平衡卡按总分降序");
+const scHist = sc.rows.find((r) => r.subject === "历史")!;
+need(scPhys.total > scHist.total, "物理加权总分应高于历史（本数据集）");
+
+need(g!.disciplines.length >= 3 && g!.disciplines.length <= 5, "12 门类匹配应给 3-5 个");
+need(g!.disciplines.every((d) => d.groups.length > 0 && d.majors.length > 0 && d.req.length > 0), "门类必须带大类/代表专业/选科要求");
+need(g!.disciplines.some((d) => d.key === "engineering" || d.name === "工学"), "I+R 兴趣+数理强 → 工学应进入推荐门类");
+need(g!.disciplines.every((d) => d.matchPct >= 55), "门槛 ≥55");
+
+const sp = g!.schoolPlan!;
+need(sp !== null, "高中有成绩必须出冲稳保规划");
+need(sp.first === "物理", "本数据集首选应为物理");
+need(sp.estScore === Math.max(350, Math.min(750, Math.round(ab.avgPct! * 7.5))), "预估分=avgPct×7.5 clamp");
+need(sp.chong.length > 0 && sp.wen.length > 0 && sp.bao.length > 0, "冲稳保三档都必须有院校");
+need(sp.chong.some((s) => !sp.wen.includes(s)), "冲稳两档院校应有区分度");
+
 need(g!.parentTips.length >= 3, "给家长的话 ≥3 条");
 need(g!.actionTips.length >= 3, "分阶段行动建议 ≥3 条");
 
@@ -130,5 +153,11 @@ need(gMid !== null, "初中形态必须出报告");
 need(gMid!.combos.some((c) => c.title.includes("语文")), "初中必须有稳分组合（语数英）");
 need(gMid!.combos.some((c) => c.title.startsWith("主攻")), "初中必须有主攻组合");
 need(gMid!.combos.every((c) => !c.title.startsWith("物理+")), "初中不得给 3+1+2 组合");
+
+/* 7b. v75 初中形态：平衡卡 9 科、无 schoolPlan、有门类匹配 */
+const scMid = gMid!.scorecard!;
+need(scMid !== null && scMid.rows.length === 9, "初中平衡卡必须覆盖 9 科");
+need(gMid!.schoolPlan === null, "初中不得出院校规划");
+need(gMid!.disciplines.length > 0, "初中也可给门类匹配");
 
 console.log("RENDER_SMOKE_V73_OK");

@@ -84,10 +84,40 @@ const fullData = {
 };
 const hFull = render("guidance", fullData, profWithAcad);
 need(hFull.includes("升学指导"), "升学 tab 头卡");
-need(hFull.includes("选科建议"), "升学 tab 选科块");
+need(hFull.includes("4.1 自我探索"), "升学 tab 4.1 自我探索");
+need(hFull.includes("个性化选科规划"), "升学 tab 第四章分隔");
+need(hFull.includes("决策平衡卡"), "升学 tab 决策平衡卡表");
+need(hFull.includes("本科专业规划"), "升学 tab 4.3 专业规划");
 need(hFull.includes("推荐专业方向"), "升学 tab 专业块");
+need(hFull.includes("选科考虑因素清单"), "选科考虑因素清单已渲染（默认折叠）");
+need(hFull.includes("12 种选科组合专业覆盖率"), "覆盖率表已渲染（默认折叠）");
+need(hFull.includes("多元升学路径规划"), "升学 tab 第五章分隔");
+need(hFull.includes("5.1 多元升学路径规划"), "升学 tab 5.1 路径块");
 need(hFull.includes("ICR"), "升学 tab 霍兰德代码");
 need(render("guidance", mbtiOnly, profWithAcad).length > 100, "升学 tab 仅 MBTI 形态");
+
+/* 形态 5b：v75 高中形态——4.2 学科专业关系 + 5.2 冲稳保院校规划 */
+const profHigh = {
+  name: "测试",
+  grade: "高一",
+  academics: {
+    examName: "期中",
+    subjects: [
+      { name: "语文", selfLevel: 3, fullScore: 150, lastScore: 105, targetScore: null },
+      { name: "数学", selfLevel: 4, fullScore: 150, lastScore: 120, targetScore: null },
+      { name: "英语", selfLevel: 3, fullScore: 150, lastScore: 108, targetScore: null },
+      { name: "物理", selfLevel: 4, fullScore: 100, lastScore: 85, targetScore: null },
+      { name: "化学", selfLevel: 4, fullScore: 100, lastScore: 80, targetScore: null },
+      { name: "生物", selfLevel: 3, fullScore: 100, lastScore: 75, targetScore: null },
+    ],
+  },
+};
+const hHigh = render("guidance", fullData, profHigh);
+need(hHigh.includes("4.2 高中学科与专业之间关系"), "高中升学 tab 4.2 学科专业关系");
+need(hHigh.includes("5.2 多元升学目标院校规划"), "高中升学 tab 5.2 院校规划");
+need(hHigh.includes("冲一冲") && hHigh.includes("保一保"), "5.2 冲稳保三档齐全");
+need(hHigh.includes("12 大学科门类匹配度"), "高中升学 tab 门类匹配度");
+need(hHigh.includes("提前批志愿结构"), "提前批结构已渲染（默认折叠）");
 
 console.log("REPORT_RENDER_SMOKE_OK");
 process.exit(0);
