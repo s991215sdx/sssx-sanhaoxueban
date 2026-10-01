@@ -120,7 +120,7 @@ const TESTS: TestDef[] = [
     name: "学科能力测评",
     desc: "9 科「听懂 / 记住 / 运用」学习环节自评，自选科目逐题打分，结果进综合学习力报告做问题分析 · 建议每月一测 · 选做",
     required: false,
-    tab: "combined",
+    tab: "subject",
     summary: (l) => (l.subject ? `综合 ${l.subject.totalAvg}/5（${l.subject.subjects.length} 科）` : null),
   },
   {
@@ -409,7 +409,7 @@ export default function AssessmentCenter() {
             </div>
           </button>
           <button
-            onClick={() => navigate("/report-detail?tab=academics")}
+            onClick={() => navigate("/report-detail")}
             className="paper-card accent-l border-lime flex items-center gap-3.5 p-5 text-left shadow-sm hover:bg-lime-pale/40"
           >
             <Target size={30} className="shrink-0 text-lime-deep" />
@@ -488,7 +488,7 @@ export default function AssessmentCenter() {
       {!testing && (
         <div className="space-y-3">
           <button
-            onClick={() => navigate("/report-detail?tab=profile")}
+            onClick={() => navigate("/report-detail")}
             className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-cream-card py-2.5 text-[13px] text-olive-mute hover:border-lime/60 hover:text-olive"
           >
             <RotateCcw size={14} />

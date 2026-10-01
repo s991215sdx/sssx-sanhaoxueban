@@ -124,10 +124,10 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
             返回测评中心
           </button>
           <button
-            onClick={() => navigate("/report-detail?tab=combined")}
+            onClick={() => navigate("/report-detail?tab=subject")}
             className="flex-1 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
           >
-            查看综合学习力报告 →
+            查看学科能力评估报告 →
           </button>
         </div>
       </div>

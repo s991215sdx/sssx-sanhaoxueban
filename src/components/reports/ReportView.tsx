@@ -100,7 +100,7 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import MentalDetail from "@/components/reports/MentalDetail";
@@ -122,16 +122,17 @@ export type ReportAssessmentData = {
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
-type Tab = "combined" | "guidance" | "profile" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "discparent" | "parent";
+type Tab = "combined" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent";
 
 /** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
 type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
 
+/* V79：我的档案 / 成绩与目标移出栏目框，置顶为「基本信息」区；家长报告更名「家长认知冲突报告」；
+   新增「学科能力评估」独立报告栏目。 */
 const TABS: { key: Tab; label: string }[] = [
   { key: "combined", label: "综合学习力报告" },
   { key: "guidance", label: "升学指导报告" },
-  { key: "profile", label: "我的档案" },
-  { key: "academics", label: "成绩与目标" },
+  { key: "parent", label: "家长认知冲突报告" },
   { key: "e3", label: "学业诊断报告" },
   { key: "mbti", label: "MBTI 性格详版" },
   { key: "disc", label: "DISC 行为详版" },
@@ -139,7 +140,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "anchor", label: "职业锚" },
   { key: "holland", label: "职业兴趣" },
   { key: "mental", label: "心理健康" },
-  { key: "parent", label: "家长报告" },
+  { key: "subject", label: "学科能力评估" },
 ];
 
 const POLE_LABEL: Record<string, string> = {
@@ -2284,8 +2285,8 @@ export default function ReportView({
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const tab: Tab = (params.get("tab") as Tab) || "combined";
-  /* tutor 模式没有「我的档案」tab */
-  const tabs = viewer === "tutor" ? TABS.filter((t) => t.key !== "profile") : TABS;
+  /* V79：我的档案/成绩与目标移出栏目框（学生端置顶「基本信息」区）；伴学师端保留「成绩与目标」栏目 */
+  const tabs = viewer === "tutor" ? [...TABS, { key: "academics" as Tab, label: "成绩与目标" }] : TABS;
 
   /** V3.7 判定：有 e3 但不是 V3.7 结果 → 旧版数据，提示重测。 */
   const e3v37 = isE3V37Result(data?.e3) ? data.e3 : null;
@@ -2359,7 +2360,11 @@ export default function ReportView({
       return;
     }
     if (viewer === "tutor") onEditAcademics?.();
-    else setTab("profile");
+    else {
+      /* V79：成绩填写入口在置顶「基本信息」区 */
+      setTab("combined");
+      setTimeout(() => document.getElementById("basic-info")?.scrollIntoView({ behavior: "smooth" }), 300);
+    }
   };
 
   /** 框架图节点点击：未测 → 直达测评；成绩未填 → 去填写（已测节点为纯展示，不可点）。 */
@@ -2375,7 +2380,8 @@ export default function ReportView({
     if (tab === "disc") return !!(data?.disc && DISC_REPORTS[data.disc.primary]);
     if (tab === "multi5") return !!data?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
-    if (tab === "academics" || tab === "profile" || tab === "guidance") return false; // 档案/成绩/升学指导 tab 不提供下载（升学指导可系统打印）
+    if (tab === "academics" || tab === "guidance") return false; // 成绩/升学指导 tab 不提供下载（升学指导可系统打印）
+    if (tab === "subject") return !!data?.subject; // window.print 直接可用
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
     if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);
     return !!combined;
@@ -2386,7 +2392,6 @@ export default function ReportView({
   const onDownload = () => {
     const TAB_TITLE: Record<Tab, string> = {
       e3: "学业诊断报告（三阶九能 V3.7）",
-      profile: "我的档案", // 该 tab 不提供下载，仅兜底
       mbti: "MBTI 性格详版报告",
       disc: "DISC 行为详版报告",
       multi5: "多元智能五项测评报告",
@@ -2394,8 +2399,9 @@ export default function ReportView({
       anchor: "职业锚测评报告",
       holland: "霍兰德职业兴趣测评报告",
       mental: "心理健康评估报告",
-      discparent: "家长报告（亲子对照与沟通建议）",
-      parent: "家长报告（亲子对照与沟通建议）",
+      subject: "学科能力评估报告",
+      discparent: "家长认知冲突报告（亲子对照与沟通建议）",
+      parent: "家长认知冲突报告（亲子对照与沟通建议）",
       combined: "综合学习力报告",
       guidance: "升学指导综合报告",
     };
@@ -2553,6 +2559,20 @@ export default function ReportView({
         </div>
       )}
 
+      {/* V79：基本信息（我的档案 + 成绩与目标）置顶独立区，不再占用报告栏目 */}
+      {viewer === "student" && (
+        <section id="basic-info" className="space-y-4">
+          <div className="paper-card flex items-center gap-2 border-lime/50 bg-lime-pale/50 px-4 py-2.5">
+            <UserRound size={15} className="text-olive" />
+            <span className="text-[13px] font-bold text-olive">基本信息</span>
+            <span className="text-[12px] text-olive-mute">· 我的档案与成绩目标，改在这里</span>
+          </div>
+          <ProfileCard />
+          <ScoreTrendCard />
+          <AcademicsForm />
+        </section>
+      )}
+
       {/* Tab 切换 */}
       <div className="flex flex-wrap gap-1 rounded-xl bg-cream-deep p-1">
         {tabs.map((t) => (
@@ -2585,14 +2605,6 @@ export default function ReportView({
         <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
       )}
 
-      {tab === "profile" && viewer === "student" && (
-        <div className="space-y-4">
-          <ProfileCard />
-          <ScoreTrendCard />
-          <AcademicsForm />
-        </div>
-      )}
-
       {tab === "academics" &&
         (!academics || academics.subjects.length === 0 ? (
           viewer === "tutor" ? (
@@ -2610,9 +2622,9 @@ export default function ReportView({
             </div>
           ) : (
             <MissingCard
-              text="还没有填写各科成绩与目标。先在「我的档案」里补全学业信息，这里就能看到每科的差距。"
-              actionText="去我的档案填写 →"
-              to="/report-detail?tab=profile"
+              text="还没有填写各科成绩与目标。到页面最上面的「基本信息」里补全学业信息，就能看到每科的差距。"
+              actionText="去基本信息填写 →"
+              to="/report-detail"
             />
           )
         ) : (
@@ -2956,6 +2968,79 @@ export default function ReportView({
                 to="/assessments?start=mental"
               />
             )}
+          </div>
+        ))}
+
+      {tab === "subject" &&
+        (!data?.subject ? (
+          <MissingCard
+            text="还没有学科能力评估结果。按「听懂 → 记住 → 运用」三个学习环节，自评每科日常学习行为的达成度（1-5 级）；每科 13-25 题约 3 分钟，可一次测几科。"
+            actionText="还未测评，开始测评 →"
+            to="/assessments?start=subject"
+          />
+        ) : (
+          <div className="space-y-4">
+            {/* 结果总览 */}
+            <div className="paper-card p-5">
+              <div className="flex items-center gap-2">
+                <BookOpen size={16} className="text-olive" />
+                <h3 className="font-bold text-olive">学科能力评估 · 结果</h3>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {data.subject.subjects.map((s) => (
+                  <span
+                    key={s.name}
+                    className="rounded-full border border-lime/50 bg-lime-pale/60 px-2.5 py-0.5 text-[12px] font-semibold text-olive"
+                  >
+                    {s.name} {s.overall} · {s.grade}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-[13.5px] leading-relaxed text-olive-soft">{data.subject.summary}</p>
+              <div className="mt-4 space-y-2">
+                {data.subject.subjects.map((s) => (
+                  <div key={s.name} className="rounded-xl bg-cream px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-bold text-olive">{s.name}</span>
+                      <span className="text-[11.5px] text-olive-mute">
+                        综合 {s.overall}/5 · 短板「{s.stages.find((x) => x.stage === s.weakest)?.stage ?? s.weakest}」
+                      </span>
+                    </div>
+                    <div className="mt-1.5 space-y-1">
+                      {s.stages.map((st) => (
+                        <div key={st.stage} className="flex items-center gap-2">
+                          <span className="w-14 shrink-0 text-[11.5px] text-olive-soft">{st.stage}</span>
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
+                            <div
+                              className={`h-full rounded-full ${st.avg < 2.5 ? "bg-terra" : st.avg < 3.5 ? "bg-[#c7a23a]" : "bg-lime"}`}
+                              style={{ width: `${(st.avg / 5) * 100}%` }}
+                            />
+                          </div>
+                          <span className="mono w-7 text-right text-[11.5px] text-olive">{st.avg}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[12px] text-olive-mute">
+                口径：按平时真实做到的程度自评（1=完全做不到，5=完全做到）。建议每月复测一次，纵向对比各环节是否改善。
+              </p>
+            </div>
+            {/* 九科雷达 + 环节对比 */}
+            <div className="paper-card p-5">
+              <h3 className="font-bold text-olive">九科综合均分雷达</h3>
+              <p className="mt-1 text-[12.5px] text-olive-mute">红色标注 = 综合偏弱（&lt;3.5）或含最弱环节的学科。</p>
+              <div className="mt-2">
+                <SubjectOverallRadar result={data.subject} />
+              </div>
+            </div>
+            <div className="paper-card p-5">
+              <h3 className="font-bold text-olive">听懂 / 记住 / 运用 · 各环节在各科的对比</h3>
+              <div className="mt-2">
+                <SubjectStageBars result={data.subject} />
+              </div>
+            </div>
           </div>
         ))}
 
