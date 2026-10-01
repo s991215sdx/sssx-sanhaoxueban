@@ -14,13 +14,14 @@ import MentalScl90Quiz from "@/components/companion/MentalScl90Quiz";
 import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
 import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
+import SubjectQuiz from "@/components/companion/SubjectQuiz";
 import CombinedSuite from "@/components/assessment/CombinedSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
 import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
-type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental";
+type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject";
 
 type TestDef = {
   kind: TestKind;
@@ -115,6 +116,14 @@ const TESTS: TestDef[] = [
     summary: (l) => (l.holland ? "已生成兴趣代码" : null),
   },
   {
+    kind: "subject",
+    name: "学科能力测评",
+    desc: "9 科「听懂 / 记住 / 运用」学习环节自评，自选科目逐题打分，结果进综合学习力报告做问题分析 · 建议每月一测 · 选做",
+    required: false,
+    tab: "combined",
+    summary: (l) => (l.subject ? `综合 ${l.subject.totalAvg}/5（${l.subject.subjects.length} 科）` : null),
+  },
+  {
     kind: "mental",
     name: "心理健康筛查（四套量表 · 选一套做）",
     desc: "学生版 A（SDQ 长处与困难，4—17 岁）/ 学生版 B（PHQ-A + GAD-7，11 岁以上）/ 通用版（PHQ-9 + GAD-7）/ 深度评估（SCL-90，16 岁以上 90 题）· 均为选做，可分开多次做 · 选做",
@@ -170,6 +179,7 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   if (kind === "discparent") return <DiscParentQuiz onDone={onDone} />;
   if (kind === "anchor") return <AnchorQuiz onDone={onDone} />;
   if (kind === "holland") return <HollandQuiz onDone={onDone} />;
+  if (kind === "subject") return <SubjectQuiz onDone={onDone} />;
   if (kind === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
   if (kind === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
   return <MentalChooser onDone={onDone} />;
@@ -364,7 +374,7 @@ export default function AssessmentCenter() {
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
           这里集中了全部测评的入口与报告。三项必测（MBTI 性格、DISC 行为风格、E3 三阶九能学业诊断）是综合学习力报告的基础；
-          选做测评（家长卷、家长 DISC、多元智能五项、职业锚、霍兰德职业兴趣、心理健康）帮你和家人从更多角度认识自己，按兴趣挑着做就好。
+          选做测评（学科能力、家长卷、家长 DISC、多元智能五项、职业锚、霍兰德职业兴趣、心理健康）帮你和家人从更多角度认识自己，按兴趣挑着做就好。
         </p>
       </div>
 

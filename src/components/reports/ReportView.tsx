@@ -28,10 +28,13 @@ import type { E3V37Result, E3V37Stage, E3V37ItemScore } from "@contracts/e3v37";
 import { E3V37P_MIRROR_QUESTIONS, isE3V37ParentResult, type E3V37ParentResult } from "@contracts/e3v37Parent";
 import { DISC_DIM_PLAIN, PARENT_DISC_ADJUST } from "./DiscParentCompare";
 import type { AnchorResult } from "@contracts/careerAnchor";
+import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { MultiResult } from "@contracts/multi";
 import type { Multi5Result } from "@contracts/multi5";
 import { buildMulti5Report, MULTI5_THEORY_NOTE, MULTI5_DIM_ORDER, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { HollandResult } from "@contracts/holland";
+import { HOLLAND_LABEL, HOLLAND_ORDER } from "@contracts/holland";
+import type { SubjectAssessmentResult } from "@contracts/subjectAssessment";
 import type { MentalResult, MentalV2Result, MentalSdqResult, MentalPaResult, Scl90Result, Scl90FactorKey } from "@contracts/mentalHealth";
 import {
   MENTAL_FACTOR_ORDER,
@@ -76,6 +79,7 @@ import { buildAnswerBlocks, answerKindsForSection } from "@/components/reports/a
 import type { AnswerBlock, RawAnswer } from "@/components/reports/answerBlocks";
 import { RichText } from "@/components/RichText";
 import NineAbilityRadar from "@/components/reports/NineAbilityRadar";
+import { SubjectOverallRadar, SubjectStageBars } from "@/components/reports/AssessCharts";
 import E3V37OverviewCard from "@/components/reports/E3V37OverviewCard";
 import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import SystemFramework from "@/components/reports/SystemFramework";
@@ -112,6 +116,8 @@ export type ReportAssessmentData = {
   mentalSdq?: MentalSdqResult | null;
   mentalPa?: MentalPaResult | null;
   mentalScl90?: Scl90Result | null;
+  /** V78 学科能力测评结果（9 科听懂/记住/运用自评）。 */
+  subject?: SubjectAssessmentResult | null;
   raw?: { kind: string; answers: unknown; createdAt: Date | string }[];
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
@@ -305,6 +311,9 @@ function RoadmapSection({
   mentalSdq,
   mentalPa,
   mentalScl90,
+  subject,
+  anchor,
+  holland,
   charts,
   raw,
   onReveal,
@@ -322,6 +331,11 @@ function RoadmapSection({
   mentalSdq?: MentalSdqResult;
   mentalPa?: MentalPaResult;
   mentalScl90?: Scl90Result;
+  /** V78 学科能力测评结果：冰山上「现状」行的问题分析（有结果才显示）。 */
+  subject?: SubjectAssessmentResult;
+  /** V78 职业锚/霍兰德：迁入冰山下新图的深层特质区。 */
+  anchor?: AnchorResult;
+  holland?: HollandResult;
   charts?: ReactNode;
   /** 各测评原始作答：冰山各行/层内重点项的答题明细折叠由此构建（V36 折叠式直出）。 */
   raw?: RawAnswer[];
@@ -445,15 +459,15 @@ function RoadmapSection({
       </details>
     );
   };
-  /* 冰山下各行（从上→下）：学能 → 善学 → 会学 → 乐学 → 条件 → 心理健康 → DISC 行为 → MBTI 性格 → 职业锚 → 霍兰德兴趣；
-     心理健康/DISC/MBTI/职业锚/霍兰德按数据有无条件渲染，全部行共享一个「冰山下」rowSpan 单元格。 */
+  /* 冰山下各行（从上→下）：学能 → 善学 → 会学 → 乐学 → 心理健康；
+     V78：条件·支持系统 与 DISC/MBTI 深层特质已迁出冰山表，在表下独立新图呈现。
+     心理健康按数据有无条件渲染，全部行共享一个「冰山下」rowSpan 单元格。 */
   const underRows: { key: string; label: string; content: ReactNode }[] = (
     [
       ["学能 · 能力系统", "学能"],
       ["善学 · 加速系统", "善学"],
       ["会学 · 行为系统", "会学"],
       ["乐学 · 动力系统", "乐学"],
-      ["条件 · 支持系统", "条件"],
     ] as const
   ).map(([rowLabel, layer]) => ({
     key: layer,
@@ -537,36 +551,7 @@ function RoadmapSection({
       ),
     });
   }
-  if (disc) {
-    underRows.push({
-      key: "disc",
-      label: "DISC 行为",
-      content: (
-        <>
-          <Chip label={`${discCombo.join("")} 型 · ${DISC_REPORTS[disc.primary as "D"|"I"|"S"|"C"]?.name ?? ""}`} trait />
-          {(["D", "I", "S", "C"] as const).map((k) => (
-            <Chip key={k} label={`${k} ${discTendencyText(discTendencyFromDims(disc.dims, disc.version)[k])}`} trait={discCombo.includes(k)} />
-          ))}
-          <AnswersFold kinds={["disc"]} />
-        </>
-      ),
-    });
-  }
-  if (mbti) {
-    underRows.push({
-      key: "mbti",
-      label: "MBTI 性格",
-      content: (
-        <>
-          <Chip label={`${mbti.type} · ${MBTI_REPORTS[mbti.type]?.name ?? ""}`} trait />
-          {(["E", "I", "S", "N", "T", "F", "J", "P"] as const).map((k) => (
-            <Chip key={k} label={`${k} ${mbti.dims[k as keyof typeof mbti.dims]}`} trait={mbti.type.includes(k)} />
-          ))}
-          <AnswersFold kinds={["mbti"]} />
-        </>
-      ),
-    });
-  }
+  /* V78：DISC/MBTI 深层特质展示已迁入冰山表下方的新图（与职业锚/霍兰德并列）。 */
   /* V72：职业锚/霍兰德的 underRows 展示已迁入升学指导报告，学习力报告不再展示。 */
   /* 第三步「建议进步方案」按冰山同序倒序渲染：学能、善学、会学、乐学、条件（LAYER_PLAN_TEXT 按层名取值）。 */
   const planLayers = [layers[4], layers[2], layers[1], layers[0], layers[3]];
@@ -724,7 +709,7 @@ function RoadmapSection({
           <table className="w-full min-w-[460px] border-collapse text-[11.5px] sm:text-[12.5px]">
             <tbody>
               <tr>
-                <td rowSpan={1} className="w-20 border border-border bg-[#dce9f5] px-2 py-1.5 text-center font-bold text-olive">冰山上</td>
+                <td rowSpan={subject ? 2 : 1} className="w-20 border border-border bg-[#dce9f5] px-2 py-1.5 text-center font-bold text-olive">冰山上</td>
                 <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 font-semibold text-olive">知识点 · 成绩</td>
                 <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
                   {subjects.length === 0 ? (
@@ -750,6 +735,22 @@ function RoadmapSection({
                   )}
                 </td>
               </tr>
+              {/* V78 冰山上第二行：学科能力自评（有结果才显示），与成绩并列为「看得见的现状」 */}
+              {subject && (
+                <tr>
+                  <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 font-semibold text-olive">学科能力自评</td>
+                  <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
+                    {subject.subjects.map((s) => (
+                      <Chip
+                        key={s.name}
+                        label={`${s.name} ${s.overall} · ${s.grade}${s.overall < 3.5 ? ` · 短板「${s.weakest}」` : ""}`}
+                        bad={s.overall < 3.5}
+                      />
+                    ))}
+                    <Chip label={`综合 ${subject.totalAvg}/5`} trait />
+                  </td>
+                </tr>
+              )}
               {underRows.map((row, ri) => (
                 <tr key={row.key}>
                   {ri === 0 && (
@@ -762,8 +763,101 @@ function RoadmapSection({
             </tbody>
           </table>
         </div>
-        <p className="mt-1.5 text-[11.5px] text-olive-mute">红底芯片 = 需要关注的点（观察点未达正常 / 五项&lt;60 / 心理阳性）；琥珀底芯片 = 你的主导类型与特点（性格/行为/兴趣没有好坏，不是缺点）。</p>
+        <p className="mt-1.5 text-[11.5px] text-olive-mute">红底芯片 = 需要关注的点（观察点未达正常 / 五项&lt;60 / 心理阳性 / 学科自评偏弱）；琥珀底芯片 = 你的主导类型与特点（性格/行为/兴趣没有好坏，不是缺点）。</p>
+
+        {/* V78 冰山上 · 学科能力自评分析图（有测评结果才显示）：九科全貌 + 环节对比 */}
+        {subject && (
+          <div className="mt-3 rounded-xl border border-[#dce9f5] bg-white/50 p-3">
+            <p className="text-[12.5px] font-bold text-olive">冰山上 · 学科能力自评分析（听懂 / 记住 / 运用，1-5 分自评口径）</p>
+            <div className="mt-2 grid gap-3 md:grid-cols-2">
+              <SubjectOverallRadar result={subject} />
+              <SubjectStageBars result={subject} />
+            </div>
+            {subject.weakestStages.length > 0 && (
+              <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
+                最需先补的环节：{subject.weakestStages.map((w) => `${w.subject}·${w.stage}（${w.avg} 分）`).join("、")}
+                ——短板环节对应的具体测评点见「学科能力测评」答题明细，建议每月一测纵向对比。
+              </p>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* V78 冰山下新图：支持系统 × 深层特质（从冰山表迁出，独立成图） */}
+      {((layerUnits["条件"] ?? []).length > 0 || mbti || disc || anchor || holland) && (
+        <div className="paper-card border-[#c9a227]/50 p-4">
+          <StepHead n="2" title="冰山下 · 看不见的根（支持系统 × 深层特质）" color="bg-[#c9a227]" />
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
+            它们不进学习力总分，但决定干预能不能落地：支持系统不稳，上面的动力与方法都立不住；深层特质没有好坏，是用来「按自己的方式高效学、按内心的方向做选择」的底色。
+          </p>
+          <div className="mt-2.5 grid gap-3 md:grid-cols-2">
+            {/* 支持系统：条件三格（状态/关系/资源） */}
+            <div className="rounded-xl border border-border bg-white/60 p-3">
+              <p className="text-[12.5px] font-bold text-olive">支持系统 · 学习条件（状态 / 关系 / 资源）</p>
+              <div className="mt-2">
+                {(layerUnits["条件"] ?? []).map((u) => (
+                  <div key={u.label} className="mb-1 flex flex-wrap items-center last:mb-0">
+                    <SolidChip label={`${u.label} ${u.score}`} level={u.level} />
+                    {u.focuses.map((f) => (
+                      <FocusChip key={f.kp} label={`${f.kp} ${f.score}`} level={f.level} />
+                    ))}
+                  </div>
+                ))}
+                {(layerUnits["条件"] ?? []).length === 0 && (
+                  <p className="text-[11.5px] text-olive-mute">完成 E3 学业诊断后，这里会显示状态 / 关系 / 资源三格得分。</p>
+                )}
+              </div>
+              <AnswersFold kinds={LAYER_KINDS["条件"]} title="条件三格 · 答题明细（点击展开）" />
+            </div>
+            {/* 深层特质：MBTI / DISC / 职业锚 / 霍兰德 */}
+            <div className="rounded-xl border border-border bg-white/60 p-3">
+              <p className="text-[12.5px] font-bold text-olive">深层特质 · 性格与方向的长期底色</p>
+              <div className="mt-2 space-y-2">
+                {mbti && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="w-16 shrink-0 text-[11.5px] font-semibold text-olive">MBTI 性格</span>
+                    <Chip label={`${mbti.type} · ${MBTI_REPORTS[mbti.type]?.name ?? ""}`} trait />
+                    {(["E", "I", "S", "N", "T", "F", "J", "P"] as const).map((k) => (
+                      <Chip key={k} label={`${k} ${mbti.dims[k as keyof typeof mbti.dims]}`} trait={mbti.type.includes(k)} />
+                    ))}
+                  </div>
+                )}
+                {disc && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="w-16 shrink-0 text-[11.5px] font-semibold text-olive">DISC 行为</span>
+                    <Chip label={`${discCombo.join("")} 型 · ${DISC_REPORTS[disc.primary as "D"|"I"|"S"|"C"]?.name ?? ""}`} trait />
+                    {(["D", "I", "S", "C"] as const).map((k) => (
+                      <Chip key={k} label={`${k} ${discTendencyText(discTendencyFromDims(disc.dims, disc.version)[k])}`} trait={discCombo.includes(k)} />
+                    ))}
+                  </div>
+                )}
+                {anchor && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="w-16 shrink-0 text-[11.5px] font-semibold text-olive">职业锚</span>
+                    <Chip label={`主导 ${ANCHOR_LABEL[anchor.top2[0]]}${anchor.top2[1] ? ` · 辅助 ${ANCHOR_LABEL[anchor.top2[1]]}` : ""}`} trait />
+                    {anchor.top2.map((k) => (
+                      <Chip key={k} label={`${ANCHOR_LABEL[k]} ${anchor.dims[k].toFixed(1)}`} trait />
+                    ))}
+                  </div>
+                )}
+                {holland && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="w-16 shrink-0 text-[11.5px] font-semibold text-olive">霍兰德兴趣</span>
+                    <Chip label={`兴趣代码 ${holland.code} · ${holland.keywords}`} trait />
+                    {holland.top3.map((k) => (
+                      <Chip key={k} label={`${HOLLAND_LABEL[k]} ${holland.dims[k].toFixed(1)}`} trait />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {mbti && <AnswersFold kinds={["mbti"]} title="MBTI 答题明细（点击展开）" />}
+                {disc && <AnswersFold kinds={["disc"]} title="DISC 答题明细（点击展开）" />}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 第三步 · 训练方案表 */}
       <div className="paper-card border-terra/50 p-4">
@@ -2420,9 +2514,23 @@ export default function ReportView({
             subs: (["D", "I", "S", "C"] as const).map((k) => `${k} ${disc.dims[k]}`),
           }
         : { done: false },
-      /* V72：霍兰德/职业锚不再进入学习力框架图（已迁入升学指导报告）。 */
+      /* V78：职业锚/霍兰德回归学习力框架图深层特质行。 */
+      anchor: data?.anchor
+        ? {
+            done: true,
+            note: `主导 ${ANCHOR_LABEL[data.anchor.top2[0]]}`,
+            subs: ANCHOR_ORDER.map((k) => `${ANCHOR_LABEL[k]} ${data.anchor!.dims[k].toFixed(1)}`),
+          }
+        : { done: false },
+      holland: data?.holland
+        ? {
+            done: true,
+            note: `兴趣代码 ${data.holland.code}`,
+            subs: HOLLAND_ORDER.map((k) => `${HOLLAND_LABEL[k]} ${data.holland!.dims[k].toFixed(1)}`),
+          }
+        : { done: false },
     };
-  }, [academics, e3v37, mental, multi5, mbti, disc]);
+  }, [academics, e3v37, mental, multi5, mbti, disc, data?.anchor, data?.holland]);
 
   return (
     <div className="space-y-4">
@@ -2912,6 +3020,9 @@ export default function ReportView({
                   mentalSdq={mentalSdq}
                   mentalPa={mentalPa}
                   mentalScl90={mentalScl90}
+                  subject={data?.subject ?? undefined}
+                  anchor={data?.anchor ?? undefined}
+                  holland={data?.holland ?? undefined}
                   raw={data?.raw}
                   onReveal={reveal}
                 />
@@ -2966,6 +3077,9 @@ export default function ReportView({
                     mental={mental}
                     mentalSdq={mentalSdq}
                     mentalPa={mentalPa}
+                    subject={data?.subject ?? undefined}
+                    anchor={data?.anchor ?? undefined}
+                    holland={data?.holland ?? undefined}
                     charts={e3v37 ? <E3V37OverviewCard e3={e3v37} /> : undefined}
                     raw={data?.raw}
                     onReveal={reveal}

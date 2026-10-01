@@ -190,3 +190,76 @@ export function Multi5Radar({ result, height = 220 }: { result: Multi5Result; he
     </div>
   );
 }
+
+/* ---------------- V78 学科能力测评图表 ---------------- */
+
+import type { SubjectAssessmentResult } from "@contracts/subjectAssessment";
+
+/** 九科综合均分雷达（左图口径：一眼看全科全貌）。 */
+export function SubjectOverallRadar({ result, height = 240 }: { result: SubjectAssessmentResult; height?: number }) {
+  const worst = new Set(result.weakestStages.map((w) => w.subject));
+  const data = result.subjects.map((s) => ({
+    label: `${s.name} ${s.overall}`,
+    得分: s.overall,
+    weak: worst.has(s.name) || s.overall < 3.5,
+  }));
+  return (
+    <div>
+      <BlockTitle>九科综合均分雷达（总均 {result.totalAvg}/5）</BlockTitle>
+      <div style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={data} outerRadius="70%">
+            <PolarGrid stroke={GRID} />
+            <PolarRadiusAxis domain={[0, 5]} tick={false} axisLine={false} />
+            <PolarAngleAxis
+              dataKey="label"
+              tick={({ x, y, payload }: any) => {
+                const d = data.find((dd) => dd.label === payload.value);
+                const [name, score] = String(payload.value).split(" ");
+                return (
+                  <text x={x} y={y} textAnchor="middle" fontSize={11}>
+                    <tspan fill={d?.weak ? TERRA : OLIVE} fontWeight={700}>{name}</tspan>
+                    <tspan dx={3} fill={d?.weak ? TERRA : "#8a916b"} fontWeight={700}>{score}</tspan>
+                  </text>
+                );
+              }}
+            />
+            <Radar dataKey="得分" stroke={LIME} fill={LIME} fillOpacity={0.28} strokeWidth={2.5} />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="text-[11px] leading-relaxed text-olive-mute">红色标注 = 综合偏弱（&lt;3.5）或含最弱环节的学科。</p>
+    </div>
+  );
+}
+
+/** 学科 × 环节对比条图（右图口径：听懂/记住/运用（+特定）在各科的分布，薄弱环节一目了然）。 */
+export function SubjectStageBars({ result, height = 240 }: { result: SubjectAssessmentResult; height?: number }) {
+  const stageKeys = [...new Set(result.subjects.flatMap((s) => s.stages.map((st) => st.stage)))] as string[];
+  const colors: Record<string, string> = { 听懂: LIME, 记住: SKY, 运用: AMBER, 特定: TERRA };
+  const data = result.subjects.map((s) => {
+    const row: Record<string, number | string> = { subject: s.name };
+    for (const st of s.stages) row[st.stage] = st.avg;
+    return row;
+  });
+  return (
+    <div>
+      <BlockTitle>听懂 / 记住 / 运用 · 各环节在各科的对比</BlockTitle>
+      <div style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+            <XAxis dataKey="subject" tick={{ fontSize: 11, fill: OLIVE }} />
+            <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "#8a916b" }} />
+            {stageKeys.map((k) => (
+              <Bar key={k} dataKey={k} fill={colors[k] ?? "#aeb58e"} radius={[3, 3, 0, 0]} barSize={12} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="text-[11px] leading-relaxed text-olive-mute">
+        {stageKeys.map((k) => `${k}（${{ 听懂: "课堂输入", 记住: "复习巩固", 运用: "练习输出", 特定: "学科特定规划" }[k] ?? k}）`).join(" · ")}
+        ，最矮的那根就是该科先补的环节。
+      </p>
+    </div>
+  );
+}

@@ -71,8 +71,14 @@ import {
 } from "@contracts/mentalHealth";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import type { E3V27ParentResult } from "@contracts/e3v27Parent";
+import {
+  SUBJECT_BANK,
+  SUBJECT_ITEM_COUNT,
+  scoreSubjectAssessment,
+  type SubjectAssessmentResult,
+} from "@contracts/subjectAssessment";
 
-const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent"]);
+const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject"]);
 
 /** questions 接口返回：V3.7 学生卷题包。 */
 type E3V37QuestionSet = {
@@ -153,6 +159,7 @@ type AssessmentQuestions =
   | { kind: "multi5"; questions: Multi5PublicQuestion[] }
   | { kind: "anchor"; ratings: typeof ANCHOR_RATINGS }
   | { kind: "holland"; ratings: typeof HOLLAND_RATINGS }
+  | { kind: "subject"; bank: typeof SUBJECT_BANK }
   | MentalQuestionSet
   | MentalPaQuestionSet
   | MentalSdqQuestionSet
@@ -169,6 +176,7 @@ type AssessmentSubmitOutcome =
   | { kind: "multi5"; result: Multi5Result }
   | { kind: "anchor"; result: AnchorResult }
   | { kind: "holland"; result: HollandResult }
+  | { kind: "subject"; result: SubjectAssessmentResult }
   | { kind: "mental"; result: MentalV2Result }
   | { kind: "mentalsdq"; result: MentalSdqResult }
   | { kind: "mentalpa"; result: MentalPaResult }
@@ -375,6 +383,9 @@ export const assessmentRouter = createRouter({
           return { kind: "anchor", ratings: ANCHOR_RATINGS };
         case "holland":
           return { kind: "holland", ratings: HOLLAND_RATINGS };
+        case "subject":
+          // 学科能力测评：9 科自评题库（学生端自选科目作答）
+          return { kind: "subject", bank: SUBJECT_BANK };
         case "mental":
           // 通用版：PHQ-9 + GAD-7 两段式量表（国际通用筛查工具）
           return { kind: "mental", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_V2_SECTIONS };
@@ -501,6 +512,17 @@ export const assessmentRouter = createRouter({
           // 深度评估 SCL-90：90 题，每题 1-5 整数（1 没有 … 5 严重）
           answers: z.array(z.number().int().min(1).max(5)).length(MENTAL_SCL90_QUESTION_COUNT),
         }),
+        z.object({
+          kind: z.literal("subject"),
+          // 学科能力测评：key=科目名，value=该科每题 1-5 分（长度须与题库一致，至少 1 科）
+          answers: z
+            .record(z.string(), z.array(z.number().int().min(1).max(5)))
+            .refine((r) => Object.keys(r).length >= 1, { message: "至少完成 1 个学科" })
+            .refine((r) => Object.entries(r).every(([name, vals]) => {
+              const n = (SUBJECT_ITEM_COUNT as Record<string, number>)[name];
+              return n != null && vals.length === n;
+            }), { message: "学科或答案数量与题库不符" }),
+        }),
       ]),
     )
     .mutation(
@@ -564,6 +586,10 @@ export const assessmentRouter = createRouter({
         // 深度评估 SCL-90：90 题 1-5 级评分，10 因子 + 中国常模筛选口径
         const result: Scl90Result = scoreScl90(input.answers);
         outcome = { kind: "scl90", result };
+      } else if (input.kind === "subject") {
+        // 学科能力测评：9 科听懂/记住/运用(+特定)环节自评
+        const result: SubjectAssessmentResult = scoreSubjectAssessment(input.answers);
+        outcome = { kind: "subject", result };
       } else {
         const result: E3V37Result = scoreE3V37(input.answers);
         outcome = { kind: "e3", result };
@@ -597,7 +623,8 @@ export const assessmentRouter = createRouter({
           outcome.kind === "mentalsdq" ||
           outcome.kind === "mentalpa" ||
           outcome.kind === "scl90" ||
-          outcome.kind === "discparent"
+          outcome.kind === "discparent" ||
+          outcome.kind === "subject"
         ) {
           // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（四套）、家长版 DISC 均为选做，不同步档案字段、不影响 onboarding
         } else {
@@ -649,6 +676,8 @@ export const assessmentRouter = createRouter({
       mentalPa?: MentalPaResult;
       /** 最新一条 scl90 结果：深度评估（SCL-90 症状自评，10 因子）。 */
       mentalScl90?: Scl90Result;
+      /** 最新一条学科能力测评结果（9 科听懂/记住/运用自评）。 */
+      subject?: SubjectAssessmentResult;
       raw: { kind: string; answers: unknown; createdAt: Date }[];
     } = { raw: [], discParents: [] };
     for (const row of rows) {
@@ -663,8 +692,8 @@ export const assessmentRouter = createRouter({
         latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
         continue;
       }
-      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa" | "scl90";
-      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : key === "scl90" ? latest.mentalScl90 : latest[key]) continue;
+      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa" | "scl90" | "subject";
+      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : key === "scl90" ? latest.mentalScl90 : key === "subject" ? latest.subject : latest[key]) continue;
       if (key === "e3parent") latest.e3parent = row.result as unknown as E3V37ParentResult | E3V27ParentResult;
       else if (key === "mbti") latest.mbti = row.result as unknown as MbtiResult;
       else if (key === "disc") latest.disc = row.result as unknown as DiscResult;
@@ -676,6 +705,7 @@ export const assessmentRouter = createRouter({
       else if (key === "mentalsdq") latest.mentalSdq = row.result as unknown as MentalSdqResult;
       else if (key === "mentalpa") latest.mentalPa = row.result as unknown as MentalPaResult;
       else if (key === "scl90") latest.mentalScl90 = row.result as unknown as Scl90Result;
+      else if (key === "subject") latest.subject = row.result as unknown as SubjectAssessmentResult;
       else latest.multi = row.result as unknown as MultiResult;
       latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
       if (latest.mbti && latest.disc && latest.e3 && latest.multi && latest.multi5 && latest.anchor && latest.holland && latest.mental) break;
