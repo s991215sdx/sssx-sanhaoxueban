@@ -408,7 +408,9 @@ export function buildSubjectAnalysis(result: SubjectAssessmentResult): SubjectAn
     `本次共测评 ${subjects.length} 科，综合均分 ${totalAvg}/5（${grade}）。` +
     (worst[0] && best[0] && worst[0].name !== best[0].name
       ? `「${best[0].name}」相对最有优势（${best[0].overall} · ${best[0].grade}），「${worst[0].name}」相对最薄弱（${worst[0].overall} · ${worst[0].grade}）。`
-      : "");
+      : worst[0]
+        ? `「${worst[0].name}」为 ${worst[0].overall} · ${worst[0].grade}。`
+        : "");
 
   const overall: string[] = [];
   /* 三环节横向画像：各科在 听懂/记住/运用 上的整体形态 */
