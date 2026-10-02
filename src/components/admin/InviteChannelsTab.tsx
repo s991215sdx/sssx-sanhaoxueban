@@ -22,8 +22,14 @@ function ReportAccessEditor({
 }) {
   const [on, setOn] = useState(enabled);
   const [picked, setPicked] = useState<string[]>(kinds);
+  const allPicked = picked.includes("all");
   const toggleKind = (key: string) =>
-    setPicked((list) => (list.includes(key) ? list.filter((x) => x !== key) : [...list, key]));
+    setPicked((list) => {
+      if (key === "all") return list.includes("all") ? [] : ["all"];
+      /* 逐个勾选时自动取消「全部」 */
+      const next = list.includes(key) ? list.filter((x) => x !== key) : [...list, key];
+      return next.filter((x) => x !== "all");
+    });
   return (
     <div className="rounded-xl border border-border bg-cream/60 p-3.5">
       <label className="flex cursor-pointer items-center gap-2.5">
@@ -45,21 +51,37 @@ function ReportAccessEditor({
       {on && (
         <>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {INVITE_REPORT_KINDS.map((k) => (
+            {/* v80.1：一键开放全部测评报告 */}
+            <button
+              type="button"
+              onClick={() => toggleKind("all")}
+              className={`rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${
+                allPicked
+                  ? "border-lime bg-olive text-cream"
+                  : "border-olive/40 bg-cream-card text-olive hover:bg-lime-pale"
+              }`}
+            >
+              {allPicked ? "✓ " : ""}
+              全部报告（{INVITE_REPORT_KINDS.length} 种）
+            </button>
+            {INVITE_REPORT_KINDS.map((k) => {
+              const active = allPicked || picked.includes(k.key);
+              return (
               <button
                 key={k.key}
                 type="button"
                 onClick={() => toggleKind(k.key)}
                 className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${
-                  picked.includes(k.key)
+                  active
                     ? "border-lime bg-lime-pale text-olive"
                     : "border-border bg-cream-card text-olive-mute hover:bg-lime-pale/50"
                 }`}
               >
-                {picked.includes(k.key) ? "✓ " : ""}
+                {active ? "✓ " : ""}
                 {k.label}
               </button>
-            ))}
+              );
+            })}
           </div>
           <button
             type="button"
