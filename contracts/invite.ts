@@ -30,3 +30,45 @@ export const INVITE_CODE_RE = /^[a-z0-9]{8,24}$/;
 export function normalizeInviteCode(raw: string): string {
   return (raw ?? "").trim().toLowerCase();
 }
+
+/**
+ * v80 二维码「测评报告功能」：渠道可勾选注册学员客户端自动可见的测评报告
+ * （对应管理端需求：发码时选择打开/关闭测评报告，并指定打开哪些）。
+ * key 与 ReportView 的 tab 一致；"all" 表示全部报告。
+ */
+export const INVITE_REPORT_KINDS = [
+  { key: "combined", label: "综合学习力报告" },
+  { key: "guidance", label: "升学指导报告" },
+  { key: "e3", label: "学业诊断报告" },
+  { key: "subject", label: "学科能力评估" },
+  { key: "mbti", label: "MBTI 性格详版" },
+  { key: "disc", label: "DISC 行为详版" },
+  { key: "multi5", label: "多元智能五项" },
+  { key: "anchor", label: "职业锚" },
+  { key: "holland", label: "职业兴趣" },
+  { key: "mental", label: "心理健康" },
+  { key: "parent", label: "家长报告" },
+] as const;
+
+/** 校验并归一化报告种类数组：剔除未知 key、去重、限量；返回 null 表示非法输入。兼容 JSON 字符串。 */
+export function normalizeReportKinds(raw: unknown): string[] | null {
+  let list = raw;
+  if (typeof list === "string") {
+    try {
+      list = JSON.parse(list);
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(list)) return [];
+  const valid = new Set(INVITE_REPORT_KINDS.map((k) => k.key));
+  const out: string[] = [];
+  for (const item of list) {
+    if (typeof item !== "string") continue;
+    const k = item.trim();
+    if (k === "all") return ["all"];
+    if (valid.has(k as (typeof INVITE_REPORT_KINDS)[number]["key"]) && !out.includes(k)) out.push(k);
+    if (out.length > 16) break;
+  }
+  return out;
+}

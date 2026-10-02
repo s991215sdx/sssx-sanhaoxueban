@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { desc, eq, or, sql } from "drizzle-orm";
-import { INVITE_CHANNEL_KINDS, normalizeInviteCode } from "@contracts/invite";
+import { INVITE_CHANNEL_KINDS, normalizeInviteCode, normalizeReportKinds } from "@contracts/invite";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
 import { inviteChannels, inviteRegistrations, studentProfile, users } from "@db/schema";
-import { createRouter, publicQuery, tutorQuery } from "./middleware";
+import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
@@ -28,12 +28,16 @@ function badRequest(message: string): never {
 export const inviteRouter = createRouter({
   /** 管理员/伴学师：新建注册邀请渠道（返回含渠道码的记录，前端据此生成二维码）。伴学师建的码归属自己。 */
   createChannel: tutorQuery
-    .input((v: unknown) => v as { name: string; kind: string; note?: string })
+    .input((v: unknown) => v as { name: string; kind: string; note?: string; reportAccess?: boolean; reportKinds?: unknown })
     .mutation(async ({ ctx, input }) => {
       const name = (input.name ?? "").trim();
       if (name.length < 2 || name.length > 64) badRequest("渠道名 2～64 个字，比如「地推-万达广场点位」");
       const kind = (INVITE_CHANNEL_KINDS as readonly string[]).includes(input.kind) ? input.kind : "其他";
       const note = (input.note ?? "").trim().slice(0, 255) || null;
+      /* v80：测评报告功能开关 + 开放的报告种类（注册学员客户端直接可见） */
+      const reportAccess = !!input.reportAccess;
+      const reportKinds = reportAccess ? normalizeReportKinds(input.reportKinds) : [];
+      if (reportKinds == null) badRequest("报告种类格式不对");
       const tutorId = ctx.user.role === "tutor" ? ctx.user.id : null;
       /* V59：发码人所属机构随码记录，注册学员继承该机构 */
       const orgId = ctx.user.orgId ?? null;
@@ -41,7 +45,7 @@ export const inviteRouter = createRouter({
       for (let i = 0; i < 5; i++) {
         const code = newInviteCode();
         try {
-          await db.insert(inviteChannels).values({ code, name, kind, note, tutorId, orgId, createdBy: ctx.user.id });
+          await db.insert(inviteChannels).values({ code, name, kind, note, tutorId, orgId, createdBy: ctx.user.id, reportAccess, reportKinds });
           const row = (await db.select().from(inviteChannels).where(eq(inviteChannels.code, code)).limit(1))[0];
           if (row) return row;
         } catch {
@@ -50,6 +54,59 @@ export const inviteRouter = createRouter({
       }
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "生成渠道码失败，请再试一次" });
     }),
+
+  /**
+   * v80 管理员/伴学师：修改已有渠道的测评报告开关与开放种类（不动其他字段）。
+   * 权限口径与 setChannelActive 一致：伴学师只能动自己的码，机构管理员限本机构，平台超管全部。
+   */
+  setChannelReports: tutorQuery
+    .input((v: unknown) => v as { id: number; reportAccess: boolean; reportKinds?: unknown })
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      if (ctx.user.role !== "admin") {
+        const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.id, input.id)).limit(1))[0];
+        if (!ch || (ch.tutorId !== ctx.user.id && ch.createdBy !== ctx.user.id)) {
+          badRequest("这张二维码不在你名下");
+        }
+      } else if (ctx.user.orgId != null) {
+        const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.id, input.id)).limit(1))[0];
+        if (!ch || (ch.orgId ?? null) !== ctx.user.orgId) badRequest("这张二维码不在你机构内");
+      }
+      const reportAccess = !!input.reportAccess;
+      const reportKinds = reportAccess ? normalizeReportKinds(input.reportKinds) : [];
+      if (reportKinds == null) badRequest("报告种类格式不对");
+      await db
+        .update(inviteChannels)
+        .set({ reportAccess, reportKinds })
+        .where(eq(inviteChannels.id, input.id));
+      return { ok: true as const };
+    }),
+
+  /**
+   * v80 学员端：当前账号经哪个渠道注册、该渠道开放了哪些测评报告。
+   * 未扫码注册（老账号/后台建号）返回 enabled=false；客户端据此外加放行对应报告栏目。
+   */
+  myReportAccess: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const reg = (
+      await db
+        .select({ channelId: inviteRegistrations.channelId })
+        .from(inviteRegistrations)
+        .where(eq(inviteRegistrations.userId, ctx.user.id))
+        .orderBy(desc(inviteRegistrations.id))
+        .limit(1)
+    )[0];
+    if (!reg) return { enabled: false as const, kinds: [] as string[] };
+    const ch = (
+      await db
+        .select({ reportAccess: inviteChannels.reportAccess, reportKinds: inviteChannels.reportKinds })
+        .from(inviteChannels)
+        .where(eq(inviteChannels.id, reg.channelId))
+        .limit(1)
+    )[0];
+    if (!ch || !ch.reportAccess) return { enabled: false as const, kinds: [] as string[] };
+    return { enabled: true as const, kinds: normalizeReportKinds(ch.reportKinds) ?? [] };
+  }),
 
   /** 管理员看本机构全部渠道（V60：平台超管看全部机构渠道）；伴学师只看自己创建的（含各渠道累计注册数 + 最近 50 条注册记录）。 */
   channels: tutorQuery.query(async ({ ctx }) => {

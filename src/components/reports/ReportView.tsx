@@ -80,6 +80,7 @@ import type { AnswerBlock, RawAnswer } from "@/components/reports/answerBlocks";
 import { RichText } from "@/components/RichText";
 import NineAbilityRadar from "@/components/reports/NineAbilityRadar";
 import { SubjectOverallRadar, SubjectStageBars } from "@/components/reports/AssessCharts";
+import SubjectAnalysisCard from "@/components/reports/SubjectAnalysisCard";
 import E3V37OverviewCard from "@/components/reports/E3V37OverviewCard";
 import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import SystemFramework from "@/components/reports/SystemFramework";
@@ -3027,6 +3028,8 @@ export default function ReportView({
                 口径：按平时真实做到的程度自评（1=完全做不到，5=完全做到）。建议每月复测一次，纵向对比各环节是否改善。
               </p>
             </div>
+            {/* v80 学科分析报告：总体判断 + 逐科分析 + 优先行动清单 */}
+            <SubjectAnalysisCard result={data.subject} />
             {/* 九科雷达 + 环节对比 */}
             <div className="paper-card p-5">
               <h3 className="font-bold text-olive">九科综合均分雷达</h3>

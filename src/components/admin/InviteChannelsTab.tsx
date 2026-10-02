@@ -1,11 +1,89 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Download, Link2, Plus, QrCode, RefreshCw } from "lucide-react";
+import { Download, Link2, Plus, QrCode, RefreshCw, FileText } from "lucide-react";
 import { trpc } from "@/providers/trpc";
-import { INVITE_CHANNEL_KINDS } from "@contracts/invite";
+import { INVITE_CHANNEL_KINDS, INVITE_REPORT_KINDS } from "@contracts/invite";
 
 function inviteUrl(code: string): string {
   return `${window.location.origin}/invite/${code}`;
+}
+
+/** v80 测评报告功能配置编辑器：总开关 + 勾选开放的报告种类（新建渠道与编辑已有渠道共用）。 */
+function ReportAccessEditor({
+  enabled,
+  kinds,
+  saving,
+  onSave,
+}: {
+  enabled: boolean;
+  kinds: string[];
+  saving: boolean;
+  onSave: (enabled: boolean, kinds: string[]) => void;
+}) {
+  const [on, setOn] = useState(enabled);
+  const [picked, setPicked] = useState<string[]>(kinds);
+  const toggleKind = (key: string) =>
+    setPicked((list) => (list.includes(key) ? list.filter((x) => x !== key) : [...list, key]));
+  return (
+    <div className="rounded-xl border border-border bg-cream/60 p-3.5">
+      <label className="flex cursor-pointer items-center gap-2.5">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          onClick={() => setOn((v) => !v)}
+          className={`relative h-5.5 w-10 shrink-0 rounded-full transition-colors ${on ? "bg-lime" : "bg-cream-deep"}`}
+          style={{ height: 22 }}
+        >
+          <span
+            className={`absolute top-[3px] h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-[3px]"}`}
+          />
+        </button>
+        <span className="text-[13px] font-bold text-olive">开放测评报告功能</span>
+        <span className="text-[11.5px] text-olive-mute">扫码注册的客户，客户端可直接查看下方勾选的报告</span>
+      </label>
+      {on && (
+        <>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {INVITE_REPORT_KINDS.map((k) => (
+              <button
+                key={k.key}
+                type="button"
+                onClick={() => toggleKind(k.key)}
+                className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${
+                  picked.includes(k.key)
+                    ? "border-lime bg-lime-pale text-olive"
+                    : "border-border bg-cream-card text-olive-mute hover:bg-lime-pale/50"
+                }`}
+              >
+                {picked.includes(k.key) ? "✓ " : ""}
+                {k.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={saving || picked.length === 0}
+            onClick={() => onSave(true, picked)}
+            className="mt-2.5 rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+          >
+            {saving ? "保存中…" : "保存报告设置"}
+          </button>
+          {picked.length === 0 && <p className="mt-1.5 text-[11.5px] text-terra">至少勾选 1 种报告，或关闭总开关</p>}
+        </>
+      )}
+      {!on && enabled && (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => onSave(false, [])}
+          className="mt-2.5 rounded-lg border border-terra/40 px-3 py-1.5 text-[12px] font-semibold text-terra hover:bg-terra/10 disabled:opacity-40"
+        >
+          {saving ? "保存中…" : "关闭测评报告功能"}
+        </button>
+      )}
+    </div>
+  );
 }
 
 /** 单个渠道的二维码（canvas 渲染 + 下载 PNG），固定宽度放渠道行右侧。 */
@@ -56,15 +134,23 @@ export default function InviteChannelsTab() {
   const [note, setNote] = useState("");
   const [qrFor, setQrFor] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [reportOn, setReportOn] = useState(false);
+  const [reportKinds, setReportKinds] = useState<string[]>([]);
+  const [editReportsFor, setEditReportsFor] = useState<number | null>(null);
 
   const create = trpc.invite.createChannel.useMutation({
     onSuccess: () => {
       setName("");
       setNote("");
+      setReportOn(false);
+      setReportKinds([]);
       utils.invite.channels.invalidate();
     },
   });
   const toggle = trpc.invite.setChannelActive.useMutation({
+    onSuccess: () => utils.invite.channels.invalidate(),
+  });
+  const setReports = trpc.invite.setChannelReports.useMutation({
     onSuccess: () => utils.invite.channels.invalidate(),
   });
 
@@ -122,9 +208,29 @@ export default function InviteChannelsTab() {
           placeholder="备注（可选）：对接人、点位、合作门店等"
           className="mt-2.5 w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
         />
+        {/* v80：测评报告功能——发码时选择打开/关闭，注册客户客户端直接可见勾选的报告 */}
+        <div className="mt-2.5">
+          <ReportAccessEditor
+            enabled={reportOn}
+            kinds={reportKinds}
+            saving={create.isPending}
+            onSave={(on, kinds) => {
+              setReportOn(on);
+              setReportKinds(kinds);
+            }}
+          />
+        </div>
         <button
-          onClick={() => create.mutate({ name: name.trim(), kind, note: note.trim() })}
-          disabled={create.isPending || name.trim().length < 2}
+          onClick={() =>
+            create.mutate({
+              name: name.trim(),
+              kind,
+              note: note.trim(),
+              reportAccess: reportOn,
+              reportKinds: reportOn ? reportKinds : [],
+            })
+          }
+          disabled={create.isPending || name.trim().length < 2 || (reportOn && reportKinds.length === 0)}
           className="mt-3 flex items-center gap-1.5 rounded-xl bg-olive px-4 py-2.5 text-[14px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
         >
           {create.isPending ? <RefreshCw size={15} className="animate-spin" /> : <Plus size={15} />}
@@ -153,6 +259,12 @@ export default function InviteChannelsTab() {
                       <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${c.active ? "bg-lime-pale text-olive" : "bg-olive-mute/15 text-olive-mute"}`}>
                         {c.active ? "投放中" : "已停用"}
                       </span>
+                      {c.reportAccess && (
+                        <span className="flex items-center gap-1 rounded-full bg-butter/70 px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]">
+                          <FileText size={11} />
+                          报告已开放
+                        </span>
+                      )}
                       <span className="ml-auto text-[12px] text-olive-mute">
                         累计注册 <b className="mono text-[14px] text-olive">{c.registrations}</b> 人
                       </span>
@@ -191,7 +303,35 @@ export default function InviteChannelsTab() {
                       >
                         {c.active ? "停用（二维码立即失效）" : "重新启用"}
                       </button>
+                      <button
+                        onClick={() => setEditReportsFor(editReportsFor === c.id ? null : c.id)}
+                        className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
+                          editReportsFor === c.id
+                            ? "border-lime bg-lime-pale text-olive"
+                            : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                        }`}
+                      >
+                        <FileText size={13} />
+                        {editReportsFor === c.id ? "收起报告设置" : "测评报告"}
+                      </button>
                     </div>
+                    {/* v80：已有渠道的测评报告功能（打开/关闭 + 勾选报告种类） */}
+                    {editReportsFor === c.id && (
+                      <div className="mt-2.5">
+                        <ReportAccessEditor
+                          key={`${c.id}-${c.reportAccess}-${(c.reportKinds ?? []).join(",")}`}
+                          enabled={!!c.reportAccess}
+                          kinds={(c.reportKinds ?? []) as string[]}
+                          saving={setReports.isPending}
+                          onSave={(on, kinds) =>
+                            setReports.mutate(
+                              { id: c.id, reportAccess: on, reportKinds: on ? kinds : [] },
+                              { onSuccess: () => setEditReportsFor(null) },
+                            )
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
                   {/* 右侧：二维码（点击「显示二维码」展开，再点收起） */}
                   {qrFor === c.id && <ChannelQr code={c.code} name={c.name} />}

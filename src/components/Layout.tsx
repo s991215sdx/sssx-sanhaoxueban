@@ -2,7 +2,9 @@ import { NavLink } from "react-router";
 import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import UpdateToast from "@/components/UpdateToast";
+import BackBar from "@/components/BackBar";
 import { trpc } from "@/providers/trpc";
 
 /** 导航项所属学员端模块（测评中心恒可用；首页属 home，受限学员不显示）。 */
@@ -94,6 +96,9 @@ export default function Layout({ children }: { children: ReactNode }) {
       }
       return next;
     });
+
+  /* v80：手机从左向右滑 = 返回上一步（全局手势，输入控件/横向滚动容器自动豁免） */
+  useSwipeBack();
 
   return (
     <div className="min-h-screen bg-cream">
@@ -242,7 +247,10 @@ export default function Layout({ children }: { children: ReactNode }) {
             本机构服务已暂停，部分功能可能不可用。如有疑问请联系机构老师。
           </div>
         )}
-        <div className="mx-auto max-w-5xl px-4 pt-6 md:px-8 md:pt-8">{children}</div>
+        <div className="mx-auto max-w-5xl px-4 pt-6 md:px-8 md:pt-8">
+          <BackBar />
+          {children}
+        </div>
       </main>
 
       {/* v71：新版本提示（服务器发新版后弹"立即刷新"，治 webview 缓存旧包） */}

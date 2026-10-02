@@ -333,3 +333,140 @@ export function scoreSubjectAssessment(answers: SubjectAssessmentAnswers): Subje
     `建议每月复测一次，纵向对比各环节是否改善。`;
   return { subjects, totalAvg, weakestStages, summary };
 }
+
+
+/* --------------------------------- 分析报告（v80） --------------------------------- */
+
+/** 单科学科分析。 */
+export type SubjectSingleAnalysis = {
+  name: SubjectName;
+  overall: number;
+  grade: SubjectScore["grade"];
+  /** 一句话总评。 */
+  verdict: string;
+  /** 优势环节与短板环节对比分析。 */
+  compare: string;
+  /** 最弱环节的具体薄弱测评点（来自作答 ≤2 分的题目，最多 3 条）。 */
+  weakPoints: string[];
+  /** 给本科的落地建议（2-4 条）。 */
+  suggestions: string[];
+};
+
+/** 学科能力评估 · 结构化分析报告（由测评结果纯函数推导，前端直接渲染）。 */
+export type SubjectAnalysis = {
+  /** 总体判断一句话。 */
+  headline: string;
+  /** 总体分析要点。 */
+  overall: string[];
+  /** 逐科分析。 */
+  subjects: SubjectSingleAnalysis[];
+  /** 优先行动清单（按最弱环节排序，最多 3 条）。 */
+  priority: { title: string; detail: string }[];
+};
+
+/** 各环节的提升策略文案（扬长补短建议库）。 */
+const STAGE_ADVICE: Record<SubjectStage, string[]> = {
+  听懂: [
+    "课前用 10 分钟快速预习：通读教材、标出不懂的地方，带着问题进课堂",
+    "课堂笔记只记知识框架和老师补充的内容，不照抄板书，保证跟得上思路",
+    "每节课记下 1-2 个疑问点，当天找老师或同学问清，不留到第二天",
+  ],
+  记住: [
+    "当天睡前用 10 分钟闭眼回忆当天所学，想不起来的内容第二天优先复习",
+    "按「当天 → 3 天后 → 1 周后」的间隔安排复习，比一次性突击更牢固",
+    "每学完一个单元画一张思维导图，把知识点串成网，标出薄弱环节回炉",
+  ],
+  运用: [
+    "作业限时独立完成，不会的题目先做好标记，做完统一回头攻克",
+    "每周整理错题：标注错误原因、涉及知识点和正确思路，并重做上周错题",
+    "每次考试后 3 天内完成试卷归因，把失分点转化成下一阶段的针对性练习",
+  ],
+  特定: [
+    "对照本科的特定规划任务逐项自查，把没做到的一项作为本周重点落实",
+  ],
+};
+
+const GRADE_VERDICT: Record<SubjectScore["grade"], string> = {
+  优秀: "该科学习习惯已基本成型，保持节奏的同时可以尝试更高阶的任务",
+  良好: "该科整体稳定，把最弱的一个环节补上，就有望进入优秀区间",
+  合格: "该科有一定基础但波动风险大，优先稳住最弱环节，避免成绩滑坡",
+  待提升: "该科是当前最需要投入的一科，建议从最小可执行的习惯开始重建",
+};
+
+/**
+ * 由学科测评结果生成结构化分析报告（v80）：
+ * 总体判断 → 逐科「优势/短板环节 + 薄弱测评点 + 建议」→ 优先行动清单。
+ * 纯函数、无随机性，同一结果永远生成同一报告。
+ */
+export function buildSubjectAnalysis(result: SubjectAssessmentResult): SubjectAnalysis {
+  const { subjects, totalAvg, weakestStages } = result;
+  const grade = subjectGrade(totalAvg);
+  const worst = [...subjects].sort((a, b) => a.overall - b.overall);
+  const best = [...subjects].sort((a, b) => b.overall - a.overall);
+
+  const headline =
+    `本次共测评 ${subjects.length} 科，综合均分 ${totalAvg}/5（${grade}）。` +
+    (worst[0] && best[0] && worst[0].name !== best[0].name
+      ? `「${best[0].name}」相对最有优势（${best[0].overall} · ${best[0].grade}），「${worst[0].name}」相对最薄弱（${worst[0].overall} · ${worst[0].grade}）。`
+      : "");
+
+  const overall: string[] = [];
+  /* 三环节横向画像：各科在 听懂/记住/运用 上的整体形态 */
+  const stageAvgs = SUBJECT_STAGE_ORDER.filter((s) => s !== "特定").map((stage) => {
+    const list = subjects.flatMap((s) => s.stages.filter((x) => x.stage === stage).map((x) => x.avg));
+    return { stage, avg: list.length ? r1(list.reduce((a, b) => a + b, 0) / list.length) : null };
+  });
+  const stageWorst = [...stageAvgs].filter((x) => x.avg != null).sort((a, b) => (a.avg ?? 0) - (b.avg ?? 0))[0];
+  if (stageWorst && stageWorst.avg != null) {
+    overall.push(
+      `从学习环节看，「${stageWorst.stage}」是整体最弱的环节（九科均分 ${stageWorst.avg}/5）。` +
+        `学习链条是 听懂 → 记住 → 运用，上游环节不达标会持续拖垮下游，建议把它作为第一优先项。`,
+    );
+  }
+  const gapSubjects = subjects.filter((s) => {
+    const avgs = s.stages.map((x) => x.avg);
+    return Math.max(...avgs) - Math.min(...avgs) >= 1.5;
+  });
+  if (gapSubjects.length > 0) {
+    overall.push(
+      `${gapSubjects.map((s) => s.name).join("、")} 各环节得分差距较大（≥1.5 分），说明不是「整科都弱」，` +
+        `而是卡在某个具体环节——按环节逐个击破，比笼统加练见效快得多。`,
+    );
+  }
+  const balanced = subjects.filter((s) => s.overall >= 4.5);
+  if (balanced.length > 0) {
+    overall.push(`${balanced.map((s) => s.name).join("、")} 达到优秀线（≥4.5），继续保持现有节奏，可作为带动其他学科的信心科目。`);
+  }
+  overall.push("口径提醒：本测评为学习习惯自评，反映的是日常学习行为的达成度，不是考试分数；建议每月复测一次，纵向对比各环节改善趋势。");
+
+  const perSubject: SubjectSingleAnalysis[] = subjects.map((s) => {
+    const strongest = s.stages.find((x) => x.stage === s.strongest);
+    const weakest = s.stages.find((x) => x.stage === s.weakest);
+    const gap = strongest && weakest ? r1(strongest.avg - weakest.avg) : 0;
+    const verdict = `${s.name}综合 ${s.overall}/5（${s.grade}），${GRADE_VERDICT[s.grade]}。`;
+    const compare =
+      `优势环节是「${s.strongest}」（${strongest?.avg ?? "-"} 分），最弱环节是「${s.weakest}」（${weakest?.avg ?? "-"} 分）` +
+      (gap >= 1
+        ? `，相差 ${gap} 分，短板明确。`
+        : "，各环节较为均衡。");
+    const weakPoints = weakest?.weakPoints ?? [];
+    const suggestions: string[] = [];
+    if (weakest) {
+      const lib = STAGE_ADVICE[weakest.stage];
+      /* 短板越弱，给的策略条目越多（1-3 条） */
+      const n = weakest.avg < 2.5 ? 3 : weakest.avg < 3.5 ? 2 : 1;
+      suggestions.push(...lib.slice(0, n));
+    }
+    if (s.strongest !== s.weakest && strongest && strongest.avg >= 4) {
+      suggestions.push(`沿用「${s.strongest}」环节已经验证有效的做法，迁移到「${s.weakest}」环节（同一套执行习惯跨环节复用）。`);
+    }
+    return { name: s.name, overall: s.overall, grade: s.grade, verdict, compare, weakPoints, suggestions: suggestions.slice(0, 4) };
+  });
+
+  const priority = weakestStages.slice(0, 3).map((w) => ({
+    title: `${w.subject} · ${w.stage}（${w.avg} 分）`,
+    detail: STAGE_ADVICE[w.stage][0],
+  }));
+
+  return { headline, overall, subjects: perSubject, priority };
+}

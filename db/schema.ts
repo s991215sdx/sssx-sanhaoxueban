@@ -408,6 +408,10 @@ export const inviteChannels = mysqlTable("invite_channels", {
   tutorId: bigint("tutor_id", { mode: "number", unsigned: true }),
   /** V59 SaaS：发码人所属机构，注册学员继承该机构（平台超发的码为 null） */
   orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  /** v80：是否对本渠道注册学员开放测评报告查看（相当于图1「自动查看报告」总开关） */
+  reportAccess: boolean("report_access").notNull().default(false),
+  /** v80：开放哪些测评报告（INVITE_REPORT_KINDS 的 key 数组；null=不开放任何报告） */
+  reportKinds: json("report_kinds").$type<string[]>(),
   createdBy: bigint("created_by", { mode: "number", unsigned: true }).notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
