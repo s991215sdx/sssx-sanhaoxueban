@@ -72,3 +72,45 @@ export function normalizeReportKinds(raw: unknown): string[] | null {
   }
   return out;
 }
+
+/**
+ * v82 二维码「测评套餐」：渠道可勾选注册学员注册后一站式连做的测评。
+ * key 与测评中心 AssessmentCenter 的 TESTS kind 一致（mental 一项覆盖四套心理量表）；
+ * "all" 表示全部测评。未勾选的测评在客户端隐藏，由伴学师后台推送（releasedAssessments）后开放。
+ */
+export const INVITE_ASSESS_KINDS = [
+  { key: "mbti", label: "MBTI 性格快测" },
+  { key: "disc", label: "DISC 行为风格" },
+  { key: "e3", label: "E3 学业诊断" },
+  { key: "multi5", label: "多元智能五项" },
+  { key: "subject", label: "学科能力测评" },
+  { key: "anchor", label: "职业锚测评" },
+  { key: "holland", label: "霍兰德职业兴趣" },
+  { key: "mental", label: "心理健康筛查" },
+  { key: "e3parent", label: "家长卷 · 家庭支持" },
+  { key: "discparent", label: "家长 DISC（家庭版）" },
+] as const;
+
+/** 校验并归一化测评种类数组：剔除未知 key、去重、限量；返回 null 表示非法输入。兼容 JSON 字符串。 */
+export function normalizeAssessKinds(raw: unknown): string[] | null {
+  let list = raw;
+  if (typeof list === "string") {
+    try {
+      list = JSON.parse(list);
+    } catch {
+      return null;
+    }
+  }
+  if (list == null) return [];
+  if (!Array.isArray(list)) return null;
+  const valid = new Set(INVITE_ASSESS_KINDS.map((k) => k.key));
+  const out: string[] = [];
+  for (const item of list) {
+    if (typeof item !== "string") continue;
+    const k = item.trim();
+    if (k === "all") return ["all"];
+    if (valid.has(k as (typeof INVITE_ASSESS_KINDS)[number]["key"]) && !out.includes(k)) out.push(k);
+    if (out.length > 16) break;
+  }
+  return out;
+}

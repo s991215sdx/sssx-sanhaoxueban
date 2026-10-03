@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { desc, eq, or, sql } from "drizzle-orm";
-import { INVITE_CHANNEL_KINDS, normalizeInviteCode, normalizeReportKinds } from "@contracts/invite";
+import { INVITE_CHANNEL_KINDS, normalizeInviteCode, normalizeReportKinds, normalizeAssessKinds } from "@contracts/invite";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
 import { inviteChannels, inviteRegistrations, studentProfile, users } from "@db/schema";
 import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
@@ -25,10 +25,23 @@ function badRequest(message: string): never {
   throw new TRPCError({ code: "BAD_REQUEST", message });
 }
 
+/** v82：校验当前用户能否修改该渠道（伴学师只能动自己的码，机构管理员限本机构，平台超管全部）。 */
+async function assertChannelEditable(db: ReturnType<typeof getDb>, ctx: { user: { role: string; id: number; orgId: number | null } }, id: number) {
+  if (ctx.user.role !== "admin") {
+    const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.id, id)).limit(1))[0];
+    if (!ch || (ch.tutorId !== ctx.user.id && ch.createdBy !== ctx.user.id)) {
+      badRequest("这张二维码不在你名下");
+    }
+  } else if (ctx.user.orgId != null) {
+    const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.id, id)).limit(1))[0];
+    if (!ch || (ch.orgId ?? null) !== ctx.user.orgId) badRequest("这张二维码不在你机构内");
+  }
+}
+
 export const inviteRouter = createRouter({
   /** 管理员/伴学师：新建注册邀请渠道（返回含渠道码的记录，前端据此生成二维码）。伴学师建的码归属自己。 */
   createChannel: tutorQuery
-    .input((v: unknown) => v as { name: string; kind: string; note?: string; reportAccess?: boolean; reportKinds?: unknown })
+    .input((v: unknown) => v as { name: string; kind: string; note?: string; reportAccess?: boolean; reportKinds?: unknown; assessmentAccess?: boolean; assessmentKinds?: unknown })
     .mutation(async ({ ctx, input }) => {
       const name = (input.name ?? "").trim();
       if (name.length < 2 || name.length > 64) badRequest("渠道名 2～64 个字，比如「地推-万达广场点位」");
@@ -38,6 +51,10 @@ export const inviteRouter = createRouter({
       const reportAccess = !!input.reportAccess;
       const reportKinds = reportAccess ? normalizeReportKinds(input.reportKinds) : [];
       if (reportKinds == null) badRequest("报告种类格式不对");
+      /* v82：测评套餐开关 + 绑定的测评种类（注册学员注册后一站式连做，其余隐藏） */
+      const assessmentAccess = !!input.assessmentAccess;
+      const assessmentKinds = assessmentAccess ? normalizeAssessKinds(input.assessmentKinds) : [];
+      if (assessmentKinds == null) badRequest("测评种类格式不对");
       const tutorId = ctx.user.role === "tutor" ? ctx.user.id : null;
       /* V59：发码人所属机构随码记录，注册学员继承该机构 */
       const orgId = ctx.user.orgId ?? null;
@@ -45,7 +62,7 @@ export const inviteRouter = createRouter({
       for (let i = 0; i < 5; i++) {
         const code = newInviteCode();
         try {
-          await db.insert(inviteChannels).values({ code, name, kind, note, tutorId, orgId, createdBy: ctx.user.id, reportAccess, reportKinds });
+          await db.insert(inviteChannels).values({ code, name, kind, note, tutorId, orgId, createdBy: ctx.user.id, reportAccess, reportKinds, assessmentAccess, assessmentKinds });
           const row = (await db.select().from(inviteChannels).where(eq(inviteChannels.code, code)).limit(1))[0];
           if (row) return row;
         } catch {
@@ -107,6 +124,52 @@ export const inviteRouter = createRouter({
     if (!ch || !ch.reportAccess) return { enabled: false as const, kinds: [] as string[] };
     return { enabled: true as const, kinds: normalizeReportKinds(ch.reportKinds) ?? [] };
   }),
+
+  /**
+   * v82 学员端：当前账号经哪个渠道注册、该渠道绑定了哪些测评（测评套餐）。
+   * 未扫码注册（老账号/后台建号）返回 enabled=false（客户端不隐藏任何测评，fail-open）。
+   * kinds 含 "all" 表示全部测评。
+   */
+  myAssessmentAccess: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const reg = (
+      await db
+        .select({ channelId: inviteRegistrations.channelId })
+        .from(inviteRegistrations)
+        .where(eq(inviteRegistrations.userId, ctx.user.id))
+        .orderBy(desc(inviteRegistrations.id))
+        .limit(1)
+    )[0];
+    if (!reg) return { enabled: false as const, kinds: [] as string[] };
+    const ch = (
+      await db
+        .select({ assessmentAccess: inviteChannels.assessmentAccess, assessmentKinds: inviteChannels.assessmentKinds })
+        .from(inviteChannels)
+        .where(eq(inviteChannels.id, reg.channelId))
+        .limit(1)
+    )[0];
+    if (!ch || !ch.assessmentAccess) return { enabled: false as const, kinds: [] as string[] };
+    return { enabled: true as const, kinds: normalizeAssessKinds(ch.assessmentKinds) ?? [] };
+  }),
+
+  /**
+   * v82 管理员/伴学师：修改已有渠道的测评套餐开关与绑定种类（不动其他字段）。
+   * 权限口径与 setChannelReports 一致。
+   */
+  setChannelAssessments: tutorQuery
+    .input((v: unknown) => v as { id: number; assessmentAccess: boolean; assessmentKinds?: unknown })
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      await assertChannelEditable(db, ctx, input.id);
+      const assessmentAccess = !!input.assessmentAccess;
+      const assessmentKinds = assessmentAccess ? normalizeAssessKinds(input.assessmentKinds) : [];
+      if (assessmentKinds == null) badRequest("测评种类格式不对");
+      await db
+        .update(inviteChannels)
+        .set({ assessmentAccess, assessmentKinds })
+        .where(eq(inviteChannels.id, input.id));
+      return { ok: true as const };
+    }),
 
   /** 管理员看本机构全部渠道（V60：平台超管看全部机构渠道）；伴学师只看自己创建的（含各渠道累计注册数 + 最近 50 条注册记录）。 */
   channels: tutorQuery.query(async ({ ctx }) => {
@@ -219,6 +282,8 @@ export const inviteRouter = createRouter({
 
       const token = await signSessionToken({ unionId: `phone:${phone}`, clientId: env.appId });
       setSessionCookie(ctx, token);
-      return { ok: true as const, name: studentName };
+      /* v82：渠道绑定了测评套餐时，随注册响应返回测评队列，客户端注册成功后一站式连做 */
+      const assessQueue = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
+      return { ok: true as const, name: studentName, assessQueue };
     }),
 });

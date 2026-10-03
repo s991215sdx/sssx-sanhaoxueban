@@ -6,6 +6,7 @@ import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
+import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search } from "lucide-react";
 
@@ -263,6 +264,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
 /** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注；orgScope=超管分系统筛选。 */
 function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgScope: { orgId: number | null } }) {
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const { data: students, isLoading } = trpc.admin.students.useQuery(orgScope);
   const { data: tutors } = trpc.admin.tutors.useQuery(orgScope);
@@ -337,6 +339,22 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
                 {/* V54：报告推送开关 */}
                 <ReportAccessButton userId={s.userId} released={s.reportReleased} />
+                {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
+                {(s.assessBoundKinds.length > 0 || s.releasedAssessments.length > 0) && (
+                  <button
+                    type="button"
+                    title="推送测评（解锁套餐外隐藏的测评）"
+                    onClick={() => setReleaseFor(releaseFor === s.userId ? null : s.userId)}
+                    className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
+                      releaseFor === s.userId
+                        ? "border-lime bg-lime-pale text-olive"
+                        : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                    }`}
+                  >
+                    <ClipboardList size={13} />
+                    推送测评
+                  </button>
+                )}
                 {/* V53：管理员可重置任意学员登录密码（默认 123456） */}
                 <ResetPasswordButton userId={s.userId} name={s.name} />
                 <button
@@ -346,6 +364,16 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                   详情
                 </button>
               </div>
+              {releaseFor === s.userId && (
+                <div className="w-full">
+                  <AssessmentReleasePanel
+                    key={`${s.userId}-${s.releasedAssessments.join(",")}`}
+                    userId={s.userId}
+                    released={s.releasedAssessments}
+                    boundKinds={s.assessBoundKinds}
+                  />
+                </div>
+              )}
             </div>
           ))}
           {filtered.length === 0 && (

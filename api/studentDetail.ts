@@ -8,6 +8,8 @@ import {
   attempts,
   dailyPlans,
   errorLogs,
+  inviteChannels,
+  inviteRegistrations,
   moodEntries,
   organizations,
   previewSessions,
@@ -41,6 +43,10 @@ export type StudentListItem = {
   reportReleased: boolean;
   /** V55：家长请求推送报告的时间（null=未请求） */
   reportPushRequestedAt: Date | null;
+  /** v82：伴学师额外推送开放的测评种类（扫码注册且渠道绑定测评套餐时，用于解锁隐藏测评） */
+  releasedAssessments: string[];
+  /** v82：学员注册渠道绑定的测评套餐种类（"all"=全部；空数组=渠道未绑定套餐或非扫码注册） */
+  assessBoundKinds: string[];
   hasMulti: boolean;
   hasAcademics: boolean;
   /** V60：所属机构品牌名（平台超管看全量时可分辨归属） */
@@ -88,6 +94,20 @@ export async function listStudents(db: Db, orgId?: number | null): Promise<Stude
   ]);
   const prevMap = new Map(prevRows.map((r) => [r.userId, Number(r.c)]));
   const multiSet = new Set(multiRows.map((r) => r.userId));
+  // v82：每个学员的注册渠道绑定测评套餐 + 伴学师已推送的额外测评
+  const [regRows, chanRows] = await Promise.all([
+    db.select().from(inviteRegistrations).orderBy(desc(inviteRegistrations.id)),
+    db.select().from(inviteChannels),
+  ]);
+  const chanMap = new Map(chanRows.map((c) => [c.id, c]));
+  const channelKindsOf = (userId: number): string[] => {
+    const reg = regRows.find((r) => r.userId === userId);
+    if (!reg) return [];
+    const ch = chanMap.get(reg.channelId);
+    if (!ch || !ch.assessmentAccess) return [];
+    const raw = ch.assessmentKinds;
+    return Array.isArray(raw) ? raw : [];
+  };
   // V56：学员-伴学师多对多分配（容错：表未就绪时退化为空）
   const { listStudentTutorLinks } = await import("./tutorAccess");
   const links = await listStudentTutorLinks(db);
@@ -121,6 +141,8 @@ export async function listStudents(db: Db, orgId?: number | null): Promise<Stude
         enabledModules: p.enabledModules ?? null,
         reportReleased: p.reportReleased,
         reportPushRequestedAt: p.reportPushRequestedAt ?? null,
+        releasedAssessments: Array.isArray(p.releasedAssessments) ? (p.releasedAssessments as string[]) : [],
+        assessBoundKinds: channelKindsOf(p.userId),
         hasMulti: multiSet.has(p.userId),
         hasAcademics: p.academics != null,
         orgName: u.orgId != null ? (orgNameMap.get(u.orgId) ?? null) : null,

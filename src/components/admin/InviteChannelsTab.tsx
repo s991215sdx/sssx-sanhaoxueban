@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Download, Link2, Plus, QrCode, RefreshCw, FileText } from "lucide-react";
+import { Download, Link2, Plus, QrCode, RefreshCw, FileText, ClipboardList } from "lucide-react";
 import { trpc } from "@/providers/trpc";
-import { INVITE_CHANNEL_KINDS, INVITE_REPORT_KINDS } from "@contracts/invite";
+import { INVITE_CHANNEL_KINDS, INVITE_REPORT_KINDS, INVITE_ASSESS_KINDS } from "@contracts/invite";
 
 function inviteUrl(code: string): string {
   return `${window.location.origin}/invite/${code}`;
@@ -108,6 +108,110 @@ function ReportAccessEditor({
   );
 }
 
+/**
+ * v82 测评套餐配置编辑器：总开关 + 勾选绑定的测评（新建渠道与编辑已有渠道共用）。
+ * 绑定后：客户扫码注册 → 自动一站式连做勾选的测评；未勾选的测评在客户端隐藏，
+ * 由伴学师在学员卡上「推送测评」后开放。
+ */
+function AssessAccessEditor({
+  enabled,
+  kinds,
+  saving,
+  onSave,
+}: {
+  enabled: boolean;
+  kinds: string[];
+  saving: boolean;
+  onSave: (enabled: boolean, kinds: string[]) => void;
+}) {
+  const [on, setOn] = useState(enabled);
+  const [picked, setPicked] = useState<string[]>(kinds);
+  const allPicked = picked.includes("all");
+  const toggleKind = (key: string) =>
+    setPicked((list) => {
+      if (key === "all") return list.includes("all") ? [] : ["all"];
+      /* 逐个勾选时自动取消「全部」 */
+      const next = list.includes(key) ? list.filter((x) => x !== key) : [...list, key];
+      return next.filter((x) => x !== "all");
+    });
+  return (
+    <div className="rounded-xl border border-border bg-cream/60 p-3.5">
+      <label className="flex cursor-pointer items-center gap-2.5">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          onClick={() => setOn((v) => !v)}
+          className={`relative w-10 shrink-0 rounded-full transition-colors ${on ? "bg-lime" : "bg-cream-deep"}`}
+          style={{ height: 22 }}
+        >
+          <span
+            className={`absolute top-[3px] h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-[3px]"}`}
+          />
+        </button>
+        <span className="text-[13px] font-bold text-olive">绑定测评套餐</span>
+        <span className="text-[11.5px] text-olive-mute">扫码注册的客户，注册后一站式做完下方勾选的测评，其余测评先隐藏</span>
+      </label>
+      {on && (
+        <>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {/* v82：一键绑定全部测评 */}
+            <button
+              type="button"
+              onClick={() => toggleKind("all")}
+              className={`rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${
+                allPicked
+                  ? "border-lime bg-olive text-cream"
+                  : "border-olive/40 bg-cream-card text-olive hover:bg-lime-pale"
+              }`}
+            >
+              {allPicked ? "✓ " : ""}
+              全部测评（{INVITE_ASSESS_KINDS.length} 种）
+            </button>
+            {INVITE_ASSESS_KINDS.map((k) => {
+              const active = allPicked || picked.includes(k.key);
+              return (
+                <button
+                  key={k.key}
+                  type="button"
+                  onClick={() => toggleKind(k.key)}
+                  className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${
+                    active
+                      ? "border-lime bg-lime-pale text-olive"
+                      : "border-border bg-cream-card text-olive-mute hover:bg-lime-pale/50"
+                  }`}
+                >
+                  {active ? "✓ " : ""}
+                  {k.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            disabled={saving || picked.length === 0}
+            onClick={() => onSave(true, picked)}
+            className="mt-2.5 rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+          >
+            {saving ? "保存中…" : "保存测评套餐"}
+          </button>
+          {picked.length === 0 && <p className="mt-1.5 text-[11.5px] text-terra">至少勾选 1 项测评，或关闭总开关</p>}
+        </>
+      )}
+      {!on && enabled && (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => onSave(false, [])}
+          className="mt-2.5 rounded-lg border border-terra/40 px-3 py-1.5 text-[12px] font-semibold text-terra hover:bg-terra/10 disabled:opacity-40"
+        >
+          {saving ? "保存中…" : "关闭测评套餐（注册客户恢复全部测评可见）"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** 单个渠道的二维码（canvas 渲染 + 下载 PNG），固定宽度放渠道行右侧。 */
 function ChannelQr({ code, name }: { code: string; name: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -159,6 +263,9 @@ export default function InviteChannelsTab() {
   const [reportOn, setReportOn] = useState(false);
   const [reportKinds, setReportKinds] = useState<string[]>([]);
   const [editReportsFor, setEditReportsFor] = useState<number | null>(null);
+  const [assessOn, setAssessOn] = useState(false);
+  const [assessKinds, setAssessKinds] = useState<string[]>([]);
+  const [editAssessFor, setEditAssessFor] = useState<number | null>(null);
 
   const create = trpc.invite.createChannel.useMutation({
     onSuccess: () => {
@@ -166,6 +273,8 @@ export default function InviteChannelsTab() {
       setNote("");
       setReportOn(false);
       setReportKinds([]);
+      setAssessOn(false);
+      setAssessKinds([]);
       utils.invite.channels.invalidate();
     },
   });
@@ -173,6 +282,9 @@ export default function InviteChannelsTab() {
     onSuccess: () => utils.invite.channels.invalidate(),
   });
   const setReports = trpc.invite.setChannelReports.useMutation({
+    onSuccess: () => utils.invite.channels.invalidate(),
+  });
+  const setAssessments = trpc.invite.setChannelAssessments.useMutation({
     onSuccess: () => utils.invite.channels.invalidate(),
   });
 
@@ -242,6 +354,18 @@ export default function InviteChannelsTab() {
             }}
           />
         </div>
+        {/* v82：测评套餐——发码时绑定一组测评，注册客户一站式连做，其余隐藏待推送 */}
+        <div className="mt-2.5">
+          <AssessAccessEditor
+            enabled={assessOn}
+            kinds={assessKinds}
+            saving={create.isPending}
+            onSave={(on, kinds) => {
+              setAssessOn(on);
+              setAssessKinds(kinds);
+            }}
+          />
+        </div>
         <button
           onClick={() =>
             create.mutate({
@@ -250,9 +374,16 @@ export default function InviteChannelsTab() {
               note: note.trim(),
               reportAccess: reportOn,
               reportKinds: reportOn ? reportKinds : [],
+              assessmentAccess: assessOn,
+              assessmentKinds: assessOn ? assessKinds : [],
             })
           }
-          disabled={create.isPending || name.trim().length < 2 || (reportOn && reportKinds.length === 0)}
+          disabled={
+            create.isPending ||
+            name.trim().length < 2 ||
+            (reportOn && reportKinds.length === 0) ||
+            (assessOn && assessKinds.length === 0)
+          }
           className="mt-3 flex items-center gap-1.5 rounded-xl bg-olive px-4 py-2.5 text-[14px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
         >
           {create.isPending ? <RefreshCw size={15} className="animate-spin" /> : <Plus size={15} />}
@@ -285,6 +416,12 @@ export default function InviteChannelsTab() {
                         <span className="flex items-center gap-1 rounded-full bg-butter/70 px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]">
                           <FileText size={11} />
                           报告已开放
+                        </span>
+                      )}
+                      {c.assessmentAccess && (
+                        <span className="flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] font-bold text-[#5a9326]">
+                          <ClipboardList size={11} />
+                          测评套餐 · {(c.assessmentKinds ?? []).includes("all") ? "全部" : (c.assessmentKinds ?? []).length} 项
                         </span>
                       )}
                       <span className="ml-auto text-[12px] text-olive-mute">
@@ -336,7 +473,35 @@ export default function InviteChannelsTab() {
                         <FileText size={13} />
                         {editReportsFor === c.id ? "收起报告设置" : "测评报告"}
                       </button>
+                      <button
+                        onClick={() => setEditAssessFor(editAssessFor === c.id ? null : c.id)}
+                        className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
+                          editAssessFor === c.id
+                            ? "border-lime bg-lime-pale text-olive"
+                            : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                        }`}
+                      >
+                        <ClipboardList size={13} />
+                        {editAssessFor === c.id ? "收起测评套餐" : "测评套餐"}
+                      </button>
                     </div>
+                    {/* v82：已有渠道的测评套餐（绑定/解绑 + 勾选测评种类） */}
+                    {editAssessFor === c.id && (
+                      <div className="mt-2.5">
+                        <AssessAccessEditor
+                          key={`${c.id}-${c.assessmentAccess}-${(c.assessmentKinds ?? []).join(",")}`}
+                          enabled={!!c.assessmentAccess}
+                          kinds={(c.assessmentKinds ?? []) as string[]}
+                          saving={setAssessments.isPending}
+                          onSave={(on, kinds) =>
+                            setAssessments.mutate(
+                              { id: c.id, assessmentAccess: on, assessmentKinds: on ? kinds : [] },
+                              { onSuccess: () => setEditAssessFor(null) },
+                            )
+                          }
+                        />
+                      </div>
+                    )}
                     {/* v80：已有渠道的测评报告功能（打开/关闭 + 勾选报告种类） */}
                     {editReportsFor === c.id && (
                       <div className="mt-2.5">

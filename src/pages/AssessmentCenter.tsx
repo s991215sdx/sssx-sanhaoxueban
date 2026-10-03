@@ -286,9 +286,26 @@ export default function AssessmentCenter() {
   const [testing, setTesting] = useState<TestKind | null>(null);
   // V56：综合学习力系统测评（一条龙向导）
   const [suiteOpen, setSuiteOpen] = useState(false);
-  // 支持 ?start=e3 深链：从报告页「去测评」直达对应答题
+  // v82：注册二维码「测评套餐」——渠道绑定的测评种类 + 伴学师额外推送的种类
+  const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
+  const { data: profile } = trpc.profile.get.useQuery();
+  // v82：一站式连测队列（注册成功落地 /assessments?queue=a,b,c 时进入，逐项做完自动下一个）
+  const [queue, setQueue] = useState<TestKind[]>([]);
+  const [queueTotal, setQueueTotal] = useState(0);
+  // 支持 ?start=e3 深链：从报告页「去测评」直达对应答题；?queue=a,b,c：一站式连测
   const [params, setParams] = useSearchParams();
   useEffect(() => {
+    const q = params.get("queue");
+    if (q) {
+      const kinds = q.split(",").filter((k) => TESTS.some((t) => t.kind === k)) as TestKind[];
+      if (kinds.length > 0) {
+        setQueue(kinds);
+        setQueueTotal(kinds.length);
+        setTesting(kinds[0]);
+      }
+      setParams({}, { replace: true });
+      return;
+    }
     const start = params.get("start") as TestKind | null;
     if (start && TESTS.some((t) => t.kind === start)) {
       setTesting(start);
@@ -298,6 +315,14 @@ export default function AssessmentCenter() {
   // anchor / holland / mental 为并行任务新增字段，接口已约定；类型未就绪故按 any 读取。
   const latest: any = data ?? {};
   const close = () => setTesting(null);
+  /* v82：连测队列中完成一项 → 自动进入下一项；队列走完 → 回到测评中心列表 */
+  const queueDone = () =>
+    setQueue((q) => {
+      const rest = q.slice(1);
+      if (rest.length > 0) setTesting(rest[0]);
+      else setTesting(null);
+      return rest;
+    });
   const hasResult = (kind: TestKind) => {
     const def = TESTS.find((t) => t.kind === kind);
     return def?.doneOf ? def.doneOf(latest) : !!latest[kind];
@@ -305,6 +330,13 @@ export default function AssessmentCenter() {
   const allRequired = !!latest.mbti && !!latest.disc && !!latest.e3;
   /* V66：必测完成进度（未完成时顶部入口显示进度） */
   const requiredDone = [latest.mbti, latest.disc, latest.e3].filter(Boolean).length;
+
+  /* v82：渠道绑定测评套餐时，只显示套餐内 + 伴学师已推送的测评；老用户/后台建号不限制（fail-open） */
+  const released: string[] = Array.isArray(profile?.releasedAssessments) ? (profile!.releasedAssessments as string[]) : [];
+  const restricted = !!access?.enabled && !(access?.kinds ?? []).includes("all");
+  const visibleSet = restricted ? new Set<string>([...(access?.kinds ?? []), ...released]) : null;
+  const visibleTests = visibleSet ? TESTS.filter((t) => visibleSet.has(t.kind)) : TESTS;
+  const hiddenCount = TESTS.length - visibleTests.length;
 
   if (isLoading) {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
@@ -315,10 +347,30 @@ export default function AssessmentCenter() {
     return <CombinedSuite onExit={() => setSuiteOpen(false)} />;
   }
 
+  /* v82：渠道套餐未完整包含综合测评的组成部分时，隐藏一条龙入口（避免引导去做被隐藏的测评） */
+  const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
+
   return (
     <div className="space-y-4">
+      {/* v82：一站式连测进度（注册套餐落地时逐项连做） */}
+      {testing && queue.length > 0 && (
+        <div className="paper-card flex items-center justify-between border-lime bg-lime-pale/50 px-4 py-2.5">
+          <span className="text-[12.5px] font-bold text-olive">
+            测评套餐进行中 · 第 {queueTotal - queue.length + 1} / {queueTotal} 项
+          </span>
+          <button
+            onClick={() => {
+              setQueue([]);
+              setTesting(null);
+            }}
+            className="text-[12px] text-olive-mute hover:text-olive"
+          >
+            退出套餐，稍后再做
+          </button>
+        </div>
+      )}
       {/* V66：三项必测全部完成后，顶部入口变为报告直达（不再显示"开始"造成"要重做"的误解） */}
-      {!testing && allRequired && (
+      {!testing && allRequired && suiteVisible && (
         <button
           onClick={() => navigate("/report-detail?tab=combined")}
           className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
@@ -340,7 +392,7 @@ export default function AssessmentCenter() {
         </button>
       )}
       {/* V56：综合学习力系统测评（最顶部入口，一条龙） */}
-      {!testing && !allRequired && (
+      {!testing && !allRequired && suiteVisible && (
         <button
           onClick={() => setSuiteOpen(true)}
           className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
@@ -425,11 +477,11 @@ export default function AssessmentCenter() {
 
       {/* 我的测评 */}
       {testing ? (
-        <QuizStage kind={testing} onDone={close} />
+        <QuizStage kind={testing} onDone={queue.length > 0 ? queueDone : close} />
       ) : (
         <div className="space-y-3">
           <div className="mono px-1 text-[11px] tracking-wider text-olive-mute">我的测评</div>
-          {TESTS.map((t) => {
+          {visibleTests.map((t) => {
             const done = hasResult(t.kind);
             const core = done ? t.summary?.(latest) : null;
             return (
@@ -481,6 +533,14 @@ export default function AssessmentCenter() {
               </div>
             );
           })}
+          {/* v82：渠道套餐隐藏的测评提示（由伴学师后台推送后开放） */}
+          {hiddenCount > 0 && (
+            <div className="rounded-xl border border-dashed border-olive/25 bg-cream/50 p-4 text-center">
+              <p className="text-[12.5px] leading-relaxed text-olive-mute">
+                还有 {hiddenCount} 项测评未开放——将由你的伴学师在合适的时候推送解锁，先专注做完手上的测评就好。
+              </p>
+            </div>
+          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import { QrCode } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { INVITE_ASSESS_KINDS } from "@contracts/invite";
 
 /**
  * 邀请注册落地页（公开，扫码直达）：/invite/{渠道码}
@@ -19,9 +20,16 @@ export default function InviteRegister() {
 
   const info = trpc.invite.channelInfo.useQuery({ code }, { retry: false });
   const register = trpc.invite.registerWithInvite.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (res) => {
       await utils.invalidate();
-      navigate("/assessments", { replace: true });
+      /* v82：渠道绑定了测评套餐 → 注册成功直接进一站式连测（"all" 展开为全部测评，按渠道勾选的顺序） */
+      const raw = res.assessQueue ?? [];
+      const queue = raw.includes("all") ? INVITE_ASSESS_KINDS.map((k) => k.key) : raw;
+      if (queue.length > 0) {
+        navigate(`/assessments?queue=${queue.join(",")}`, { replace: true });
+      } else {
+        navigate("/assessments", { replace: true });
+      }
     },
     onError: (err) => setError(err.message || "注册失败，请重试"),
   });

@@ -6,6 +6,7 @@ import { studentPrescriptions, studentProfile, users } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
+import { normalizeAssessKinds } from "@contracts/invite";
 import { getStudentDetail, listStudents } from "./studentDetail";
 import { isMyStudent } from "./tutorAccess";
 import { sameOrg } from "./tenant";
@@ -123,6 +124,36 @@ export const coachRouter = createRouter({
         await db.insert(studentProfile).values({ userId: input.userId, reportReleased: !!input.released, ...releasePatch });
       }
       return { ok: true as const, released: !!input.released };
+    }),
+
+  /**
+   * v82：伴学师/管理员向学员「推送」额外开放的测评（对绑定了测评套餐的扫码注册学员，
+   * 未在套餐内的测评默认隐藏；推送到 releasedAssessments 后该学员客户端可见可测）。
+   * kinds 传完整目标集合（空数组=收回全部额外推送）。伴学师只能操作名下学员。
+   */
+  setReleasedAssessments: tutorQuery
+    .input((v: unknown) => v as { userId: number; kinds: unknown })
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      if (ctx.user.role !== "admin") {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
+      }
+      const kinds = normalizeAssessKinds(input.kinds);
+      if (kinds == null) throw new Error("测评种类格式不对");
+      const value = kinds.length === 0 ? null : kinds;
+      const existing = (
+        await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
+      )[0];
+      if (existing) {
+        await db.update(studentProfile).set({ releasedAssessments: value }).where(eq(studentProfile.id, existing.id));
+      } else {
+        await db.insert(studentProfile).values({ userId: input.userId, releasedAssessments: value });
+      }
+      return { ok: true as const, released: kinds };
     }),
 
   setStudentModules: tutorQuery

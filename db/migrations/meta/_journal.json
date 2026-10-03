@@ -184,6 +184,13 @@
       "when": 1790352000000,
       "tag": "0025_invite_report_access",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1790438400000,
+      "tag": "0026_invite_assessment_access",
+      "breakpoints": true
     }
   ]
 }

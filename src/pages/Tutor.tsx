@@ -8,8 +8,9 @@ import AiCoachPanel from "@/components/coach/AiCoachPanel";
 import StudentAdvicePanel from "@/components/coach/StudentAdvicePanel";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
+import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import { STUDENT_MODULES } from "@contracts/studentModules";
-import { GraduationCap, SlidersHorizontal, Send, Search } from "lucide-react";
+import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList } from "lucide-react";
 
 /** 学员卡内联的「功能开关」面板：勾选该学员可用的模块（测评中心恒可用）。 */
 function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabledModules: string[] | null }) {
@@ -66,6 +67,7 @@ export default function Tutor() {
   const allowed = user?.role === "tutor" || user?.role === "admin";
   const [detailId, setDetailId] = useState<number | null>(null);
   const [modulesFor, setModulesFor] = useState<number | null>(null);
+  const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
   // V57：学员管理 / 陪跑训练专栏
   const [section, setSection] = useState<"students" | "training">("students");
@@ -188,8 +190,32 @@ export default function Tutor() {
                     <ResetPasswordButton userId={s.userId} name={s.name} compact />
                     {/* V54：报告推送开关（默认未推送，家长不可见） */}
                     <ReportAccessButton userId={s.userId} released={s.reportReleased} compact />
+                    {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
+                    {(s.assessBoundKinds.length > 0 || s.releasedAssessments.length > 0) && (
+                      <button
+                        type="button"
+                        title="推送测评（解锁套餐外隐藏的测评）"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReleaseFor(releaseFor === s.userId ? null : s.userId);
+                        }}
+                        className={`rounded-lg p-1.5 transition-colors ${
+                          releaseFor === s.userId ? "bg-lime-pale text-olive" : "text-olive-mute hover:bg-lime-pale hover:text-olive"
+                        }`}
+                      >
+                        <ClipboardList size={15} />
+                      </button>
+                    )}
                   </div>
                   {modulesFor === s.userId && <StudentModulesPanel userId={s.userId} enabledModules={s.enabledModules} />}
+                  {releaseFor === s.userId && (
+                    <AssessmentReleasePanel
+                      key={`${s.userId}-${s.releasedAssessments.join(",")}`}
+                      userId={s.userId}
+                      released={s.releasedAssessments}
+                      boundKinds={s.assessBoundKinds}
+                    />
+                  )}
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {s.mbti ? (
                       <span className="chip !py-0.5 !text-[10.5px] text-olive">MBTI {s.mbti}</span>

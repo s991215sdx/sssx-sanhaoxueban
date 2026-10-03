@@ -187,6 +187,9 @@ export const studentProfile = mysqlTable("student_profile", {
   reportReleased: boolean("report_released").notNull().default(false),
   /** V55：家长「请伴学师推送报告」的请求时间（推送后清空） */
   reportPushRequestedAt: timestamp("report_push_requested_at"),
+  /** v82：伴学师额外推送开放的测评种类（INVITE_ASSESS_KINDS 的 key 数组；null=无额外推送）。
+   *  对绑定了测评套餐的扫码注册学员，未在套餐内、但在此列表里的测评也会显示在测评中心。 */
+  releasedAssessments: json("released_assessments").$type<string[] | null>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -412,6 +415,10 @@ export const inviteChannels = mysqlTable("invite_channels", {
   reportAccess: boolean("report_access").notNull().default(false),
   /** v80：开放哪些测评报告（INVITE_REPORT_KINDS 的 key 数组；null=不开放任何报告） */
   reportKinds: json("report_kinds").$type<string[]>(),
+  /** v82：是否对本渠道注册学员绑定「测评套餐」（注册后一站式连做勾选的测评，其余隐藏） */
+  assessmentAccess: boolean("assessment_access").notNull().default(false),
+  /** v82：绑定的测评种类（INVITE_ASSESS_KINDS 的 key 数组；"all"=全部测评） */
+  assessmentKinds: json("assessment_kinds").$type<string[]>(),
   createdBy: bigint("created_by", { mode: "number", unsigned: true }).notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
