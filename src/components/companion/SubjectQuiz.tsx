@@ -118,8 +118,18 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
         </div>
         <div className="mt-6 flex gap-3">
           <button
-            onClick={onDone}
+            onClick={() => {
+              /* v81：再测其他科——清空本次选择回到选科，不强制返回测评中心 */
+              resetAll();
+              submit.reset();
+            }}
             className="flex-1 rounded-xl border border-lime/60 bg-lime-pale py-3 text-[14px] font-semibold text-olive hover:bg-lime/20"
+          >
+            再测其他科
+          </button>
+          <button
+            onClick={onDone}
+            className="flex-1 rounded-xl border border-border bg-cream-card py-3 text-[14px] font-semibold text-olive-soft hover:bg-lime-pale"
           >
             返回测评中心
           </button>
@@ -127,9 +137,12 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
             onClick={() => navigate("/report-detail?tab=subject")}
             className="flex-1 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
           >
-            查看学科能力评估报告 →
+            查看报告 →
           </button>
         </div>
+        <p className="mt-3 text-center text-[12px] text-olive-mute">
+          再测的科目会与已测结果合并进同一份报告；重复测同一科以最新一次为准。
+        </p>
       </div>
     );
   }

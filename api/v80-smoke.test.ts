@@ -40,3 +40,24 @@ describe("v80 buildSubjectAnalysis", () => {
     expect(JSON.stringify(r1)).toBe(JSON.stringify(r2));
   });
 });
+
+describe("v81 学科测评累计合并", () => {
+  it("新科目并入、同科目覆盖、无历史时等同本次", async () => {
+    const { mergeSubjectAnswers } = await import("@contracts/subjectAssessment");
+    const hist = SUBJECT_BANK["历史"].map(() => 4);
+    const math = SUBJECT_BANK["数学"].map(() => 3);
+    const math2 = SUBJECT_BANK["数学"].map(() => 5);
+    // 先测历史，再测数学 → 两科都在
+    const m1 = mergeSubjectAnswers(null, { 历史: hist });
+    expect(Object.keys(m1)).toEqual(["历史"]);
+    const m2 = mergeSubjectAnswers(m1, { 数学: math });
+    expect(Object.keys(m2).sort()).toEqual(["历史", "数学"]);
+    // 重测数学覆盖旧数学，历史保留
+    const m3 = mergeSubjectAnswers(m2, { 数学: math2 });
+    expect(m3["数学"]).toEqual(math2);
+    expect(m3["历史"]).toEqual(hist);
+    // 合并结果可直接计分且覆盖 2 科
+    const r = scoreSubjectAssessment(m3);
+    expect(r.subjects.length).toBe(2);
+  });
+});

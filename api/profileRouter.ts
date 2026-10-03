@@ -74,6 +74,7 @@ import type { E3V27ParentResult } from "@contracts/e3v27Parent";
 import {
   SUBJECT_BANK,
   SUBJECT_ITEM_COUNT,
+  mergeSubjectAnswers,
   scoreSubjectAssessment,
   type SubjectAssessmentResult,
 } from "@contracts/subjectAssessment";
@@ -534,6 +535,7 @@ export const assessmentRouter = createRouter({
       const db = getDb();
 
       let outcome: AssessmentSubmitOutcome;
+      let mergedSubjectAnswers: Record<string, number[]> | undefined; /* v81 学科累计作答（存库用） */
       if (input.kind === "e3parent") {
         // 取孩子最近一次 e3 原始作答，计算家长认知对照；仅 V3.7（70 题）作答参与对照，否则传 null
         const [e3row] = await db
@@ -588,19 +590,30 @@ export const assessmentRouter = createRouter({
         outcome = { kind: "scl90", result };
       } else if (input.kind === "subject") {
         // 学科能力测评：9 科听懂/记住/运用(+特定)环节自评
-        const result: SubjectAssessmentResult = scoreSubjectAssessment(input.answers);
+        // v81 累计口径：与上一次学科作答合并（新测的同科目覆盖、未测的保留），
+        // 避免「再测一科就把之前测过的覆盖没了」——支持分次测完 9 科
+        const [prevRow] = await db
+          .select({ answers: assessmentResults.answers })
+          .from(assessmentResults)
+          .where(and(eq(assessmentResults.userId, userId), eq(assessmentResults.kind, "subject")))
+          .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
+          .limit(1);
+        const prev = (prevRow?.answers ?? null) as Record<string, number[]> | null;
+        const merged = mergeSubjectAnswers(prev, input.answers);
+        mergedSubjectAnswers = merged;
+        const result: SubjectAssessmentResult = scoreSubjectAssessment(merged);
         outcome = { kind: "subject", result };
       } else {
         const result: E3V37Result = scoreE3V37(input.answers);
         outcome = { kind: "e3", result };
       }
 
-      // 存结果 + 原始作答（伴学师可查看答题明细）
+      // 存结果 + 原始作答（伴学师可查看答题明细）；学科测评存累计合并后的作答
       await db.insert(assessmentResults).values({
         userId,
         kind: outcome.kind,
         result: outcome.result as unknown as Record<string, unknown>,
-        answers: input.answers as unknown as number[],
+        answers: (outcome.kind === "subject" ? mergedSubjectAnswers : input.answers) as unknown as number[],
       });
 
       // 同步到档案对应字段；没有档案则先建一条默认档案

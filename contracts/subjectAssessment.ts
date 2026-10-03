@@ -472,3 +472,14 @@ export function buildSubjectAnalysis(result: SubjectAssessmentResult): SubjectAn
 
   return { headline, overall, subjects: perSubject, priority };
 }
+
+/**
+ * v81 学科测评累计合并：新测的同科目覆盖、未测过的科目保留，
+ * 支持分多次测完 9 科（结果页「再测其他科」口径）。prev 为上一次存库的原始作答。
+ */
+export function mergeSubjectAnswers(
+  prev: SubjectAssessmentAnswers | null | undefined,
+  incoming: SubjectAssessmentAnswers,
+): SubjectAssessmentAnswers {
+  return { ...(prev && typeof prev === "object" ? prev : {}), ...incoming };
+}
