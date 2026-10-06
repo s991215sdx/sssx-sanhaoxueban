@@ -109,6 +109,10 @@ export default function Login() {
         <p className="mt-6 text-center mono text-[10.5px] tracking-wider text-olive-mute/70">
           好好学习 · 天天向上
         </p>
+        {/* v83：品牌署名「上上升学」 */}
+        <p className="mt-2.5 text-center text-[10px] tracking-[0.3em] text-olive-mute/45">
+          上上升学
+        </p>
       </div>
 
       {/* 忘记密码说明弹层：重置由伴学师/管理员在后台操作，默认密码 123456 */}
