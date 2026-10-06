@@ -1,5 +1,8 @@
 # 三好学伴 · 部署与二次开发指南
 
+> ⚠️ 2026-10-06 起：团队开发流程、分支规范、部署步骤以仓库根目录《交接-新开发者工作手册.md》为准。
+> 本文保留作通用参考（其中 npm/TiDB 等描述已过时，实际用 pnpm + 云数据库，详见手册）。
+
 ## 项目简介
 K12 个性化伴学 Web 应用（React 19 + Vite + Tailwind 前端；Hono + tRPC + Drizzle ORM 后端；MySQL 兼容数据库，线上用 TiDB Serverless）。
 
