@@ -12,7 +12,7 @@ import { discTendencyFromDims, discTendencyText } from "@contracts/assessments";
 const DISC_COLOR: Record<"D" | "I" | "S" | "C", string> = {
   D: "#d44f3a",
   I: "#e8a33d",
-  S: "#4e9e5f",
+  S: "#58c1a3",
   C: "#3d8ec4",
 };
 
@@ -73,7 +73,7 @@ function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: str
               key={k}
               className={`flex items-center gap-2 rounded-lg px-1.5 py-0.5 -mx-1.5 ${isHot ? "bg-[#fbe3df] ring-1 ring-[#b91c1c]/50" : ""}`}
             >
-              <span className={`w-16 shrink-0 text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : inCombo ? "font-bold text-olive" : "text-olive-mute"}`}>
+              <span className={`w-16 shrink-0 text-[11.5px] ${isHot ? "font-bold text-[#b91c1c]" : inCombo ? "font-bold text-olive" : "text-olive-mute"}`}>
                 {k} · {DISC_THEORY.find((ty) => ty.type === k)?.name}
               </span>
               <div className="relative h-2.5 flex-1 rounded-full bg-cream-deep">
@@ -88,7 +88,7 @@ function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: str
                   }}
                 />
               </div>
-              <span className={`mono w-11 shrink-0 text-right text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : "text-olive-soft"}`}>{discTendencyText(t)}</span>
+              <span className={`mono w-11 shrink-0 text-right text-[11.5px] ${isHot ? "font-bold text-[#b91c1c]" : "text-olive-soft"}`}>{discTendencyText(t)}</span>
             </div>
           );
         })}
@@ -119,7 +119,7 @@ function DimDeltaBadges({ label, parent, student }: { label: string; parent: Dis
       {strong.map((d) => (
         <span
           key={d.k}
-          className="rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]"
+          className="rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#b91c1c]"
         >
           ⚠ {d.k}（{DISC_DIM_PLAIN[d.k]}）差得最多、容易对着干：你 {discTendencyText(d.student)} / {label} {discTendencyText(d.parent)}，差 {Math.round(d.abs)}%
         </span>
@@ -127,7 +127,7 @@ function DimDeltaBadges({ label, parent, student }: { label: string; parent: Dis
       {watch.map((d) => (
         <span
           key={d.k}
-          className="rounded-md border border-[#c7a23a]/70 bg-[#f5e7c1] px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]"
+          className="rounded-md border border-[#f2a65a]/70 bg-[#ffe0d2] px-2 py-0.5 text-[11px] font-bold text-[#b7791f]"
         >
           {d.k}（{DISC_DIM_PLAIN[d.k]}）略有差异：你 {discTendencyText(d.student)} / {label} {discTendencyText(d.parent)}，差 {Math.round(d.abs)}%
         </span>

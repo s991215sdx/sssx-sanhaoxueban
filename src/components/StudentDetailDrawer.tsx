@@ -189,7 +189,7 @@ export default function StudentDetailDrawer({
                       <span className="chip !text-[11px] text-terra">低估：{data.assessments.e3parent.underestimates.map((d) => d.kp).join("、")}</span>
                     )}
                     {data.assessments.e3parent.severeConflict && (
-                      <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
+                      <span className="chip !border-[#b91c1c]/50 !bg-[#fbe3df] !text-[11px] !text-[#b91c1c]">家庭近期有严重亲子冲突信号</span>
                     )}
                   </div>
                   <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{data.assessments.e3parent.summary}</p>

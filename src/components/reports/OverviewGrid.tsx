@@ -6,14 +6,14 @@ export type OverviewCardTone = "red" | "amber" | "green";
 export type OverviewCardData = { label: string; value: string; note: string; tone?: OverviewCardTone };
 
 const TONE_CLASS: Record<OverviewCardTone, string> = {
-  red: "border-[#8f1313]/50 bg-[#fbe3df]",
-  amber: "border-[#8a6d1a]/50 bg-[#f5e7c1]",
-  green: "border-[#5a9326]/50 bg-lime-pale",
+  red: "border-[#b91c1c]/50 bg-[#fbe3df]",
+  amber: "border-[#b7791f]/50 bg-[#ffe0d2]",
+  green: "border-[#c43d28]/50 bg-lime-pale",
 };
 const TONE_TEXT: Record<OverviewCardTone, string> = {
-  red: "text-[#8f1313]",
-  amber: "text-[#8a6d1a]",
-  green: "text-[#5a9326]",
+  red: "text-[#b91c1c]",
+  amber: "text-[#b7791f]",
+  green: "text-[#c43d28]",
 };
 
 export default function OverviewGrid({ cards }: { cards: OverviewCardData[] }) {

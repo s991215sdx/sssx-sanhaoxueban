@@ -115,7 +115,7 @@ export const THREE_TIER_STYLE: Record<
   ThreeTierAbilityPlan["tier"],
   { label: string; sub: string; color: string; bg: string; border: string }
 > = {
-  乐学: { label: "1 阶 · 乐学 · 动力系统", sub: "发动机 · 先解决「为什么学」", color: "#7cb83c", bg: "#f0f7dd", border: "#7cb83c80" },
+  乐学: { label: "1 阶 · 乐学 · 动力系统", sub: "发动机 · 先解决「为什么学」", color: "#ed4e38", bg: "#fdeee9", border: "#ed4e3880" },
   会学: { label: "2 阶 · 会学 · 行为系统", sub: "底盘 · 跑顺日常学习闭环", color: "#3d8ec4", bg: "#e3edf6", border: "#3d8ec480" },
-  善学: { label: "3 阶 · 善学 · 加速系统", sub: "加速器 · 策略与元认知", color: "#c7a23a", bg: "#f5eecb", border: "#c7a23a80" },
+  善学: { label: "3 阶 · 善学 · 加速系统", sub: "加速器 · 策略与元认知", color: "#f2a65a", bg: "#ffe0d2", border: "#f2a65a80" },
 };

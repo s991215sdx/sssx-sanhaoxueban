@@ -257,9 +257,9 @@ function MentalChooser({ onDone }: { onDone: () => void }) {
             <div className="flex items-center justify-between gap-2">
               <span className="rounded-full bg-olive px-2.5 py-0.5 text-[11px] font-bold text-cream">{o.badge}</span>
               {o.done ? (
-                <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[11px] font-semibold text-[#5a9326]">{o.done.label}</span>
+                <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[11px] font-semibold text-[#c43d28]">{o.done.label}</span>
               ) : (
-                <span className="rounded-full border border-dashed border-[#a8b08c]/80 px-2 py-px text-[11px] text-olive-mute">未测</span>
+                <span className="rounded-full border border-dashed border-[#b9c2cc]/80 px-2 py-px text-[11px] text-olive-mute">未测</span>
               )}
             </div>
             <div className="mt-2 text-[14.5px] font-bold text-olive">{o.title}</div>

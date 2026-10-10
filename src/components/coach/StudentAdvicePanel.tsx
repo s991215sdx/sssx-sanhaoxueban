@@ -59,16 +59,16 @@ export default function StudentAdvicePanel({ userId }: { userId: number }) {
                 按诊断弱项（前 {weak.length} 项）匹配的训练方案：
               </p>
               {weak.map((a) => (
-                <div key={a.label} className="rounded-xl border border-[#a8b08c]/40 bg-white/70 p-2.5">
+                <div key={a.label} className="rounded-xl border border-[#b9c2cc]/40 bg-white/70 p-2.5">
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-bold text-olive">{a.label}</span>
                     <span
                       className={`rounded-full px-1.5 py-px text-[10.5px] font-bold ${
                         a.score < 3.0
-                          ? "bg-[#fbe3df] text-[#8f1313]"
+                          ? "bg-[#fbe3df] text-[#b91c1c]"
                           : a.score < 3.8
-                            ? "bg-[#f5e7c1] text-[#8a6d1a]"
-                            : "bg-[#f0f7dd] text-[#5a9326]"
+                            ? "bg-[#ffe0d2] text-[#b7791f]"
+                            : "bg-[#fdeee9] text-[#c43d28]"
                       }`}
                     >
                       {a.score}/5 · {a.level}

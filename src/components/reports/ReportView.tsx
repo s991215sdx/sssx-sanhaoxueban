@@ -235,7 +235,7 @@ function CollapsibleSection({
   return (
     <div id={`sec-${index}`} className="paper-card scroll-mt-20 p-5">
       <div className="flex items-center gap-2.5 border-l-4 border-lime pl-3">
-        <span className="mono text-[12px] font-bold text-[#5a9326]">{String(index + 1).padStart(2, "0")}</span>
+        <span className="mono text-[12px] font-bold text-[#c43d28]">{String(index + 1).padStart(2, "0")}</span>
         <h3 className="text-[15.5px] font-bold text-olive">
           <RichText text={section.title} />
         </h3>
@@ -280,7 +280,7 @@ function SectionToc({ sections }: { sections: CombinedSection[] }) {
             onClick={() => document.getElementById(`sec-${i}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
             className="rounded-lg border border-border bg-cream px-2.5 py-1 text-[12px] text-olive transition-colors hover:border-lime hover:bg-lime-pale"
           >
-            <span className="mono mr-1 text-[#5a9326]">{i + 1}</span>
+            <span className="mono mr-1 text-[#c43d28]">{i + 1}</span>
             {s.title.replace(/[*（(].*$/, "")}
           </button>
         ))}
@@ -349,9 +349,9 @@ function RoadmapSection({
     <span
       className={`mr-1.5 mb-1 inline-block rounded-md border px-1.5 py-0.5 text-[11.5px] leading-tight ${
         bad
-          ? "border-[#b91c1c]/50 bg-[#fbe3df] font-bold text-[#8f1313]"
+          ? "border-[#b91c1c]/50 bg-[#fbe3df] font-bold text-[#b91c1c]"
           : trait
-            ? "border-[#c7a23a]/70 bg-[#f5e7c1] font-bold text-[#8a6d1a]"
+            ? "border-[#f2a65a]/70 bg-[#ffe0d2] font-bold text-[#b7791f]"
             : "border-border bg-cream text-olive-soft"
       }`}
     >
@@ -561,7 +561,7 @@ function RoadmapSection({
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2.5">
-        <span className="mono text-[12px] font-bold text-[#5a9326]">{String(index + 1).padStart(2, "0")}</span>
+        <span className="mono text-[12px] font-bold text-[#c43d28]">{String(index + 1).padStart(2, "0")}</span>
         <h3 className="text-[15.5px] font-bold text-olive">{section.title}</h3>
       </div>
       {section.paragraphs?.map((p, i) => (
@@ -629,13 +629,13 @@ function RoadmapSection({
                     return (
                       <td
                         key={x.name}
-                        className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 ${gap > 0 ? "bg-[#fbe3df] font-bold text-[#b91c1c]" : "text-[#5a9326]"}`}
+                        className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 ${gap > 0 ? "bg-[#fbe3df] font-bold text-[#b91c1c]" : "text-[#c43d28]"}`}
                       >
                         {gap > 0 ? `+${gap}` : "已达标"}
                       </td>
                     );
                   })}
-                  <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${targetTotal - lastTotal > 0 ? "bg-[#fbe3df] text-[#b91c1c]" : "text-[#5a9326]"}`}>
+                  <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${targetTotal - lastTotal > 0 ? "bg-[#fbe3df] text-[#b91c1c]" : "text-[#c43d28]"}`}>
                     {targetTotal - lastTotal > 0 ? `+${targetTotal - lastTotal}` : "已达标"}
                   </td>
                 </tr>
@@ -644,10 +644,10 @@ function RoadmapSection({
                   {layers.slice(0, 3).map((l) => {
                     const st =
                       l.level === "卡点"
-                        ? { cls: "bg-[#f5c8c0] font-bold text-[#8f1313]", tag: " · 卡点，优先补" }
+                        ? { cls: "bg-[#f5c8c0] font-bold text-[#b91c1c]", tag: " · 卡点，优先补" }
                         : l.level === "待提升"
-                          ? { cls: "bg-[#f5e7c1] font-semibold text-[#8a6d1a]", tag: " · 待提升" }
-                          : { cls: "font-semibold text-[#5a9326]", tag: " · 正常" };
+                          ? { cls: "bg-[#ffe0d2] font-semibold text-[#b7791f]", tag: " · 待提升" }
+                          : { cls: "font-semibold text-[#c43d28]", tag: " · 正常" };
                     return (
                       <td
                         key={l.layer}
@@ -668,10 +668,10 @@ function RoadmapSection({
                   ].map((s) => {
                     const st =
                       s.level === "卡点"
-                        ? "bg-[#f5c8c0] font-bold text-[#8f1313]"
+                        ? "bg-[#f5c8c0] font-bold text-[#b91c1c]"
                         : s.level === "待提升"
-                          ? "bg-[#f5e7c1] font-semibold text-[#8a6d1a]"
-                          : "font-semibold text-[#5a9326]";
+                          ? "bg-[#ffe0d2] font-semibold text-[#b7791f]"
+                          : "font-semibold text-[#c43d28]";
                     return (
                       <td
                         key={s.label}
@@ -694,7 +694,7 @@ function RoadmapSection({
               <button
                 type="button"
                 onClick={() => onReveal({ kind: "fill-academics" })}
-                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#4e7d20] transition hover:bg-lime-pale"
+                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#c43d28] transition hover:bg-lime-pale"
               >
                 去填写 →
               </button>
@@ -705,8 +705,8 @@ function RoadmapSection({
       </div>
 
       {/* 第二步 · 冰山诊断表 */}
-      <div className="paper-card border-[#c9a227]/50 p-4">
-        <StepHead n="2" title="分析问题 · 痛点 · 特点（冰山模型）" color="bg-[#c9a227]" />
+      <div className="paper-card border-[#ed7b2f]/50 p-4">
+        <StepHead n="2" title="分析问题 · 痛点 · 特点（冰山模型）" color="bg-[#ed7b2f]" />
         <div className="mt-2.5 overflow-x-auto">
           <table className="w-full min-w-[460px] border-collapse text-[11.5px] sm:text-[12.5px]">
             <tbody>
@@ -721,7 +721,7 @@ function RoadmapSection({
                         <button
                           type="button"
                           onClick={() => onReveal({ kind: "fill-academics" })}
-                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#4e7d20] transition hover:bg-lime-pale hover:shadow-sm"
+                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#c43d28] transition hover:bg-lime-pale hover:shadow-sm"
                         >
                           去填写成绩与目标 →
                         </button>
@@ -787,8 +787,8 @@ function RoadmapSection({
 
       {/* V78 冰山下新图：支持系统 × 深层特质（从冰山表迁出，独立成图） */}
       {((layerUnits["条件"] ?? []).length > 0 || mbti || disc || anchor || holland) && (
-        <div className="paper-card border-[#c9a227]/50 p-4">
-          <StepHead n="2" title="冰山下 · 看不见的根（支持系统 × 深层特质）" color="bg-[#c9a227]" />
+        <div className="paper-card border-[#ed7b2f]/50 p-4">
+          <StepHead n="2" title="冰山下 · 看不见的根（支持系统 × 深层特质）" color="bg-[#ed7b2f]" />
           <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
             它们不进学习力总分，但决定干预能不能落地：支持系统不稳，上面的动力与方法都立不住；深层特质没有好坏，是用来「按自己的方式高效学、按内心的方向做选择」的底色。
           </p>
@@ -879,7 +879,7 @@ function RoadmapSection({
                 const weakDims = l.dims.filter((n) => n.level !== "正常");
                 return (
                   <tr key={l.layer} className={bad ? "" : "opacity-70"}>
-                    <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${l.level === "卡点" ? "bg-[#fbe3df] text-[#8f1313]" : l.level === "待提升" ? "bg-[#f5e7c1] text-[#8a6d1a]" : "text-[#5a9326]"}`}>
+                    <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${l.level === "卡点" ? "bg-[#fbe3df] text-[#b91c1c]" : l.level === "待提升" ? "bg-[#ffe0d2] text-[#b7791f]" : "text-[#c43d28]"}`}>
                       {l.layer}层 {l.score}/5 · {l.level}
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
@@ -1057,7 +1057,7 @@ function ListCard({ title, items, ordered }: { title: string; items: string[]; o
       <ul className="mt-3 space-y-2">
         {items.map((t, i) => (
           <li key={i} className="flex gap-2 text-[14px] leading-relaxed text-olive-soft">
-            <span className="mono shrink-0 text-[12.5px] font-bold text-[#5a9326]">
+            <span className="mono shrink-0 text-[12.5px] font-bold text-[#c43d28]">
               {ordered ? `${i + 1}.` : "·"}
             </span>
             <span>
@@ -1430,7 +1430,7 @@ function ParentReportTab({
           <h3 className="font-bold text-olive">家庭支持与环境观察（家长卷）</h3>
           <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">{e3parent.summary}</p>
           {e3parent.severeConflict && (
-            <div className="mt-2.5 rounded-xl border border-[#8f1313]/40 bg-[#fbe3df] p-3 text-[12.5px] font-semibold text-[#8f1313]">
+            <div className="mt-2.5 rounded-xl border border-[#b91c1c]/40 bg-[#fbe3df] p-3 text-[12.5px] font-semibold text-[#b91c1c]">
               !! 红线提醒：家庭近期出现严重亲子冲突信号——建议先修复关系，必要时寻求学校心理老师或专业机构支持。
             </div>
           )}
@@ -1445,10 +1445,10 @@ function ParentReportTab({
                       className="chip !text-[11px]"
                       style={
                         cv.studentLevel === "卡点"
-                          ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#fbe3df" }
+                          ? { borderColor: "#b91c1c66", color: "#b91c1c", background: "#fbe3df" }
                           : cv.studentLevel === "待提升"
-                            ? { borderColor: "#c7a23a66", color: "#8a6d1a", background: "#f5e7c1" }
-                            : { borderColor: "#7cb83c66", color: "#5a9326", background: "#f0f7dd" }
+                            ? { borderColor: "#f2a65a66", color: "#b7791f", background: "#ffe0d2" }
+                            : { borderColor: "#ed4e3866", color: "#c43d28", background: "#fdeee9" }
                       }
                     >
                       孩子自评 {cv.studentScore}/5 · {cv.studentLevel}
@@ -1489,14 +1489,14 @@ function ParentReportTab({
                   <div
                     key={b.key}
                     className={`rounded-xl border p-3.5 ${
-                      strong ? "border-[#b91c1c]/50 bg-[#fbe3df]/60" : over ? "border-[#c7a23a]/50 bg-[#f5e7c1]/40" : "border-lime/40 bg-lime-pale/40"
+                      strong ? "border-[#b91c1c]/50 bg-[#fbe3df]/60" : over ? "border-[#f2a65a]/50 bg-[#ffe0d2]/40" : "border-lime/40 bg-lime-pale/40"
                     }`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[13px] font-bold text-olive">{b.kp}</span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                          strong ? "bg-[#b91c1c] text-white" : over ? "bg-[#f5e7c1] text-[#8a6d1a]" : "bg-[#f0f7dd] text-[#5a9326]"
+                          strong ? "bg-[#b91c1c] text-white" : over ? "bg-[#ffe0d2] text-[#b7791f]" : "bg-[#fdeee9] text-[#c43d28]"
                         }`}
                       >
                         差 {Math.abs(b.gap)} 分 · {over ? "家长更乐观" : "家长没看到"}
@@ -1506,11 +1506,11 @@ function ParentReportTab({
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <div className="rounded-lg bg-white/70 px-2.5 py-1.5 text-center">
                         <div className="text-[11px] text-olive-mute">家长的估计</div>
-                        <div className={`mono text-[16px] font-bold ${strong ? "text-[#8f1313]" : "text-olive"}`}>{b.parentScore}<span className="text-[11px] font-normal text-olive-mute"> /5</span></div>
+                        <div className={`mono text-[16px] font-bold ${strong ? "text-[#b91c1c]" : "text-olive"}`}>{b.parentScore}<span className="text-[11px] font-normal text-olive-mute"> /5</span></div>
                       </div>
                       <div className="rounded-lg bg-white/70 px-2.5 py-1.5 text-center">
                         <div className="text-[11px] text-olive-mute">孩子的实际感受</div>
-                        <div className={`mono text-[16px] font-bold ${strong ? "text-[#8f1313]" : "text-olive"}`}>{b.studentScore}<span className="text-[11px] font-normal text-olive-mute"> /5</span></div>
+                        <div className={`mono text-[16px] font-bold ${strong ? "text-[#b91c1c]" : "text-olive"}`}>{b.studentScore}<span className="text-[11px] font-normal text-olive-mute"> /5</span></div>
                       </div>
                     </div>
                     <p className="mt-2 text-[12px] leading-relaxed text-olive-soft">
@@ -1541,11 +1541,11 @@ function ParentReportTab({
                   key={i}
                   className={
                     c.hot
-                      ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
+                      ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#b91c1c] ring-1 ring-[#b91c1c]/50"
                       : "text-[12.5px] leading-relaxed text-olive-soft"
                   }
                 >
-                  <b className={c.hot ? "text-[#8f1313]" : "text-olive"}>{i + 1}.</b> {c.text}
+                  <b className={c.hot ? "text-[#b91c1c]" : "text-olive"}>{i + 1}.</b> {c.text}
                 </li>
               ))}
             </ol>
@@ -1640,9 +1640,9 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
         <div className="mt-2 h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#d9dcb8" />
-              <PolarAngleAxis dataKey="dim" tick={{ fill: "#556339", fontSize: 12 }} />
-              <Radar dataKey="得分" stroke="#7cb83c" fill="#7cb83c" fillOpacity={0.35} strokeWidth={2.5} />
+              <PolarGrid stroke="#eceef1" />
+              <PolarAngleAxis dataKey="dim" tick={{ fill: "#595959", fontSize: 12 }} />
+              <Radar dataKey="得分" stroke="#ed4e38" fill="#ed4e38" fillOpacity={0.35} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -1691,7 +1691,7 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
               <span className={`w-[64px] shrink-0 text-right text-[12px] ${!neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
                 {DISC_BIPOLAR[k].plus} {k}+
               </span>
-              <span className="mono w-[88px] shrink-0 text-right text-[12px]" style={{ color: !neg ? DISC_COLOR[k] : "#c8cdb2" }}>
+              <span className="mono w-[88px] shrink-0 text-right text-[12px]" style={{ color: !neg ? DISC_COLOR[k] : "#e8e8e8" }}>
                 {!neg ? val : ""}
               </span>
               <div className="relative h-3 flex-1 rounded-full bg-cream-deep">
@@ -1701,7 +1701,7 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
                   style={{ left: t > 0 ? `${50 - t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR[k] }}
                 />
               </div>
-              <span className="mono w-[88px] shrink-0 text-[12px]" style={{ color: neg ? DISC_COLOR[k] : "#c8cdb2" }}>
+              <span className="mono w-[88px] shrink-0 text-[12px]" style={{ color: neg ? DISC_COLOR[k] : "#e8e8e8" }}>
                 {neg ? val : ""}
               </span>
               <span className={`w-[64px] shrink-0 text-[12px] ${neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
@@ -1754,7 +1754,7 @@ function DiscParentDetail({ label, result, student }: { label: string; result: D
   return (
     <div className="paper-card p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-[#c7a23a]/70 bg-[#c7a23a]/15 px-2.5 py-0.5 text-[11.5px] font-bold text-[#8a6d1a]">
+        <span className="rounded-full border border-[#f2a65a]/70 bg-[#f2a65a]/15 px-2.5 py-0.5 text-[11.5px] font-bold text-[#b7791f]">
           家长版 · {label}
         </span>
         <span className="text-xl font-bold text-olive">
@@ -1821,19 +1821,19 @@ function Multi5Radar({ multi5 }: { multi5: Multi5Result }) {
       <div className="mt-2 h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={MULTI5_DIM_ORDER.map((k) => ({ dim: `${MULTI5_DIM_LABEL[k]} ${multi5.dims[k]}`, 得分: multi5.dims[k] }))} outerRadius="72%">
-            <PolarGrid stroke="#d9dcb8" />
+            <PolarGrid stroke="#eceef1" />
             <PolarAngleAxis
               dataKey="dim"
               tick={({ x, y, payload }: any) => {
                 const v = Number(String(payload.value).split(" ").pop());
                 return (
-                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 60 ? "#b91c1c" : "#556339"} fontWeight={v < 60 ? 700 : 400}>
+                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 60 ? "#b91c1c" : "#595959"} fontWeight={v < 60 ? 700 : 400}>
                     {payload.value}
                   </text>
                 );
               }}
             />
-            <Radar dataKey="得分" stroke="#7cb83c" fill="#7cb83c" fillOpacity={0.35} strokeWidth={2.5} />
+            <Radar dataKey="得分" stroke="#ed4e38" fill="#ed4e38" fillOpacity={0.35} strokeWidth={2.5} />
           </RadarChart>
         </ResponsiveContainer>
       </div>
@@ -1870,7 +1870,7 @@ function MentalV2Bars({
   /** v2=通用版（PHQ-9）；pa=学生版 B（PHQ-A + GAD-7 标准版）。 */
   variant?: "v2" | "pa";
 }) {
-  const BAND_COLOR: Record<string, string> = { 良好: "#7cb83c", 关注: "#c7a23a", 预警: "#cf6a3c", 高风险: "#b91c1c" };
+  const BAND_COLOR: Record<string, string> = { 良好: "#ed4e38", 关注: "#f2a65a", 预警: "#ed7b2f", 高风险: "#b91c1c" };
   const isPa = variant === "pa";
   const rows = [
     { label: isPa ? "PHQ-A 青少年抑郁筛查" : "PHQ-9 抑郁筛查", value: mental.phq9, max: 27, band: mental.phq9Level },
@@ -1901,8 +1901,8 @@ function MentalV2Bars({
       </div>
       {mental.selfHarm && (
         <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3">
-          <div className="text-[12.5px] font-bold text-[#8f1313]">⚠ 需要立即关注的信号</div>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_V2_ITEM9_NOTICE}主动求助是勇敢，不是软弱。</p>
+          <div className="text-[12.5px] font-bold text-[#b91c1c]">⚠ 需要立即关注的信号</div>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-[#b91c1c]">{MENTAL_V2_ITEM9_NOTICE}主动求助是勇敢，不是软弱。</p>
         </div>
       )}
       <p className="mt-3 text-[11.5px] leading-relaxed text-olive-mute">{isPa ? MENTAL_PA_DISCLAIMER : MENTAL_V2_DISCLAIMER}</p>
@@ -1912,7 +1912,7 @@ function MentalV2Bars({
 
 /** 学生版 A（SDQ）五维度条形图。 */
 function MentalSdqBars({ mental }: { mental: MentalSdqResult }) {
-  const BAND_COLOR: Record<string, string> = { 正常: "#7cb83c", 边缘: "#c7a23a", 明显: "#b91c1c" };
+  const BAND_COLOR: Record<string, string> = { 正常: "#ed4e38", 边缘: "#f2a65a", 明显: "#b91c1c" };
   const dims = ["emotion", "conduct", "hyper", "peer", "prosocial"] as const;
   return (
     <div className="paper-card p-5">
@@ -1944,8 +1944,8 @@ function MentalSdqBars({ mental }: { mental: MentalSdqResult }) {
       <p className="mt-2 text-[11.5px] text-olive-mute">亲社会行为是优势维度（分越高越好）；其余四维与困难总分越低越好。</p>
       {mental.selfHarm && (
         <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3">
-          <div className="text-[12.5px] font-bold text-[#8f1313]">⚠ 需要立即关注的信号</div>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_SDQ_SAFETY_NOTICE}主动求助是勇敢，不是软弱。</p>
+          <div className="text-[12.5px] font-bold text-[#b91c1c]">⚠ 需要立即关注的信号</div>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-[#b91c1c]">{MENTAL_SDQ_SAFETY_NOTICE}主动求助是勇敢，不是软弱。</p>
         </div>
       )}
       <p className="mt-3 text-[11.5px] leading-relaxed text-olive-mute">{MENTAL_SDQ_DISCLAIMER}</p>
@@ -1998,10 +1998,10 @@ function SdqDimExplainCard({ mental }: { mental: MentalSdqResult }) {
                 <span
                   className={`rounded-full border px-2 py-px text-[11px] font-semibold ${
                     mental.dimBands[k] === "正常"
-                      ? "border-lime/50 bg-lime-pale text-[#5a9326]"
+                      ? "border-lime/50 bg-lime-pale text-[#c43d28]"
                       : mental.dimBands[k] === "边缘"
-                        ? "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]"
-                        : "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]"
+                        ? "border-[#f2a65a]/70 bg-[#ffe0d2] text-[#b7791f]"
+                        : "border-[#b91c1c]/50 bg-[#fbe3df] text-[#b91c1c]"
                   }`}
                 >
                   本次 {mental.dims[k]}/10「{mental.dimBands[k]}」
@@ -2054,7 +2054,7 @@ function PhqGadExplainCard({ variant, selfHarm }: { variant: "v2" | "pa"; selfHa
           <ul className="mt-1.5 space-y-1.5">
             {PHQ9_ITEM_EXPLAIN.map((it, i) => (
               <li key={i} className="text-[12.5px] leading-relaxed text-olive-soft">
-                <b className={i === 8 && selfHarm ? "text-[#8f1313]" : "text-olive"}>
+                <b className={i === 8 && selfHarm ? "text-[#b91c1c]" : "text-olive"}>
                   第 {i + 1} 题{i === 8 ? "（红线）" : ""}：
                 </b>
                 {it.text}——{it.observe}
@@ -2083,11 +2083,11 @@ function PhqGadExplainCard({ variant, selfHarm }: { variant: "v2" | "pa"; selfHa
 
 /** SCL-90 因子程度徽章配色。 */
 const SCL90_LEVEL_BADGE: Record<string, string> = {
-  正常: "border-lime/50 bg-lime-pale text-[#5a9326]",
-  轻度: "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]",
+  正常: "border-lime/50 bg-lime-pale text-[#c43d28]",
+  轻度: "border-[#f2a65a]/70 bg-[#ffe0d2] text-[#b7791f]",
   中度: "border-[#c77b3a]/60 bg-[#f8e3d1] text-[#9a4d17]",
-  偏重: "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]",
-  严重: "border-[#b91c1c] bg-[#f6d4ce] text-[#8f1313]",
+  偏重: "border-[#b91c1c]/50 bg-[#fbe3df] text-[#b91c1c]",
+  严重: "border-[#b91c1c] bg-[#f6d4ce] text-[#b91c1c]",
 };
 
 /** 深度评估（SCL-90）附件式完整评估报告：评估背景 → 计分与常模说明 → 综合评估表 → 逐因子风险指标解读。 */
@@ -2112,7 +2112,7 @@ function Scl90ReportCard({ result }: { result: Scl90Result }) {
       <div className="paper-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-bold text-olive">心理健康综合评估</h3>
-          <span className={`rounded-full border px-3 py-1 text-[12.5px] font-bold ${result.screeningPositive ? "border-terra/60 bg-terra/10 text-terra" : "border-lime/60 bg-lime-pale text-[#5a9326]"}`}>
+          <span className={`rounded-full border px-3 py-1 text-[12.5px] font-bold ${result.screeningPositive ? "border-terra/60 bg-terra/10 text-terra" : "border-lime/60 bg-lime-pale text-[#c43d28]"}`}>
             {result.screeningPositive ? "筛选阳性 · 建议进一步评估" : "筛选阴性 · 未达阳性线"}
           </span>
         </div>
@@ -2246,17 +2246,17 @@ function MentalBar({ mental }: { mental: MentalResult }) {
             barSize={12}
             margin={{ left: 8, right: 40 }}
           >
-            <XAxis type="number" domain={[0, 5]} tick={{ fill: "#8b9468", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="name" width={88} tick={{ fill: "#556339", fontSize: 12 }} axisLine={false} tickLine={false} />
-            <ReferenceLine x={2} stroke="#cf6a3c" strokeDasharray="6 4" label={{ value: "阳性线 2", position: "top", fontSize: 10.5, fill: "#cf6a3c" }} />
+            <XAxis type="number" domain={[0, 5]} tick={{ fill: "#999999", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="name" width={88} tick={{ fill: "#595959", fontSize: 12 }} axisLine={false} tickLine={false} />
+            <ReferenceLine x={2} stroke="#ed7b2f" strokeDasharray="6 4" label={{ value: "阳性线 2", position: "top", fontSize: 10.5, fill: "#ed7b2f" }} />
             <Bar dataKey="得分" radius={[0, 6, 6, 0]}>
               {MENTAL_FACTOR_ORDER.map((f) => (
-                <Cell key={f} fill={mental.factors[f] > 2 ? "#cf6a3c" : "#7cb83c"} />
+                <Cell key={f} fill={mental.factors[f] > 2 ? "#ed7b2f" : "#ed4e38"} />
               ))}
               <LabelList
                 dataKey="得分"
                 position="right"
-                style={{ fontSize: 11, fill: "#556339" }}
+                style={{ fontSize: 11, fill: "#595959" }}
                 formatter={(v: number) => {
                   const s = v > 2 ? (v >= 3 ? "重度" : v >= 2.5 ? "中度" : "轻度") : "";
                   return s ? `${v}（${s}）` : `${v}`;
@@ -2672,7 +2672,7 @@ export default function ReportView({
                           ) : gap > 0 ? (
                             <span className="font-semibold text-terra">+{gap}</span>
                           ) : (
-                            <span className="font-semibold text-[#5a9326]">已达标</span>
+                            <span className="font-semibold text-[#c43d28]">已达标</span>
                           )}
                         </td>
                       </tr>
@@ -2723,7 +2723,7 @@ export default function ReportView({
                 <span className="chip !text-[11px]">外驱依赖 {e3v37.extDrive}/5 · 内驱 {e3v37.intDrive}/5</span>
                 <span className="chip !text-[11px]">生活事件 {e3v37.lifeEventScore}/24（{e3v37.lifeEventLevel}）</span>
                 {e3v37.mainBlock && (
-                  <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">
+                  <span className="chip !border-[#b91c1c]/50 !bg-[#fbe3df] !text-[11px] !text-[#b91c1c]">
                     主卡点：{e3v37.mainBlock.label} {e3v37.mainBlock.score}/5
                   </span>
                 )}
@@ -2776,7 +2776,7 @@ export default function ReportView({
                     <span className="chip !text-[11px]">家长没看到的闪光点：{parentResult.underestimates.map((d) => d.kp).join("、")}</span>
                   )}
                   {parentResult.severeConflict && (
-                    <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
+                    <span className="chip !border-[#b91c1c]/50 !bg-[#fbe3df] !text-[11px] !text-[#b91c1c]">家庭近期有严重亲子冲突信号</span>
                   )}
                 </div>
               </div>
@@ -3013,7 +3013,7 @@ export default function ReportView({
                           <span className="w-14 shrink-0 text-[11.5px] text-olive-soft">{st.stage}</span>
                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
                             <div
-                              className={`h-full rounded-full ${st.avg < 2.5 ? "bg-terra" : st.avg < 3.5 ? "bg-[#c7a23a]" : "bg-lime"}`}
+                              className={`h-full rounded-full ${st.avg < 2.5 ? "bg-terra" : st.avg < 3.5 ? "bg-[#f2a65a]" : "bg-lime"}`}
                               style={{ width: `${(st.avg / 5) * 100}%` }}
                             />
                           </div>
@@ -3289,13 +3289,13 @@ function MiniBars({
               className="h-full rounded-full"
               style={{
                 width: `${Math.max(3, Math.min(100, (r.value / max) * 100))}%`,
-                background: r.state === "bad" ? "#b91c1c" : r.state === "trait" ? "#c7a23a" : "#7cb83c",
+                background: r.state === "bad" ? "#b91c1c" : r.state === "trait" ? "#f2a65a" : "#ed4e38",
               }}
             />
           </div>
           <span
             className={`mono w-12 shrink-0 text-right text-[11.5px] ${
-              r.state === "bad" ? "font-bold text-[#8f1313]" : r.state === "trait" ? "font-bold text-[#8a6d1a]" : "text-olive-soft"
+              r.state === "bad" ? "font-bold text-[#b91c1c]" : r.state === "trait" ? "font-bold text-[#b7791f]" : "text-olive-soft"
             }`}
           >
             {r.display ?? r.value}
@@ -3396,19 +3396,19 @@ function AssessmentChartsLite({
                 data={MULTI5_DIM_ORDER.map((k) => ({ dim: `${MULTI5_DIM_LABEL[k]} ${multi5.dims[k]}`, 得分: multi5.dims[k] }))}
                 outerRadius="70%"
               >
-                <PolarGrid stroke="#d9dcb8" />
+                <PolarGrid stroke="#eceef1" />
                 <PolarAngleAxis
                   dataKey="dim"
                   tick={({ x, y, payload }: any) => {
                     const v = Number(String(payload.value).split(" ").pop());
                     return (
-                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 60 ? "#b91c1c" : "#556339"} fontWeight={v < 60 ? 700 : 400}>
+                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 60 ? "#b91c1c" : "#595959"} fontWeight={v < 60 ? 700 : 400}>
                         {payload.value}
                       </text>
                     );
                   }}
                 />
-                <Radar dataKey="得分" stroke="#7cb83c" fill="#7cb83c" fillOpacity={0.35} strokeWidth={2.5} />
+                <Radar dataKey="得分" stroke="#ed4e38" fill="#ed4e38" fillOpacity={0.35} strokeWidth={2.5} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -3438,7 +3438,7 @@ function AssessmentChartsLite({
             ]}
           />
           {mental.selfHarm && (
-            <p className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3 text-[12.5px] font-bold leading-relaxed text-[#8f1313]">
+            <p className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3 text-[12.5px] font-bold leading-relaxed text-[#b91c1c]">
               ⚠ 有自伤念头信号——请今天就告诉家长或信任的老师，必要时拨打心理援助热线 12356。
             </p>
           )}
@@ -3526,7 +3526,7 @@ function CombinedLite({
               <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
                 <div
                   className="h-full rounded-full"
-                  style={{ width: `${(d.score / 5) * 100}%`, background: d.level === "正常" ? "#7cb83c" : d.level === "待提升" ? "#c7a23a" : "#b91c1c" }}
+                  style={{ width: `${(d.score / 5) * 100}%`, background: d.level === "正常" ? "#ed4e38" : d.level === "待提升" ? "#f2a65a" : "#b91c1c" }}
                 />
               </div>
               <span className={`mono w-16 shrink-0 text-right text-[12px] ${e3v37LevelTextClass(d.level)}`}>
@@ -3553,7 +3553,7 @@ function CombinedLite({
           <span className="chip !border-lime/50 !bg-lime-pale !text-[12.5px]">性格 {mbti.type} 型{mr ? ` · ${mr.tags.slice(0, 2).join("、")}` : ""}</span>
           <span className="chip !border-lime/50 !bg-lime-pale !text-[12.5px]">行为 {combo.join("")} 组合{dr ? ` · ${dr.keywords.slice(0, 2).join("、")}` : ""}</span>
           {e3.mainBlock && (
-            <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[12.5px] !text-[#8f1313]">主卡点 · {e3.mainBlock.label} {e3.mainBlock.score}/5</span>
+            <span className="chip !border-[#b91c1c]/50 !bg-[#fbe3df] !text-[12.5px] !text-[#b91c1c]">主卡点 · {e3.mainBlock.label} {e3.mainBlock.score}/5</span>
           )}
         </div>
       </div>
@@ -3567,8 +3567,8 @@ function CombinedLite({
               <h3 className="font-bold text-olive">亲子对照 · 摘要</h3>
               <ol className="mt-2 space-y-1.5">
                 {conflicts.slice(0, 3).map((c, i) => (
-                  <li key={i} className={`text-[12.5px] leading-relaxed ${c.hot ? "font-semibold text-[#8f1313]" : "text-olive-soft"}`}>
-                    <b className={c.hot ? "text-[#8f1313]" : "text-terra"}>{i + 1}.</b> {c.text}
+                  <li key={i} className={`text-[12.5px] leading-relaxed ${c.hot ? "font-semibold text-[#b91c1c]" : "text-olive-soft"}`}>
+                    <b className={c.hot ? "text-[#b91c1c]" : "text-terra"}>{i + 1}.</b> {c.text}
                   </li>
                 ))}
               </ol>
@@ -3656,11 +3656,11 @@ function AnswerBlocksView({ blocks }: { blocks: AnswerBlock[] }) {
                 <span
                   className={`shrink-0 font-semibold ${
                     row.band === "bad"
-                      ? "text-[#8f1313]"
+                      ? "text-[#b91c1c]"
                       : row.band === "mid"
-                        ? "text-[#8a6d1a]"
+                        ? "text-[#b7791f]"
                         : row.band === "ok"
-                          ? "text-[#5a9326]"
+                          ? "text-[#c43d28]"
                           : row.bad
                             ? "text-terra"
                             : "text-olive"

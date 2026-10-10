@@ -13,7 +13,7 @@ export type ScoreRecord = {
   createdAt: Date | string;
 };
 
-const PALETTE = ["#5a9326", "#cf6a3c", "#3a6ea5", "#b03a5b", "#8a6d1a", "#4a8a8a", "#7a5ba8", "#a8763e", "#3e8a5a", "#a83e6a"];
+const PALETTE = ["#c43d28", "#ed7b2f", "#3a6ea5", "#b03a5b", "#b7791f", "#4a8a8a", "#7a5ba8", "#a8763e", "#3e8a5a", "#a83e6a"];
 
 export default function ScoreTrendChart({ records }: { records: ScoreRecord[] }) {
   const [hover, setHover] = useState<{ si: number; ri: number } | null>(null);
@@ -69,7 +69,7 @@ export default function ScoreTrendChart({ records }: { records: ScoreRecord[] })
             </g>
           ))}
           {chron.map((r, ri) => (
-            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#556339" className="max-w-[70px]">
+            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#595959" className="max-w-[70px]">
               {labelOf(r).slice(0, 8)}
             </text>
           ))}
@@ -112,7 +112,7 @@ export default function ScoreTrendChart({ records }: { records: ScoreRecord[] })
             const full = s.fullScore ?? 100;
             return (
               <g>
-                <rect x={Math.min(W - 150, xOf(hover.ri) + 8)} y={Math.max(2, yOf(Math.min(100, (s.lastScore / Math.max(1, full)) * 100)) - 34)} width={142} height={28} rx={6} fill="#3C2E25" opacity={0.92} />
+                <rect x={Math.min(W - 150, xOf(hover.ri) + 8)} y={Math.max(2, yOf(Math.min(100, (s.lastScore / Math.max(1, full)) * 100)) - 34)} width={142} height={28} rx={6} fill="#2d2d2d" opacity={0.92} />
                 <text x={Math.min(W - 150, xOf(hover.ri) + 8) + 71} y={Math.max(2, yOf(Math.min(100, (s.lastScore / Math.max(1, full)) * 100)) - 15)} textAnchor="middle" fontSize={11} fill="#f5f2e8">
                   {name} {s.lastScore}/{full} 分
                 </text>

@@ -26,7 +26,7 @@ const RATE_HINTS = ["从不", "很少", "有时", "经常", "总是"];
 const EVENT_HINTS = ["没发生", "轻度", "中度", "重度"];
 
 /** 九能红黄绿（与报告一致）：卡点红 / 待提升黄 / 正常绿。 */
-const LEVEL_COLOR: Record<string, string> = { 卡点: "#b91c1c", 待提升: "#c7a23a", 正常: "#5a9326" };
+const LEVEL_COLOR: Record<string, string> = { 卡点: "#b91c1c", 待提升: "#f2a65a", 正常: "#c43d28" };
 
 /** 学科快扫一行（V3.7）：喜欢/掌握/发挥 0-5（0=未开设）+ 最近大考成绩 + 排名 + 最薄弱环节。 */
 type SubjectRow = {
@@ -240,7 +240,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
     return (
       <div className="mx-auto max-w-3xl">
         <div className="paper-card accent-l border-lime p-5 sm:p-6">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-lime-pale text-[22px] font-bold text-[#5a9326]">✓</div>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-lime-pale text-[22px] font-bold text-[#c43d28]">✓</div>
           <h2 className="mt-3 text-center text-lg font-bold text-olive">诊断完成</h2>
           <p className="mt-1 text-center text-[13.5px] text-olive-soft">
             三阶九能诊断已生成，红色是当前卡点、黄色待提升、绿色正常。
@@ -529,7 +529,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
       <div className="mx-auto max-w-3xl space-y-4">
         {header}
         <div className="paper-card p-4 text-center sm:p-6">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-lime-pale text-[22px] font-bold text-[#5a9326]">✓</div>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-lime-pale text-[22px] font-bold text-[#c43d28]">✓</div>
           <h3 className="mt-3 text-[17px] font-bold text-olive">{part.praise}</h3>
           <p className="mx-auto mt-2 max-w-[420px] text-[13.5px] leading-relaxed text-olive-soft">
             {isLastPart

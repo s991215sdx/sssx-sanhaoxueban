@@ -4,7 +4,7 @@ import ReportLockedGate from "@/components/ReportLockedGate";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { MessageSquareHeart } from "lucide-react";
 
-const PIE_COLORS = ["#7cb83c", "#cfe07a", "#cf6a3c", "#556339", "#f9de81"];
+const PIE_COLORS = ["#ed4e38", "#ffb59d", "#ed7b2f", "#595959", "#ffe0d2"];
 
 export default function Report() {
   const { data, isLoading } = trpc.dashboard.summary.useQuery(undefined, { retry: 6, retryDelay: 3000 });
@@ -52,9 +52,9 @@ export default function Report() {
           <div className="mt-2 h-60">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={data.radar} outerRadius="70%">
-                <PolarGrid stroke="#d9dcb8" />
-                <PolarAngleAxis dataKey="chapter" tick={{ fill: "#556339", fontSize: 12 }} />
-                <Radar dataKey="score" stroke="#7cb83c" fill="#7cb83c" fillOpacity={0.35} strokeWidth={2.5} />
+                <PolarGrid stroke="#eceef1" />
+                <PolarAngleAxis dataKey="chapter" tick={{ fill: "#595959", fontSize: 12 }} />
+                <Radar dataKey="score" stroke="#ed4e38" fill="#ed4e38" fillOpacity={0.35} strokeWidth={2.5} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -74,7 +74,7 @@ export default function Report() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ background: "#fffef6", border: "1px solid #d9dcb8", borderRadius: 12, fontSize: 13 }}
+                    contentStyle={{ background: "#ffffff", border: "1px solid #eceef1", borderRadius: 12, fontSize: 13 }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -100,15 +100,15 @@ export default function Report() {
                 data={data.weekly.map((w) => ({ ...w, pct: w.total ? Math.round((w.correct / w.total) * 100) : 0 }))}
                 barSize={20}
               >
-                <XAxis dataKey="day" tick={{ fill: "#8b9468", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: "#8b9468", fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
+                <XAxis dataKey="day" tick={{ fill: "#999999", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fill: "#999999", fontSize: 11 }} axisLine={false} tickLine={false} width={30} />
                 <Tooltip
                   formatter={(v) => [`${v}%`, "正确率"]}
-                  contentStyle={{ background: "#fffef6", border: "1px solid #d9dcb8", borderRadius: 12, fontSize: 13 }}
+                  contentStyle={{ background: "#ffffff", border: "1px solid #eceef1", borderRadius: 12, fontSize: 13 }}
                 />
                 <Bar dataKey="pct" radius={[6, 6, 0, 0]}>
                   {data.weekly.map((w, i) => (
-                    <Cell key={i} fill={w.total > 0 ? "#7cb83c" : "#e8e9c8"} />
+                    <Cell key={i} fill={w.total > 0 ? "#ed4e38" : "#eceef1"} />
                   ))}
                 </Bar>
               </BarChart>

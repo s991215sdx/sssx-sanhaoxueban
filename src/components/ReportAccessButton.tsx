@@ -78,8 +78,8 @@ export default function ReportAccessButton({
         onClick={() => setConfirmRecall(true)}
         className={
           compact
-            ? "rounded-lg bg-lime-pale p-1.5 text-[#4e7d20] transition-colors hover:bg-lime/30"
-            : "inline-flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-3 py-1.5 text-[12.5px] font-semibold text-[#4e7d20] hover:bg-lime/20"
+            ? "rounded-lg bg-lime-pale p-1.5 text-[#c43d28] transition-colors hover:bg-lime/30"
+            : "inline-flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-3 py-1.5 text-[12.5px] font-semibold text-[#c43d28] hover:bg-lime/20"
         }
       >
         <CheckCircle2 size={compact ? 15 : 13} />

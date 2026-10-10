@@ -5,24 +5,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        /* ===== 云亮珊瑚主题（v85 全站换肤：白卡浅灰底 + 珊瑚橙 #ed4e38 强调） ===== */
         olive: {
-          DEFAULT: "#35421e",
-          soft: "#556339",
-          mute: "#8b9468",
+          DEFAULT: "#242424",
+          soft: "#595959",
+          mute: "#999999",
         },
         lime: {
-          DEFAULT: "#7cb83c",
-          light: "#9ccb52",
-          tint: "#cfe07a",
-          pale: "#f0f7dd",
+          DEFAULT: "#ed4e38",
+          light: "#ff7a45",
+          tint: "#ffb59d",
+          pale: "#fdeee9",
         },
         cream: {
-          DEFAULT: "#fdf8e7",
-          deep: "#f6efc8",
-          card: "#fffef6",
+          DEFAULT: "#f5f6f8",
+          deep: "#eceef1",
+          card: "#ffffff",
         },
-        butter: "#f9de81",
-        terra: "#cf6a3c",
+        butter: "#ffe0d2",
+        terra: "#ed7b2f",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

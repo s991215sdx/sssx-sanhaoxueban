@@ -32,7 +32,7 @@ export function esc(s: unknown): string {
 /** 报告富文本：先转义，再把 **加粗** 转成 <strong>，换行转 <br/>。 */
 function rich(s: string): string {
   return esc(s)
-    .replace(/\*\*!!(.+?)!!\*\*/g, '<strong style="color:#cf6a3c">$1</strong>') // 红色警示：卡点/重大问题
+    .replace(/\*\*!!(.+?)!!\*\*/g, '<strong style="color:#ed7b2f">$1</strong>') // 红色警示：卡点/重大问题
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
 }
@@ -364,14 +364,14 @@ export function e3V37PrintHtml(e3: E3V37Result, studentName?: string): string {
   const rows = (list: { label: string; score: number; level: string }[]) =>
     `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
       <thead><tr>
-        <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:left">项目</th>
-        <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center">得分</th>
-        <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center">判定</th>
+        <th style="border:1px solid #eceef1;padding:5px 8px;text-align:left">项目</th>
+        <th style="border:1px solid #eceef1;padding:5px 8px;text-align:center">得分</th>
+        <th style="border:1px solid #eceef1;padding:5px 8px;text-align:center">判定</th>
       </tr></thead>
       <tbody>${list
         .map(
           (r) =>
-            `<tr><td style="border:1px solid #e4e6cd;padding:5px 8px">${esc(r.label)}</td><td style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center;font-family:monospace;font-weight:700">${r.score}/5</td><td style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center">${esc(r.level)}</td></tr>`,
+            `<tr><td style="border:1px solid #eceef1;padding:5px 8px">${esc(r.label)}</td><td style="border:1px solid #eceef1;padding:5px 8px;text-align:center;font-family:monospace;font-weight:700">${r.score}/5</td><td style="border:1px solid #eceef1;padding:5px 8px;text-align:center">${esc(r.level)}</td></tr>`,
         )
         .join("")}</tbody>
     </table>`;
@@ -409,26 +409,26 @@ export function answerSheetsPrintHtml(
   e3?: E3V37Result | null,
 ): string {
   const ansColor = (r: { bad?: boolean; band?: "bad" | "mid" | "ok" }) =>
-    r.band === "bad" ? "#8f1313" : r.band === "mid" ? "#8a6d1a" : r.band === "ok" ? "#5a9326" : r.bad ? "#c25e3a" : "#35421e";
+    r.band === "bad" ? "#b91c1c" : r.band === "mid" ? "#b7791f" : r.band === "ok" ? "#c43d28" : r.bad ? "#c25e3a" : "#242424";
   const parts: string[] = [];
   /* E3 三阶九能得分速览（得分表口径：每能一行 小计+判定） */
   if (e3 && isE3V37Result(e3)) {
-    const lvColor = (lv: string) => (lv === "卡点" ? "#8f1313" : lv === "待提升" ? "#8a6d1a" : "#5a9326");
+    const lvColor = (lv: string) => (lv === "卡点" ? "#b91c1c" : lv === "待提升" ? "#b7791f" : "#c43d28");
     const sectionRows = (label: string, list: { label: string; score: number; level: string }[], note?: string) =>
-      `<tr><td colspan="3" style="border:1px solid #e4e6cd;padding:5px 8px;background:#f5f3e6;font-weight:700">${esc(label)}${note ? `<span style="font-weight:400;font-size:11px;color:#8b9468">（${esc(note)}）</span>` : ""}</td></tr>` +
+      `<tr><td colspan="3" style="border:1px solid #eceef1;padding:5px 8px;background:#f5f3e6;font-weight:700">${esc(label)}${note ? `<span style="font-weight:400;font-size:11px;color:#999999">（${esc(note)}）</span>` : ""}</td></tr>` +
       list
         .map(
           (r) =>
-            `<tr><td style="border:1px solid #e4e6cd;padding:5px 8px">${esc(r.label)}</td><td style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center;font-family:monospace;font-weight:700;color:${lvColor(r.level)}">${r.score}/5</td><td style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center;font-weight:700;color:${lvColor(r.level)}">${esc(r.level)}</td></tr>`,
+            `<tr><td style="border:1px solid #eceef1;padding:5px 8px">${esc(r.label)}</td><td style="border:1px solid #eceef1;padding:5px 8px;text-align:center;font-family:monospace;font-weight:700;color:${lvColor(r.level)}">${r.score}/5</td><td style="border:1px solid #eceef1;padding:5px 8px;text-align:center;font-weight:700;color:${lvColor(r.level)}">${esc(r.level)}</td></tr>`,
         )
         .join("");
     parts.push(
       h2(`三阶九能得分表（${e3.stageLabel}）`),
       `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
         <thead><tr>
-          <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:left">能力 / 观测点</th>
-          <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center">得分</th>
-          <th style="border:1px solid #e4e6cd;padding:5px 8px;text-align:center">判定</th>
+          <th style="border:1px solid #eceef1;padding:5px 8px;text-align:left">能力 / 观测点</th>
+          <th style="border:1px solid #eceef1;padding:5px 8px;text-align:center">得分</th>
+          <th style="border:1px solid #eceef1;padding:5px 8px;text-align:center">判定</th>
         </tr></thead>
         <tbody>${[
           sectionRows("乐学 · 动力系统", e3.abilities.filter((a) => a.system === "乐学")),
@@ -448,7 +448,7 @@ export function answerSheetsPrintHtml(
         <tbody>${b.rows
           .map(
             (r) =>
-              `<tr style="page-break-inside:avoid"><td style="border-bottom:1px solid #eef0dc;padding:4px 6px;width:52px;font-family:monospace;color:#8b9468;vertical-align:top">${esc(r.no)}.</td><td style="border-bottom:1px solid #eef0dc;padding:4px 6px;vertical-align:top">${esc(r.text)}</td><td style="border-bottom:1px solid #eef0dc;padding:4px 6px;width:200px;text-align:right;font-weight:700;color:${ansColor(r)};vertical-align:top">${esc(r.ans)}</td></tr>`,
+              `<tr style="page-break-inside:avoid"><td style="border-bottom:1px solid #f5f6f8;padding:4px 6px;width:52px;font-family:monospace;color:#999999;vertical-align:top">${esc(r.no)}.</td><td style="border-bottom:1px solid #f5f6f8;padding:4px 6px;vertical-align:top">${esc(r.text)}</td><td style="border-bottom:1px solid #f5f6f8;padding:4px 6px;width:200px;text-align:right;font-weight:700;color:${ansColor(r)};vertical-align:top">${esc(r.ans)}</td></tr>`,
           )
           .join("")}</tbody>
       </table>`,
@@ -462,28 +462,28 @@ export function answerSheetsPrintHtml(
 
 const PRINT_CSS = `
   body { font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color: #333a22; background: #fff; margin: 0; padding: 32px 40px; line-height: 1.75; font-size: 14px; }
-  h1 { font-size: 22px; margin: 0 0 4px; color: #35421e; }
-  h2 { font-size: 16px; margin: 26px 0 8px; color: #35421e; border-left: 4px solid #8ebb3e; padding-left: 10px; page-break-after: avoid; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: #242424; }
+  h2 { font-size: 16px; margin: 26px 0 8px; color: #242424; border-left: 4px solid #ff7a45; padding-left: 10px; page-break-after: avoid; }
   p { margin: 6px 0; }
   ul, ol { margin: 6px 0; padding-left: 22px; }
   li { margin: 4px 0; }
-  strong { color: #35421e; }
-  .meta { color: #8b9468; font-size: 12px; margin-bottom: 18px; }
-  .box { border: 1px solid #e4e6cd; border-radius: 8px; padding: 10px 14px; margin: 8px 0; page-break-inside: avoid; }
-  .lv-ok { border-left: 4px solid #8ebb3e; }
+  strong { color: #242424; }
+  .meta { color: #999999; font-size: 12px; margin-bottom: 18px; }
+  .box { border: 1px solid #eceef1; border-radius: 8px; padding: 10px 14px; margin: 8px 0; page-break-inside: avoid; }
+  .lv-ok { border-left: 4px solid #ff7a45; }
   .lv-warn { border-left: 4px solid #e2c25e; }
   .lv-bad { border-left: 4px solid #c25e3a; }
   .bar-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; margin: 5px 0; page-break-inside: avoid; }
   .bar-label { width: 200px; flex-shrink: 0; }
   .bar-track { flex: 1; height: 10px; background: #f1eedd; border-radius: 6px; overflow: hidden; }
-  .bar-fill { display: block; height: 100%; background: #7cb83c; border-radius: 6px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .bar-val { font-family: monospace; color: #556339; width: 72px; text-align: right; flex-shrink: 0; }
+  .bar-fill { display: block; height: 100%; background: #ed4e38; border-radius: 6px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bar-val { font-family: monospace; color: #595959; width: 72px; text-align: right; flex-shrink: 0; }
   .cards { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
-  .card { border: 1px solid #e4e6cd; border-radius: 8px; padding: 10px 14px; min-width: 140px; flex: 1; }
-  .card-label { font-size: 11.5px; color: #8b9468; }
-  .card-value { font-size: 16px; font-weight: 700; color: #35421e; }
-  .card-note { font-size: 11px; color: #556339; }
-  @media print { body { padding: 12mm; } .bar-fill { background: #7cb83c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  .card { border: 1px solid #eceef1; border-radius: 8px; padding: 10px 14px; min-width: 140px; flex: 1; }
+  .card-label { font-size: 11.5px; color: #999999; }
+  .card-value { font-size: 16px; font-weight: 700; color: #242424; }
+  .card-note { font-size: 11px; color: #595959; }
+  @media print { body { padding: 12mm; } .bar-fill { background: #ed4e38 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 `;
 
 /** 打开打印窗口写入报告 HTML 并调起打印（用户可另存 PDF）。 */

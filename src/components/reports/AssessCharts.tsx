@@ -13,11 +13,11 @@ import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { Multi5Result } from "@contracts/multi5";
 import { MULTI5_DIM_LABEL, MULTI5_DIM_ORDER } from "@contracts/multi5";
 
-const OLIVE = "#556339";
-const GRID = "#d9dcb8";
-const LIME = "#7cb83c";
+const OLIVE = "#595959";
+const GRID = "#eceef1";
+const LIME = "#ed4e38";
 const SKY = "#3d8ec4";
-const AMBER = "#c7a23a";
+const AMBER = "#f2a65a";
 const TERRA = "#c05a3a";
 
 function BlockTitle({ children }: { children: React.ReactNode }) {
@@ -49,7 +49,7 @@ export function HollandRadar({ result, height = 230 }: { result: HollandResult; 
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>
                     <tspan fill={d?.hot ? LIME : OLIVE} fontWeight={700}>{name}</tspan>
-                    <tspan dx={3} fill={d?.hot ? LIME : "#8a916b"} fontWeight={700}>{score}</tspan>
+                    <tspan dx={3} fill={d?.hot ? LIME : "#999999"} fontWeight={700}>{score}</tspan>
                   </text>
                 );
               }}
@@ -90,8 +90,8 @@ export function MbtiBars({ result }: { result: MbtiResult }) {
                 <span className="font-bold" style={{ color: bv > av ? SKY : OLIVE }}>{bv > av ? "▶" : ""} {b}</span>
               </div>
               <div className="mt-0.5 flex h-2.5 overflow-hidden rounded-full bg-olive/8">
-                <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#aeb58e" }} />
-                <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#aeb58e" }} />
+                <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#c9c9c9" }} />
+                <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#c9c9c9" }} />
               </div>
             </div>
           );
@@ -219,7 +219,7 @@ export function SubjectOverallRadar({ result, height = 240 }: { result: SubjectA
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>
                     <tspan fill={d?.weak ? TERRA : OLIVE} fontWeight={700}>{name}</tspan>
-                    <tspan dx={3} fill={d?.weak ? TERRA : "#8a916b"} fontWeight={700}>{score}</tspan>
+                    <tspan dx={3} fill={d?.weak ? TERRA : "#999999"} fontWeight={700}>{score}</tspan>
                   </text>
                 );
               }}
@@ -249,9 +249,9 @@ export function SubjectStageBars({ result, height = 240 }: { result: SubjectAsse
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
             <XAxis dataKey="subject" tick={{ fontSize: 11, fill: OLIVE }} />
-            <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "#8a916b" }} />
+            <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "#999999" }} />
             {stageKeys.map((k) => (
-              <Bar key={k} dataKey={k} fill={colors[k] ?? "#aeb58e"} radius={[3, 3, 0, 0]} barSize={12} />
+              <Bar key={k} dataKey={k} fill={colors[k] ?? "#c9c9c9"} radius={[3, 3, 0, 0]} barSize={12} />
             ))}
           </BarChart>
         </ResponsiveContainer>

@@ -74,7 +74,7 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
   if (finished) {
     return (
       <div className="paper-card mx-auto max-w-lg p-8 text-center">
-        <CheckCircle2 className="mx-auto h-11 w-11 text-[#5a9326]" />
+        <CheckCircle2 className="mx-auto h-11 w-11 text-[#c43d28]" />
         <h2 className="mt-3 text-[19px] font-bold text-olive">综合学习力系统测评完成</h2>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
           基本信息、MBTI、DISC、学习力诊断、学业目标、智能五项都已记录在案。综合报告正在生成，伴学师会结合全部测评为你解读。

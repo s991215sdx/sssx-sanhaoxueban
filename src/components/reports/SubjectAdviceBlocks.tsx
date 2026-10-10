@@ -93,7 +93,7 @@ export function SubjectAdviceBlocks({
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-bold text-olive">{m.subject}</span>
                   {ctx?.pct != null && (
-                    <span className={`mono text-[11px] font-semibold ${ctx.pct >= 80 ? "text-[#5a9326]" : ctx.pct < 60 ? "text-terra" : "text-[#8a6d1a]"}`}>
+                    <span className={`mono text-[11px] font-semibold ${ctx.pct >= 80 ? "text-[#c43d28]" : ctx.pct < 60 ? "text-terra" : "text-[#b7791f]"}`}>
                       得分率 {Math.round(ctx.pct)}%{ctx.gap != null && ctx.gap > 0 ? ` · 距目标 ${Math.round(ctx.gap)} 分` : ""}
                     </span>
                   )}

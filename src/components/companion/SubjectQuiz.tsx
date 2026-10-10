@@ -105,7 +105,7 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
                     <span className="w-14 shrink-0 text-[11.5px] text-olive-soft">{st.stage}</span>
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
                       <div
-                        className={`h-full rounded-full ${st.avg < 2.5 ? "bg-terra" : st.avg < 3.5 ? "bg-[#c7a23a]" : "bg-lime"}`}
+                        className={`h-full rounded-full ${st.avg < 2.5 ? "bg-terra" : st.avg < 3.5 ? "bg-[#f2a65a]" : "bg-lime"}`}
                         style={{ width: `${(st.avg / 5) * 100}%` }}
                       />
                     </div>

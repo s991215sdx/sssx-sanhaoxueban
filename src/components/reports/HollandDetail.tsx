@@ -21,9 +21,9 @@ export default function HollandDetail({ result }: { result: HollandResult }) {
               data={HOLLAND_ORDER.map((k) => ({ dim: `${k}·${HOLLAND_LABEL[k]}`, 得分: result.dims[k] }))}
               outerRadius="72%"
             >
-              <PolarGrid stroke="#d9dcb8" />
-              <PolarAngleAxis dataKey="dim" tick={{ fill: "#556339", fontSize: 12 }} />
-              <Radar dataKey="得分" stroke="#cf6a3c" fill="#cf6a3c" fillOpacity={0.3} strokeWidth={2.5} />
+              <PolarGrid stroke="#eceef1" />
+              <PolarAngleAxis dataKey="dim" tick={{ fill: "#595959", fontSize: 12 }} />
+              <Radar dataKey="得分" stroke="#ed7b2f" fill="#ed7b2f" fillOpacity={0.3} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
         </div>

@@ -3,11 +3,11 @@ import { HeartHandshake, Compass } from "lucide-react";
 import type { E3V27Result, E3Level } from "@contracts/assessments";
 
 const DIM_COLORS: Record<string, string> = {
-  乐学: "#7cb83c",
-  会学: "#cfe07a",
-  善学: "#556339",
+  乐学: "#ed4e38",
+  会学: "#ffb59d",
+  善学: "#595959",
   品格: "#e8a33d",
-  环境: "#8b9468",
+  环境: "#999999",
 };
 
 const LEVEL_CLASS: Record<E3Level, string> = {
