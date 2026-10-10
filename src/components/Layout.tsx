@@ -101,10 +101,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   useSwipeBack();
 
   return (
-    <div className="min-h-screen bg-cream">
-      {/* 桌面侧边栏：可点击右缘按钮折叠为窄图标栏 */}
+    <div className="min-h-screen bg-white">
+      {/* 桌面侧边栏：可点击右缘按钮折叠为窄图标栏（v85b：边栏浅灰底，比右侧白色展示区深一档，对齐 Kimi Work 的深浅分区） */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-cream-card/80 py-6 backdrop-blur transition-all duration-200 md:flex ${
+        className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-[#f2f3f5] py-6 transition-all duration-200 md:flex ${
           collapsed ? "w-[68px] px-2" : "w-60 px-5"
         }`}
       >
@@ -218,7 +218,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* 移动顶栏 */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-white/90 px-4 py-3 backdrop-blur md:hidden">
         <Logo brand={brand} />
         <div className="flex items-center gap-2">
           {showCoach && (
@@ -247,7 +247,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             本机构服务已暂停，部分功能可能不可用。如有疑问请联系机构老师。
           </div>
         )}
-        <div className="mx-auto max-w-5xl px-4 pt-6 md:px-8 md:pt-8">
+        {/* v85b：展示区拉宽近满屏，字和图更大，方便阅读 */}
+        <div className="mx-auto max-w-[1560px] px-4 pt-6 md:px-10 md:pt-8">
           <BackBar />
           {children}
         </div>

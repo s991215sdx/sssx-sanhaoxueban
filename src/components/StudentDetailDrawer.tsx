@@ -52,10 +52,10 @@ export default function StudentDetailDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-olive/30 backdrop-blur-sm" onClick={onClose}>
       <div
-        className={`h-full w-full overflow-y-auto bg-cream p-5 shadow-xl transition-[max-width] ${wide ? "max-w-none" : "max-w-lg"}`}
+        className={`h-full w-full overflow-y-auto bg-white p-5 shadow-xl transition-[max-width] ${wide ? "max-w-none" : "max-w-lg"}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={`flex items-center justify-between ${wide ? "mx-auto max-w-4xl" : ""}`}>
+        <div className={`flex items-center justify-between ${wide ? "mx-auto max-w-[1440px]" : ""}`}>
           <h2 className="text-[17px] font-bold text-olive">学员详情</h2>
           <div className="flex items-center gap-1">
             <button
@@ -77,7 +77,7 @@ export default function StudentDetailDrawer({
             <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
           </div>
         ) : (
-          <div className={`mt-4 space-y-4 ${wide ? "mx-auto max-w-4xl" : ""}`}>
+          <div className={`mt-4 space-y-4 ${wide ? "mx-auto max-w-[1440px]" : ""}`}>
             {/* 档案 */}
             <div className="paper-card p-4">
               <div className="flex items-center gap-3">
