@@ -1,4 +1,4 @@
-import { Compass, Flame, GraduationCap, Heart, Route, School, Star, Target, TrendingUp, Users } from "lucide-react";
+import { Compass, Flame, GraduationCap, Heart, Route, School, Star, Target, TrendingUp, Users, CalendarDays, FileText, PenLine, BookOpen, Sparkles } from "lucide-react";
 import { buildGuidanceReport, PATHWAY_CATS } from "@/data/reports/guidance";
 import type { GuidanceRecord } from "@/data/reports/guidance";
 import { COMBO_COVERAGE, CONSIDER_FACTORS, EARLY_BATCH, SUBJECT_MAJOR_MAP } from "@/data/reports/guidanceData";
@@ -32,6 +32,23 @@ const VERDICT_STYLE: Record<string, string> = {
   慎重: "bg-rose/80 text-cream",
 };
 
+/** V84 学科画像 tone 样式（模仿样例报告 Part2 每科评语卡的标签配色）。 */
+const TONE_STYLE: Record<string, { chip: string; bar: string }> = {
+  优势: { chip: "border-lime/60 bg-lime-pale/70 text-olive", bar: "bg-lime" },
+  良好: { chip: "border-sky/60 bg-sky-50 text-sky-700", bar: "bg-sky" },
+  稳分: { chip: "border-amber/60 bg-amber-50 text-amber-700", bar: "bg-amber" },
+  潜能: { chip: "border-terra/50 bg-terra/10 text-terra", bar: "bg-terra" },
+  待提升: { chip: "border-rose/50 bg-rose-50 text-rose-700", bar: "bg-rose" },
+};
+
+/** V84 报告编号（按姓名+年级稳定哈希，展示用）。 */
+function reportNoOf(name: string | null | undefined, grade: string | null | undefined): string {
+  const s = `${name ?? ""}|${grade ?? ""}|sanhao`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1000000;
+  return `SH${String(h).padStart(6, "0")}`;
+}
+
 function Fold({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
   return (
     <details className="group mt-3 overflow-hidden rounded-xl border border-olive/12 bg-cream/50">
@@ -62,6 +79,10 @@ function GroupDivider({ no, title }: { no: string; title: string }) {
  * 高中 = 选科规划（图表化测评 + 12 门类图 + 三视角选科建议 + 平衡卡 + 分数段路径矩阵）；
  * 初中 = 学科优势与中考路径（全路径图），高中内容折叠参考；
  * 小学 = 兴趣能力启蒙与小升初路径（全路径图），初中/高中内容折叠参考。
+ * v84：模仿《智慧生涯测评报告》（郭老师升学规划样例）完善——封面信息（编号/姓名/日期）、
+ * 测评结果概览（Part1 + SOU 原理）、霍兰德个人侧写（黄框 + 各型特征 bullet）、距离目标差距表、
+ * 学科表现分析（每科画像卡）、推荐专业/职业表格化、未来期望填空卡、给未来自己的一封信、
+ * 推荐专业详情（介绍/课程/应用领域/就业方向）与推荐职业详情（工作内容/技能/前景/路径/趋势）、结尾三条免责声明。
  */
 export default function GuidanceTab({
   data,
@@ -78,6 +99,7 @@ export default function GuidanceTab({
 }) {
   const g = buildGuidanceReport({
     grade: profile?.grade,
+    studentName: profile?.name,
     mbti: data?.mbti,
     disc: data?.disc,
     multi5: data?.multi5 ?? undefined,
@@ -121,7 +143,220 @@ export default function GuidanceTab({
 
   const hasSelfExplore = g.hollandBlock || g.mbtiBlock || g.discBlock || g.multi5Block;
 
+  /* V84：报告封面信息（样例报告封面：编号/姓名/日期）。 */
+  const reportNo = reportNoOf(profile?.name, profile?.grade);
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
   /* ---- 渲染块（纯 JSX 返回，内部不用 hook，可安全条件调用） ---- */
+
+  /** V84 Part1 风格：测评结果概览 + 报告生成原理（SOU 模型）。 */
+  const renderOverview = () => (
+    <div className="paper-card p-5">
+      <div className="flex items-center gap-2">
+        <FileText size={16} className="text-olive" />
+        <h3 className="font-bold text-olive">测评结果概览</h3>
+        <span className="ml-auto text-[11px] text-olive-mute">报告编号 {reportNo}</span>
+      </div>
+      <p className="mt-0.5 text-[12px] leading-relaxed text-olive-mute">
+        六项测评与学业数据的完成全景：做完的给出结论，没做的标出待补——测评越全、成绩越新，后面的分析与推荐越准。
+      </p>
+      <div className="mt-3 space-y-2">
+        {g.overview.map((o) => (
+          <div
+            key={o.label}
+            className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
+              o.status === "done" ? "border-olive/12 bg-cream/60" : "border-dashed border-olive/25 bg-cream/30"
+            }`}
+          >
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold ${
+                o.status === "done" ? "bg-lime text-cream" : "bg-olive/10 text-olive-mute"
+              }`}
+            >
+              {o.status === "done" ? "已完成" : "待测评"}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-olive">
+                {o.label}
+                <span className="ml-2 font-normal text-olive-soft">{o.value}</span>
+              </p>
+              {o.note && <p className="truncate text-[11.5px] text-olive-mute">{o.note}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 rounded-xl border border-olive/12 bg-cream/60 p-3">
+        <p className="text-[12.5px] font-bold text-olive">本报告如何生成（SOU 模型）</p>
+        <div className="mt-1.5 grid gap-2 sm:grid-cols-3">
+          <p className="text-[12px] leading-relaxed text-olive-soft">
+            <b className="text-olive">S · 个体特征</b>——霍兰德兴趣、MBTI 性格、DISC 风格、多元智能与职业锚测评，回答「我是谁」。
+          </p>
+          <p className="text-[12px] leading-relaxed text-olive-soft">
+            <b className="text-olive">O · 选科要求</b>——各专业选考科目门槛与学业成绩要求，回答「现实允许什么」。
+          </p>
+          <p className="text-[12px] leading-relaxed text-olive-soft">
+            <b className="text-olive">U · 学以致用</b>——专业对应的职业出口与发展前景，回答「学完能做什么」。
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  /** V84 Part2 风格：学科表现分析（每科一张画像卡）。 */
+  const renderSubjectCards = () =>
+    g.subjectCards && (
+      <div className="paper-card p-5">
+        <div className="flex items-center gap-2">
+          <BookOpen size={16} className="text-olive" />
+          <h3 className="font-bold text-olive">学科表现分析</h3>
+          <span className="ml-auto text-[11.5px] text-olive-mute">每科一张画像：分数 × 兴趣 × 能力 × 趋势</span>
+        </div>
+        <div className="mt-3 space-y-2.5">
+          {g.subjectCards.map((c) => (
+            <div key={c.name} className="rounded-xl border border-olive/12 bg-cream/60 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[13.5px] font-bold text-olive">{c.name}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-bold ${TONE_STYLE[c.tone].chip}`}>{c.tone}</span>
+                {c.trend === "up" && <span className="text-[11px] font-bold text-lime">↗ +{c.trendPct}%</span>}
+                {c.trend === "down" && <span className="text-[11px] font-bold text-rose">↘ {c.trendPct}%</span>}
+                <b className={`ml-auto text-[14px] ${c.pct >= 70 ? "text-lime" : c.pct >= 60 ? "text-amber" : "text-rose"}`}>{c.pct}%</b>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-olive/8">
+                <div className={`h-full rounded-full ${TONE_STYLE[c.tone].bar}`} style={{ width: `${Math.min(100, c.pct)}%` }} />
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-olive-mute">
+                <span>分数 {c.raw}/{c.full}</span>
+                <span>兴趣倾向 {c.interest > 0 ? `${c.interest} 分（${c.interestFrom}）` : "暂无测评数据"}</span>
+                <span>能力匹配 {c.ability} 分</span>
+              </div>
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-olive-soft">{c.comment}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+
+  /** V84：未来期望填空卡（样例报告「___大学___专业___职业」）。 */
+  const Blank = ({ hint }: { hint?: string | null }) => (
+    <span className="mx-1 inline-block min-w-[6.5em] border-b border-dashed border-olive/40 px-1 text-center text-[12px] font-normal text-olive-mute">
+      {hint ?? "　"}
+    </span>
+  );
+  const renderFutureExpect = () =>
+    g.futureExpect && (
+      <div className="mt-3 rounded-xl border-2 border-dashed border-amber/50 bg-amber-50/40 p-3.5">
+        <p className="flex items-center gap-1.5 text-[13px] font-bold text-olive">
+          <PenLine size={14} className="text-amber" /> 未来期望（写下你的答案）
+        </p>
+        <p className="mt-2 text-[13.5px] font-semibold leading-loose text-olive">
+          我的目标大学：<Blank hint={g.futureExpect.uniHint} />
+          目标专业：<Blank hint={g.futureExpect.majorHints[0] ?? null} />
+          理想职业：<Blank hint={g.futureExpect.careerHints[0] ?? null} />
+        </p>
+        <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
+          数据参考：专业方向 {g.futureExpect.majorHints.join("、") || "待测评补充"}；职业方向 {g.futureExpect.careerHints.join("、") || "待测评补充"}；
+          院校档位 {g.futureExpect.uniHint ?? "录入成绩后给出预估"}。——建议和家人、伴学师一起把它填实。
+        </p>
+      </div>
+    );
+
+  /** V84 Part4 风格：推荐专业详情（介绍/课程/应用领域/就业方向）。 */
+  const renderMajorDetails = () =>
+    isHigh &&
+    g.majorDetails.length > 0 && (
+      <Fold title={`适合学习的专业详情（Top ${g.majorDetails.length}）`} sub="大类介绍 · 核心课程 · 应用领域 · 就业方向">
+        <div className="space-y-3">
+          {g.majorDetails.map((m, i) => (
+            <div key={m.name} className="rounded-xl border border-olive/12 bg-cream/60 p-3.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg bg-olive px-2 py-0.5 text-[11px] font-bold text-cream">{i + 1}</span>
+                <p className="text-[13.5px] font-bold text-olive">{m.name}</p>
+                <span className="rounded-full bg-lime-pale/70 px-2 py-0.5 text-[10.5px] font-semibold text-olive-mute">{m.category}</span>
+              </div>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{m.intro}</p>
+              <p className="mt-2.5 text-[12px] font-bold text-olive">核心课程</p>
+              <div className="mt-1 grid gap-x-4 sm:grid-cols-2">
+                {m.courses.map((c, j) => (
+                  <p key={j} className="text-[12px] leading-relaxed text-olive-mute">· {c}</p>
+                ))}
+              </div>
+              <p className="mt-2.5 text-[12px] font-bold text-olive">专业应用领域</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-olive-mute">{m.fields.join("、")}</p>
+              <p className="mt-2.5 text-[12px] font-bold text-olive">就业方向</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {m.careers.map((c) => (
+                  <span key={c} className="rounded-full bg-olive/8 px-2.5 py-0.5 text-[11.5px] text-olive-soft">{c}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Fold>
+    );
+
+  /** V84 Part5 风格：推荐职业详情（工作内容/职业内容/技能/前景/路径/趋势）。 */
+  const renderCareerDetails = () =>
+    isHigh &&
+    g.careerDetails.length > 0 && (
+      <Fold title={`适合从事的职业详情（Top ${g.careerDetails.length}）`} sub="工作内容 · 职业技能 · 发展前景 · 发展路径">
+        <div className="space-y-3">
+          {g.careerDetails.map((c, i) => (
+            <div key={c.name} className="rounded-xl border border-olive/12 bg-cream/60 p-3.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg bg-olive px-2 py-0.5 text-[11px] font-bold text-cream">{i + 1}</span>
+                <p className="text-[13.5px] font-bold text-olive">{c.name}</p>
+                <span className="rounded-full bg-lime-pale/70 px-2 py-0.5 text-[10.5px] font-semibold text-olive-mute">{c.category}</span>
+              </div>
+              <p className="mt-2 text-[12px] font-bold text-olive">工作内容</p>
+              <ul className="mt-1 space-y-0.5">
+                {c.duties.map((d, j) => (
+                  <li key={j} className="text-[12px] leading-relaxed text-olive-mute">· {d}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[12px] font-bold text-olive">职业内容</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">{c.content}</p>
+              <p className="mt-2 text-[12px] font-bold text-olive">职业技能</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-olive-mute"><b className="text-olive-soft">专业技能：</b>{c.skillsPro.join("；")}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-olive-mute"><b className="text-olive-soft">通用技能：</b>{c.skillsGen.join("；")}</p>
+              <p className="mt-2 text-[12px] font-bold text-olive">发展前景</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">{c.prospect}</p>
+              <p className="mt-2 text-[12px] font-bold text-olive">个人发展路径</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">{c.path}</p>
+              <p className="mt-2 text-[12px] font-bold text-olive">职业的就业趋势</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-olive-soft">{c.trend}</p>
+            </div>
+          ))}
+        </div>
+      </Fold>
+    );
+
+  /** V84 Part3 风格：给未来自己的一封信。 */
+  const renderLetter = () => (
+    <div className="paper-card p-5">
+      <div className="flex items-center gap-2">
+        <Sparkles size={16} className="text-amber" />
+        <h3 className="font-bold text-olive">给未来自己的一封信</h3>
+      </div>
+      <div className="mt-3 rounded-xl border border-amber/30 bg-cream/80 p-4">
+        {g.letterParas.map((p, i) => (
+          <p
+            key={i}
+            className={
+              i === g.letterParas.length - 1
+                ? "mt-3 text-right text-[13px] font-semibold text-olive"
+                : i > 0
+                  ? "mt-2 text-[13px] leading-loose text-olive-soft"
+                  : "text-[13px] leading-loose text-olive-soft"
+            }
+          >
+            {p}
+          </p>
+        ))}
+        <p className="mt-5 text-right text-[12px] text-olive-mute">签名：＿＿＿＿＿＿</p>
+      </div>
+    </div>
+  );
 
   const renderAcademics = () =>
     g.academicsBlock && (
@@ -161,6 +396,40 @@ export default function GuidanceTab({
         <p className="mt-3 text-[12.5px] leading-relaxed text-olive-mute">
           得分率 = 得分 ÷ 满分，比原始分更可比。{records && records.length >= 2 ? "下方曲线来自多次成绩记录。" : "多次录入成绩后，下方会出现变化曲线与趋势判断。"}
         </p>
+        {g.gapTable && g.gapTable.rows.some((r) => r.targetRaw != null) && (
+          <div className="mt-3 border-t border-olive/10 pt-3">
+            <p className="text-[13px] font-bold text-olive">距离目标差距表</p>
+            <p className="mt-0.5 text-[11.5px] leading-relaxed text-olive-mute">目标分取自「我的档案」里填写的中高考目标；分差 = 目标 − 目前。</p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[480px] border-collapse text-[12px]">
+                <thead>
+                  <tr className="border-b border-olive/15 text-left text-olive-mute">
+                    <th className="py-1.5 pr-2 font-semibold">学科</th>
+                    <th className="py-1.5 pr-2 text-center font-semibold">目前分数</th>
+                    <th className="py-1.5 pr-2 text-center font-semibold">目标分数</th>
+                    <th className="py-1.5 pr-2 text-center font-semibold">分差</th>
+                    <th className="py-1.5 text-center font-semibold">得分率</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.gapTable.rows
+                    .filter((r) => r.targetRaw != null)
+                    .map((r) => (
+                      <tr key={r.name} className="border-b border-olive/8 last:border-0">
+                        <td className="py-1.5 pr-2 font-semibold text-olive">{r.name}</td>
+                        <td className="py-1.5 pr-2 text-center text-olive-soft">{r.raw} / {r.full}</td>
+                        <td className="py-1.5 pr-2 text-center text-olive-soft">{r.targetRaw}</td>
+                        <td className={`py-1.5 pr-2 text-center font-bold ${(r.gapRaw ?? 0) <= 0 ? "text-lime" : (r.gapRaw ?? 0) >= 15 ? "text-rose" : "text-amber"}`}>
+                          {r.gapRaw != null ? (r.gapRaw > 0 ? `+${r.gapRaw}` : `${r.gapRaw}`) : "—"}
+                        </td>
+                        <td className="py-1.5 text-center text-olive-soft">{r.pct}%</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
         {records && records.length >= 2 && (
           <div className="mt-3 border-t border-olive/10 pt-3">
             <ScoreTrendChart records={records as ScoreRecord[]} />
@@ -194,6 +463,27 @@ export default function GuidanceTab({
             {data?.holland && (
               <div className="mt-2 rounded-xl border border-olive/10 bg-cream/40 p-2">
                 <HollandRadar result={data.holland} />
+              </div>
+            )}
+            {g.hollandDeep && (
+              <div className="mt-2 rounded-xl border border-amber/50 bg-amber-50/70 p-3">
+                <p className="text-[12.5px] font-bold text-olive">
+                  个人侧写 · {g.hollandDeep.code} 型<span className="ml-1.5 font-normal text-olive-mute">{g.hollandDeep.keywords}</span>
+                </p>
+                {g.hollandDeep.types.map((t) => (
+                  <div key={t.key} className="mt-2 first:mt-1.5">
+                    <p className="text-[12.5px] font-bold text-olive">
+                      {t.label}型 <span className="font-normal text-olive-mute">{t.score} 分</span>
+                    </p>
+                    <p className="mt-0.5 text-[12px] leading-relaxed text-olive-soft">{t.trait}</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {t.studyImpact.map((s, i) => (
+                        <li key={i} className="text-[12px] leading-relaxed text-olive-mute">· {s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                <p className="mt-2 text-[11.5px] leading-relaxed text-olive-mute">{g.hollandDeep.relationNote}</p>
               </div>
             )}
             {g.anchorBlock && (
@@ -330,34 +620,65 @@ export default function GuidanceTab({
         {g.majors.length > 0 && (
           <div className={`mt-3 ${g.disciplines.length > 0 ? "border-t border-olive/10 pt-3" : ""}`}>
             <p className="text-[13px] font-bold text-olive">推荐专业方向（结合选科要求）</p>
-            <div className="mt-2 space-y-2">
-              {g.majors.map((m) => (
-                <div key={m.name} className="rounded-xl border border-olive/12 bg-cream/60 p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[13px] font-bold text-olive">{m.name}</span>
-                    <span className="rounded-full bg-lime-pale/70 px-2 py-0.5 text-[11px] font-semibold text-olive-mute">{m.why}</span>
-                    {m.req && <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">选科要求：{m.req}</span>}
-                  </div>
-                  {m.gateNote && <p className={`mt-1 text-[12px] leading-relaxed ${m.gateNote.includes("不足") ? "text-rose" : "text-olive-mute"}`}>{m.gateNote}</p>}
-                </div>
-              ))}
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[440px] border-collapse text-[12px]">
+                <thead>
+                  <tr className="border-b border-olive/15 text-left text-olive-mute">
+                    <th className="py-1.5 pr-2 font-semibold">专业名称</th>
+                    <th className="py-1.5 pr-2 font-semibold">推荐依据</th>
+                    <th className="py-1.5 text-center font-semibold">选科要求</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.majors.map((m) => (
+                    <tr key={m.name} className="border-b border-olive/8 align-top last:border-0">
+                      <td className="py-1.5 pr-2 font-semibold text-olive">
+                        {m.name}
+                        {m.gateNote && (
+                          <span className={`block text-[11px] font-normal leading-snug ${m.gateNote.includes("不足") ? "text-rose" : "text-olive-mute"}`}>{m.gateNote}</span>
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-2 text-olive-soft">{m.why}</td>
+                      <td className="py-1.5 text-center">
+                        {m.req ? (
+                          <span className="inline-block rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">{m.req}</span>
+                        ) : (
+                          <span className="text-olive-mute">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
         {g.industries.length > 0 && (
           <div className={`mt-3 ${g.disciplines.length > 0 || g.majors.length > 0 ? "border-t border-olive/10 pt-3" : ""}`}>
-            <p className="text-[13px] font-bold text-olive">行业方向参考</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {g.industries.map((i) => (
-                <div key={i.name} className="rounded-full border border-olive/12 bg-cream/60 px-3 py-1.5 text-[12.5px]">
-                  <b className="text-olive">{i.name}</b>
-                  <span className="ml-1.5 text-olive-mute">{i.why}</span>
-                </div>
-              ))}
+            <p className="text-[13px] font-bold text-olive">推荐职业方向</p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[440px] border-collapse text-[12px]">
+                <thead>
+                  <tr className="border-b border-olive/15 text-left text-olive-mute">
+                    <th className="py-1.5 pr-2 font-semibold">职业方向</th>
+                    <th className="py-1.5 font-semibold">匹配依据</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.industries.map((i) => (
+                    <tr key={i.name} className="border-b border-olive/8 last:border-0">
+                      <td className="py-1.5 pr-2 font-semibold text-olive">{i.name}</td>
+                      <td className="py-1.5 text-olive-soft">{i.why}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
+
+        {renderFutureExpect()}
       </div>
     );
 
@@ -743,7 +1064,15 @@ export default function GuidanceTab({
           {g.missing.length > 0 && <>；再补充 {g.missing.join("、")} 会更准</>}
           。{isHigh ? <>回答三个问题：<b className="text-olive">选什么科 · 学什么专业 · 走什么路径</b>。</> : <>聚焦当下：<b className="text-olive">强什么 · 怎么学 · 下一步怎么走</b>。</>}
         </p>
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-olive/10 pt-2 text-[11.5px] text-olive-mute">
+          <span className="flex items-center gap-1"><CalendarDays size={12} /> 报告编号 {reportNo}</span>
+          {profile?.name && <span>学生：{profile.name}</span>}
+          {profile?.grade && <span>年级：{profile.grade}</span>}
+          <span>生成日期：{todayStr}</span>
+        </div>
       </div>
+
+      {renderOverview()}
 
       {renderAcademics()}
 
@@ -758,6 +1087,9 @@ export default function GuidanceTab({
             ? "小学阶段的测评看倾向、不看定论：兴趣和能力方向比分数更值得记住。"
             : "测评与成绩合起来看：兴趣在哪、能力底子在哪、哪些学科正在成为优势。",
       )}
+
+      {/* V84 Part2：学科表现分析（每科一张画像卡） */}
+      {renderSubjectCards()}
 
       {/* 4.2-4.4：高中为主体；初小为学科方案 + 高中内容折叠参考 */}
       {isHigh ? (
@@ -799,6 +1131,7 @@ export default function GuidanceTab({
               {renderScorecard()}
               {renderQuadrant()}
               {renderCombos()}
+              {renderFutureExpect()}
             </div>
           )}
           {renderHighSchoolReference()}
@@ -828,6 +1161,10 @@ export default function GuidanceTab({
 
       {/* 5.2 冲稳保（仅高中） */}
       {renderSchoolPlan()}
+
+      {/* V84 Part4/Part5：推荐专业详情 + 推荐职业详情（高中版） */}
+      {renderMajorDetails()}
+      {renderCareerDetails()}
 
       {/* 小学版：初中升学参考折叠 */}
       {isPrimary && (
@@ -866,10 +1203,24 @@ export default function GuidanceTab({
         </div>
       )}
 
-      {/* 免责声明 */}
-      <p className="px-2 text-center text-[11.5px] leading-relaxed text-olive-mute">
-        本报告基于测评与成绩数据生成，仅供升学规划参考；选科与志愿请以学校正式通知、省级招考政策与个人意愿为准。
-      </p>
+      {/* V84 Part3：给未来自己的一封信 */}
+      {renderLetter()}
+
+      {/* 免责声明（样例报告结尾三条） */}
+      <div className="paper-card p-4">
+        <div className="space-y-1.5">
+          {[
+            "本报告对你的个人特点进行了详细的描述，是科学的参考资料，但不是唯一的决策依据。",
+            "测评的目的是帮助你拓宽思路、接受更多的可能，而非限制你的选择；报告结果没有「好」与「坏」之分，但不同的兴趣倾向会让你的选择空间大小不同，需要甄别优劣。",
+            "本报告中的专业与职业建议仅作为你学业生涯发展规划的参考。",
+          ].map((t, i) => (
+            <p key={i} className="flex gap-2 text-[11.5px] leading-relaxed text-olive-mute">
+              <span className="shrink-0 font-bold text-lime">{i + 1}.</span>
+              {t}
+            </p>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

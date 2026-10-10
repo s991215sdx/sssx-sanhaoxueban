@@ -18,6 +18,8 @@ import { DISC_REPORTS } from "@/data/reports/disc";
 import { buildMulti5Report } from "@contracts/multi5";
 import { DISCIPLINE_CATS, SUBJECT_COVERAGE_SCORE, pickSchoolTiers } from "@/data/reports/guidanceData";
 import type { SchoolTier } from "@/data/reports/guidanceData";
+import { getMajorDetail, getCareerDetail } from "@/data/reports/careerData";
+import type { MajorDetail, CareerDetail } from "@/data/reports/careerData";
 
 /* ---------------------------------- 类型 ---------------------------------- */
 
@@ -89,6 +91,51 @@ export type GuidanceReport = {
   parentTips: string[];
   /** 分阶段行动建议。 */
   actionTips: { phase: string; text: string }[];
+  /* ---- V84：模仿《智慧生涯测评报告》新增板块 ---- */
+  /** 测评结果概览（Part1 风格：每项测评一行结论 + 完成态）。 */
+  overview: { label: string; value: string; status: "done" | "todo"; note: string }[];
+  /** 霍兰德深度解读：个人侧写 + 各型特征 bullet。 */
+  hollandDeep: {
+    code: string;
+    keywords: string;
+    relationNote: string;
+    types: { key: HollandKey; label: string; score: number; trait: string; studyImpact: string[] }[];
+  } | null;
+  /** 距离目标差距表（录了目标分数才生成）。 */
+  gapTable: {
+    rows: {
+      name: string;
+      raw: number;
+      full: number;
+      pct: number;
+      targetRaw: number | null;
+      targetPct: number | null;
+      gapRaw: number | null;
+      gapPct: number | null;
+    }[];
+  } | null;
+  /** 学科表现分析：每科一张画像卡（分数/兴趣/能力/趋势/评语）。 */
+  subjectCards: {
+    name: string;
+    pct: number;
+    raw: number;
+    full: number;
+    trend: "up" | "down" | "flat" | null;
+    trendPct: number | null;
+    interest: number;
+    interestFrom: string;
+    ability: number;
+    tone: "优势" | "良好" | "稳分" | "潜能" | "待提升";
+    comment: string;
+  }[] | null;
+  /** 未来期望：目标大学/专业/职业填空卡（自动预填建议值）。 */
+  futureExpect: { uniHint: string | null; majorHints: string[]; careerHints: string[] } | null;
+  /** 给未来自己的一封信（自动生成）。 */
+  letterParas: string[];
+  /** 推荐专业详情（含课程/应用领域/就业方向）。 */
+  majorDetails: MajorDetail[];
+  /** 推荐职业详情（含工作内容/技能/前景/路径）。 */
+  careerDetails: CareerDetail[];
 };
 
 /* ---------------------------------- 选科要求知识库 ---------------------------------- */
@@ -231,6 +278,8 @@ const DISC_GUIDANCE: Record<string, { roleStyle: string; scene: string }> = {
 
 export type GuidanceInput = {
   grade?: string | null;
+  /** 学生姓名（给未来自己的一封信落款用）。 */
+  studentName?: string | null;
   mbti?: MbtiResult | null;
   disc?: DiscResult | null;
   multi5?: Multi5Result | null;
@@ -812,6 +861,148 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
     parentTips.push(`孩子当前平均得分率约 ${academicsBlock.avgPct}%，与其焦虑排名，不如先抓「优势学科」建立信心，再逐个解决目标差距大的科目。`);
   }
 
+  /* ---- V84：测评结果概览 / 霍兰德深度 / 差距表 / 学科卡 / 未来期望 / 信 / 详情库 ---- */
+
+  /* 测评结果概览（Part1 风格）。 */
+  const overview: GuidanceReport["overview"] = [
+    holland
+      ? { label: "霍兰德职业兴趣", value: `${holland.code} 型`, status: "done", note: holland.keywords }
+      : { label: "霍兰德职业兴趣", value: "待测评", status: "todo", note: "完成后这里会给出你的兴趣代码（如 SIA）" },
+    mbti
+      ? { label: "MBTI 职业性格", value: `${mbtiBlock?.type ?? mbti.type.toUpperCase()} · ${mbtiBlock?.name ?? ""}`, status: "done", note: "影响学习打法与适合的专业气质" }
+      : { label: "MBTI 职业性格", value: "待测评", status: "todo", note: "完成后补充性格与学习风格分析" },
+    disc
+      ? { label: "DISC 行为风格", value: `${discBlock?.name ?? disc.primary.toUpperCase()} 型`, status: "done", note: "影响升学路径的打法选择" }
+      : { label: "DISC 行为风格", value: "待测评", status: "todo", note: "完成后补充行为风格分析" },
+    multi5
+      ? { label: "多元智能五项", value: multi5Block?.length ? `最强：${multi5Block[0].label} ${multi5Block[0].score}` : "已测评", status: "done", note: "能力底子的画像" }
+      : { label: "多元智能五项", value: "待测评", status: "todo", note: "完成后补充能力优势分析" },
+    anchor
+      ? { label: "职业锚", value: anchorBlock?.length ? `主导：${anchorBlock[0].label}` : "已测评", status: "done", note: "你最看重的职业回报是什么" }
+      : { label: "职业锚", value: "待测评", status: "todo", note: "完成后补充择业价值观分析" },
+    academicsBlock
+      ? { label: "学业成绩", value: `平均得分率 ${academicsBlock.avgPct}%`, status: "done", note: academicsBlock.examName }
+      : { label: "学业成绩", value: "待录入", status: "todo", note: "在「我的档案」录入后报告会更准" },
+  ];
+
+  /* 霍兰德深度解读：个人侧写 + 各型特征 bullet（样例报告 Part1·职业兴趣分析）。 */
+  const hollandDeep: GuidanceReport["hollandDeep"] = (() => {
+    if (!holland || !hollandBlock) return null;
+    const rep = buildHollandReport(holland);
+    return {
+      code: rep.code,
+      keywords: rep.keywords,
+      relationNote: rep.relationNote,
+      types: rep.top3.map((x) => {
+        const dim = rep.dims.find((d) => d.key === x.key);
+        return { key: x.key, label: x.label, score: x.score, trait: dim?.trait ?? "", studyImpact: dim?.studyImpact ?? [] };
+      }),
+    };
+  })();
+
+  /* 距离目标差距表（样例报告「距离目标大学/专业」表）。 */
+  const gapTable: GuidanceReport["gapTable"] = academicsBlock
+    ? {
+        rows: academicsBlock.rows.map((r) => {
+          const targetRaw = r.targetPct != null ? Math.round(((r.targetPct / 100) * r.full) * 10) / 10 : null;
+          const gapRaw = targetRaw != null ? Math.round((targetRaw - r.raw) * 10) / 10 : null;
+          return { name: r.name, raw: r.raw, full: r.full, pct: r.pct, targetRaw, targetPct: r.targetPct, gapRaw, gapPct: r.gap };
+        }),
+      }
+    : null;
+
+  /* 学科表现分析：每科一张画像卡（样例报告 Part2「学科表现分析」）。 */
+  let subjectCards: GuidanceReport["subjectCards"] = null;
+  if (academicsBlock) {
+    const quadrantOf = (n: string) => matrix?.find((m) => m.name === n)?.quadrant;
+    const interestSource = (n: string): string => {
+      const fromH =
+        !!holland && holland.top3.some((k) => HOLLAND_SUBJECTS[k].includes(n));
+      const fromM =
+        !!multi5 &&
+        (Object.entries(MULTI5_SUBJECT_BOOST) as [Multi5Key, string[]][]).some(([k, arr]) => arr.includes(n) && (multi5!.dims[k] ?? 0) >= 70);
+      if (fromH && fromM) return "霍兰德兴趣 + 多元智能";
+      if (fromH) return "霍兰德兴趣映射";
+      if (fromM) return "多元智能加成";
+      return "综合评估";
+    };
+    subjectCards = academicsBlock.rows
+      .slice()
+      .sort((a, b) => b.pct - a.pct)
+      .map((r) => {
+        const interest = interestMap.get(r.name) ?? 0;
+        const ability = abilityOf(r.name);
+        const q = quadrantOf(r.name);
+        const tone: NonNullable<typeof subjectCards>[number]["tone"] =
+          r.pct >= 80 ? "优势" : r.pct >= 70 ? "良好" : interest >= 70 && r.pct < 70 ? "潜能" : r.pct >= 60 ? "稳分" : "待提升";
+        const parts: string[] = [];
+        if (tone === "优势") parts.push(`${r.name}是当前的优势学科：学得顺、考得好，继续配最多的资源，把它打造成升学名片。`);
+        else if (tone === "良好") parts.push(`${r.name}基础扎实，再往深走一步（综合题/拓展）就能升级成优势学科。`);
+        else if (tone === "潜能") parts.push(`${r.name}兴趣浓厚但成绩还没跟上——先查方法（错题归因 + 主动请教老师），往往是提分性价比最高的地方。`);
+        else if (tone === "稳分") parts.push(`${r.name}成绩尚可、兴趣一般，适合作为「稳分组合」，不必强扭成热爱。`);
+        else parts.push(`${r.name}暂时落后：先回到课本与基础题，把错题按「粗心/不会/没时间」归因后再逐个击破。`);
+        if (q === "潜能学科") parts.push("兴趣×学业四象限把它列为「潜能学科」。");
+        if (q === "谨慎学科") parts.push("注意它在四象限中属于「谨慎学科」，投入前先想清楚目标。");
+        if (interest >= 75) parts.push(`测评显示你对这门课兴趣浓厚（兴趣分 ${interest}）。`);
+        else if (interest <= 30) parts.push("兴趣测评显示它并非你的热情所在，靠方法而非热情驱动。");
+        if (r.trend === "up") parts.push(`最近呈上升趋势（+${r.trendPct}%），趁热打铁。`);
+        if (r.trend === "down") parts.push(`最近有所下滑（${r.trendPct}%），先找原因再换方法。`);
+        if ((r.gap ?? 0) >= 15) parts.push(`距离目标还差 ${r.gap} 个百分点，列为本学期重点攻克项。`);
+        return { name: r.name, pct: r.pct, raw: r.raw, full: r.full, trend: r.trend, trendPct: r.trendPct, interest, interestFrom: interestSource(r.name), ability, tone, comment: parts.join("") };
+      });
+  }
+
+  /* 未来期望填空卡（样例报告「未来期望：___大学___专业___职业」）。 */
+  const futureExpect: GuidanceReport["futureExpect"] =
+    majors.length > 0 || industries.length > 0 || schoolPlan
+      ? {
+          uniHint: schoolPlan ? `${schoolPlan.tier} 档（预估 ${schoolPlan.estScore} 分）` : null,
+          majorHints: majors.slice(0, 3).map((m) => m.name),
+          careerHints: industries.slice(0, 3).map((i) => i.name),
+        }
+      : null;
+
+  /* 给未来自己的一封信（样例报告 Part3，自动生成 + 留白）。 */
+  const letterParas: string[] = [];
+  {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()} 年 ${today.getMonth() + 1} 月 ${today.getDate()} 日`;
+    letterParas.push(`亲爱的${input.studentName ?? "未来的我"}：你好！我是 ${dateStr} 的你，正在${grade ? `${grade}的教室里` : "校园里"}写下这封信。`);
+    if (academicsBlock?.avgPct != null) {
+      const sortedRows = academicsBlock.rows.slice().sort((a, b) => b.pct - a.pct);
+      const best = sortedRows[0];
+      const worstGap = academicsBlock.rows.filter((r) => r.gap != null).sort((a, b) => (b.gap ?? 0) - (a.gap ?? 0))[0];
+      letterParas.push(
+        `此刻的学业画卷是这样：${academicsBlock.examName}平均得分率 ${academicsBlock.avgPct}%，最顺手的是${best.name}（${best.pct}%）` +
+          (worstGap ? `，最想攻克的是${worstGap.name}（距离目标还差 ${worstGap.gap} 个百分点）。` : "。"),
+      );
+    }
+    const who: string[] = [];
+    if (hollandBlock) who.push(`霍兰德兴趣代码「${hollandBlock.code}」——${hollandBlock.top3.map((t) => t.label).join("、")}`);
+    if (mbtiBlock) who.push(`MBTI ${mbtiBlock.type}（${mbtiBlock.name}）`);
+    if (multi5Block?.length) who.push(`最强智能是${multi5Block[0].label}`);
+    if (who.length) letterParas.push(`关于「我是谁」，测评给出的坐标是：${who.join("；")}。它们不是标签，而是你在认识自己路上留下的脚印。`);
+    const where: string[] = [];
+    if (majors.length) where.push(`适合的专业方向有${majors.slice(0, 3).map((m) => m.name).join("、")}`);
+    if (industries.length) where.push(`向往的职业方向有${industries.slice(0, 3).map((i) => i.name).join("、")}`);
+    if (where.length) letterParas.push(`关于「想去哪里」，${where.join("；")}。请把它们当作指南针而不是紧箍咒——路线可以调整，方向感是自己的。`);
+    letterParas.push(
+      highSchool
+        ? "高中的路很长也很快。愿你在每一次选择前多一点从容，在每一次想放弃时多一点坚持；愿选科不人云亦云，努力不负晨光。三年后再打开这封信时，愿你已站在自己选择的风景里。"
+        : "成长的路很长也很快。愿你在每一次选择前多一点从容，在每一次想放弃时多一点坚持；愿你眼里的光，比成绩单上的数字更亮。",
+    );
+    letterParas.push("——来自今天的你");
+  }
+
+  /* 推荐专业/职业详情（匹配静态库，样例报告 Part4/Part5）。 */
+  const majorDetails = majors.slice(0, 5).map((m) => getMajorDetail(m.name)).filter((x): x is MajorDetail => x != null);
+  const careerSeen = new Set<string>();
+  const careerDetails = industries
+    .slice(0, 6)
+    .map((i) => getCareerDetail(i.name))
+    .filter((x): x is CareerDetail => x != null && !careerSeen.has(x.name) && (careerSeen.add(x.name), true))
+    .slice(0, 5);
+
   /* ---- 标题 ---- */
   const strongMajors = matrix?.filter((m) => m.quadrant === "优势学科") ?? [];
   const headline = strongMajors.length > 0
@@ -843,5 +1034,13 @@ export function buildGuidanceReport(input: GuidanceInput): GuidanceReport | null
     secondDecision,
     parentTips,
     actionTips,
+    overview,
+    hollandDeep,
+    gapTable,
+    subjectCards,
+    futureExpect,
+    letterParas,
+    majorDetails,
+    careerDetails,
   };
 }
