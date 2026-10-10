@@ -166,6 +166,6 @@ describe("v84 前端接线", () => {
     need(src, "不是唯一的决策依据", "免责声明三条");
   });
   it("BUILD_TAG 递增到 v84", () => {
-    need(read("api/router.ts"), 'BUILD_TAG = "v84-2026-10-10"', "版本号");
+    need(read("api/router.ts"), 'BUILD_TAG = "v85-2026-10-10"', "版本号");
   });
 });
