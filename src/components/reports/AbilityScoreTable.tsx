@@ -8,7 +8,7 @@ import { useState } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
-import { e3v37LevelTextClass, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
+import { e3v37LevelTextClass, e3v37LevelBarColor, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
 /** 1-5 分选项文案（与作答端一致）：显示原答案，得分列显示换算后的有效分。 */
 const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
@@ -52,6 +52,14 @@ function AbilityGroup({
           <span className="w-3.5 shrink-0" />
         )}
         <span className="min-w-0 flex-1">
+          {/* v103：判定圆点标识（红=卡点/琥珀=待提升/绿=正常），预警一眼可辨 */}
+          {sub.level && (
+            <span
+              title={sub.level}
+              className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle"
+              style={{ background: e3v37LevelBarColor(sub.level) }}
+            />
+          )}
           <span className={`text-[13px] font-semibold ${sub.level ? e3v37LevelTextClass(sub.level) : "text-olive"}`}>{sub.label}</span>
           {sub.note && <span className="ml-1 text-[10.5px] text-olive-mute">（{sub.note}）</span>}
           {hasItems && (
@@ -79,7 +87,10 @@ function AbilityGroup({
           <tbody>
             {qItems.map((it) => (
               <tr key={it.no}>
-                <td className="border-t border-border px-3 py-1.5 text-olive-soft">
+                <td
+                  className="border-t border-l-[3px] border-border px-3 py-1.5 text-olive-soft"
+                  style={{ borderLeftColor: e3v37LevelBarColor(it.level) }}
+                >
                   <span className="mono text-[11px] text-olive-mute">{it.no}.</span>{" "}
                   <span className="font-medium">{it.kp}</span>
                   <span className="mt-0.5 block text-[11px] leading-snug text-olive-mute">{it.text}</span>
