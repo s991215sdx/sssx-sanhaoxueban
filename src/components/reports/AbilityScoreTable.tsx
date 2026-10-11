@@ -87,10 +87,10 @@ function AbilityGroup({
           <tbody>
             {qItems.map((it) => (
               <tr key={it.no}>
-                <td className="relative border-t border-border px-3 py-1.5 text-olive-soft">
-                  {/* v113：左侧短圆角色条（约 28px 高、圆角竖条），替代原通高 3px 边框 */}
+                <td className="relative border-t border-border py-1.5 pl-7 pr-3 text-olive-soft">
+                  {/* v117：左侧短圆角色条（约 28px 高、圆角竖条），与文字留足边距 */}
                   <span
-                    className="absolute left-1.5 top-1/2 h-7 w-[3.5px] -translate-y-1/2 rounded-full"
+                    className="absolute left-2.5 top-1/2 h-7 w-[3.5px] -translate-y-1/2 rounded-full"
                     style={{ background: e3v37LevelBarColor(it.level) }}
                   />
                   <span className="mono text-[11px] text-olive-mute">{it.no}.</span>{" "}
