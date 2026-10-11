@@ -50,7 +50,7 @@ export default function StudentDetailDrawer({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-brand/30 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/25 backdrop-blur-sm" onClick={onClose}>
       <div
         className={`h-full w-full overflow-y-auto bg-cream p-5 shadow-xl transition-[max-width] ${wide ? "max-w-none" : "max-w-lg"}`}
         onClick={(e) => e.stopPropagation()}
