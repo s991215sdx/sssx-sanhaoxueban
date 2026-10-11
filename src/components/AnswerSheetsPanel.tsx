@@ -73,41 +73,53 @@ export default function AnswerSheetsPanel({
         </div>
       )}
 
-      {/* 各套测评答题卷（逐题作答） */}
-      <div className="mt-3 space-y-2">
-        {blocks.map((b) => (
-          <details key={b.key} id={`sheet-${b.key}`} className="rounded-xl border border-border bg-cream/60 px-4 py-2.5">
-            <summary className="flex cursor-pointer items-center gap-2 text-[13px] font-semibold text-olive">
-              <ClipboardList size={14} className="shrink-0 text-olive-mute" />
-              <span className="flex-1">{b.title}</span>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  downloadReport(`答题卷 · ${b.title}`, answerSheetsPrintHtml([b], null), studentName);
-                }}
-                className={printBtn}
-              >
-                <Printer size={12} /> 打印
-              </button>
-            </summary>
-            {b.note && <p className="mt-1.5 text-[11.5px] text-olive-mute">{b.note}</p>}
-            <ol className="mt-2 space-y-1.5">
-              {b.rows.map((row, ri) => (
-                <li key={`${row.no}-${ri}`} className="flex gap-2 text-[12.5px] leading-relaxed text-olive-soft">
-                  <span className="mono shrink-0 text-olive-mute">{row.no}.</span>
-                  <span className="flex-1">{row.text}</span>
-                  <span
-                    className={`shrink-0 font-semibold ${
-                      row.band ? BAND_CLASS[row.band] : row.bad ? "text-terra" : "text-olive"
-                    }`}
-                  >
-                    {row.ans}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </details>
-        ))}
+      {/* 各套测评答题卷（逐题作答）——v114：改信标 + 细线分隔的清爽列表样式 */}
+      <div className="mt-3 divide-y divide-border/70">
+        {blocks.map((b) => {
+          /* 标题末尾的（日期）拆出来单独灰色显示；E3 系显示 E 信标，量表类显示 S */
+          const m = b.title.match(/^(.*?)（(\d{4}\/\d{1,2}\/\d{1,2})）$/);
+          const mainTitle = m ? m[1] : b.title;
+          const dateStr = m ? m[2] : null;
+          const letter = b.key.startsWith("e3") ? "E" : "S";
+          return (
+            <details key={b.key} id={`sheet-${b.key}`} className="group">
+              <summary className="flex cursor-pointer items-center gap-3 py-3 transition-colors hover:bg-cream-deep/40">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EFF3F1] text-[12.5px] font-bold text-olive-soft">
+                  {letter}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-olive">
+                  {mainTitle}
+                  {dateStr && <span className="ml-1.5 text-[12px] font-normal text-olive-mute">· {dateStr}</span>}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    downloadReport(`答题卷 · ${b.title}`, answerSheetsPrintHtml([b], null), studentName);
+                  }}
+                  className={printBtn}
+                >
+                  <Printer size={12} /> 打印
+                </button>
+              </summary>
+              {b.note && <p className="mt-1 text-[11.5px] text-olive-mute pl-12">{b.note}</p>}
+              <ol className="mt-2 space-y-1.5 pb-2 pl-12">
+                {b.rows.map((row, ri) => (
+                  <li key={`${row.no}-${ri}`} className="flex gap-2 text-[12.5px] leading-relaxed text-olive-soft">
+                    <span className="mono shrink-0 text-olive-mute">{row.no}.</span>
+                    <span className="flex-1">{row.text}</span>
+                    <span
+                      className={`shrink-0 font-semibold ${
+                        row.band ? BAND_CLASS[row.band] : row.bad ? "text-terra" : "text-olive"
+                      }`}
+                    >
+                      {row.ans}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          );
+        })}
       </div>
     </div>
   );
