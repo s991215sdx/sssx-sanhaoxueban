@@ -78,17 +78,20 @@ export default function StudentDetailDrawer({
           </div>
         ) : (
           <div className={`mt-4 space-y-4 ${wide ? "mx-auto max-w-4xl" : ""}`}>
-            {/* 档案 */}
-            <div className="paper-card p-4">
+            {/* 档案（v107：翡翠绿→深橄榄绿渐变头卡，高级质感） */}
+            <div
+              className="rounded-2xl border border-white/20 p-4 text-white shadow-[0_8px_24px_-10px_rgba(11,61,46,0.45)]"
+              style={{ backgroundImage: "linear-gradient(135deg, #0EA875 0%, #0B8A63 45%, #0B3D2E 100%)" }}
+            >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-cream">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-[15px] font-bold text-brand shadow-sm">
                   {(data.profile?.name || data.user.name || "学")[0]}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-semibold text-olive">
+                  <div className="text-[15px] font-semibold text-white">
                     {data.profile?.name || data.user.name || "未命名"}
                   </div>
-                  <div className="mono mt-0.5 text-[11px] text-olive-mute">
+                  <div className="mono mt-0.5 text-[11px] text-white/75">
                     {[data.user.phone, data.profile?.grade, data.profile?.school, data.profile?.targetSchool && `目标：${data.profile.targetSchool}`]
                       .filter(Boolean)
                       .join(" · ") || "档案未完善"}
@@ -102,9 +105,9 @@ export default function StudentDetailDrawer({
                   { label: "预习", value: data.learning.previewsDone },
                   { label: "计划", value: data.learning.planCount },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-lg bg-cream px-1 py-2">
-                    <div className="text-[16px] font-bold text-olive">{s.value}</div>
-                    <div className="text-[10.5px] text-olive-mute">{s.label}</div>
+                  <div key={s.label} className="rounded-lg bg-white/15 px-1 py-2 backdrop-blur-sm">
+                    <div className="text-[16px] font-bold text-white">{s.value}</div>
+                    <div className="text-[10.5px] text-white/70">{s.label}</div>
                   </div>
                 ))}
               </div>
