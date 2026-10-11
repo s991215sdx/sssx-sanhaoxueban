@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
+import ResetPasswordButton from "@/components/ResetPasswordButton";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import OrgAdminTab from "@/components/admin/OrgAdminTab";
-import ResetPasswordButton from "@/components/ResetPasswordButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
@@ -310,6 +310,8 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                           >
                             {u.role === "tutor" ? "取消伴学师" : "设为伴学师"}
                           </button>
+                          {/* V89：管理员重置该用户登录密码（复用 V53 接口，重置后默认 123456） */}
+                          <ResetPasswordButton userId={u.id} name={u.name} />
                         </>
                       )}
                     </div>
