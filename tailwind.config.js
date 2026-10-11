@@ -5,11 +5,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // v91：明快亮色系——深绿文字/品牌色 + 鲜绿点缀 + 近白亮底（解决灰蒙蒙）
+        // v94：文字改墨绿炭黑（绿色只留给点缀/图表/链接），解决"满屏绿字"
         olive: {
-          DEFAULT: "#1F6B43",
-          soft: "#2E7D55",
-          mute: "#6E8579",
+          DEFAULT: "#20362B",
+          soft: "#43564C",
+          mute: "#7A8A82",
         },
         lime: {
           DEFAULT: "#3CC078",

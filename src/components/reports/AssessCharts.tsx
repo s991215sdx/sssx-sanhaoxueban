@@ -13,7 +13,7 @@ import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { Multi5Result } from "@contracts/multi5";
 import { MULTI5_DIM_LABEL, MULTI5_DIM_ORDER } from "@contracts/multi5";
 
-const OLIVE = "#2E7D55";
+const OLIVE = "#43564C";
 const GRID = "#D8E2DC";
 const LIME = "#3CC078";
 const SKY = "#3d8ec4";

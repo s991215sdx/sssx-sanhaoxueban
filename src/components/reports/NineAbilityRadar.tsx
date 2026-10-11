@@ -49,8 +49,8 @@ export default function NineAbilityRadar({
               dataKey="label"
               tick={({ x, y, payload }: any) => {
                 const d = data.find((dd) => dd.label === payload.value);
-                const lvColor = d ? E3V37_LEVEL_STYLE[d.level as keyof typeof E3V37_LEVEL_STYLE].text : "#2E7D55";
-                const sysColor = d ? SYSTEM_COLOR[d.system] : "#2E7D55";
+                const lvColor = d ? E3V37_LEVEL_STYLE[d.level as keyof typeof E3V37_LEVEL_STYLE].text : "#43564C";
+                const sysColor = d ? SYSTEM_COLOR[d.system] : "#43564C";
                 const [name, score] = String(payload.value).split(" ");
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>

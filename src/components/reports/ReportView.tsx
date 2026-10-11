@@ -694,7 +694,7 @@ function RoadmapSection({
               <button
                 type="button"
                 onClick={() => onReveal({ kind: "fill-academics" })}
-                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#1F6B43] transition hover:bg-lime-pale"
+                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#20362B] transition hover:bg-lime-pale"
               >
                 去填写 →
               </button>
@@ -721,7 +721,7 @@ function RoadmapSection({
                         <button
                           type="button"
                           onClick={() => onReveal({ kind: "fill-academics" })}
-                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#1F6B43] transition hover:bg-lime-pale hover:shadow-sm"
+                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#20362B] transition hover:bg-lime-pale hover:shadow-sm"
                         >
                           去填写成绩与目标 →
                         </button>
@@ -1641,7 +1641,7 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData} outerRadius="72%">
               <PolarGrid stroke="#D8E2DC" />
-              <PolarAngleAxis dataKey="dim" tick={{ fill: "#2E7D55", fontSize: 12 }} />
+              <PolarAngleAxis dataKey="dim" tick={{ fill: "#43564C", fontSize: 12 }} />
               <Radar dataKey="得分" stroke="#3CC078" fill="#3CC078" fillOpacity={0.35} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
@@ -1827,7 +1827,7 @@ function Multi5Radar({ multi5 }: { multi5: Multi5Result }) {
               tick={({ x, y, payload }: any) => {
                 const v = Number(String(payload.value).split(" ").pop());
                 return (
-                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 60 ? "#b91c1c" : "#2E7D55"} fontWeight={v < 60 ? 700 : 400}>
+                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 60 ? "#b91c1c" : "#43564C"} fontWeight={v < 60 ? 700 : 400}>
                     {payload.value}
                   </text>
                 );
@@ -2246,8 +2246,8 @@ function MentalBar({ mental }: { mental: MentalResult }) {
             barSize={12}
             margin={{ left: 8, right: 40 }}
           >
-            <XAxis type="number" domain={[0, 5]} tick={{ fill: "#6E8579", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="name" width={88} tick={{ fill: "#2E7D55", fontSize: 12 }} axisLine={false} tickLine={false} />
+            <XAxis type="number" domain={[0, 5]} tick={{ fill: "#7A8A82", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="name" width={88} tick={{ fill: "#43564C", fontSize: 12 }} axisLine={false} tickLine={false} />
             <ReferenceLine x={2} stroke="#FF961F" strokeDasharray="6 4" label={{ value: "阳性线 2", position: "top", fontSize: 10.5, fill: "#FF961F" }} />
             <Bar dataKey="得分" radius={[0, 6, 6, 0]}>
               {MENTAL_FACTOR_ORDER.map((f) => (
@@ -2256,7 +2256,7 @@ function MentalBar({ mental }: { mental: MentalResult }) {
               <LabelList
                 dataKey="得分"
                 position="right"
-                style={{ fontSize: 11, fill: "#2E7D55" }}
+                style={{ fontSize: 11, fill: "#43564C" }}
                 formatter={(v: number) => {
                   const s = v > 2 ? (v >= 3 ? "重度" : v >= 2.5 ? "中度" : "轻度") : "";
                   return s ? `${v}（${s}）` : `${v}`;
@@ -3402,7 +3402,7 @@ function AssessmentChartsLite({
                   tick={({ x, y, payload }: any) => {
                     const v = Number(String(payload.value).split(" ").pop());
                     return (
-                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 60 ? "#b91c1c" : "#2E7D55"} fontWeight={v < 60 ? 700 : 400}>
+                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 60 ? "#b91c1c" : "#43564C"} fontWeight={v < 60 ? 700 : 400}>
                         {payload.value}
                       </text>
                     );

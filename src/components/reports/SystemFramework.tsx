@@ -65,7 +65,7 @@ const DEEP_TRAITS: { key: "mbti" | "disc" | "anchor" | "holland"; label: string 
 function LinkChip({ done, label, onClick }: { done: boolean; label: string; onClick?: () => void }) {
   const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${
     done
-      ? "border border-[#3CC078]/60 bg-[#E4F7EC] text-[#1F6B43]"
+      ? "border border-[#3CC078]/60 bg-[#E4F7EC] text-[#20362B]"
       : "border border-dashed border-[#A3B8AB]/80 text-olive-mute"
   }`;
   if (!onClick) return <span className={cls}>{label}</span>;
@@ -94,7 +94,7 @@ const LV = (level: E3V37Level) => E3V37_LEVEL_STYLE[level];
 
 /** 心理健康档色（V52）：ok=绿 / warn=关注·黄 / bad=预警及以上·红。 */
 const MENTAL_TONE_STYLE = {
-  ok: { border: "#3CC07899", bg: "#E4F7EC", text: "#1F6B43" },
+  ok: { border: "#3CC07899", bg: "#E4F7EC", text: "#20362B" },
   warn: { border: "#c7a23a99", bg: "#f5e7c1", text: "#8a6d1a" },
   bad: { border: "#b91c1c99", bg: "#fbe3df", text: "#8f1313" },
 } as const;
@@ -109,7 +109,7 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
       style={done ? { borderColor: `${st.bar}55`, background: st.bg } : { borderColor: "rgba(168,176,140,0.4)", background: "rgba(255,255,255,0.7)" }}
     >
       <div className="flex items-baseline justify-center gap-1">
-        <span className="text-[12px] font-semibold" style={done ? { color: st.text } : { color: "#1F6B43" }}>
+        <span className="text-[12px] font-semibold" style={done ? { color: st.text } : { color: "#20362B" }}>
           {name}
         </span>
         {done && unit?.score != null && (
