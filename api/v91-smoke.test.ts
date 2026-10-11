@@ -1,0 +1,35 @@
+/* v91 冒烟：明快亮色系——正文近黑、深绿品牌色、鲜绿点缀、亮底 */
+import { describe, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const read = (p: string) => readFileSync(join(root, p), "utf8");
+
+describe("v91 明快色系", () => {
+  it("tailwind 令牌为深绿/鲜绿/亮底", () => {
+    const src = read("tailwind.config.js");
+    for (const [tok, hex] of [
+      ['DEFAULT: "#1F6B43"', "olive 深绿"],
+      ['DEFAULT: "#3CC078"', "lime 鲜绿"],
+      ['DEFAULT: "#F7F9F8"', "亮底"],
+      ['pale: "#E4F7EC"', "浅绿 tint"],
+    ]) {
+      if (!src.includes(tok)) throw new Error("缺 " + hex + "：" + tok);
+    }
+  });
+
+  it("正文前景色为近黑而非中绿", () => {
+    const src = read("src/index.css");
+    if (!/--foreground: 160 12% 14%/.test(src)) throw new Error("缺：近黑正文色");
+  });
+
+  it("不再残留 v85 雾感色值", () => {
+    const files = ["src/pages/Login.tsx", "src/pages/Report.tsx", "src/lib/reportDownload.ts"];
+    for (const f of files) {
+      const src = read(f);
+      if (/#2E8B57|#44B979|#8AA695/i.test(src)) throw new Error(f + " 残留 v85 色值");
+    }
+  });
+});

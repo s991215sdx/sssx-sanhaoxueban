@@ -8,12 +8,12 @@ export type OverviewCardData = { label: string; value: string; note: string; ton
 const TONE_CLASS: Record<OverviewCardTone, string> = {
   red: "border-[#8f1313]/50 bg-[#fbe3df]",
   amber: "border-[#8a6d1a]/50 bg-[#f5e7c1]",
-  green: "border-[#379E6B]/50 bg-lime-pale",
+  green: "border-[#2F8F60]/50 bg-lime-pale",
 };
 const TONE_TEXT: Record<OverviewCardTone, string> = {
   red: "text-[#8f1313]",
   amber: "text-[#8a6d1a]",
-  green: "text-[#379E6B]",
+  green: "text-[#2F8F60]",
 };
 
 export default function OverviewGrid({ cards }: { cards: OverviewCardData[] }) {

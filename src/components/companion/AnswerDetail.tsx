@@ -98,7 +98,7 @@ function RatingDetail({
                     ? "text-[#8f1313]"
                     : adj < 3.8
                       ? "text-[#8a6d1a]"
-                      : "text-[#379E6B]"
+                      : "text-[#2F8F60]"
               }`}
             >
               {v != null && v >= 1 && v <= 5 ? (

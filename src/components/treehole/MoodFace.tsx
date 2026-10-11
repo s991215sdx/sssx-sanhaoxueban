@@ -10,10 +10,10 @@ export const MOOD_LABELS: Record<number, string> = {
 
 const FACE_COLORS: Record<number, { bg: string; fg: string }> = {
   1: { bg: "#FF961F", fg: "#FFFFFF" },
-  2: { bg: "#d9a05b", fg: "#2E8B57" },
-  3: { bg: "#C4EBD6", fg: "#2E8B57" },
-  4: { bg: "#7ED3A5", fg: "#2E8B57" },
-  5: { bg: "#44B979", fg: "#FFFFFF" },
+  2: { bg: "#d9a05b", fg: "#1F6B43" },
+  3: { bg: "#B9ECD0", fg: "#1F6B43" },
+  4: { bg: "#6FD9A4", fg: "#1F6B43" },
+  5: { bg: "#3CC078", fg: "#FFFFFF" },
 };
 
 const MOUTHS: Record<number, string> = {

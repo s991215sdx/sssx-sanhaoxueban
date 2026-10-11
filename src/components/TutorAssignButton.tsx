@@ -75,7 +75,7 @@ export default function TutorAssignButton({
                     type="checkbox"
                     checked={on}
                     onChange={() => setSelected((s) => (on ? s.filter((id) => id !== t.id) : [...s, t.id]))}
-                    className="accent-[#44B979]"
+                    className="accent-[#3CC078]"
                   />
                   {t.name}
                 </label>

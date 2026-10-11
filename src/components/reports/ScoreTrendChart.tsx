@@ -13,7 +13,7 @@ export type ScoreRecord = {
   createdAt: Date | string;
 };
 
-const PALETTE = ["#379E6B", "#FF961F", "#3a6ea5", "#b03a5b", "#8a6d1a", "#4a8a8a", "#7a5ba8", "#a8763e", "#3e8a5a", "#a83e6a"];
+const PALETTE = ["#2F8F60", "#FF961F", "#3a6ea5", "#b03a5b", "#8a6d1a", "#4a8a8a", "#7a5ba8", "#a8763e", "#3e8a5a", "#a83e6a"];
 
 export default function ScoreTrendChart({ records }: { records: ScoreRecord[] }) {
   const [hover, setHover] = useState<{ si: number; ri: number } | null>(null);
@@ -69,7 +69,7 @@ export default function ScoreTrendChart({ records }: { records: ScoreRecord[] })
             </g>
           ))}
           {chron.map((r, ri) => (
-            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#4C9E70" className="max-w-[70px]">
+            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#2E7D55" className="max-w-[70px]">
               {labelOf(r).slice(0, 8)}
             </text>
           ))}

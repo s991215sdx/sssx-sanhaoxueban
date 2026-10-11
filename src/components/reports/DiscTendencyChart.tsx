@@ -90,14 +90,14 @@ export default function DiscTendencyChart({
         <line x1={PLOT_L} y1={lowY} x2={PLOT_R} y2={lowY} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
         {/* 分段刻度线（每 25%，中线 0% 加粗带箭头） */}
         {[-75, -50, -25, 25, 50, 75].map((t) => (
-          <line key={`seg-${t}`} x1={PLOT_L} y1={yOf(t)} x2={PLOT_R} y2={yOf(t)} stroke="#A9B8AF" strokeWidth={Math.abs(t) === 50 ? 0.9 : 0.6} strokeDasharray={Math.abs(t) === 50 ? "none" : "2 4"} opacity={0.45} />
+          <line key={`seg-${t}`} x1={PLOT_L} y1={yOf(t)} x2={PLOT_R} y2={yOf(t)} stroke="#A3B8AB" strokeWidth={Math.abs(t) === 50 ? 0.9 : 0.6} strokeDasharray={Math.abs(t) === 50 ? "none" : "2 4"} opacity={0.45} />
         ))}
-        <line x1={PLOT_L} y1={yOf(0)} x2={PLOT_R} y2={yOf(0)} stroke="#8FA69A" strokeWidth={1.6} opacity={0.85} />
-        <polygon points={`${PLOT_L - 6},${yOf(0)} ${PLOT_L},${yOf(0) - 4} ${PLOT_L},${yOf(0) + 4}`} fill="#8FA69A" opacity={0.85} />
-        <polygon points={`${PLOT_R + 6},${yOf(0)} ${PLOT_R},${yOf(0) - 4} ${PLOT_R},${yOf(0) + 4}`} fill="#8FA69A" opacity={0.85} />
+        <line x1={PLOT_L} y1={yOf(0)} x2={PLOT_R} y2={yOf(0)} stroke="#8AA698" strokeWidth={1.6} opacity={0.85} />
+        <polygon points={`${PLOT_L - 6},${yOf(0)} ${PLOT_L},${yOf(0) - 4} ${PLOT_L},${yOf(0) + 4}`} fill="#8AA698" opacity={0.85} />
+        <polygon points={`${PLOT_R + 6},${yOf(0)} ${PLOT_R},${yOf(0) - 4} ${PLOT_R},${yOf(0) + 4}`} fill="#8AA698" opacity={0.85} />
         {/* 左侧刻度标签 */}
         {[100, 50, 0, -50, -100].map((t) => (
-          <text key={`tick-${t}`} x={PLOT_L - 8} y={yOf(t) + 3.5} fontSize={9.5} fill="#8FA69A" textAnchor="end">
+          <text key={`tick-${t}`} x={PLOT_L - 8} y={yOf(t) + 3.5} fontSize={9.5} fill="#8AA698" textAnchor="end">
             {t > 0 ? `+${t}` : t}%
           </text>
         ))}
@@ -106,7 +106,7 @@ export default function DiscTendencyChart({
           <line key={`line-${k}`} x1={xs[i]} y1={TOP} x2={xs[i]} y2={TOP + plotH} stroke={DISC_COLOR[k]} strokeWidth={3} opacity={0.28} strokeLinecap="round" />
         ))}
         {/* 底部基线 */}
-        <line x1={PLOT_L} y1={TOP + plotH} x2={PLOT_R} y2={TOP + plotH} stroke="#A9B8AF" strokeWidth={1} />
+        <line x1={PLOT_L} y1={TOP + plotH} x2={PLOT_R} y2={TOP + plotH} stroke="#A3B8AB" strokeWidth={1} />
         {/* 顶部维度徽章 */}
         {keys.map((k, i) => {
           const inCombo = combo.includes(k);
@@ -123,7 +123,7 @@ export default function DiscTendencyChart({
         <polyline
           points={keys.map((k, i) => `${xs[i]},${yOf(tendency[k])}`).join(" ")}
           fill="none"
-          stroke="#4C9E70"
+          stroke="#2E7D55"
           strokeWidth={2}
           opacity={0.55}
           strokeLinejoin="round"
@@ -200,8 +200,8 @@ export default function DiscTendencyChart({
                       className="border-b border-border/60 px-1 py-[3px] text-center text-[11px] leading-tight"
                       style={
                         hit
-                          ? { background: `${DISC_COLOR[k]}${inCombo ? "40" : "22"}`, color: "#2E8B57", fontWeight: inCombo ? 800 : 600 }
-                          : { color: "#8AA695" }
+                          ? { background: `${DISC_COLOR[k]}${inCombo ? "40" : "22"}`, color: "#1F6B43", fontWeight: inCombo ? 800 : 600 }
+                          : { color: "#6E8579" }
                       }
                     >
                       {w}

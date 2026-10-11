@@ -1,8 +1,8 @@
 export function scoreColor(score: number) {
-  if (score >= 80) return "#44B979";
-  if (score >= 60) return "#C4EBD6";
+  if (score >= 80) return "#3CC078";
+  if (score >= 60) return "#B9ECD0";
   if (score > 0) return "#FF961F";
-  return "#D5DDD8";
+  return "#D8E2DC";
 }
 
 export function scoreLabel(score: number) {
@@ -31,7 +31,7 @@ export function ScoreRing({ score, size = 56 }: { score: number; size?: number }
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E6EBE7" strokeWidth={6} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E8EFEA" strokeWidth={6} />
         <circle
           cx={size / 2}
           cy={size / 2}

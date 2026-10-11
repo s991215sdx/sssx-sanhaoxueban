@@ -32,9 +32,9 @@ const MOBILE_NAV = [
 function LogoMark() {
   return (
     <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
-      <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#2E8B57" />
-      <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#7ED3A5" />
-      <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#C4EBD6" />
+      <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#1F6B43" />
+      <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#6FD9A4" />
+      <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#B9ECD0" />
       <circle cx="17" cy="9.5" r="2.2" fill="#FFC600" />
     </svg>
   );

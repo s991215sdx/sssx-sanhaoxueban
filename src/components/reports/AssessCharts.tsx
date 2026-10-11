@@ -13,9 +13,9 @@ import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { Multi5Result } from "@contracts/multi5";
 import { MULTI5_DIM_LABEL, MULTI5_DIM_ORDER } from "@contracts/multi5";
 
-const OLIVE = "#4C9E70";
-const GRID = "#D5DDD8";
-const LIME = "#44B979";
+const OLIVE = "#2E7D55";
+const GRID = "#D8E2DC";
+const LIME = "#3CC078";
 const SKY = "#3d8ec4";
 const AMBER = "#c7a23a";
 const TERRA = "#c05a3a";
@@ -49,7 +49,7 @@ export function HollandRadar({ result, height = 230 }: { result: HollandResult; 
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>
                     <tspan fill={d?.hot ? LIME : OLIVE} fontWeight={700}>{name}</tspan>
-                    <tspan dx={3} fill={d?.hot ? LIME : "#93A298"} fontWeight={700}>{score}</tspan>
+                    <tspan dx={3} fill={d?.hot ? LIME : "#93A79B"} fontWeight={700}>{score}</tspan>
                   </text>
                 );
               }}
@@ -90,8 +90,8 @@ export function MbtiBars({ result }: { result: MbtiResult }) {
                 <span className="font-bold" style={{ color: bv > av ? SKY : OLIVE }}>{bv > av ? "▶" : ""} {b}</span>
               </div>
               <div className="mt-0.5 flex h-2.5 overflow-hidden rounded-full bg-olive/8">
-                <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#AFBCB2" }} />
-                <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#AFBCB2" }} />
+                <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#ABC0B2" }} />
+                <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#ABC0B2" }} />
               </div>
             </div>
           );
@@ -219,7 +219,7 @@ export function SubjectOverallRadar({ result, height = 240 }: { result: SubjectA
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>
                     <tspan fill={d?.weak ? TERRA : OLIVE} fontWeight={700}>{name}</tspan>
-                    <tspan dx={3} fill={d?.weak ? TERRA : "#93A298"} fontWeight={700}>{score}</tspan>
+                    <tspan dx={3} fill={d?.weak ? TERRA : "#93A79B"} fontWeight={700}>{score}</tspan>
                   </text>
                 );
               }}
@@ -249,9 +249,9 @@ export function SubjectStageBars({ result, height = 240 }: { result: SubjectAsse
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
             <XAxis dataKey="subject" tick={{ fontSize: 11, fill: OLIVE }} />
-            <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "#93A298" }} />
+            <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "#93A79B" }} />
             {stageKeys.map((k) => (
-              <Bar key={k} dataKey={k} fill={colors[k] ?? "#AFBCB2"} radius={[3, 3, 0, 0]} barSize={12} />
+              <Bar key={k} dataKey={k} fill={colors[k] ?? "#ABC0B2"} radius={[3, 3, 0, 0]} barSize={12} />
             ))}
           </BarChart>
         </ResponsiveContainer>
