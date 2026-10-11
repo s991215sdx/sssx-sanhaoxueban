@@ -15,10 +15,9 @@ describe("v107 渐变绿头卡", () => {
     if (src.includes("#0B3D2E")) throw new Error("残留：深橄榄色");
   });
 
-  it("头卡文字与统计格为白色系", () => {
+  it("头卡统计格为白底（v111：绿字数值）", () => {
     const src = read("src/components/StudentDetailDrawer.tsx");
-    if (!/text-white\/75/.test(src)) throw new Error("缺：副信息白色75%");
-    if (!/bg-white\/15/.test(src)) throw new Error("缺：统计格半透明白");
+    if (!/rounded-lg bg-white px-1 py-2/.test(src)) throw new Error("缺：统计格白底");
   });
 
   it("头像反白（白底绿字）", () => {
