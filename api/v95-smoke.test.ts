@@ -33,9 +33,10 @@ describe("v95 卡点底色去粉", () => {
     if (!/#f5e7c1/.test(src)) throw new Error("待提升琥珀底色被改动");
   });
 
-  it("得分表能力行按判定三档着色（v101 起红黄绿 tint，替代 v95 的暖沙）", () => {
+  it("得分表行白底 + 判定文字着色（v102 起，替代 v101 的三档淡 tint）", () => {
     const src = read("src/components/reports/AbilityScoreTable.tsx");
     if (/fbe3df/i.test(src)) throw new Error("AbilityScoreTable 残留粉色");
-    if (!/e3v37LevelBgClass/.test(src)) throw new Error("缺：按判定着色");
+    if (/e3v37LevelBgClass/.test(src)) throw new Error("得分表不应再引用行底色助手");
+    if (!/e3v37LevelTextClass\(sub\.level\)/.test(src)) throw new Error("缺：按判定给文字着色");
   });
 });

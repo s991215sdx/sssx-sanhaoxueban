@@ -8,7 +8,7 @@ import { useState } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
-import { e3v37LevelTextClass, e3v37LevelBgClass, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
+import { e3v37LevelTextClass, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
 /** 1-5 分选项文案（与作答端一致）：显示原答案，得分列显示换算后的有效分。 */
 const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
@@ -39,9 +39,8 @@ function AbilityGroup({
       <button
         type="button"
         onClick={onToggle}
-        className={`flex w-full items-center gap-2 px-3 py-2 text-left transition ${
-          sub.level ? e3v37LevelBgClass(sub.level) : "bg-cream/70 hover:bg-cream"
-        }`}
+        /* v102：行底统一白/浅中性，只按判定给文字着色（卡点深红/待提升琥珀/正常绿） */
+        className="flex w-full items-center gap-2 bg-cream/70 px-3 py-2 text-left transition hover:bg-cream"
       >
         {hasItems ? (
           expanded ? (
@@ -53,7 +52,7 @@ function AbilityGroup({
           <span className="w-3.5 shrink-0" />
         )}
         <span className="min-w-0 flex-1">
-          <span className="text-[13px] font-semibold text-olive">{sub.label}</span>
+          <span className={`text-[13px] font-semibold ${sub.level ? e3v37LevelTextClass(sub.level) : "text-olive"}`}>{sub.label}</span>
           {sub.note && <span className="ml-1 text-[10.5px] text-olive-mute">（{sub.note}）</span>}
           {hasItems && (
             <span className="ml-1.5 text-[10.5px] text-olive-mute">{expanded ? "收起明细" : `逐题明细 ${qItems.length} 题`}</span>
@@ -79,7 +78,7 @@ function AbilityGroup({
           </thead>
           <tbody>
             {qItems.map((it) => (
-              <tr key={it.no} className={e3v37LevelBgClass(it.level)}>
+              <tr key={it.no}>
                 <td className="border-t border-border px-3 py-1.5 text-olive-soft">
                   <span className="mono text-[11px] text-olive-mute">{it.no}.</span>{" "}
                   <span className="font-medium">{it.kp}</span>
