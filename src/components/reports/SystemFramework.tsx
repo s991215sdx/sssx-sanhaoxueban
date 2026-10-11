@@ -105,14 +105,14 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
   if (!done)
     return (
       <div className="rounded-xl border border-dashed border-[#A3B8AB]/70 bg-white/60 px-1 py-2 text-center">
-        <div className="text-[11.5px] font-semibold text-olive-soft">{name}</div>
-        <div className="mono mt-0.5 text-[15px] font-bold text-olive-mute">-</div>
+        <div className="text-[12px] font-semibold text-olive-soft">{name}</div>
+        <div className="mono mt-0.5 text-[16px] font-bold text-olive-mute">-</div>
       </div>
     );
   return (
     <div className="rounded-xl bg-white px-1 py-2 text-center shadow-sm">
-      <div className="text-[11.5px] font-semibold text-olive">{name}</div>
-      <div className="mono mt-0.5 text-[15px] font-bold" style={{ color: band.text }}>
+      <div className="text-[12px] font-semibold text-olive">{name}</div>
+      <div className="mono mt-0.5 text-[16px] font-bold" style={{ color: band.text }}>
         {unit?.score ?? "-"}
       </div>
     </div>
@@ -163,7 +163,7 @@ export default function SystemFramework({
       <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
       {/* v116 三档图例（绿=正常 / 黄橙=预警 / 红=重点关注） */}
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-medium text-olive-soft">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11.5px] font-medium text-olive-soft">
         {(["正常", "待提升", "卡点"] as const).map((lv) => (
           <span key={lv} className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: BAND[lv].border }} />
@@ -187,10 +187,10 @@ export default function SystemFramework({
               className="rounded-xl border px-3 py-3 text-center"
               style={{ borderColor: box.borderColor, background: box.background }}
             >
-              <div className="text-[13.5px] font-bold" style={{ color: box.titleColor }}>
+              <div className="text-[14.5px] font-bold" style={{ color: box.titleColor }}>
                 {i + 1} 阶 · {t.name}
               </div>
-              <div className="mt-0.5 text-[11px] text-olive-mute">{t.sub}</div>
+              <div className="mt-0.5 text-[11.5px] text-olive-mute">{t.sub}</div>
               <div className="mt-2 grid grid-cols-3 gap-1">
                 {t.abilities.map((a) => (
                   <UnitBlock key={a} name={a} unit={unitOf(a)} done={e3Done} />
@@ -217,10 +217,10 @@ export default function SystemFramework({
           const box = levelBoxStyle(b.key === "条件" ? condLevel : aptLevel);
           return (
             <div key={b.name} className="rounded-xl border px-3 py-3 text-center" style={{ borderColor: box.borderColor, background: box.background }}>
-              <div className="text-[13.5px] font-bold" style={{ color: box.titleColor }}>
+              <div className="text-[14.5px] font-bold" style={{ color: box.titleColor }}>
                 {b.name}
               </div>
-              <div className="mt-0.5 text-[11px] text-olive-mute">{b.sub}</div>
+              <div className="mt-0.5 text-[11.5px] text-olive-mute">{b.sub}</div>
               <div className="mt-2 grid grid-cols-3 gap-1">
                 {b.abilities.map((a) => (
                   <UnitBlock key={a} name={a} unit={unitOf(a)} done={e3Done} />
@@ -240,7 +240,7 @@ export default function SystemFramework({
                       const band = BAND[(status.mental.tone ?? "ok") === "ok" ? "正常" : (status.mental.tone ?? "ok") === "warn" ? "待提升" : "卡点"];
                       return (
                         <span
-                          className="inline-block rounded-full border px-2.5 py-1 text-[10.5px] font-semibold leading-tight"
+                          className="inline-block rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight"
                           style={{ borderColor: band.border, background: band.bg, color: band.text }}
                         >
                           {status.mental.done ? `心理健康 · ${status.mental.note ?? "已测"}` : "心理健康 · 未测"}
@@ -270,7 +270,7 @@ export default function SystemFramework({
               )}
               {/* 多元五项二级维度分（v116：按设计稿改绿色纯文字，不用 chip） */}
               {b.key === "学能" && status?.multi5?.done && (status.multi5.subs?.length ?? 0) > 0 && (
-                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-[#2F8F60]">
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11.5px] font-medium text-[#2F8F60]">
                   {status.multi5.subs!.map((s) => (
                     <span key={s}>{s}</span>
                   ))}
@@ -339,7 +339,7 @@ function ScoreChip({ name, score }: { name: string; score: number }) {
   const band = BAND[lv];
   return (
     <span
-      className="inline-block rounded-full border px-2.5 py-1 text-[10.5px] font-semibold leading-tight"
+      className="inline-block rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight"
       style={{ borderColor: band.border, background: band.bg, color: band.text }}
     >
       {name} {score} · {band.label}
