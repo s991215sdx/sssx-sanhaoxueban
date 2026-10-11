@@ -29,7 +29,12 @@ export async function isMyStudent(db: Db, tutorUserId: number, studentUserId: nu
     db.select({ orgId: users.orgId }).from(users).where(eq(users.id, tutorUserId)).limit(1),
     db.select({ orgId: users.orgId }).from(users).where(eq(users.id, studentUserId)).limit(1),
   ]);
-  if (!me[0] || !target[0] || me[0].orgId == null || me[0].orgId !== target[0].orgId) return false;
+  if (!me[0] || !target[0]) return false;
+  /* v93：一方为 NULL（平台直客/无机构伴学师）时跳过机构一致性校验，只要名下关系命中即可；
+     双方都有机构且不同 → 仍一律不认（跨机构隔离不破） */
+  const meOrg = me[0].orgId;
+  const targetOrg = target[0].orgId;
+  if (meOrg != null && targetOrg != null && meOrg !== targetOrg) return false;
   const p = (
     await db
       .select({ tutorId: studentProfile.tutorId })

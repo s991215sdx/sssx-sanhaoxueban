@@ -51,6 +51,17 @@
 }
 
 @layer utilities {
+  /* v93：桌面端报告整体放大（zoom 同比放大字号与图表），打印与移动端还原 */
+  @media (min-width: 768px) {
+    .report-view-zoom {
+      zoom: 1.15;
+    }
+  }
+  @media print {
+    .report-view-zoom {
+      zoom: 1;
+    }
+  }
   .paper-card {
     @apply bg-card border border-border rounded-2xl shadow-[0_1px_0_rgba(31,107,67,0.06),0_8px_24px_-12px_rgba(31,107,67,0.18)];
   }

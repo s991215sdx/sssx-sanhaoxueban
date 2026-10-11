@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -99,6 +99,10 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   /* v80：手机从左向右滑 = 返回上一步（全局手势，输入控件/横向滚动容器自动豁免） */
   useSwipeBack();
+
+  /* v93：报告类页面（学习报告/测评详细报告）桌面端接近全屏，左右留白少、字图更大 */
+  const { pathname } = useLocation();
+  const isReportPage = pathname.startsWith("/report");
 
   return (
     <div className="min-h-screen bg-cream">
@@ -247,8 +251,9 @@ export default function Layout({ children }: { children: ReactNode }) {
             本机构服务已暂停，部分功能可能不可用。如有疑问请联系机构老师。
           </div>
         )}
-        {/* v87：桌面端内容区加白色卡片背景板（灰底太飘），卡片随屏宽自适应并留内外边距；移动端保持全宽 */}
-        <div className="mx-auto max-w-5xl px-4 pt-6 md:max-w-6xl md:px-5 md:pt-5 xl:max-w-7xl">
+        {/* v87：桌面端内容区加白色卡片背景板（灰底太飘），卡片随屏宽自适应并留内外边距；移动端保持全宽。
+            v93：报告页桌面端放宽到近全屏（1560px），其余页面维持 5xl/6xl/7xl 自适应 */}
+        <div className={`mx-auto px-4 pt-6 md:pt-5 ${isReportPage ? "md:px-8 xl:max-w-[1560px]" : "max-w-5xl md:max-w-6xl md:px-5 xl:max-w-7xl"}`}>
           <div className="md:paper-card md:min-h-[calc(100vh-4.5rem)] md:px-8 md:py-7">
             <BackBar />
             {children}
