@@ -32,5 +32,6 @@ export function isPlatformAdmin(user: Pick<User, "role" | "orgId">): boolean {
 export async function sameOrg(db: ReturnType<typeof getDb>, me: Pick<User, "orgId">, targetUserId: number): Promise<boolean> {
   if (me.orgId == null) return true;
   const t = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, targetUserId)).limit(1))[0];
-  return !!t && t.orgId === me.orgId;
+  /* v93：目标账号 org_id 为 NULL（平台直客/历史账号）对所有机构放行，不再隐身 */
+  return !!t && (t.orgId === me.orgId || t.orgId == null);
 }

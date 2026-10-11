@@ -2600,8 +2600,9 @@ export default function ReportView({
         </button>
       )}
 
-      {/* 打印根：window.print() 时仅显示此区域，保证 PDF 与页面所见完全一致 */}
-      <div id="report-print-root" className="space-y-4">
+      {/* 打印根：window.print() 时仅显示此区域，保证 PDF 与页面所见完全一致。
+          v93：桌面端整体放大 1.15 倍（zoom），字号/图表同比变大，阅读不用眯眼；打印与移动端保持原尺寸 */}
+      <div id="report-print-root" className="report-view-zoom space-y-4">
       {tab === "guidance" && (
         <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
       )}
