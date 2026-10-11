@@ -43,3 +43,6 @@ coverage/
 scripts/.*.cjs
 !scripts/dump-db.cjs
 .env.test
+
+# 部署产物
+*.tgz
