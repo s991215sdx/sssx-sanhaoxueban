@@ -81,7 +81,7 @@ export default function StudentDetailDrawer({
             {/* 档案（v107：翡翠绿→深橄榄绿渐变头卡，高级质感） */}
             <div
               className="rounded-2xl border border-white/20 p-4 text-white shadow-[0_8px_24px_-10px_rgba(11,61,46,0.45)]"
-              style={{ backgroundImage: "linear-gradient(135deg, #0EA875 0%, #0B8A63 45%, #0B3D2E 100%)" }}
+              style={{ backgroundImage: "linear-gradient(135deg, #2BB583 0%, #0EA875 55%, #0B8A63 100%)" }}
             >
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-[15px] font-bold text-brand shadow-sm">
