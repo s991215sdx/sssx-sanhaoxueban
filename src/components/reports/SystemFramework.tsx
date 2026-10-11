@@ -92,11 +92,11 @@ export function frameworkScoreLevel(score: number): E3V37Level {
 /** 三档样式：浅色底 + 深色字（V52 统一底色）。 */
 const LV = (level: E3V37Level) => E3V37_LEVEL_STYLE[level];
 
-/** 心理健康档色（V52）：ok=绿 / warn=关注·黄 / bad=预警及以上·红。 */
+/** 心理健康档色（V52）：ok=绿 / warn=关注·黄 / bad=预警及以上·红。v108 底色与左条色系协调到三档浅色系。 */
 const MENTAL_TONE_STYLE = {
   ok: { border: "#3CC07899", bg: "#E4F7EC", text: "#20362B" },
-  warn: { border: "#c7a23a99", bg: "#f5e7c1", text: "#8a6d1a" },
-  bad: { border: "#b91c1c99", bg: "#FAF3EB", text: "#8f1313" },
+  warn: { border: "#FFC60099", bg: "#FFF6D9", text: "#C79400" },
+  bad: { border: "#b91c1c99", bg: "#FDEBEB", text: "#8f1313" },
 } as const;
 
 /** 一级单元块：能力名 + 均分，按红黄绿三档浅色底 + 深色字。 */
@@ -122,11 +122,15 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
   );
 }
 
-/** 按分着色的容器框（三阶 / 底座用）：浅色底 + 深色标题。 */
+/**
+ * v108：按档着色容器框——参考官网服务卡的「左侧加粗色条 + 浅色底 + 同色系深标题」。
+ * 卡点=浅红底+深红左条+深红标题；待提升=浅黄底+亮黄左条+金黄标题；正常=浅绿底+绿左条+绿标题。
+ */
+const BOX_BG: Record<E3V37Level, string> = { 卡点: "#FDEBEB", 待提升: "#FFF6D9", 正常: "#E4F7EC" };
 function levelBoxStyle(level: E3V37Level | undefined) {
-  if (!level) return { borderColor: "#a8b08c60", background: "#EFF5F1", titleColor: "#6b7452" };
+  if (!level) return { frame: "#a8b08c60", borderLeft: "#A3B8AB", background: "#EFF5F1", titleColor: "#6b7452" };
   const st = LV(level);
-  return { borderColor: `${st.bar}80`, background: st.bg, titleColor: st.text };
+  return { frame: `${st.bar}30`, borderLeft: st.bar, background: BOX_BG[level], titleColor: st.text };
 }
 
 export default function SystemFramework({
@@ -173,8 +177,8 @@ export default function SystemFramework({
           return (
             <div
               key={t.name}
-              className="rounded-xl border px-3 py-3 text-center"
-              style={{ borderColor: box.borderColor, background: box.background }}
+              className="rounded-xl border border-l-[5px] px-3 py-3 text-center"
+              style={{ borderColor: box.frame, borderLeftColor: box.borderLeft, background: box.background }}
             >
               <div className="text-[13.5px] font-bold" style={{ color: box.titleColor }}>
                 {i + 1} 阶 · {t.name}
@@ -205,7 +209,7 @@ export default function SystemFramework({
         {BASES.map((b) => {
           const box = levelBoxStyle(b.key === "条件" ? condLevel : aptLevel);
           return (
-            <div key={b.name} className="rounded-xl border px-3 py-3 text-center" style={{ borderColor: box.borderColor, background: box.background }}>
+            <div key={b.name} className="rounded-xl border border-l-[5px] px-3 py-3 text-center" style={{ borderColor: box.frame, borderLeftColor: box.borderLeft, background: box.background }}>
               <div className="text-[13.5px] font-bold" style={{ color: box.titleColor }}>
                 {b.name}
               </div>
