@@ -347,11 +347,11 @@ function RoadmapSection({
   /** 小数值芯片：bad=深红（需关注）；trait=琥珀显眼（性格/行为/兴趣特点，非缺点）。 */
   const Chip = ({ label, bad, trait }: { label: string; bad?: boolean; trait?: boolean }) => (
     <span
-      className={`mr-1.5 mb-1 inline-block rounded-md border px-1.5 py-0.5 text-[11.5px] leading-tight ${
+      className={`mr-1.5 mb-1 inline-block rounded-md border px-2 py-0.5 text-[12px] leading-tight ${
         bad
-          ? "border-[#b91c1c]/50 bg-[#FAF3EB] font-bold text-[#8f1313]"
+          ? "border-[#D84E4E]/60 bg-[#FDECEC] font-bold text-[#B42323]"
           : trait
-            ? "border-[#c7a23a]/70 bg-[#f5e7c1] font-bold text-[#8a6d1a]"
+            ? "border-[#E3A008]/70 bg-[#FCF3DC] font-bold text-[#B07800]"
             : "border-border bg-cream text-olive-soft"
       }`}
     >
@@ -401,7 +401,7 @@ function RoadmapSection({
   /** 一级元素：实心色块 chip（白字，按阈值着色）。 */
   const SolidChip = ({ label, level }: { label: string; level: "正常" | "待提升" | "卡点" }) => (
     <span
-      className="mr-1 inline-block shrink-0 rounded-md px-1.5 py-0.5 text-[11.5px] font-bold leading-tight text-white"
+      className="mr-1 inline-block shrink-0 rounded-md px-2 py-0.5 text-[12.5px] font-bold leading-tight text-white"
       style={{ background: E3V37_LEVEL_STYLE[level].bar }}
     >
       {label}
@@ -410,7 +410,7 @@ function RoadmapSection({
   /** 二级元素：描边小字 chip（阈值色文字 + 浅底），与一级实心块明显区分。 */
   const FocusChip = ({ label, level }: { label: string; level: "正常" | "待提升" | "卡点" }) => (
     <span
-      className="mr-1 mb-0.5 inline-block rounded-md border px-1.5 py-px text-[11px] leading-tight"
+      className="mr-1 mb-0.5 inline-block rounded-md border px-2 py-px text-[11.5px] leading-tight"
       style={{ borderColor: `${E3V37_LEVEL_STYLE[level].bar}80`, color: E3V37_LEVEL_STYLE[level].text, background: E3V37_LEVEL_STYLE[level].bg }}
     >
       {label}
@@ -708,11 +708,11 @@ function RoadmapSection({
       <div className="paper-card border-[#c9a227]/50 p-4">
         <StepHead n="2" title="分析问题 · 痛点 · 特点（冰山模型）" color="bg-[#c9a227]" />
         <div className="mt-2.5 overflow-x-auto">
-          <table className="w-full min-w-[460px] border-collapse text-[11.5px] sm:text-[12.5px]">
+          <table className="w-full min-w-[460px] border-collapse text-[12.5px] sm:text-[13px]">
             <tbody>
               <tr>
-                <td rowSpan={subject ? 2 : 1} className="w-20 border border-border bg-[#dce9f5] px-2 py-1.5 text-center font-bold text-olive">冰山上</td>
-                <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 font-semibold text-olive">知识点 · 成绩</td>
+                <td rowSpan={subject ? 2 : 1} className="w-20 border border-border bg-[#dce9f5] px-2 py-1.5 text-center text-[13px] font-bold text-olive">冰山上</td>
+                <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 text-[12.5px] font-semibold text-olive sm:text-[13px]">知识点 · 成绩</td>
                 <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
                   {subjects.length === 0 ? (
                     <>
@@ -740,7 +740,7 @@ function RoadmapSection({
               {/* V78 冰山上第二行：学科能力自评（有结果才显示），与成绩并列为「看得见的现状」 */}
               {subject && (
                 <tr>
-                  <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 font-semibold text-olive">学科能力自评</td>
+                  <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 text-[12.5px] font-semibold text-olive sm:text-[13px]">学科能力自评</td>
                   <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
                     {subject.subjects.map((s) => (
                       <Chip
@@ -756,9 +756,9 @@ function RoadmapSection({
               {underRows.map((row, ri) => (
                 <tr key={row.key}>
                   {ri === 0 && (
-                    <td rowSpan={underRows.length} className="w-20 border border-border bg-[#f6e3d8] px-2 py-1.5 text-center font-bold text-olive">冰山下</td>
+                    <td rowSpan={underRows.length} className="w-20 border border-border bg-[#f6e3d8] px-2 py-1.5 text-center text-[13px] font-bold text-olive">冰山下</td>
                   )}
-                  <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 font-semibold text-olive">{row.label}</td>
+                  <td className="w-32 border border-border bg-cream-deep/50 px-2 py-1.5 text-[12.5px] font-semibold text-olive sm:text-[13px]">{row.label}</td>
                   <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">{row.content}</td>
                 </tr>
               ))}
@@ -865,7 +865,7 @@ function RoadmapSection({
       <div className="paper-card border-terra/50 p-4">
         <StepHead n="3" title="建议进步方案" color="bg-terra" />
         <div className="mt-2.5 overflow-x-auto">
-          <table className="w-full min-w-[460px] border-collapse text-[11.5px] sm:text-[12.5px]">
+          <table className="w-full min-w-[460px] border-collapse text-[12.5px] sm:text-[13px]">
             <thead>
               <tr className="bg-cream-deep/60 text-olive">
                 <th className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 text-left">层</th>
