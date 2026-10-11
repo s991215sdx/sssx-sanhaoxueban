@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import InviteRegister from "./pages/InviteRegister";
 import Admin from "./pages/Admin";
 import Tutor from "./pages/Tutor";
+import RecycleBin from "./pages/RecycleBin";
 import { trpc } from "./providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import ProfileStage from "@/components/welcome/ProfileStage";
@@ -164,6 +165,7 @@ export default function App() {
                     <Route path="/report-detail" element={<ReportDetail />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/tutor" element={<Tutor />} />
+                    <Route path="/recycle-bin" element={<RecycleBin />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                   </BasicsGate>

@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
+import DeleteStudentButton from "@/components/DeleteStudentButton";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ReportAccessButton from "@/components/ReportAccessButton";
@@ -433,6 +434,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 )}
                 {/* V53：管理员可重置任意学员登录密码（默认 123456） */}
                 <ResetPasswordButton userId={s.userId} name={s.name} />
+                {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
+                <DeleteStudentButton userId={s.userId} name={s.name} />
                 <button
                   onClick={() => setDetailId(s.userId)}
                   className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"

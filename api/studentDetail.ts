@@ -121,7 +121,8 @@ export async function listStudents(db: Db, orgId?: number | null): Promise<Stude
   };
 
   return profiles
-    .filter((p) => userMap.has(p.userId))
+    /* v96：已软删的学员（users.deleted_at 非空）不出现在任何列表 */
+    .filter((p) => userMap.has(p.userId) && userMap.get(p.userId)!.deletedAt == null)
     .map((p) => {
       const u = userMap.get(p.userId)!;
       const tutorIds = tutorsOf(p.userId, p.tutorId ?? null);
@@ -207,6 +208,8 @@ export async function getStudentDetail(db: Db, userId: number, orgId?: number | 
   }
   const u = await db.query.users.findFirst({ where: eq(users.id, userId) });
   if (!u) throw new Error("用户不存在");
+  /* v96：已软删的学员不可再查看详情（回收站恢复后自动恢复访问） */
+  if (u.deletedAt) throw new Error("该学员已被删除，如需查看请先在回收站恢复");
   const profile = (await db.select().from(studentProfile).where(eq(studentProfile.userId, userId)).limit(1))[0] ?? null;
 
   // 测评：每种取最新一条（含原始作答）

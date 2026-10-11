@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -168,6 +168,21 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <ShieldCheck size={18} strokeWidth={2.2} />
               {!collapsed && "后台管理"}
+            </NavLink>
+          )}
+          {/* v96：回收站（已删学员 2 个月保留期，可恢复） */}
+          {showCoach && (
+            <NavLink
+              to="/recycle-bin"
+              title={collapsed ? "回收站" : undefined}
+              className={({ isActive }) =>
+                `group flex items-center rounded-xl transition-colors ${
+                  collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+                } ${isActive ? "bg-lime-pale font-semibold text-olive" : "text-olive-soft hover:bg-lime-pale/50"}`
+              }
+            >
+              <Trash2 size={18} strokeWidth={2.2} />
+              {!collapsed && "回收站"}
             </NavLink>
           )}
         </nav>

@@ -364,6 +364,9 @@ export const users = mysqlTable("users", {
     .notNull()
     .$onUpdate(() => new Date()),
   lastSignInAt: timestamp("lastSignInAt").defaultNow().notNull(),
+  /** v96：学员删除（软删）时间。null=正常；非 null=已删除——从各列表/登录隐藏，
+   *  保留 2 个月（RETENTION_MS）内可在回收站恢复，到期由 purgeExpiredStudents 物理清除。 */
+  deletedAt: timestamp("deleted_at"),
 });
 
 /* ---------------------------------- SaaS 机构（租户） --------------------------------- */

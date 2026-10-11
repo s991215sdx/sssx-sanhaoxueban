@@ -7,6 +7,7 @@ import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
 import AiCoachPanel from "@/components/coach/AiCoachPanel";
 import StudentAdvicePanel from "@/components/coach/StudentAdvicePanel";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
+import DeleteStudentButton from "@/components/DeleteStudentButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import { STUDENT_MODULES } from "@contracts/studentModules";
@@ -191,6 +192,8 @@ export default function Tutor() {
                     <ResetPasswordButton userId={s.userId} name={s.name} compact />
                     {/* V54：报告推送开关（默认未推送，家长不可见） */}
                     <ReportAccessButton userId={s.userId} released={s.reportReleased} compact />
+                    {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
+                    <DeleteStudentButton userId={s.userId} name={s.name} compact />
                     {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
                     {(s.assessBoundKinds.length > 0 || s.releasedAssessments.length > 0) && (
                       <button

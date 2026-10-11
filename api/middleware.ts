@@ -20,6 +20,15 @@ const requireAuth = t.middleware(async (opts) => {
     });
   }
 
+  /* v96：已删除（软删）的账号一律拒绝对外接口——学员被删后立即失效，
+   * 伴学师/管理员要恢复请走回收站。 */
+  if (ctx.user.deletedAt) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "该账号已被删除，如需恢复请联系伴学师",
+    });
+  }
+
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
