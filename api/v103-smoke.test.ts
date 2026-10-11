@@ -13,10 +13,10 @@ describe("v103 判定颜色标识", () => {
     if (!/rounded-full[\s\S]{0,80}e3v37LevelBarColor\(sub\.level\)/.test(src)) throw new Error("缺：小计行判定圆点");
   });
 
-  it("逐题行：左侧 3px 判定色条", () => {
+  it("逐题行：左侧短圆角色条（v113 替代通高 3px 边框）", () => {
     const src = read("src/components/reports/AbilityScoreTable.tsx");
-    if (!/border-l-\[3px\]/.test(src)) throw new Error("缺：逐题行左侧色条");
-    if (!/borderLeftColor: e3v37LevelBarColor\(it\.level\)/.test(src)) throw new Error("缺：色条取判定色");
+    if (!/h-7 w-\[3\.5px\][\s\S]{0,80}rounded-full/.test(src)) throw new Error("缺：短圆角色条");
+    if (!/background: e3v37LevelBarColor\(it\.level\)/.test(src)) throw new Error("缺：色条取判定色");
   });
 
   it("取色助手使用三档 bar 色", () => {
