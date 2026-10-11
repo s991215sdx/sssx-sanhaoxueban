@@ -349,7 +349,7 @@ function RoadmapSection({
     <span
       className={`mr-1.5 mb-1 inline-block rounded-md border px-1.5 py-0.5 text-[11.5px] leading-tight ${
         bad
-          ? "border-[#b91c1c]/50 bg-[#fbe3df] font-bold text-[#8f1313]"
+          ? "border-[#b91c1c]/50 bg-[#FAF3EB] font-bold text-[#8f1313]"
           : trait
             ? "border-[#c7a23a]/70 bg-[#f5e7c1] font-bold text-[#8a6d1a]"
             : "border-border bg-cream text-olive-soft"
@@ -629,13 +629,13 @@ function RoadmapSection({
                     return (
                       <td
                         key={x.name}
-                        className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 ${gap > 0 ? "bg-[#fbe3df] font-bold text-[#b91c1c]" : "text-[#2F8F60]"}`}
+                        className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 ${gap > 0 ? "bg-[#FAF3EB] font-bold text-[#b91c1c]" : "text-[#2F8F60]"}`}
                       >
                         {gap > 0 ? `+${gap}` : "已达标"}
                       </td>
                     );
                   })}
-                  <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${targetTotal - lastTotal > 0 ? "bg-[#fbe3df] text-[#b91c1c]" : "text-[#2F8F60]"}`}>
+                  <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${targetTotal - lastTotal > 0 ? "bg-[#FAF3EB] text-[#b91c1c]" : "text-[#2F8F60]"}`}>
                     {targetTotal - lastTotal > 0 ? `+${targetTotal - lastTotal}` : "已达标"}
                   </td>
                 </tr>
@@ -879,7 +879,7 @@ function RoadmapSection({
                 const weakDims = l.dims.filter((n) => n.level !== "正常");
                 return (
                   <tr key={l.layer} className={bad ? "" : "opacity-70"}>
-                    <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${l.level === "卡点" ? "bg-[#fbe3df] text-[#8f1313]" : l.level === "待提升" ? "bg-[#f5e7c1] text-[#8a6d1a]" : "text-[#2F8F60]"}`}>
+                    <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${l.level === "卡点" ? "bg-[#FAF3EB] text-[#8f1313]" : l.level === "待提升" ? "bg-[#f5e7c1] text-[#8a6d1a]" : "text-[#2F8F60]"}`}>
                       {l.layer}层 {l.score}/5 · {l.level}
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
@@ -1430,7 +1430,7 @@ function ParentReportTab({
           <h3 className="font-bold text-olive">家庭支持与环境观察（家长卷）</h3>
           <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">{e3parent.summary}</p>
           {e3parent.severeConflict && (
-            <div className="mt-2.5 rounded-xl border border-[#8f1313]/40 bg-[#fbe3df] p-3 text-[12.5px] font-semibold text-[#8f1313]">
+            <div className="mt-2.5 rounded-xl border border-[#8f1313]/40 bg-[#FAF3EB] p-3 text-[12.5px] font-semibold text-[#8f1313]">
               !! 红线提醒：家庭近期出现严重亲子冲突信号——建议先修复关系，必要时寻求学校心理老师或专业机构支持。
             </div>
           )}
@@ -1445,7 +1445,7 @@ function ParentReportTab({
                       className="chip !text-[11px]"
                       style={
                         cv.studentLevel === "卡点"
-                          ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#fbe3df" }
+                          ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#FAF3EB" }
                           : cv.studentLevel === "待提升"
                             ? { borderColor: "#c7a23a66", color: "#8a6d1a", background: "#f5e7c1" }
                             : { borderColor: "#3CC07866", color: "#2F8F60", background: "#E4F7EC" }
@@ -1489,7 +1489,7 @@ function ParentReportTab({
                   <div
                     key={b.key}
                     className={`rounded-xl border p-3.5 ${
-                      strong ? "border-[#b91c1c]/50 bg-[#fbe3df]/60" : over ? "border-[#c7a23a]/50 bg-[#f5e7c1]/40" : "border-lime/40 bg-lime-pale/40"
+                      strong ? "border-[#b91c1c]/50 bg-[#FAF3EB]/60" : over ? "border-[#c7a23a]/50 bg-[#f5e7c1]/40" : "border-lime/40 bg-lime-pale/40"
                     }`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
@@ -1541,7 +1541,7 @@ function ParentReportTab({
                   key={i}
                   className={
                     c.hot
-                      ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
+                      ? "rounded-lg bg-[#FAF3EB] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
                       : "text-[12.5px] leading-relaxed text-olive-soft"
                   }
                 >
@@ -1900,7 +1900,7 @@ function MentalV2Bars({
         ))}
       </div>
       {mental.selfHarm && (
-        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3">
+        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#FAF3EB] p-3">
           <div className="text-[12.5px] font-bold text-[#8f1313]">⚠ 需要立即关注的信号</div>
           <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_V2_ITEM9_NOTICE}主动求助是勇敢，不是软弱。</p>
         </div>
@@ -1943,7 +1943,7 @@ function MentalSdqBars({ mental }: { mental: MentalSdqResult }) {
       </div>
       <p className="mt-2 text-[11.5px] text-olive-mute">亲社会行为是优势维度（分越高越好）；其余四维与困难总分越低越好。</p>
       {mental.selfHarm && (
-        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3">
+        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#FAF3EB] p-3">
           <div className="text-[12.5px] font-bold text-[#8f1313]">⚠ 需要立即关注的信号</div>
           <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_SDQ_SAFETY_NOTICE}主动求助是勇敢，不是软弱。</p>
         </div>
@@ -2001,7 +2001,7 @@ function SdqDimExplainCard({ mental }: { mental: MentalSdqResult }) {
                       ? "border-lime/50 bg-lime-pale text-[#2F8F60]"
                       : mental.dimBands[k] === "边缘"
                         ? "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]"
-                        : "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]"
+                        : "border-[#b91c1c]/50 bg-[#FAF3EB] text-[#8f1313]"
                   }`}
                 >
                   本次 {mental.dims[k]}/10「{mental.dimBands[k]}」
@@ -2086,7 +2086,7 @@ const SCL90_LEVEL_BADGE: Record<string, string> = {
   正常: "border-lime/50 bg-lime-pale text-[#2F8F60]",
   轻度: "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]",
   中度: "border-[#c77b3a]/60 bg-[#f8e3d1] text-[#9a4d17]",
-  偏重: "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]",
+  偏重: "border-[#b91c1c]/50 bg-[#FAF3EB] text-[#8f1313]",
   严重: "border-[#b91c1c] bg-[#f6d4ce] text-[#8f1313]",
 };
 
@@ -2723,7 +2723,7 @@ export default function ReportView({
                 <span className="chip !text-[11px]">外驱依赖 {e3v37.extDrive}/5 · 内驱 {e3v37.intDrive}/5</span>
                 <span className="chip !text-[11px]">生活事件 {e3v37.lifeEventScore}/24（{e3v37.lifeEventLevel}）</span>
                 {e3v37.mainBlock && (
-                  <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">
+                  <span className="chip !border-[#8f1313]/50 !bg-[#FAF3EB] !text-[11px] !text-[#8f1313]">
                     主卡点：{e3v37.mainBlock.label} {e3v37.mainBlock.score}/5
                   </span>
                 )}
@@ -2776,7 +2776,7 @@ export default function ReportView({
                     <span className="chip !text-[11px]">家长没看到的闪光点：{parentResult.underestimates.map((d) => d.kp).join("、")}</span>
                   )}
                   {parentResult.severeConflict && (
-                    <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
+                    <span className="chip !border-[#8f1313]/50 !bg-[#FAF3EB] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
                   )}
                 </div>
               </div>
@@ -3438,7 +3438,7 @@ function AssessmentChartsLite({
             ]}
           />
           {mental.selfHarm && (
-            <p className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3 text-[12.5px] font-bold leading-relaxed text-[#8f1313]">
+            <p className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#FAF3EB] p-3 text-[12.5px] font-bold leading-relaxed text-[#8f1313]">
               ⚠ 有自伤念头信号——请今天就告诉家长或信任的老师，必要时拨打心理援助热线 12356。
             </p>
           )}
@@ -3553,7 +3553,7 @@ function CombinedLite({
           <span className="chip !border-lime/50 !bg-lime-pale !text-[12.5px]">性格 {mbti.type} 型{mr ? ` · ${mr.tags.slice(0, 2).join("、")}` : ""}</span>
           <span className="chip !border-lime/50 !bg-lime-pale !text-[12.5px]">行为 {combo.join("")} 组合{dr ? ` · ${dr.keywords.slice(0, 2).join("、")}` : ""}</span>
           {e3.mainBlock && (
-            <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[12.5px] !text-[#8f1313]">主卡点 · {e3.mainBlock.label} {e3.mainBlock.score}/5</span>
+            <span className="chip !border-[#8f1313]/50 !bg-[#FAF3EB] !text-[12.5px] !text-[#8f1313]">主卡点 · {e3.mainBlock.label} {e3.mainBlock.score}/5</span>
           )}
         </div>
       </div>

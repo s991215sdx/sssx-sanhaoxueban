@@ -270,7 +270,7 @@ console.log("OK 综合详版附录章整章不打印");
 const compareCount = fullParent.split("亲子 DISC 行为风格对照").length - 1;
 if (compareCount !== 1) throw new Error(`综合详版亲子 DISC 对照图出现 ${compareCount} 次，应为 1 次`);
 /* 家长报告：DISC 强冲突维度红色高亮 + 白话 */
-need(parentHtml, "#fbe3df", "家长报告红色高亮");
+need(parentHtml, "#FAF3EB", "家长报告红色高亮");
 need(parentHtml, "明显对着干", "DISC 差值白话");
 need(parentHtml, "爱热闹、爱表达", "DISC 维度白话注释");
 /* 认知对照卡：并排对照 + 白话含义 */
@@ -310,7 +310,7 @@ console.log("OK v40 双量表计分与红线");
 const profileHtml = render("combined");
 for (const kw of ["乐学 3.1/5 · 待提升", "会学 3.3/5 · 待提升", "善学 2.7/5 · 卡点", "条件 2.8/5 · 卡点", "学能 2/5 · 卡点"]) need(profileHtml, kw, "框架图分数徽章");
 if (/学业诊断 · (乐学|会学|善学|条件|学能) \d/.test(profileHtml)) throw new Error("框架图仍有「学业诊断 ·」分数前缀");
-if (!profileHtml.includes("#fbe3df")) throw new Error("框架图卡点红色缺失");
+if (!profileHtml.includes("#FAF3EB")) throw new Error("框架图卡点红色缺失");
 console.log("OK 框架图分数徽章（去前缀+红黄绿+档位）");
 
 /* 心理三套结果都进报告：mental tab + 综合条件章 + 答题明细 */
@@ -637,7 +637,7 @@ const fw52 = renderToStaticMarkup(
 );
 need(fw52, "#f5e7c1", "待提升黄底");
 need(fw52, "#8a6d1a", "待提升深色字");
-need(fw52, "#fbe3df", "卡点红底");
+need(fw52, "#FAF3EB", "卡点红底");
 need(fw52, "#8f1313", "卡点深红字");
 need(fw52, "#f0f7dd", "正常绿底");
 need(fw52, "SDQ「关注」", "心理健康关注徽标");

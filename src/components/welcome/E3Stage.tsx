@@ -629,7 +629,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                 )
               }
               className={`rounded-full border px-3 py-1 text-[12px] transition-colors ${
-                closed ? "border-terra/50 bg-[#fbe3df] text-[#b91c1c]" : "border-border bg-cream text-olive-mute hover:border-lime/60"
+                closed ? "border-terra/50 bg-[#FAF3EB] text-[#b91c1c]" : "border-border bg-cream text-olive-mute hover:border-lime/60"
               }`}
             >
               {closed ? "未开设 · 点击恢复" : "未开设"}

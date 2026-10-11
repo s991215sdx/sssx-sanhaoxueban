@@ -40,7 +40,7 @@ function AbilityGroup({
         type="button"
         onClick={onToggle}
         className={`flex w-full items-center gap-2 px-3 py-2 text-left transition ${
-          sub.level && sub.level !== "正常" ? "bg-[#fbe3df]/40" : "bg-cream/70 hover:bg-cream"
+          sub.level && sub.level !== "正常" ? "bg-[#FAF3EB]/40" : "bg-cream/70 hover:bg-cream"
         }`}
       >
         {hasItems ? (
@@ -79,7 +79,7 @@ function AbilityGroup({
           </thead>
           <tbody>
             {qItems.map((it) => (
-              <tr key={it.no} className={it.level !== "正常" ? "bg-[#fbe3df]/30" : ""}>
+              <tr key={it.no} className={it.level !== "正常" ? "bg-[#FAF3EB]/30" : ""}>
                 <td className="border-t border-border px-3 py-1.5 text-olive-soft">
                   <span className="mono text-[11px] text-olive-mute">{it.no}.</span>{" "}
                   <span className="font-medium">{it.kp}</span>

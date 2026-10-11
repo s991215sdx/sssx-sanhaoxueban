@@ -269,7 +269,7 @@ console.log("OK 综合详版附录章整章不打印");
 const compareCount = fullParent.split("亲子 DISC 行为风格对照").length - 1;
 if (compareCount !== 1) throw new Error(`综合详版亲子 DISC 对照图出现 ${compareCount} 次，应为 1 次`);
 /* 家长报告：DISC 强冲突维度红色高亮 + 白话 */
-need(parentHtml, "#fbe3df", "家长报告红色高亮");
+need(parentHtml, "#FAF3EB", "家长报告红色高亮");
 need(parentHtml, "明显顶牛", "DISC 差值白话");
 need(parentHtml, "爱热闹、爱表达", "DISC 维度白话注释");
 /* 认知对照卡：并排对照 + 白话含义 */

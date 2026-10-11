@@ -65,7 +65,7 @@ export default function StudentAdvicePanel({ userId }: { userId: number }) {
                     <span
                       className={`rounded-full px-1.5 py-px text-[10.5px] font-bold ${
                         a.score < 3.0
-                          ? "bg-[#fbe3df] text-[#8f1313]"
+                          ? "bg-[#FAF3EB] text-[#8f1313]"
                           : a.score < 3.8
                             ? "bg-[#f5e7c1] text-[#8a6d1a]"
                             : "bg-[#E4F7EC] text-[#2F8F60]"

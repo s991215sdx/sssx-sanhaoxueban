@@ -96,7 +96,7 @@ const LV = (level: E3V37Level) => E3V37_LEVEL_STYLE[level];
 const MENTAL_TONE_STYLE = {
   ok: { border: "#3CC07899", bg: "#E4F7EC", text: "#20362B" },
   warn: { border: "#c7a23a99", bg: "#f5e7c1", text: "#8a6d1a" },
-  bad: { border: "#b91c1c99", bg: "#fbe3df", text: "#8f1313" },
+  bad: { border: "#b91c1c99", bg: "#FAF3EB", text: "#8f1313" },
 } as const;
 
 /** 一级单元块：能力名 + 均分，按红黄绿三档浅色底 + 深色字。 */
