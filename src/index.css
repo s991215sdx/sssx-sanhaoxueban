@@ -54,6 +54,9 @@
 @layer utilities {
   .paper-card {
     @apply bg-card border border-border rounded-2xl shadow-[0_1px_0_rgba(31,107,67,0.06),0_8px_24px_-12px_rgba(31,107,67,0.18)];
+    background-image:
+      radial-gradient(260px 180px at 100% 0%, rgba(14, 168, 117, 0.05), transparent 70%),
+      radial-gradient(220px 160px at 0% 100%, rgba(60, 192, 120, 0.04), transparent 70%);
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border border-border bg-secondary/60 px-2.5 py-0.5 text-xs mono;

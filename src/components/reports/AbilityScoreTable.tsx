@@ -5,7 +5,7 @@
  * 逐题数据来自 scoreE3V37Items(stage, ratings)；ratings 长度不足 70 时只有小计行（无明细可展开）。
  */
 import { useState } from "react";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, TreePine } from "lucide-react";
 import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
 import { e3v37LevelTextClass, e3v37LevelBarColor, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
@@ -166,7 +166,10 @@ export default function AbilityScoreTable({
   );
   return (
     <div className="paper-card p-5">
-      <h3 className="font-bold text-olive">附录 · 三阶九能观察点得分表</h3>
+      <h3 className="flex items-center gap-1.5 font-bold text-[#2F8F60]">
+        <TreePine size={16} />
+        附录 · 三阶九能观察点得分表
+      </h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
         每能一行小计（分数+判定）直接可看；点能力行展开该能逐题明细：作答是你选的原答案（1=从不 / 2=很少 / 3=有时 / 4=经常 / 5=总是），得分按 5 分制换算（反向题已换算，越低越需关注）：{E3V37_LEVEL_CAPTION}。
         {items.length === 0 && "（本次记录未保存逐题作答，仅显示能级小计；重新完成一次诊断即可看到逐题明细。）"}

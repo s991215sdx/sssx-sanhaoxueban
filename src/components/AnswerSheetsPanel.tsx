@@ -4,7 +4,7 @@
  * 每套卷可单独打印，也可一键全部打印（独立打印窗口，可另存 PDF）。
  */
 import { useMemo } from "react";
-import { Printer, ClipboardList } from "lucide-react";
+import { Printer, ClipboardList, TreePine } from "lucide-react";
 import { buildAnswerBlocks, type RawAnswer } from "@/components/reports/answerBlocks";
 import { isE3V37Result } from "@contracts/e3v37";
 import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
@@ -39,7 +39,10 @@ export default function AnswerSheetsPanel({
   return (
     <div className="paper-card p-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="mono text-[10px] tracking-wider text-olive-mute">答题卷 · 得分表</div>
+        <div className="flex items-center gap-1.5 text-[#2F8F60]">
+          <ClipboardList size={14} />
+          <span className="mono text-[10px] tracking-wider">答题卷 · 得分表</span>
+        </div>
         <button
           onClick={() => downloadReport("答题卷 · 得分表", answerSheetsPrintHtml(blocks, e3v37), studentName)}
           className={printBtn}
@@ -55,7 +58,10 @@ export default function AnswerSheetsPanel({
       {e3v37 && (
         <div className="mt-3">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-[12.5px] font-semibold text-olive">三阶九能得分表</span>
+            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#2F8F60]">
+              <TreePine size={14} />
+              三阶九能得分表
+            </span>
             <button
               onClick={() => downloadReport("三阶九能得分表", answerSheetsPrintHtml([], e3v37), studentName)}
               className={printBtn}

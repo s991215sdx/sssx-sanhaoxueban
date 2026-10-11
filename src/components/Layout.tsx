@@ -186,6 +186,11 @@ export default function Layout({ children }: { children: ReactNode }) {
             </NavLink>
           )}
         </nav>
+        {/* v104：侧栏底部低存在感树苗装饰，呼应「三好树」品牌意象 */}
+        <div className={`mt-auto flex items-center gap-1.5 text-[10px] text-olive-mute/70 ${collapsed ? "justify-center" : "px-3.5"}`}>
+          <Sprout size={14} strokeWidth={1.8} />
+          {!collapsed && <span>伴每一棵小树，长成大树</span>}
+        </div>
         {collapsed ? (
           <div className="mt-auto flex flex-col items-center gap-2.5">
             <span title={displayName}>
