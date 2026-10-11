@@ -247,8 +247,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             本机构服务已暂停，部分功能可能不可用。如有疑问请联系机构老师。
           </div>
         )}
-        {/* v87：桌面端内容区加白色卡片背景板（灰底太飘），卡片随屏宽自适应并留内外边距；移动端保持全宽 */}
-        <div className="mx-auto max-w-5xl px-4 pt-6 md:max-w-6xl md:px-5 md:pt-5 xl:max-w-7xl">
+        {/* v87/v93：桌面端内容区加白色卡片背景板；v93 起 2xl 超大屏放宽到 1560px，消灭两侧大片留白；移动端保持全宽 */}
+        <div className="mx-auto max-w-5xl px-4 pt-6 md:max-w-6xl md:px-5 md:pt-5 lg:max-w-7xl 2xl:max-w-[1560px]">
           <div className="md:paper-card md:min-h-[calc(100vh-4.5rem)] md:px-8 md:py-7">
             <BackBar />
             {children}

@@ -18,8 +18,8 @@ module.exports = {
           pale: "#E4F7EC",
         },
         cream: {
-          DEFAULT: "#F7F9F8",
-          deep: "#EDF2EF",
+          DEFAULT: "#FFFFFF",
+          deep: "#F1F6F3",
           card: "#FFFFFF",
         },
         butter: "#FFC600",

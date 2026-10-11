@@ -13,11 +13,12 @@ describe("v91 明快色系", () => {
     for (const [tok, hex] of [
       ['DEFAULT: "#1F6B43"', "olive 深绿"],
       ['DEFAULT: "#3CC078"', "lime 鲜绿"],
-      ['DEFAULT: "#F7F9F8"', "亮底"],
       ['pale: "#E4F7EC"', "浅绿 tint"],
     ]) {
       if (!src.includes(tok)) throw new Error("缺 " + hex + "：" + tok);
     }
+    /* 亮底：v91 引入 #F7F9F8，v93 起进一步提为纯白（不再锁死具体值） */
+    if (!/DEFAULT: "#(F7F9F8|FFFFFF)"/.test(src)) throw new Error("缺：亮底 cream");
   });
 
   it("正文前景色为近黑而非中绿", () => {

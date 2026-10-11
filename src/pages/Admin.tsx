@@ -145,8 +145,8 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       </header>
 
       {/* Tab 切换 */}
-      {/* v90：去灰——tab 条改淡绿 tinted 底，不再是大灰板 */}
-      <div className="flex rounded-xl bg-lime-pale/70 p-1">
+      {/* v90/v93：tab 条淡绿底（v93 起全不透明更鲜亮），不再是大灰板 */}
+      <div className="flex rounded-xl bg-lime-pale p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
