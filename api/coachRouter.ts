@@ -379,46 +379,45 @@ export const coachRouter = createRouter({
         await db.select({ id: studentProfile.id }).from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
       )[0];
       if (!profile) throw new Error("只有学员（有学员档案的账号）可以删除");
-      await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, input.userId));
+      /* v99：记录删除人——回收站按"谁删的"做伴学师可见性判定 */
+      await db.update(users).set({ deletedAt: new Date(), deletedBy: ctx.user.id }).where(eq(users.id, input.userId));
       return { ok: true as const };
     }),
 
-  /** v96：从回收站恢复学员（清除 deleted_at）。权限同删除。 */
+  /** v96：从回收站恢复学员（清除 deleted_at）。权限同删除（v99：含"我删的"）。 */
   restoreStudent: tutorQuery
     .input((v: unknown) => v as { userId: number })
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      const target = (
+        await db.select({ id: users.id, deletedAt: users.deletedAt, deletedBy: users.deletedBy }).from(users).where(eq(users.id, input.userId)).limit(1)
+      )[0];
+      if (!target) throw new Error("学员账号不存在");
+      if (!target.deletedAt) throw new Error("该学员不在回收站里");
       if (ctx.user.role !== "admin") {
-        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+        /* 伴学师：名下学员、扫自己码注册的学员、或自己删的学员才可恢复 */
+        if (target.deletedBy !== ctx.user.id && !(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
       } else if (!(await sameOrg(db, ctx.user, input.userId))) {
         throw new Error("这位同学不在你的机构内");
       }
-      const target = (
-        await db.select({ id: users.id, deletedAt: users.deletedAt }).from(users).where(eq(users.id, input.userId)).limit(1)
-      )[0];
-      if (!target) throw new Error("学员账号不存在");
-      if (!target.deletedAt) throw new Error("该学员不在回收站里");
-      await db.update(users).set({ deletedAt: null }).where(eq(users.id, input.userId));
+      await db.update(users).set({ deletedAt: null, deletedBy: null }).where(eq(users.id, input.userId));
       return { ok: true as const };
     }),
 
   /**
    * v96：回收站——已删除、尚在 2 个月保留期内的学员。打开时先惰性清扫一次到期数据。
-   * 管理员看本机构（超管看全量）；伴学师只看自己名下被删的学员。
+   * 管理员看本机构（超管看全量）；v99：伴学师只看「自己删的 / 名下 / 扫自己码注册的」学员。
    */
   recycleBin: tutorQuery.query(async ({ ctx }) => {
     const db = getDb();
-    const { purgeExpiredStudents, listDeletedStudents } = await import("./recycle");
+    const { purgeExpiredStudents, listDeletedStudents, visibleDeletedStudentIds } = await import("./recycle");
     const purged = await purgeExpiredStudents(db);
     const all = await listDeletedStudents(db, ctx.user.orgId);
     if (ctx.user.role === "admin") return { items: all, purged };
-    const { listStudentTutorLinks } = await import("./tutorAccess");
-    const links = await listStudentTutorLinks(db);
-    const mine = new Set<number>();
-    for (const l of links) if (l.tutorUserId === ctx.user.id) mine.add(l.studentUserId);
-    return { items: all.filter((s) => mine.has(s.userId)), purged };
+    const visible = await visibleDeletedStudentIds(db, ctx.user.id);
+    return { items: all.filter((s) => visible.has(s.userId)), purged };
   }),
 });
 

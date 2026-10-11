@@ -2,7 +2,9 @@
 // 背景：平台部署运行时 db/migrations 下的文件可能不在容器内，
 // 迁移内容随 esbuild 打入 dist/boot.js，消除运行时文件依赖。
 export const JOURNAL_ENTRIES: { idx: number; when: number; tag: string }[] = [{"idx": 0, "when": 1788353292784, "tag": "0000_solid_maximus"}, {"idx": 1, "when": 1788361090425, "tag": "0001_greedy_cyclops"}, {"idx": 2, "when": 1788431657903, "tag": "0002_smiling_bloodscream"}, {"idx": 3, "when": 1788520000000, "tag": "0003_tutor_sessions"}, {"idx": 4, "when": 1788542400000, "tag": "0004_phone_password_login"}, {"idx": 5, "when": 1788560000000, "tag": "0005_assessment_answers_academics"}, {"idx": 6, "when": 1788563600000, "tag": "0006_tutor_role"}, {"idx": 7, "when": 1788604800000, "tag": "0007_kp_stage_grade"}, {"idx": 8, "when": 1788657600000, "tag": "0008_kp_subject"}, {"idx": 9, "when": 1788715200000, "tag": "0009_multi5_kind"}, {"idx": 10, "when": 1788780000000, "tag": "0010_optional_assessments"}, {"idx": 11, "when": 1788990000000, "tag": "0011_e3parent_kind"}, {"idx": 12, "when": 1789222055198, "tag": "0012_discparent_kind"}, {"idx": 13, "when": 1789344000000, "tag": "0013_mental_v40_kinds"}, {"idx": 14, "when": 1789400000000, "tag": "0014_scl90_kind"}, {"idx": 15, "when": 1789488000000, "tag": "0015_invite_channels"}, {"idx": 16, "when": 1789574400000, "tag": "0016_invite_v50"}, {"idx": 17, "when": 1789660800000, "tag": "0017_invite_v51_minimal"}, {"idx": 18, "when": 1789747200000, "tag": "0018_report_released"}, {"idx": 19, "when": 1789833600000, "tag": "0019_report_push_request"}, {"idx": 20, "when": 1789920000000, "tag": "0020_student_tutor"}, {"idx": 21, "when": 1790006400000, "tag": "0021_organizations"}, {"idx": 22, "when": 1790092800000, "tag": "0022_student_prescriptions"}, {"idx": 23, "when": 1790180000000, "tag": "0023_academic_records"}, {"idx": 24, "when": 1790265600000, "tag": "0024_subject_kind"}, {"idx": 25, "when": 1790352000000, "tag": "0025_invite_report_access"}, {"idx": 26, "when": 1790438400000, "tag": "0026_invite_assessment_access"}, {"idx": 27, "when": 1790524800000, "tag": "0027_user_soft_delete"}
+, {"idx": 28, "when": 1790611200000, "tag": "0028_user_deleted_by"}
 ];
+
 
 
 export const MIGRATION_SQL: Record<string, string> = {
@@ -35,4 +37,5 @@ export const MIGRATION_SQL: Record<string, string> = {
   "0025_invite_report_access": "ALTER TABLE `invite_channels` ADD `report_access` boolean NOT NULL DEFAULT false;--> statement-breakpoint\nALTER TABLE `invite_channels` ADD `report_kinds` json;\n",
   "0026_invite_assessment_access": "ALTER TABLE `invite_channels` ADD `assessment_access` boolean NOT NULL DEFAULT false;--> statement-breakpoint\nALTER TABLE `invite_channels` ADD `assessment_kinds` json;--> statement-breakpoint\nALTER TABLE `student_profile` ADD `released_assessments` json;\n",
   "0027_user_soft_delete": "ALTER TABLE `users` ADD `deleted_at` timestamp NULL;--> statement-breakpoint\nALTER TABLE `users` ADD INDEX `users_deleted_idx` (`deleted_at`);\n",
+  "0028_user_deleted_by": "ALTER TABLE `users` ADD `deleted_by` bigint unsigned NULL;\n",
 };

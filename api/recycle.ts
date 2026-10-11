@@ -83,9 +83,15 @@ export type DeletedStudentItem = {
   deletedAt: Date;
   /** 距物理清除还剩的完整天数（0 = 今天内随时可能被清） */
   remainingDays: number;
+  /** 执行删除的操作者（v99；null=未知/旧数据） */
+  deletedBy: number | null;
+  deletedByName: string | null;
 };
 
-/** 回收站列表：已软删、仍有学员档案的用户（只列学员，不列伴学师/管理员）。 */
+/**
+ * 回收站列表：已软删、仍有学员档案的用户（只列学员，不列伴学师/管理员）。
+ * v99：附带删除人，供「谁删的」可见性与页面展示。
+ */
 export async function listDeletedStudents(db: Db, orgId?: number | null): Promise<DeletedStudentItem[]> {
   const deletedUsers = await db
     .select()
@@ -93,6 +99,7 @@ export async function listDeletedStudents(db: Db, orgId?: number | null): Promis
     .where(isNotNull(users.deletedAt));
   const profiles = await db.select().from(studentProfile);
   const profileByUser = new Map(profiles.map((p) => [p.userId, p]));
+  const nameMap = new Map(deletedUsers.map((u) => [u.id, u.name ?? `用户${u.id}`]));
   const now = Date.now();
   return deletedUsers
     .filter((u) => u.deletedAt != null)
@@ -109,7 +116,34 @@ export async function listDeletedStudents(db: Db, orgId?: number | null): Promis
         grade: p.grade,
         deletedAt,
         remainingDays: Math.max(0, Math.ceil(remainingMs / (24 * 3600 * 1000))),
+        deletedBy: u.deletedBy ?? null,
+        deletedByName: u.deletedBy != null ? (nameMap.get(u.deletedBy) ?? `用户${u.deletedBy}`) : null,
       };
     })
     .sort((a, b) => b.deletedAt.getTime() - a.deletedAt.getTime());
+}
+
+/**
+ * v99：伴学师在回收站可见的学员范围——命中任一即可：
+ * ① 自己执行的删除（users.deleted_by = 我）；
+ * ② 名下学员（主管伴学师 或 student_tutor 分配）；
+ * ③ 扫我自己的注册二维码注册的学员。
+ */
+export async function visibleDeletedStudentIds(db: Db, tutorUserId: number): Promise<Set<number>> {
+  const { listStudentTutorLinks, listInviteeStudentIds } = await import("./tutorAccess");
+  const visible = new Set<number>();
+  const [links, invitees, deletedRows, profiles] = await Promise.all([
+    listStudentTutorLinks(db),
+    listInviteeStudentIds(db, tutorUserId),
+    db.select({ id: users.id, deletedBy: users.deletedBy }).from(users).where(isNotNull(users.deletedAt)),
+    db.select({ userId: studentProfile.userId, tutorId: studentProfile.tutorId }).from(studentProfile),
+  ]);
+  const primaryOf = new Map(profiles.filter((p) => p.tutorId != null).map((p) => [p.userId, p.tutorId!]));
+  for (const l of links) if (l.tutorUserId === tutorUserId) visible.add(l.studentUserId);
+  for (const id of invitees) visible.add(id);
+  for (const r of deletedRows) {
+    if (r.deletedBy === tutorUserId) visible.add(r.id);
+    if (primaryOf.get(r.id) === tutorUserId) visible.add(r.id);
+  }
+  return visible;
 }

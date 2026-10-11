@@ -71,6 +71,7 @@ export default function RecycleBin() {
                 </div>
                 <div className="mt-0.5 text-[11.5px] text-olive-mute">
                   删除于 {new Date(s.deletedAt).toLocaleString("zh-CN")}
+                  {s.deletedByName && <> · 由 {s.deletedByName} 删除</>}
                   <span className={s.remainingDays <= 7 ? "font-semibold text-[#8f1313]" : ""}>
                     {" "}· 还剩 {s.remainingDays} 天自动彻底清除
                   </span>

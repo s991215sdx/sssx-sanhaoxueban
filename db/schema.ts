@@ -367,6 +367,8 @@ export const users = mysqlTable("users", {
   /** v96：学员删除（软删）时间。null=正常；非 null=已删除——从各列表/登录隐藏，
    *  保留 2 个月（RETENTION_MS）内可在回收站恢复，到期由 purgeExpiredStudents 物理清除。 */
   deletedAt: timestamp("deleted_at"),
+  /** v99：执行软删的操作者（users.id）——回收站按"谁删的"做伴学师可见性判定。 */
+  deletedBy: bigint("deleted_by", { mode: "number", unsigned: true }),
 });
 
 /* ---------------------------------- SaaS 机构（租户） --------------------------------- */
