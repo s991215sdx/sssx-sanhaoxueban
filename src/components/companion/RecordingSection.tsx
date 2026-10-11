@@ -62,7 +62,7 @@ export default function RecordingSection() {
     <div className="space-y-4">
       <button
         onClick={() => setShowForm((v) => !v)}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
       >
         <Plus size={17} />
         记一节录音
@@ -160,7 +160,7 @@ export default function RecordingSection() {
                   transcript: transcript.trim() || undefined,
                 })
               }
-              className="flex-1 rounded-xl bg-olive py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
+              className="flex-1 rounded-xl bg-brand py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
             >
               {add.isPending ? "保存中…" : "存下这节课"}
             </button>

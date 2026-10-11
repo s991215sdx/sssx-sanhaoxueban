@@ -9,7 +9,7 @@ import { useState } from "react";
 import { ChevronDown, Flag, Footprints } from "lucide-react";
 import type { PathwayStage } from "@/data/reports/shengxueData";
 
-const STAGE_DOT = ["bg-lime", "bg-sky", "bg-amber", "bg-olive"];
+const STAGE_DOT = ["bg-lime", "bg-sky", "bg-amber", "bg-brand"];
 
 export default function FullPathwayMap({ stages }: { stages: PathwayStage[] }) {
   const [collapsed, setCollapsed] = useState<string[]>(
@@ -31,7 +31,7 @@ export default function FullPathwayMap({ stages }: { stages: PathwayStage[] }) {
           return (
             <li key={s.key} className="relative pl-6 pb-3 last:pb-0">
               {/* 时间线 */}
-              <span className={`absolute left-[7px] top-4 h-full w-0.5 ${i < stages.length - 1 ? "bg-olive/15" : "bg-transparent"}`} />
+              <span className={`absolute left-[7px] top-4 h-full w-0.5 ${i < stages.length - 1 ? "bg-brand/15" : "bg-transparent"}`} />
               <span className={`absolute left-1 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-cream ${STAGE_DOT[i % STAGE_DOT.length]}`} />
               <button
                 onClick={() => toggle(s.key)}

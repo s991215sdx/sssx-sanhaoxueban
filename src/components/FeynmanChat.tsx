@@ -106,7 +106,7 @@ export default function FeynmanChat({
       {/* 头部 */}
       <div className="flex items-center justify-between border-b border-border bg-lime-pale/50 px-5 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-olive text-cream">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-cream">
             <Bot size={18} />
           </span>
           <div>
@@ -133,7 +133,7 @@ export default function FeynmanChat({
           <div key={i} className={`flex gap-2.5 ${m.role === "student" ? "flex-row-reverse" : ""}`}>
             <span
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                m.role === "tutor" ? "bg-olive text-cream" : "bg-lime text-white"
+                m.role === "tutor" ? "bg-brand text-cream" : "bg-lime text-white"
               }`}
             >
               {m.role === "tutor" ? <Bot size={15} /> : <User size={15} />}
@@ -151,7 +151,7 @@ export default function FeynmanChat({
         ))}
         {reply.isPending && (
           <div className="flex gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-olive text-cream">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-cream">
               <Bot size={15} />
             </span>
             <div className="rounded-2xl rounded-tl-sm border border-border bg-cream-card px-4 py-3">
@@ -159,7 +159,7 @@ export default function FeynmanChat({
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-olive-mute"
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-mute"
                     style={{ animationDelay: `${i * 0.15}s` }}
                   />
                 ))}
@@ -175,7 +175,7 @@ export default function FeynmanChat({
         {done ? (
           <button
             onClick={onDone}
-            className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             生成我的课堂提问清单 →
           </button>
@@ -212,7 +212,7 @@ export default function FeynmanChat({
               <button
                 onClick={send}
                 disabled={!input.trim() || reply.isPending}
-                className="flex w-14 items-center justify-center rounded-xl bg-olive text-cream transition-colors hover:bg-lime disabled:opacity-40"
+                className="flex w-14 items-center justify-center rounded-xl bg-brand text-cream transition-colors hover:bg-lime disabled:opacity-40"
               >
                 <SendHorizonal size={18} />
               </button>

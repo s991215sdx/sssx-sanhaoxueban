@@ -138,7 +138,7 @@ export default function InviteRegister() {
           <button
             type="submit"
             disabled={register.isPending || phone.length !== 11 || password.length < 6 || password2.length < 6}
-            className="mt-5 w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-5 w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
           >
             {register.isPending ? "注册中…" : "完成注册，开始使用"}
           </button>

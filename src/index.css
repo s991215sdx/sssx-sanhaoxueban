@@ -11,8 +11,9 @@
     --card-foreground: 160 12% 14%;
     --popover: 0 0% 100%;
     --popover-foreground: 160 12% 14%;
-    --primary: 152 26% 17%;
-    --primary-foreground: 0 0% 98%;
+    /* v98：primary 改翡翠绿 #0EA875（hsl 159 85% 36%），升学规划报告风格 */
+    --primary: 159 85% 36%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 150 47% 93%;
     --secondary-foreground: 160 12% 14%;
     --muted: 150 12% 94%;

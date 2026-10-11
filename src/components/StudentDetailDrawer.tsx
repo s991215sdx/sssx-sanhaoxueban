@@ -50,7 +50,7 @@ export default function StudentDetailDrawer({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-olive/30 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-brand/30 backdrop-blur-sm" onClick={onClose}>
       <div
         className={`h-full w-full overflow-y-auto bg-cream p-5 shadow-xl transition-[max-width] ${wide ? "max-w-none" : "max-w-lg"}`}
         onClick={(e) => e.stopPropagation()}
@@ -81,7 +81,7 @@ export default function StudentDetailDrawer({
             {/* 档案 */}
             <div className="paper-card p-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-olive text-[15px] font-bold text-cream">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-cream">
                   {(data.profile?.name || data.user.name || "学")[0]}
                 </span>
                 <div className="min-w-0 flex-1">

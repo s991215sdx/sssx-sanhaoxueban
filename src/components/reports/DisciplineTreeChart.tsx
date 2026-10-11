@@ -42,7 +42,7 @@ export default function DisciplineTreeChart({ matches, topN = 4 }: { matches?: D
             <div className="flex items-center gap-2">
               <span className={`rounded-md ${GROUP_BAR[gi]} px-2 py-0.5 text-[11.5px] font-bold text-cream`}>{g.label}</span>
               <span className="text-[11px] text-olive-mute">{g.sub}</span>
-              <div className="h-px flex-1 bg-olive/10" />
+              <div className="h-px flex-1 bg-brand/10" />
             </div>
             <div className="mt-1.5 grid grid-cols-2 gap-2 lg:grid-cols-4">
               {g.names.map((name) => {
@@ -66,7 +66,7 @@ export default function DisciplineTreeChart({ matches, topN = 4 }: { matches?: D
                     )}
                     <div className="flex items-baseline justify-between gap-1">
                       <span className="text-[13px] font-bold text-olive">{d.name}</span>
-                      <span className="rounded-full bg-olive/8 px-1.5 py-0.5 text-[10px] font-semibold text-olive-mute">{d.count} 类</span>
+                      <span className="rounded-full bg-brand/8 px-1.5 py-0.5 text-[10px] font-semibold text-olive-mute">{d.count} 类</span>
                     </div>
                     <p className="mt-0.5 line-clamp-1 text-[10.5px] leading-relaxed text-olive-mute">{d.note}</p>
                     <span className="mt-1 flex items-center gap-0.5 text-[10.5px] font-semibold text-lime">

@@ -42,7 +42,7 @@ export default function E3ResultCard({ result, action }: { result: E3V27Result; 
             </div>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-center rounded-xl bg-olive py-2.5">
+        <div className="mt-4 flex items-center justify-center rounded-xl bg-brand py-2.5">
           <span className="text-[16px] font-bold tracking-wide text-cream">五维定位：{result.priority}</span>
         </div>
       </div>

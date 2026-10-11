@@ -26,7 +26,7 @@ export default function UpdateToast() {
   if (!visible || !serverV) return null;
   return (
     <div className="fixed inset-x-0 bottom-20 z-[90] flex justify-center px-4">
-      <div className="flex items-center gap-3 rounded-2xl border border-lime/60 bg-olive px-4 py-2.5 shadow-xl">
+      <div className="flex items-center gap-3 rounded-2xl border border-lime/60 bg-brand px-4 py-2.5 shadow-xl">
         <RefreshCw size={15} className="shrink-0 text-lime" />
         <span className="text-[13px] text-cream">
           发现新版本（{serverV}），刷新后生效

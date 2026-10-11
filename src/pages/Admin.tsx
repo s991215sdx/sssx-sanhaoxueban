@@ -42,7 +42,7 @@ function ClaimAdminCard({ onClaimed }: { onClaimed: () => void }) {
         <button
           onClick={() => claim.mutate()}
           disabled={claim.isPending}
-          className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+          className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           {claim.isPending ? "开通中…" : "我是负责人，开通管理员"}
         </button>
@@ -220,7 +220,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
               <div className="divide-y divide-border">
                 {users?.map((u) => (
                   <div key={u.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive text-[14px] font-bold text-cream">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
                       {(u.name || "学")[0]}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -484,7 +484,7 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
           {tutors?.map((t) => (
             <div key={t.id} className="paper-card overflow-hidden">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-5 py-3.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive text-[14px] font-bold text-cream">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
                   {(t.name || "伴")[0]}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -528,7 +528,7 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
 function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => void }) {
   const { data, isLoading } = trpc.admin.userDetail.useQuery({ userId });
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-olive/30 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-brand/30 backdrop-blur-sm" onClick={onClose}>
       <div
         className="h-full w-full max-w-md overflow-y-auto bg-cream p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -547,7 +547,7 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
           <div className="mt-4 space-y-4">
             <div className="paper-card p-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-olive text-[15px] font-bold text-cream">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-cream">
                   {(data.user.name ?? "学")[0]}
                 </span>
                 <div>

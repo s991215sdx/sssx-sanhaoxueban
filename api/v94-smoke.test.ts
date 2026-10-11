@@ -8,10 +8,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
 describe("v94 文字去绿", () => {
-  it("olive 令牌为墨绿炭黑系", () => {
+  it("olive 令牌为深绿系（v94 墨绿炭黑 → v98 报告深绿，均为深绿非鲜绿文字）", () => {
     const src = read("tailwind.config.js");
-    for (const tok of ['DEFAULT: "#20362B"', 'soft: "#43564C"', 'mute: "#7A8A82"']) {
-      if (!src.includes(tok)) throw new Error("缺 olive 令牌：" + tok);
+    for (const tok of ['DEFAULT: "#(20362B|0B3D2E)"', 'soft: "#(43564C|4B5F57)"', 'mute: "#(7A8A82|8FA39B)"']) {
+      if (!src.includes(tok) && !new RegExp(tok).test(src)) throw new Error("缺 olive 令牌：" + tok);
     }
     /* lime 鲜绿点缀保留 */
     if (!src.includes('DEFAULT: "#3CC078"')) throw new Error("lime 鲜绿应保留");

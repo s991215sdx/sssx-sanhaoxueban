@@ -49,7 +49,7 @@ export default function Papers() {
               <div key={s} className="flex items-center gap-2">
                 <span
                   className={`mono flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-bold ${
-                    newStep > i ? "bg-olive text-cream" : "bg-cream-deep text-olive-mute"
+                    newStep > i ? "bg-brand text-cream" : "bg-cream-deep text-olive-mute"
                   }`}
                 >
                   {i + 1}

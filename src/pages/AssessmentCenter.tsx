@@ -166,7 +166,7 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
         renderAction={() => (
           <button
             onClick={onDone}
-            className="w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             完成，返回测评中心
           </button>
@@ -255,7 +255,7 @@ function MentalChooser({ onDone }: { onDone: () => void }) {
         {OPTIONS.map((o) => (
           <div key={o.key} className="flex flex-col rounded-xl border border-lime/40 bg-lime-pale/40 p-4">
             <div className="flex items-center justify-between gap-2">
-              <span className="rounded-full bg-olive px-2.5 py-0.5 text-[11px] font-bold text-cream">{o.badge}</span>
+              <span className="rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-bold text-cream">{o.badge}</span>
               {o.done ? (
                 <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[11px] font-semibold text-[#2F8F60]">{o.done.label}</span>
               ) : (
@@ -268,7 +268,7 @@ function MentalChooser({ onDone }: { onDone: () => void }) {
             {o.done && <p className="mt-2 text-[11.5px] leading-relaxed text-olive-mute">{o.done.note}</p>}
             <button
               onClick={() => setPicked(o.key)}
-              className="mt-3 w-full rounded-xl bg-olive py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime"
+              className="mt-3 w-full rounded-xl bg-brand py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime"
             >
               {o.done ? "重新测一遍" : "开始这套测评"}
             </button>
@@ -386,7 +386,7 @@ export default function AssessmentCenter() {
               MBTI、DISC、学习力诊断都已做完，点开看你的专属综合学习力报告 →
             </p>
           </span>
-          <span className="shrink-0 rounded-xl bg-olive px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+          <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream">
             查看报告 →
           </span>
         </button>
@@ -397,13 +397,13 @@ export default function AssessmentCenter() {
           onClick={() => setSuiteOpen(true)}
           className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
         >
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-olive text-cream">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-cream">
             <Rocket size={24} />
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-center gap-2">
               <h3 className="text-[17px] font-bold text-olive">综合学习力系统测评</h3>
-              <span className="rounded-full bg-olive px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
+              <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
             </span>
             <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
               {requiredDone > 0
@@ -412,7 +412,7 @@ export default function AssessmentCenter() {
               基本信息 → MBTI 性格 → DISC 学生版 → 学习力诊断 → 学业目标 → 智能五项，全程约 25 分钟，做完自动生成综合学习力报告。
             </p>
           </span>
-          <span className="shrink-0 rounded-xl bg-olive px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+          <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream">
             开始 →
           </span>
         </button>
@@ -510,7 +510,7 @@ export default function AssessmentCenter() {
                     <>
                       <button
                         onClick={() => navigate(`/report-detail?tab=${t.tab}`)}
-                        className="flex-1 rounded-xl bg-olive py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
+                        className="flex-1 rounded-xl bg-brand py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
                       >
                         查看报告
                       </button>
@@ -524,7 +524,7 @@ export default function AssessmentCenter() {
                   ) : (
                     <button
                       onClick={() => setTesting(t.kind)}
-                      className="flex-1 rounded-xl bg-olive py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
+                      className="flex-1 rounded-xl bg-brand py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
                     >
                       开始测评
                     </button>

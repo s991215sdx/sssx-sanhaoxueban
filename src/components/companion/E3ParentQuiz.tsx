@@ -13,7 +13,7 @@ import { Users } from "lucide-react";
 
 const CHIP_BASE =
   "rounded-xl border px-3.5 py-2 text-[13.5px] font-medium transition-colors";
-const CHIP_ON = "border-olive bg-olive text-cream";
+const CHIP_ON = "border-olive bg-brand text-cream";
 const CHIP_OFF = "border-border bg-cream text-olive-soft hover:border-olive/40";
 
 /** 家长卷作答草稿 key（mirror 内部用 -1 表示未答；提交时保证全部 >= 0，0=不了解）。 */
@@ -121,7 +121,7 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
         )}
         <button
           onClick={onDone}
-          className="mt-4 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+          className="mt-4 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
         >
           完成，返回测评中心
         </button>
@@ -307,7 +307,7 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
           } as never)
         }
         disabled={!ready || submit.isPending}
-        className="w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+        className="w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
       >
         {submit.isPending ? "正在生成对照分析…" : ready ? "提交家长卷" : "还有题目没答完"}
       </button>

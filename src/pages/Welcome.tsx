@@ -43,7 +43,7 @@ export default function Welcome() {
                     i < stage
                       ? "bg-lime text-cream"
                       : i === stage
-                        ? "bg-olive text-cream"
+                        ? "bg-brand text-cream"
                         : "border border-border bg-cream-card text-olive-mute"
                   }`}
                 >
@@ -82,7 +82,7 @@ export default function Welcome() {
             renderAction={() => (
               <button
                 onClick={goHome}
-                className="w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime"
+                className="w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime"
               >
                 完成，进入三好学伴 →
               </button>

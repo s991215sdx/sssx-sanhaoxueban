@@ -169,7 +169,7 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
           </button>
           <button
             onClick={() => navigate("/report-detail?tab=mental")}
-            className="flex-1 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="flex-1 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             查看完整评估报告 →
           </button>
@@ -302,7 +302,7 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
                   submit.mutate({ kind: "scl90", answers: answers.map((v) => v ?? 1) } as any);
                 }}
                 disabled={submit.isPending}
-                className="flex items-center gap-1 rounded-xl bg-olive px-4 py-2 text-[13.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
+                className="flex items-center gap-1 rounded-xl bg-brand px-4 py-2 text-[13.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
               >
                 {submit.isPending ? "正在生成…" : "生成评估报告"}
                 <ChevronRight size={15} />

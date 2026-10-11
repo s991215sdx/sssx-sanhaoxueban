@@ -86,7 +86,7 @@ export default function TutorAssignButton({
             <button
               onClick={() => save.mutate({ studentUserId, tutorIds: selected })}
               disabled={save.isPending}
-              className="rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+              className="rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
             >
               {save.isPending ? "保存中…" : "保存"}
             </button>

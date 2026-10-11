@@ -51,7 +51,7 @@ export default function WeekMoodBars() {
             )}
             <div
               className={`w-full rounded-t-lg transition-all ${
-                d.mood === null ? "bg-olive/15" : d.isToday ? "ring-2 ring-olive/40" : ""
+                d.mood === null ? "bg-brand/15" : d.isToday ? "ring-2 ring-olive/40" : ""
               }`}
               style={{
                 maxWidth: "2.25rem",

@@ -573,7 +573,7 @@ function RoadmapSection({
       {/* V52 · 总览先读：主卡点 + 关键状态 + 总策略一句话（对应一页看懂报告的总述块） */}
       {e3 && (
         <div className="paper-card p-4 text-center">
-          <div className="inline-flex items-center gap-2 rounded-2xl bg-olive px-5 py-2.5 text-[17px] font-bold text-cream">
+          <div className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-2.5 text-[17px] font-bold text-cream">
             {e3.mainBlock ? `主卡点：${e3.mainBlock.label} ${e3.mainBlock.score}/5` : "三阶九能全部正常"}
           </div>
           <p className="mt-2 text-[12.5px] text-olive-soft">
@@ -1152,7 +1152,7 @@ function MbtiDetail({ result, onGoCombined }: { result: MbtiResult; onGoCombined
 
       <button
         onClick={onGoCombined}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
       >
         <Sparkles size={16} />
         看看 MBTI × DISC × 学习力 三合一综合报告 →
@@ -1258,7 +1258,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
 
       <button
         onClick={onGoCombined}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
       >
         <Sparkles size={16} />
         看看 MBTI × DISC × 学习力 三合一综合报告 →
@@ -1695,7 +1695,7 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
                 {!neg ? val : ""}
               </span>
               <div className="relative h-3 flex-1 rounded-full bg-cream-deep">
-                <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
+                <div className="absolute left-1/2 top-0 h-full w-px bg-brand-mute/50" />
                 <div
                   className="absolute top-0 h-full rounded-full"
                   style={{ left: t > 0 ? `${50 - t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR[k] }}
@@ -2151,7 +2151,7 @@ function Scl90ReportCard({ result }: { result: Scl90Result }) {
                   className={`absolute inset-y-0 left-0 rounded-full ${overNorm(k) ? "bg-terra/80" : "bg-lime/80"}`}
                   style={{ width: `${Math.min(100, (result.factors[k] / 5) * 100)}%` }}
                 />
-                <span className="absolute inset-y-0 w-px bg-olive/40" style={{ left: `${(SCL90_NORM[k] / 5) * 100}%` }} />
+                <span className="absolute inset-y-0 w-px bg-brand/40" style={{ left: `${(SCL90_NORM[k] / 5) * 100}%` }} />
               </span>
               <span className={`mono w-12 text-right font-semibold ${overNorm(k) ? "text-terra" : "text-olive"}`}>{result.factors[k].toFixed(2)}</span>
               <span className="mono w-12 text-right text-olive-mute">{SCL90_NORM[k].toFixed(2)}</span>
@@ -2615,7 +2615,7 @@ export default function ReportView({
               {onEditAcademics && (
                 <button
                   onClick={onEditAcademics}
-                  className="mt-3 rounded-xl bg-olive px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
+                  className="mt-3 rounded-xl bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
                 >
                   帮TA填写 →
                 </button>
@@ -2684,7 +2684,7 @@ export default function ReportView({
             {viewer === "tutor" && onEditAcademics && (
               <button
                 onClick={onEditAcademics}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep"
               >
                 修改成绩与目标
               </button>
@@ -3605,7 +3605,7 @@ function CombinedLite({
       {/* 现状定位（放在图之后） */}
       <div className="paper-card accent-l border-lime p-5 text-center">
         <div className="mono text-[11px] tracking-wider text-olive-mute">{name ? `${name} 的` : ""}学习力 · 一页看懂（{e3.stageLabel}）</div>
-        <div className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-olive px-5 py-2.5 text-[18px] font-bold text-cream">
+        <div className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-2.5 text-[18px] font-bold text-cream">
           {e3.mainBlock ? `主卡点：${e3.mainBlock.label} ${e3.mainBlock.score}/5` : "三阶九能全部正常"}
         </div>
         <p className="mt-2 text-[13px] text-olive-soft">
@@ -3712,7 +3712,7 @@ function MissingCard({ text, actionText, to }: { text: string; actionText?: stri
       <p className="mt-2 text-[13.5px] leading-relaxed text-olive-mute">{text}</p>
       <button
         onClick={() => navigate(to ?? "/assessments")}
-        className="mt-3 rounded-xl bg-olive px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
+        className="mt-3 rounded-xl bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
       >
         {actionText ?? "去测评 →"}
       </button>

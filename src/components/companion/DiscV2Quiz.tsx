@@ -106,7 +106,7 @@ export function DiscV2GroupsUI({
         <button
           onClick={onSubmit}
           disabled={submitPending}
-          className="mt-4 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
+          className="mt-4 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
         >
           {submitPending ? "正在生成结果…" : "完成提交 →"}
         </button>
@@ -261,7 +261,7 @@ export default function DiscV2Quiz({
           </p>
           <button
             onClick={onNext}
-            className="mt-6 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="mt-6 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             完成 →
           </button>

@@ -5,11 +5,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // v94：文字改墨绿炭黑（绿色只留给点缀/图表/链接），解决"满屏绿字"
+        // v98：升学规划报告风格——翡翠绿主色 + 深绿文字（采样自参考图）
+        // olive=文字色系（深绿），brand=品牌动作色（翡翠绿按钮/头部/头像）
         olive: {
-          DEFAULT: "#20362B",
-          soft: "#43564C",
-          mute: "#7A8A82",
+          DEFAULT: "#0B3D2E",
+          soft: "#4B5F57",
+          mute: "#8FA39B",
+        },
+        brand: {
+          DEFAULT: "#0EA875",
+          deep: "#0B8A63",
+          pale: "#D4F2E8",
         },
         lime: {
           DEFAULT: "#3CC078",
@@ -19,7 +25,7 @@ module.exports = {
         },
         cream: {
           DEFAULT: "#FFFFFF",
-          deep: "#F1F6F3",
+          deep: "#F0FAF5",
           card: "#FFFFFF",
         },
         butter: "#FFC600",

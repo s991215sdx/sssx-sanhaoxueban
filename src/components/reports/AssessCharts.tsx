@@ -89,7 +89,7 @@ export function MbtiBars({ result }: { result: MbtiResult }) {
                 <span className="text-olive-mute">{label}</span>
                 <span className="font-bold" style={{ color: bv > av ? SKY : OLIVE }}>{bv > av ? "▶" : ""} {b}</span>
               </div>
-              <div className="mt-0.5 flex h-2.5 overflow-hidden rounded-full bg-olive/8">
+              <div className="mt-0.5 flex h-2.5 overflow-hidden rounded-full bg-brand/8">
                 <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#ABC0B2" }} />
                 <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#ABC0B2" }} />
               </div>

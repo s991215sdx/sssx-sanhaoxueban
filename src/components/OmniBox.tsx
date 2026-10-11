@@ -160,7 +160,7 @@ export default function OmniBox() {
                 onClick={send}
                 disabled={!canSend}
                 aria-label="发送"
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-olive text-cream transition-colors hover:bg-lime disabled:opacity-40"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-cream transition-colors hover:bg-lime disabled:opacity-40"
               >
                 <SendHorizonal size={17} />
               </button>
@@ -198,7 +198,7 @@ export default function OmniBox() {
                   </div>
                   <Link
                     to="/preview"
-                    className="shrink-0 rounded-lg bg-olive px-3 py-1.5 text-[12.5px] font-medium text-cream hover:bg-lime"
+                    className="shrink-0 rounded-lg bg-brand px-3 py-1.5 text-[12.5px] font-medium text-cream hover:bg-lime"
                   >
                     去学
                   </Link>

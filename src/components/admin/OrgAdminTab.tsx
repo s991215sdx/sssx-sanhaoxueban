@@ -34,7 +34,7 @@ export default function OrgAdminTab() {
       <div className="flex justify-end">
         <button
           onClick={() => setCreating(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-olive px-4 py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime"
+          className="flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime"
         >
           <Plus size={16} /> 开通机构
         </button>
@@ -122,7 +122,7 @@ function SetActiveButton({ org }: { org: OrgRow }) {
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-olive/30 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/30 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-cream p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-[17px] font-bold text-olive">{title}</h2>
@@ -182,7 +182,7 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
         <button
           onClick={() => create.mutate({ name, brandName, logoUrl, adminName, adminPhone, adminPassword })}
           disabled={create.isPending}
-          className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+          className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           {create.isPending ? "开通中…" : "开通机构系统"}
         </button>
@@ -222,7 +222,7 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
         <button
           onClick={() => update.mutate({ id: org.id, name, brandName, logoUrl })}
           disabled={update.isPending}
-          className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+          className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           {update.isPending ? "保存中…" : "保存"}
         </button>
@@ -258,7 +258,7 @@ function ResetAdminModal({ org, onClose }: { org: OrgRow; onClose: () => void })
           <button
             onClick={() => reset.mutate({ id: org.id, password })}
             disabled={reset.isPending}
-            className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+            className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
           >
             {reset.isPending ? "重置中…" : "确认重置"}
           </button>

@@ -91,7 +91,7 @@ export default function ChoiceStage({
         <p className="mx-auto mt-4 max-w-md text-left text-[14.5px] leading-relaxed text-olive-soft">{result.summary}</p>
         <button
           onClick={onNext}
-          className="mt-6 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+          className="mt-6 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
         >
           下一步 →
         </button>

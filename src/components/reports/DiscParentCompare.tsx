@@ -77,7 +77,7 @@ function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: str
                 {k} · {DISC_THEORY.find((ty) => ty.type === k)?.name}
               </span>
               <div className="relative h-2.5 flex-1 rounded-full bg-cream-deep">
-                <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
+                <div className="absolute left-1/2 top-0 h-full w-px bg-brand-mute/50" />
                 <div
                   className="absolute top-0 h-full rounded-full"
                   style={{

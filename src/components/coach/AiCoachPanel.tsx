@@ -78,7 +78,7 @@ export default function AiCoachPanel() {
         <button
           onClick={submit}
           disabled={ask.isPending || question.trim().length < 4}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-olive px-4 py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           {ask.isPending ? <Loader2 size={15} className="animate-spin" /> : <SendHorizonal size={15} />}
           {ask.isPending ? "问诊中…" : "问对策"}
@@ -89,7 +89,7 @@ export default function AiCoachPanel() {
       {ask.data && (
         <div className="mt-4 rounded-xl border border-lime/50 bg-cream/70 p-4">
           <div className="flex items-center gap-2">
-            <span className={`rounded-full px-2 py-px text-[10.5px] font-bold ${ask.data.ai ? "bg-olive text-cream" : "bg-butter/60 text-olive-soft"}`}>
+            <span className={`rounded-full px-2 py-px text-[10.5px] font-bold ${ask.data.ai ? "bg-brand text-cream" : "bg-butter/60 text-olive-soft"}`}>
               {ask.data.ai ? "AI 生成" : "规则匹配"}
             </span>
             <span className="text-[11px] text-olive-mute">

@@ -37,7 +37,7 @@ export default function ReportAccessButton({
           className={
             compact
               ? "rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive disabled:opacity-50"
-              : "rounded-lg bg-olive px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
+              : "rounded-lg bg-brand px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
           }
         >
           {compact ? <Send size={15} /> : setAccess.isPending ? "推送中…" : "推送报告"}

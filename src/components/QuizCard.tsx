@@ -42,7 +42,7 @@ export default function QuizCard({
       }`}
     >
       <div className="flex items-start gap-3">
-        <span className="mono mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-olive text-[13px] font-bold text-cream">
+        <span className="mono mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand text-[13px] font-bold text-cream">
           {index + 1}
         </span>
         <div className="min-w-0 flex-1">
@@ -85,7 +85,7 @@ export default function QuizCard({
               >
                 <span
                   className={`mono flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[12px] font-bold ${
-                    isAnswer ? "bg-lime text-white" : selected ? "bg-olive text-cream" : "bg-secondary text-olive-soft"
+                    isAnswer ? "bg-lime text-white" : selected ? "bg-brand text-cream" : "bg-secondary text-olive-soft"
                   }`}
                 >
                   {letter}

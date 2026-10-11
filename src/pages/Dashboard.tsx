@@ -91,7 +91,7 @@ function TodayPlan() {
               onClick={() => setMinutes(m)}
               className={`mono relative rounded-full border px-3 py-1 text-[13px] font-medium transition-colors ${
                 effectiveMinutes === m
-                  ? "border-olive bg-olive text-cream"
+                  ? "border-olive bg-brand text-cream"
                   : "border-border bg-cream text-olive-soft hover:border-olive/40"
               }`}
             >
@@ -296,7 +296,7 @@ export default function Dashboard() {
       <div className="paper-card accent-l border-terra mx-auto mt-16 max-w-md p-6">
         <p className="font-semibold text-olive">数据暂时连不上</p>
         <p className="mt-1 text-sm text-olive-mute">首次启动需要初始化题库，稍等片刻再试。</p>
-        <button onClick={() => refetch()} className="mt-4 rounded-xl bg-olive px-5 py-2.5 text-sm font-medium text-cream">
+        <button onClick={() => refetch()} className="mt-4 rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-cream">
           重新加载
         </button>
       </div>

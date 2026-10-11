@@ -144,7 +144,7 @@ export default function PreviewSession() {
                     state === "done"
                       ? "bg-lime text-white"
                       : state === "active"
-                        ? "bg-olive text-cream ring-4 ring-lime/25"
+                        ? "bg-brand text-cream ring-4 ring-lime/25"
                         : "bg-secondary text-olive-mute"
                   }`}
                 >
@@ -189,7 +189,7 @@ export default function PreviewSession() {
             <button
               onClick={handleSubmitQuiz}
               disabled={!allAnswered || submitCheck.isPending}
-              className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+              className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
             >
               {submitCheck.isPending ? "批改中…" : "提交检测"}
             </button>
@@ -210,7 +210,7 @@ export default function PreviewSession() {
                     <Link to="/gaps" className="rounded-xl border border-olive px-4 py-2 text-sm font-medium text-olive hover:bg-lime-pale">
                       去查漏补缺
                     </Link>
-                    <button onClick={nextStep} className="rounded-xl bg-olive px-4 py-2 text-sm font-medium text-cream hover:bg-lime">
+                    <button onClick={nextStep} className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-cream hover:bg-lime">
                       先继续预习
                     </button>
                   </div>
@@ -222,7 +222,7 @@ export default function PreviewSession() {
                     <Check size={17} className="text-lime" />
                     地基很牢，全对！开始今天的新内容吧。
                   </div>
-                  <button onClick={nextStep} className="mt-3 rounded-xl bg-olive px-5 py-2.5 text-sm font-medium text-cream hover:bg-lime">
+                  <button onClick={nextStep} className="mt-3 rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-cream hover:bg-lime">
                     进入精讲 →
                   </button>
                 </div>
@@ -270,7 +270,7 @@ export default function PreviewSession() {
 
           <button
             onClick={nextStep}
-            className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             我看完了，开始小试牛刀 →
           </button>
@@ -304,14 +304,14 @@ export default function PreviewSession() {
               <button
                 onClick={handleSubmitQuiz}
                 disabled={!allAnswered || submitPractice.isPending}
-                className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+                className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
               >
                 {submitPractice.isPending ? "批改中…" : "提交练习"}
               </button>
             ) : (
               <button
                 onClick={nextStep}
-                className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+                className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
               >
                 下一步：讲给 AI 听 →
               </button>
@@ -334,7 +334,7 @@ export default function PreviewSession() {
             <ol className="mt-4 space-y-3">
               {(finishData?.classQuestions ?? []).map((q, i) => (
                 <li key={i} className="flex gap-3 rounded-xl bg-cream-card/80 p-4">
-                  <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-olive text-[12px] font-bold text-cream">
+                  <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand text-[12px] font-bold text-cream">
                     {i + 1}
                   </span>
                   <span className="text-[14.5px] leading-relaxed text-olive">{q}</span>
@@ -364,7 +364,7 @@ export default function PreviewSession() {
 
           <Link
             to="/preview"
-            className="block w-full rounded-xl bg-olive py-3 text-center text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="block w-full rounded-xl bg-brand py-3 text-center text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             完成，返回预习中心
           </Link>

@@ -147,7 +147,7 @@ export default function SystemFramework({
   return (
     <div className="rounded-xl border border-border bg-cream/60 p-4 sm:p-5">
       {/* 顶部：学习目标 · 成绩（冰山上） */}
-      <div className="mx-auto w-fit rounded-full bg-olive px-6 py-1.5 text-[13px] font-bold text-cream">
+      <div className="mx-auto w-fit rounded-full bg-brand px-6 py-1.5 text-[13px] font-bold text-cream">
         学习目标 · 成绩
       </div>
       {status?.academics && (
@@ -163,7 +163,7 @@ export default function SystemFramework({
           />
         </div>
       )}
-      <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
+      <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
       {/* 三阶递进：底色统一按红黄绿档着色 */}
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -198,7 +198,7 @@ export default function SystemFramework({
           );
         })}
       </div>
-      <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
+      <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
       {/* 底座：条件 + 学能（同样按档着色） */}
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -276,7 +276,7 @@ export default function SystemFramework({
       {/* 深层特质行：性格与方向的长期底色（仅 status 提供时显示） */}
       {showDeep && (
         <>
-          <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
+          <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
           <div className="rounded-xl border border-[#A3B8AB]/60 bg-[#EFF5F1] px-3.5 py-3">
             <div className="text-center text-[12.5px] font-bold text-[#6b7452]">深层特质 · 性格与方向的长期底色</div>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">

@@ -82,7 +82,7 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
         <div className="mt-5 flex gap-2">
           <button
             onClick={() => navigate("/report-detail?tab=combined")}
-            className="flex-1 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep"
+            className="flex-1 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep"
           >
             查看综合报告
           </button>
@@ -118,7 +118,7 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
                 <span
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
                     active
-                      ? "border-lime bg-olive text-cream"
+                      ? "border-lime bg-brand text-cream"
                       : done
                         ? "border-lime/60 bg-lime-pale text-olive"
                         : "border-border bg-cream text-olive-mute"
@@ -160,7 +160,7 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
           renderAction={() => (
             <button
               onClick={next}
-              className="w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime"
+              className="w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime"
             >
               完成，继续下一项 →
             </button>

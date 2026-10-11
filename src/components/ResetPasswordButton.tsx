@@ -50,7 +50,7 @@ export default function ResetPasswordButton({
           type="button"
           disabled={reset.isPending}
           onClick={() => reset.mutate({ userId })}
-          className="rounded-lg bg-olive px-2 py-1 text-[11.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
+          className="rounded-lg bg-brand px-2 py-1 text-[11.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
         >
           {reset.isPending ? "重置中…" : "确认重置"}
         </button>

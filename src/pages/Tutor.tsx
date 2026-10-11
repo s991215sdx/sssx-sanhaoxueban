@@ -48,7 +48,7 @@ function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabl
           type="button"
           onClick={() => save.mutate({ userId, modules: selected })}
           disabled={save.isPending}
-          className="rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+          className="rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
         >
           {save.isPending ? "保存中…" : "保存"}
         </button>
@@ -158,7 +158,7 @@ export default function Tutor() {
                   className="paper-card cursor-pointer p-4 transition-shadow hover:shadow-md"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-olive text-[15px] font-bold text-cream">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-cream">
                       {(s.name || "学")[0]}
                     </span>
                     <div className="min-w-0 flex-1">

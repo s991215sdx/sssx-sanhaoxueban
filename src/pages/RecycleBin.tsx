@@ -60,7 +60,7 @@ export default function RecycleBin() {
         <div className="grid gap-3">
           {items.map((s) => (
             <div key={s.userId} className="paper-card flex flex-wrap items-center gap-3 p-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-olive-mute/30 text-[15px] font-bold text-olive">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-mute/30 text-[15px] font-bold text-olive">
                 {(s.name || "学")[0]}
               </span>
               <div className="min-w-0 flex-1">
@@ -80,7 +80,7 @@ export default function RecycleBin() {
                 type="button"
                 disabled={restore.isPending}
                 onClick={() => restore.mutate({ userId: s.userId })}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-olive px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
               >
                 <RotateCcw size={13} />
                 {restore.isPending ? "恢复中…" : "恢复学员"}

@@ -94,7 +94,7 @@ export default function TalkForm() {
               key={t}
               onClick={() => toggleTag(t)}
               className={`rounded-full border px-4 py-1.5 text-[13.5px] font-medium transition-colors ${
-                tags.has(t) ? "border-olive bg-olive text-cream" : "border-border bg-cream text-olive-soft hover:border-olive/40"
+                tags.has(t) ? "border-olive bg-brand text-cream" : "border-border bg-cream text-olive-soft hover:border-olive/40"
               }`}
             >
               {t}
@@ -121,7 +121,7 @@ export default function TalkForm() {
       <button
         onClick={() => valid && talk.mutate({ mood: mood!, tags: [...tags], content: content.trim() })}
         disabled={!valid || talk.isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
       >
         <Send size={15} />
         {talk.isPending ? "树洞正在听…" : "讲给树洞听"}
