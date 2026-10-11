@@ -20,7 +20,7 @@ describe("v102 得分表白底+色字", () => {
     const theme = read("src/components/reports/e3v37Theme.ts");
     for (const [tok, label] of [
       ['level === "卡点" ? "text-[#8f1313]"', "卡点深红"],
-      ['"待提升" ? "text-[#8a6d1a]"', "待提升琥珀"],
+      ['"待提升" ? "text-[#C79400]"', "待提升亮黄"],
       ['"text-[#2F8F60]"', "正常绿"],
     ]) {
       if (!theme.includes(tok)) throw new Error(`缺 ${label}：${tok}`);
