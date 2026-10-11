@@ -106,6 +106,15 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       utils.admin.overview.invalidate();
     },
   });
+  /* V88：管理员修改用户姓名（后端同步 users + 学员档案，占位名「同学+尾号」可改为真名） */
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const setUserName = trpc.admin.setUserName.useMutation({
+    onSuccess: () => {
+      utils.admin.users.invalidate();
+      setRenamingId(null);
+    },
+  });
   /* V59：平台超管自举——系统还没有平台超管时，机构管理员可把自己升级为平台超管（总系统） */
   const claimPlatform = trpc.admin.claimPlatformAdmin.useMutation({
     onSuccess: () => refresh(),
@@ -214,14 +223,58 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="truncate text-[14.5px] font-semibold text-olive">{u.name}</span>
-                        {u.role === "admin" && <span className="chip !py-0.5 !text-[10.5px] text-olive">管理员</span>}
-                        {u.role === "tutor" && <span className="chip !py-0.5 !text-[10.5px] text-olive">伴学师</span>}
+                        {renamingId === u.id ? (
+                          <>
+                            <input
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              maxLength={32}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && renameValue.trim()) setUserName.mutate({ userId: u.id, name: renameValue });
+                                if (e.key === "Escape") setRenamingId(null);
+                              }}
+                              className="w-32 rounded-lg border border-border bg-cream px-2 py-1 text-[13px] text-olive outline-none focus:border-lime"
+                            />
+                            <button
+                              onClick={() => setUserName.mutate({ userId: u.id, name: renameValue })}
+                              disabled={setUserName.isPending || !renameValue.trim()}
+                              className="rounded-lg border border-border bg-cream px-2 py-1 text-[11.5px] font-medium text-olive hover:border-lime disabled:opacity-40"
+                            >
+                              {setUserName.isPending ? "保存中…" : "保存"}
+                            </button>
+                            <button
+                              onClick={() => setRenamingId(null)}
+                              className="rounded-lg px-2 py-1 text-[11.5px] text-olive-mute hover:text-olive"
+                            >
+                              取消
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="truncate text-[14.5px] font-semibold text-olive">{u.name}</span>
+                            <button
+                              onClick={() => {
+                                setRenamingId(u.id);
+                                setRenameValue(u.name);
+                              }}
+                              className="text-[11px] text-olive-mute underline decoration-dotted underline-offset-2 transition-colors hover:text-olive"
+                              title="修改姓名（学员档案会同步更新）"
+                            >
+                              改名
+                            </button>
+                          </>
+                        )}
+                        {renamingId !== u.id && u.role === "admin" && <span className="chip !py-0.5 !text-[10.5px] text-olive">管理员</span>}
+                        {renamingId !== u.id && u.role === "tutor" && <span className="chip !py-0.5 !text-[10.5px] text-olive">伴学师</span>}
                         {/* V60：超管看全量列表时标注所属机构 */}
-                        {platform && u.orgName && (
+                        {renamingId !== u.id && platform && u.orgName && (
                           <span className="chip !py-0.5 !text-[10.5px] text-olive-soft">{u.orgName}</span>
                         )}
-                        {u.id === selfId && <span className="text-[11px] text-olive-mute">（我）</span>}
+                        {renamingId !== u.id && u.id === selfId && <span className="text-[11px] text-olive-mute">（我）</span>}
+                        {setUserName.error && renamingId === u.id && (
+                          <span className="text-[11px] text-terra">{setUserName.error.message}</span>
+                        )}
                       </div>
                       <div className="mono mt-0.5 text-[11px] text-olive-mute">
                         {u.phone ? `手机 ${u.phone} · ` : ""}注册 {new Date(u.createdAt).toLocaleDateString("zh-CN")} · 最近登录{" "}

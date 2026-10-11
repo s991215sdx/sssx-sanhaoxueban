@@ -48,6 +48,19 @@ export const adminRouter = createRouter({
       return { ok: true };
     }),
 
+  /** V88：管理员修改用户姓名——同步 users 与学员档案（注册时两端都写了「同学+尾号」占位名），只改一处另一端会显示不一致。 */
+  setUserName: adminQuery
+    .input((v: unknown) => v as { userId: number; name: string })
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!(await sameOrg(db, ctx.user, input.userId))) throw new Error("该用户不在你的机构内");
+      const name = (input.name ?? "").trim();
+      if (!name || name.length > 32) throw new Error("姓名需 1～32 个字符");
+      await db.update(users).set({ name }).where(eq(users.id, input.userId));
+      await db.update(studentProfile).set({ name }).where(eq(studentProfile.userId, input.userId));
+      return { ok: true };
+    }),
+
   /**
    * 学员列表：档案 + 测评标签 + 学习概览 + 已分配伴学师。
    * V59：限本机构；V60：超管可看全部；V61：超管可传 orgId 按系统（机构）查看。
