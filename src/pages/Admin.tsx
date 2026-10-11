@@ -170,7 +170,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
           <select
             value={orgSel === "all" ? "all" : String(orgSel)}
             onChange={(e) => setOrgSel(e.target.value === "all" ? "all" : Number(e.target.value))}
-            className="rounded-lg border border-border bg-cream-cardpx-2.5 py-1.5 text-[12.5px] text-olive outline-none focus:border-lime"
+            className="rounded-lg border border-border bg-cream-card px-2.5 py-1.5 text-[12.5px] text-olive outline-none focus:border-lime"
           >
             <option value="all">全部系统（跨机构合计）</option>
             {(orgsForSel ?? []).map((o) => (
@@ -207,7 +207,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="搜索姓名 / 手机号 / 邮箱"
-                  className="w-full rounded-lg border border-border bg-cream-cardpy-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none transition-colors placeholder:text-olive-mute/60 focus:border-lime"
+                  className="w-full rounded-lg border border-border bg-cream-card py-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none transition-colors placeholder:text-olive-mute/60 focus:border-lime"
                 />
               </div>
             </div>
@@ -235,12 +235,12 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                                 if (e.key === "Enter" && renameValue.trim()) setUserName.mutate({ userId: u.id, name: renameValue });
                                 if (e.key === "Escape") setRenamingId(null);
                               }}
-                              className="w-32 rounded-lg border border-border bg-cream-cardpx-2 py-1 text-[13px] text-olive outline-none focus:border-lime"
+                              className="w-32 rounded-lg border border-border bg-cream-card px-2 py-1 text-[13px] text-olive outline-none focus:border-lime"
                             />
                             <button
                               onClick={() => setUserName.mutate({ userId: u.id, name: renameValue })}
                               disabled={setUserName.isPending || !renameValue.trim()}
-                              className="rounded-lg border border-border bg-cream-cardpx-2 py-1 text-[11.5px] font-medium text-olive hover:border-lime disabled:opacity-40"
+                              className="rounded-lg border border-border bg-cream-card px-2 py-1 text-[11.5px] font-medium text-olive hover:border-lime disabled:opacity-40"
                             >
                               {setUserName.isPending ? "保存中…" : "保存"}
                             </button>
@@ -288,7 +288,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setDetailId(u.id)}
-                        className="rounded-lg border border-border bg-cream-cardpx-3 py-1.5 text-[12.5px] font-medium text-olive hover:border-lime"
+                        className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
                       >
                         详情
                       </button>
@@ -299,7 +299,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                             <button
                               onClick={() => setRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" })}
                               disabled={setRole.isPending}
-                              className="rounded-lg border border-border bg-cream-cardpx-3 py-1.5 text-[12.5px] font-medium text-olive-soft hover:border-olive/40 disabled:opacity-40"
+                              className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50 disabled:opacity-40"
                             >
                               {u.role === "admin" ? "取消管理员" : "设为管理员"}
                             </button>
@@ -307,7 +307,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                           <button
                             onClick={() => setRole.mutate({ userId: u.id, role: u.role === "tutor" ? "user" : "tutor" })}
                             disabled={setRole.isPending}
-                            className="rounded-lg border border-border bg-cream-cardpx-3 py-1.5 text-[12.5px] font-medium text-olive-soft hover:border-olive/40 disabled:opacity-40"
+                            className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50 disabled:opacity-40"
                           >
                             {u.role === "tutor" ? "取消伴学师" : "设为伴学师"}
                           </button>
@@ -361,7 +361,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="搜索姓名 / 手机号"
-            className="w-52 rounded-lg border border-border bg-cream-cardpy-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
+            className="w-52 rounded-lg border border-border bg-cream-card py-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
           />
         </span>
       </div>
@@ -435,7 +435,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 <ResetPasswordButton userId={s.userId} name={s.name} />
                 <button
                   onClick={() => setDetailId(s.userId)}
-                  className="rounded-lg border border-border bg-cream-cardpx-3 py-1.5 text-[12.5px] font-medium text-olive hover:border-lime"
+                  className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
                 >
                   详情
                 </button>
@@ -655,7 +655,7 @@ function PlatformDashboard({ onPickOrg }: { onPickOrg: (orgId: number) => void }
                 </div>
                 <button
                   onClick={() => onPickOrg(r.id)}
-                  className="rounded-lg border border-border bg-cream-cardpx-3 py-1.5 text-[12.5px] font-medium text-olive hover:border-lime"
+                  className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
                 >
                   查看该系统
                 </button>

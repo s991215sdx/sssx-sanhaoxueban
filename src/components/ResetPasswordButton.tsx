@@ -74,7 +74,7 @@ export default function ResetPasswordButton({
         className={
           compact
             ? "rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive"
-            : "rounded-lg border border-border bg-cream px-3 py-1.5 text-[12.5px] font-medium text-olive hover:border-lime"
+            : "rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
         }
       >
         {compact ? <KeyRound size={15} /> : "重置密码"}
