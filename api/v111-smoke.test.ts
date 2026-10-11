@@ -8,10 +8,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
 describe("v111 统计格白底", () => {
-  it("四个统计格白底 + 深绿数值", () => {
+  it("四个统计格白底 + 深色数值（v115：圆角加大）", () => {
     const src = read("src/components/StudentDetailDrawer.tsx");
-    if (!/rounded-lg bg-white px-1 py-2/.test(src)) throw new Error("缺：统计格白底");
-    if (!/font-bold text-\[#0B8A63\]/.test(src)) throw new Error("缺：数值深绿");
+    if (!/rounded-xl bg-white px-1 py-2\.5/.test(src)) throw new Error("缺：统计格白底");
+    if (!/font-bold text-\[#1F2937\]/.test(src)) throw new Error("缺：数值深色");
     if (/bg-white\/15/.test(src)) throw new Error("残留：半透明白统计格");
   });
 });

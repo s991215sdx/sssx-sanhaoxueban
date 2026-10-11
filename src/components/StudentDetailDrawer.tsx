@@ -78,23 +78,26 @@ export default function StudentDetailDrawer({
           </div>
         ) : (
           <div className={`mt-4 space-y-4 ${wide ? "mx-auto max-w-4xl" : ""}`}>
-            {/* 档案（v112：绿色渐变降至约50%透明，淡绿底+深绿字，清透明快） */}
-            <div
-              className="rounded-2xl border border-[#0EA875]/25 p-4 text-olive shadow-[0_8px_24px_-10px_rgba(11,61,46,0.25)]"
-              style={{ backgroundImage: "linear-gradient(135deg, #2BB58359 0%, #0EA8754D 55%, #0B8A634D 100%)" }}
-            >
+            {/* 档案（v115：参考新设计——薄荷浅底实底，姓名+年级学校首行，ID+目标次行，白统计格） */}
+            <div className="rounded-2xl bg-[#E1F5EE] p-4 shadow-[0_4px_16px_-8px_rgba(29,158,117,0.35)]">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-cream shadow-sm">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1D9E75] text-[16px] font-bold text-white shadow-sm">
                   {(data.profile?.name || data.user.name || "学")[0]}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-semibold text-olive">
-                    {data.profile?.name || data.user.name || "未命名"}
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-[16px] font-bold text-[#1F2937]">
+                      {data.profile?.name || data.user.name || "未命名"}
+                    </span>
+                    {[data.profile?.grade, data.profile?.school].filter(Boolean).length > 0 && (
+                      <span className="text-[12.5px] font-semibold text-[#0F6E56]">
+                        {[data.profile?.grade, data.profile?.school].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
                   </div>
-                  <div className="mono mt-0.5 text-[11px] text-olive-soft">
-                    {[data.user.phone, data.profile?.grade, data.profile?.school, data.profile?.targetSchool && `目标：${data.profile.targetSchool}`]
-                      .filter(Boolean)
-                      .join(" · ") || "档案未完善"}
+                  <div className="mono mt-0.5 text-[11.5px] text-[#0F6E56]">
+                    ID {data.user.phone}
+                    {data.profile?.targetSchool && <span className="ml-1.5">· 目标：{data.profile.targetSchool}</span>}
                   </div>
                 </div>
               </div>
@@ -105,8 +108,8 @@ export default function StudentDetailDrawer({
                   { label: "预习", value: data.learning.previewsDone },
                   { label: "计划", value: data.learning.planCount },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-lg bg-white px-1 py-2 shadow-[0_1px_3px_rgba(11,61,46,0.15)]">
-                    <div className="text-[16px] font-bold text-[#0B8A63]">{s.value}</div>
+                  <div key={s.label} className="rounded-xl bg-white px-1 py-2.5 shadow-[0_1px_4px_rgba(29,158,117,0.18)]">
+                    <div className="text-[17px] font-bold text-[#1F2937]">{s.value}</div>
                     <div className="text-[10.5px] text-olive-mute">{s.label}</div>
                   </div>
                 ))}
