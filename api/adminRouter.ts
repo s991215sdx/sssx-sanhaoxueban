@@ -236,7 +236,12 @@ export const adminRouter = createRouter({
     const searchCond = likeKw
       ? or(like(users.name, likeKw), like(users.phone, likeKw), like(users.email, likeKw))
       : undefined;
-    const whereCond = orgId == null ? searchCond : searchCond ? and(eq(users.orgId, orgId), searchCond) : eq(users.orgId, orgId);
+    /* v96：已软删的学员不进用户列表（在回收站里） */
+    const notDeleted = isNull(users.deletedAt);
+    const whereCond =
+      orgId == null
+        ? and(notDeleted, searchCond)
+        : and(eq(users.orgId, orgId), notDeleted, searchCond);
     const allUsers =
       orgId == null
         ? await db.select().from(users).where(whereCond).orderBy(desc(users.createdAt)) // 平台超管：全部机构

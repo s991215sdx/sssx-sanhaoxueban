@@ -90,7 +90,7 @@ export default function ScorePathMatrix({ first, estScore }: { first: "物理" |
             key={t}
             onClick={() => setTier(t)}
             className={`rounded-full px-3 py-1 text-[11.5px] font-bold transition-colors ${
-              tier === t ? "bg-olive text-cream" : "bg-olive/8 text-olive-mute hover:bg-olive/15"
+              tier === t ? "bg-brand text-cream" : "bg-brand/8 text-olive-mute hover:bg-brand/15"
             }`}
           >
             {t === "全部" ? "全部" : `${t}档`}

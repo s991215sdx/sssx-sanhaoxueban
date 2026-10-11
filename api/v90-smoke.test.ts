@@ -10,7 +10,7 @@ const read = (p: string) => readFileSync(join(root, p), "utf8");
 describe("v90 后台去灰", () => {
   it("tab 切换条为淡绿底、激活 tab 纯白", () => {
     const src = read("src/pages/Admin.tsx");
-    if (!src.includes("bg-lime-pale/70 p-1")) throw new Error("缺：tab 条淡绿底");
+    if (!/bg-lime-pale(\/70)? p-1/.test(src)) throw new Error("缺：tab 条淡绿底");
     if (!src.includes('tab === t.key ? "bg-cream-card text-olive shadow-sm"')) throw new Error("缺：激活 tab 纯白");
   });
 

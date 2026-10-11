@@ -30,7 +30,7 @@ const LEVEL_STYLE: Record<MentalV2Band, string> = {
 const BAND_STYLE: Record<SdqBand, string> = {
   正常: "border-lime/50 bg-lime-pale text-[#2F8F60]",
   边缘: "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]",
-  明显: "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]",
+  明显: "border-[#b91c1c]/50 bg-[#FAF3EB] text-[#8f1313]",
 };
 
 const SDQ_DIMS: SdqDim[] = ["emotion", "conduct", "hyper", "peer", "prosocial"];
@@ -159,7 +159,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
           </button>
           <button
             onClick={() => navigate("/report-detail?tab=mental")}
-            className="flex-1 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="flex-1 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             查看详细报告 →
           </button>

@@ -135,7 +135,7 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
           </button>
           <button
             onClick={() => navigate("/report-detail?tab=subject")}
-            className="flex-1 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="flex-1 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             查看报告 →
           </button>
@@ -198,7 +198,7 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
             <button
               onClick={() => setPicked([...pickedValid])}
               disabled={picked.length === 0}
-              className="mt-5 w-full rounded-xl bg-olive py-3.5 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+              className="mt-5 w-full rounded-xl bg-brand py-3.5 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
             >
               开始测评（已选 {picked.length} 科）
             </button>

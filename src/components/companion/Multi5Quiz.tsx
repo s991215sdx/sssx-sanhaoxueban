@@ -92,7 +92,7 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
           </button>
           <button
             onClick={() => navigate("/report-detail?tab=multi5")}
-            className="flex-1 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="flex-1 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             查看详细报告 →
           </button>

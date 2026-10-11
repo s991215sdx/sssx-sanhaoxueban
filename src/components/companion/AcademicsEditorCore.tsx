@@ -162,7 +162,7 @@ export default function AcademicsEditorCore({
                     onClick={() => patch(name, { selfLevel: d.selfLevel === lv.value ? null : lv.value })}
                     className={`rounded-lg px-2 py-1 text-[11.5px] transition-colors ${
                       d.selfLevel === lv.value
-                        ? "bg-olive text-cream"
+                        ? "bg-brand text-cream"
                         : "border border-border text-olive-mute hover:border-lime/60 hover:text-olive"
                     }`}
                   >
@@ -217,7 +217,7 @@ export default function AcademicsEditorCore({
       <button
         onClick={onSave}
         disabled={submitting}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep disabled:opacity-60"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep disabled:opacity-60"
       >
         <Save size={15} />
         {submitting ? "保存中…" : submitLabel}

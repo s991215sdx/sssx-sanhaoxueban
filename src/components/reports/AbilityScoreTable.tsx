@@ -5,10 +5,10 @@
  * 逐题数据来自 scoreE3V37Items(stage, ratings)；ratings 长度不足 70 时只有小计行（无明细可展开）。
  */
 import { useState } from "react";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, TreePine } from "lucide-react";
 import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
-import { e3v37LevelTextClass, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
+import { e3v37LevelTextClass, e3v37LevelBarColor, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
 /** 1-5 分选项文案（与作答端一致）：显示原答案，得分列显示换算后的有效分。 */
 const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
@@ -39,9 +39,8 @@ function AbilityGroup({
       <button
         type="button"
         onClick={onToggle}
-        className={`flex w-full items-center gap-2 px-3 py-2 text-left transition ${
-          sub.level && sub.level !== "正常" ? "bg-[#fbe3df]/40" : "bg-cream/70 hover:bg-cream"
-        }`}
+        /* v102：行底统一白/浅中性，只按判定给文字着色（卡点深红/待提升琥珀/正常绿） */
+        className="flex w-full items-center gap-2 bg-cream/70 px-3 py-2 text-left transition hover:bg-cream"
       >
         {hasItems ? (
           expanded ? (
@@ -53,7 +52,15 @@ function AbilityGroup({
           <span className="w-3.5 shrink-0" />
         )}
         <span className="min-w-0 flex-1">
-          <span className="text-[13px] font-semibold text-olive">{sub.label}</span>
+          {/* v103：判定圆点标识（红=卡点/琥珀=待提升/绿=正常），预警一眼可辨 */}
+          {sub.level && (
+            <span
+              title={sub.level}
+              className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle"
+              style={{ background: e3v37LevelBarColor(sub.level) }}
+            />
+          )}
+          <span className={`text-[13px] font-semibold ${sub.level ? e3v37LevelTextClass(sub.level) : "text-olive"}`}>{sub.label}</span>
           {sub.note && <span className="ml-1 text-[10.5px] text-olive-mute">（{sub.note}）</span>}
           {hasItems && (
             <span className="ml-1.5 text-[10.5px] text-olive-mute">{expanded ? "收起明细" : `逐题明细 ${qItems.length} 题`}</span>
@@ -79,8 +86,11 @@ function AbilityGroup({
           </thead>
           <tbody>
             {qItems.map((it) => (
-              <tr key={it.no} className={it.level !== "正常" ? "bg-[#fbe3df]/30" : ""}>
-                <td className="border-t border-border px-3 py-1.5 text-olive-soft">
+              <tr key={it.no}>
+                <td
+                  className="border-t border-l-[3px] border-border px-3 py-1.5 text-olive-soft"
+                  style={{ borderLeftColor: e3v37LevelBarColor(it.level) }}
+                >
                   <span className="mono text-[11px] text-olive-mute">{it.no}.</span>{" "}
                   <span className="font-medium">{it.kp}</span>
                   <span className="mt-0.5 block text-[11px] leading-snug text-olive-mute">{it.text}</span>
@@ -156,7 +166,10 @@ export default function AbilityScoreTable({
   );
   return (
     <div className="paper-card p-5">
-      <h3 className="font-bold text-olive">附录 · 三阶九能观察点得分表</h3>
+      <h3 className="flex items-center gap-1.5 font-bold text-[#2F8F60]">
+        <TreePine size={16} />
+        附录 · 三阶九能观察点得分表
+      </h3>
       <p className="mt-1 text-[12.5px] text-olive-mute">
         每能一行小计（分数+判定）直接可看；点能力行展开该能逐题明细：作答是你选的原答案（1=从不 / 2=很少 / 3=有时 / 4=经常 / 5=总是），得分按 5 分制换算（反向题已换算，越低越需关注）：{E3V37_LEVEL_CAPTION}。
         {items.length === 0 && "（本次记录未保存逐题作答，仅显示能级小计；重新完成一次诊断即可看到逐题明细。）"}

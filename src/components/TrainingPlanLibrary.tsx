@@ -71,7 +71,7 @@ export default function TrainingPlanLibrary() {
 
       {/* 开方浮动条 */}
       {selected.size > 0 && (
-        <div className="sticky bottom-4 z-20 mt-4 flex items-center gap-3 rounded-2xl border border-lime/60 bg-olive px-4 py-3 text-cream shadow-lg">
+        <div className="sticky bottom-4 z-20 mt-4 flex items-center gap-3 rounded-2xl border border-lime/60 bg-brand px-4 py-3 text-cream shadow-lg">
           <FileSignature size={17} />
           <span className="text-[13.5px] font-semibold">已勾选 {selected.size} 个训练方法</span>
           <span className="hidden max-w-[40%] truncate text-[11.5px] text-cream/80 sm:inline">
@@ -149,7 +149,7 @@ ${full?.tool && full.tool !== "无" ? `<p><b>工具：</b>${esc(full.tool)}</p>`
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-olive/30 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand/30 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-cream p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -221,7 +221,7 @@ ${full?.tool && full.tool !== "无" ? `<p><b>工具：</b>${esc(full.tool)}</p>`
           <button
             onClick={submit}
             disabled={create.isPending || userId === ""}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-olive py-3 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand py-3 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
           >
             {create.isPending ? <Loader2 size={15} className="animate-spin" /> : <FileSignature size={15} />}
             {create.isPending ? "推送中…" : "确认开方，推送给学员端"}

@@ -13,7 +13,7 @@ import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { Multi5Result } from "@contracts/multi5";
 import { MULTI5_DIM_LABEL, MULTI5_DIM_ORDER } from "@contracts/multi5";
 
-const OLIVE = "#2E7D55";
+const OLIVE = "#43564C";
 const GRID = "#D8E2DC";
 const LIME = "#3CC078";
 const SKY = "#3d8ec4";
@@ -89,7 +89,7 @@ export function MbtiBars({ result }: { result: MbtiResult }) {
                 <span className="text-olive-mute">{label}</span>
                 <span className="font-bold" style={{ color: bv > av ? SKY : OLIVE }}>{bv > av ? "▶" : ""} {b}</span>
               </div>
-              <div className="mt-0.5 flex h-2.5 overflow-hidden rounded-full bg-olive/8">
+              <div className="mt-0.5 flex h-2.5 overflow-hidden rounded-full bg-brand/8">
                 <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#ABC0B2" }} />
                 <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#ABC0B2" }} />
               </div>

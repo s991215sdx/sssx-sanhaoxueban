@@ -67,9 +67,9 @@ function Fold({ title, sub, children }: { title: string; sub?: string; children:
 function GroupDivider({ no, title }: { no: string; title: string }) {
   return (
     <div className="flex items-center gap-2.5 px-1 pt-2">
-      <span className="rounded-lg bg-olive px-2 py-1 text-[12px] font-bold text-cream">{no}</span>
+      <span className="rounded-lg bg-brand px-2 py-1 text-[12px] font-bold text-cream">{no}</span>
       <h2 className="text-[15px] font-bold text-olive">{title}</h2>
-      <div className="h-px flex-1 bg-olive/15" />
+      <div className="h-px flex-1 bg-brand/15" />
     </div>
   );
 }
@@ -171,7 +171,7 @@ export default function GuidanceTab({
           >
             <span
               className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold ${
-                o.status === "done" ? "bg-lime text-cream" : "bg-olive/10 text-olive-mute"
+                o.status === "done" ? "bg-lime text-cream" : "bg-brand/10 text-olive-mute"
               }`}
             >
               {o.status === "done" ? "已完成" : "待测评"}
@@ -222,7 +222,7 @@ export default function GuidanceTab({
                 {c.trend === "down" && <span className="text-[11px] font-bold text-rose">↘ {c.trendPct}%</span>}
                 <b className={`ml-auto text-[14px] ${c.pct >= 70 ? "text-lime" : c.pct >= 60 ? "text-amber" : "text-rose"}`}>{c.pct}%</b>
               </div>
-              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-olive/8">
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-brand/8">
                 <div className={`h-full rounded-full ${TONE_STYLE[c.tone].bar}`} style={{ width: `${Math.min(100, c.pct)}%` }} />
               </div>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-olive-mute">
@@ -270,7 +270,7 @@ export default function GuidanceTab({
           {g.majorDetails.map((m, i) => (
             <div key={m.name} className="rounded-xl border border-olive/12 bg-cream/60 p-3.5">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg bg-olive px-2 py-0.5 text-[11px] font-bold text-cream">{i + 1}</span>
+                <span className="rounded-lg bg-brand px-2 py-0.5 text-[11px] font-bold text-cream">{i + 1}</span>
                 <p className="text-[13.5px] font-bold text-olive">{m.name}</p>
                 <span className="rounded-full bg-lime-pale/70 px-2 py-0.5 text-[10.5px] font-semibold text-olive-mute">{m.category}</span>
               </div>
@@ -286,7 +286,7 @@ export default function GuidanceTab({
               <p className="mt-2.5 text-[12px] font-bold text-olive">就业方向</p>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {m.careers.map((c) => (
-                  <span key={c} className="rounded-full bg-olive/8 px-2.5 py-0.5 text-[11.5px] text-olive-soft">{c}</span>
+                  <span key={c} className="rounded-full bg-brand/8 px-2.5 py-0.5 text-[11.5px] text-olive-soft">{c}</span>
                 ))}
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function GuidanceTab({
           {g.careerDetails.map((c, i) => (
             <div key={c.name} className="rounded-xl border border-olive/12 bg-cream/60 p-3.5">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg bg-olive px-2 py-0.5 text-[11px] font-bold text-cream">{i + 1}</span>
+                <span className="rounded-lg bg-brand px-2 py-0.5 text-[11px] font-bold text-cream">{i + 1}</span>
                 <p className="text-[13.5px] font-bold text-olive">{c.name}</p>
                 <span className="rounded-full bg-lime-pale/70 px-2 py-0.5 text-[10.5px] font-semibold text-olive-mute">{c.category}</span>
               </div>
@@ -384,7 +384,7 @@ export default function GuidanceTab({
                   <b className={r.pct >= 70 ? "text-lime" : r.pct >= 60 ? "text-amber" : "text-rose"}>{r.pct}%</b>
                 </span>
               </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-olive/8">
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-brand/8">
                 <div
                   className={`h-full rounded-full ${r.pct >= 70 ? "bg-lime" : r.pct >= 60 ? "bg-amber" : "bg-rose"}`}
                   style={{ width: `${Math.min(100, r.pct)}%` }}
@@ -597,11 +597,11 @@ export default function GuidanceTab({
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-[13px] font-bold text-olive">
                       {d.name}
-                      <span className="ml-1.5 rounded-full bg-olive/8 px-2 py-0.5 align-middle text-[10.5px] font-semibold text-olive-mute">选科要求：{d.req}</span>
+                      <span className="ml-1.5 rounded-full bg-brand/8 px-2 py-0.5 align-middle text-[10.5px] font-semibold text-olive-mute">选科要求：{d.req}</span>
                     </p>
                     <b className={`text-[13px] ${d.matchPct >= 75 ? "text-lime" : d.matchPct >= 65 ? "text-sky" : "text-amber"}`}>{d.matchPct}%</b>
                   </div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-olive/8">
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-brand/8">
                     <div
                       className={`h-full rounded-full ${d.matchPct >= 75 ? "bg-lime" : d.matchPct >= 65 ? "bg-sky" : "bg-amber"}`}
                       style={{ width: `${d.matchPct}%` }}
@@ -738,8 +738,8 @@ export default function GuidanceTab({
                 <span className="text-[12.5px] font-bold text-olive">物理</span>
                 <b className="mono text-[14px] text-olive">{g.firstDecision.physScore}</b>
               </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-olive/8">
-                <div className={`h-full rounded-full ${g.firstDecision.pick === "物理" ? "bg-lime" : "bg-olive/25"}`} style={{ width: `${Math.min(100, g.firstDecision.physScore)}%` }} />
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-brand/8">
+                <div className={`h-full rounded-full ${g.firstDecision.pick === "物理" ? "bg-lime" : "bg-brand/25"}`} style={{ width: `${Math.min(100, g.firstDecision.physScore)}%` }} />
               </div>
             </div>
             <div className={`rounded-lg px-3 py-2 ${g.firstDecision.pick === "历史" ? "bg-lime-pale/70" : "bg-cream"}`}>
@@ -747,8 +747,8 @@ export default function GuidanceTab({
                 <span className="text-[12.5px] font-bold text-olive">历史</span>
                 <b className="mono text-[14px] text-olive">{g.firstDecision.histScore}</b>
               </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-olive/8">
-                <div className={`h-full rounded-full ${g.firstDecision.pick === "历史" ? "bg-lime" : "bg-olive/25"}`} style={{ width: `${Math.min(100, g.firstDecision.histScore)}%` }} />
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-brand/8">
+                <div className={`h-full rounded-full ${g.firstDecision.pick === "历史" ? "bg-lime" : "bg-brand/25"}`} style={{ width: `${Math.min(100, g.firstDecision.histScore)}%` }} />
               </div>
             </div>
           </div>
@@ -766,7 +766,7 @@ export default function GuidanceTab({
               <span key={p} className="rounded-full bg-lime px-2.5 py-0.5 text-[11.5px] font-bold text-cream">选 {p}</span>
             ))}
             {g.secondDecision.dropped.map((p) => (
-              <span key={p} className="rounded-full bg-olive/10 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-mute">备选 {p}</span>
+              <span key={p} className="rounded-full bg-brand/10 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-mute">备选 {p}</span>
             ))}
           </div>
           <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{g.secondDecision.text}</p>
@@ -943,7 +943,7 @@ export default function GuidanceTab({
                           p.fit === "主力" ? "bg-lime text-cream"
                           : p.fit === "适配" ? "bg-sky text-cream"
                           : p.fit === "关注" ? "bg-amber text-cream"
-                          : "bg-olive/15 text-olive"
+                          : "bg-brand/15 text-olive"
                         }`}
                       >
                         {p.fit}
@@ -952,7 +952,7 @@ export default function GuidanceTab({
                         <p className="text-[13px] font-bold text-olive">
                           {p.name}
                           {p.cond && (
-                            <span className="ml-1.5 rounded-full bg-olive/8 px-2 py-0.5 align-middle text-[10.5px] font-semibold text-olive-mute">
+                            <span className="ml-1.5 rounded-full bg-brand/8 px-2 py-0.5 align-middle text-[10.5px] font-semibold text-olive-mute">
                               {p.cond}
                             </span>
                           )}
@@ -972,7 +972,7 @@ export default function GuidanceTab({
               <div key={e.name} className="rounded-lg bg-cream/60 px-3 py-2">
                 <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <p className="text-[12.5px] font-bold text-olive">{e.name}</p>
-                  <span className="rounded-full bg-olive/8 px-2 py-0.5 text-[10.5px] font-semibold text-olive-mute">{e.slots}</span>
+                  <span className="rounded-full bg-brand/8 px-2 py-0.5 text-[10.5px] font-semibold text-olive-mute">{e.slots}</span>
                 </div>
                 <p className="mt-1 text-[12px] leading-relaxed text-olive-soft">{e.desc}</p>
               </div>

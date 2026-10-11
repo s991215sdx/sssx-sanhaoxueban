@@ -7,6 +7,7 @@ import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
 import AiCoachPanel from "@/components/coach/AiCoachPanel";
 import StudentAdvicePanel from "@/components/coach/StudentAdvicePanel";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
+import DeleteStudentButton from "@/components/DeleteStudentButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import { STUDENT_MODULES } from "@contracts/studentModules";
@@ -47,7 +48,7 @@ function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabl
           type="button"
           onClick={() => save.mutate({ userId, modules: selected })}
           disabled={save.isPending}
-          className="rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+          className="rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
         >
           {save.isPending ? "保存中…" : "保存"}
         </button>
@@ -104,7 +105,8 @@ export default function Tutor() {
           </div>
         </div>
         {/* V57：两大专栏切换 */}
-        <div className="mt-3 flex rounded-xl bg-cream-deep p-1">
+        {/* v93：与后台统一——tab 条淡绿底 */}
+        <div className="mt-3 flex rounded-xl bg-lime-pale p-1">
           {(
             [
               { key: "students", label: "学员管理" },
@@ -115,7 +117,7 @@ export default function Tutor() {
               key={t.key}
               onClick={() => setSection(t.key)}
               className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
-                section === t.key ? "bg-cream text-olive shadow-sm" : "text-olive-mute"
+                section === t.key ? "bg-cream-card text-olive shadow-sm" : "text-olive-mute"
               }`}
             >
               {t.label}
@@ -156,7 +158,7 @@ export default function Tutor() {
                   className="paper-card cursor-pointer p-4 transition-shadow hover:shadow-md"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-olive text-[15px] font-bold text-cream">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-cream">
                       {(s.name || "学")[0]}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -190,6 +192,8 @@ export default function Tutor() {
                     <ResetPasswordButton userId={s.userId} name={s.name} compact />
                     {/* V54：报告推送开关（默认未推送，家长不可见） */}
                     <ReportAccessButton userId={s.userId} released={s.reportReleased} compact />
+                    {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
+                    <DeleteStudentButton userId={s.userId} name={s.name} compact />
                     {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
                     {(s.assessBoundKinds.length > 0 || s.releasedAssessments.length > 0) && (
                       <button

@@ -5,11 +5,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // v91：明快亮色系——深绿文字/品牌色 + 鲜绿点缀 + 近白亮底（解决灰蒙蒙）
+        // v98：升学规划报告风格——翡翠绿主色 + 深绿文字（采样自参考图）
+        // olive=文字色系（深绿），brand=品牌动作色（翡翠绿按钮/头部/头像）
         olive: {
-          DEFAULT: "#1F6B43",
-          soft: "#2E7D55",
-          mute: "#6E8579",
+          DEFAULT: "#0B3D2E",
+          soft: "#4B5F57",
+          mute: "#8FA39B",
+        },
+        brand: {
+          DEFAULT: "#0EA875",
+          deep: "#0B8A63",
+          pale: "#D4F2E8",
         },
         lime: {
           DEFAULT: "#3CC078",
@@ -18,8 +24,8 @@ module.exports = {
           pale: "#E4F7EC",
         },
         cream: {
-          DEFAULT: "#F7F9F8",
-          deep: "#EDF2EF",
+          DEFAULT: "#FFFFFF",
+          deep: "#F0FAF5",
           card: "#FFFFFF",
         },
         butter: "#FFC600",

@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
+import DeleteStudentButton from "@/components/DeleteStudentButton";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ReportAccessButton from "@/components/ReportAccessButton";
@@ -41,7 +42,7 @@ function ClaimAdminCard({ onClaimed }: { onClaimed: () => void }) {
         <button
           onClick={() => claim.mutate()}
           disabled={claim.isPending}
-          className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+          className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           {claim.isPending ? "开通中…" : "我是负责人，开通管理员"}
         </button>
@@ -123,7 +124,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight text-olive">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight text-[#2F8F60]">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
         <p className="mt-1 text-[13px] text-olive-mute">
           {platform
             ? "平台超管：可查看所有机构的数据，并可给任意账号开通管理员。树洞内容属于隐私，只看得到心情曲线。"
@@ -145,8 +146,8 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       </header>
 
       {/* Tab 切换 */}
-      {/* v90：去灰——tab 条改淡绿 tinted 底，不再是大灰板 */}
-      <div className="flex rounded-xl bg-lime-pale/70 p-1">
+      {/* v90/v93：tab 条淡绿底（v93 起全不透明更鲜亮），不再是大灰板 */}
+      <div className="flex rounded-xl bg-lime-pale p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -219,7 +220,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
               <div className="divide-y divide-border">
                 {users?.map((u) => (
                   <div key={u.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive text-[14px] font-bold text-cream">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
                       {(u.name || "学")[0]}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -373,12 +374,12 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
         <div className="divide-y divide-border">
           {filtered.map((s) => (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive text-[14px] font-bold text-cream">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2F8F60] text-[14px] font-bold text-white">
                 {(s.name || "学")[0]}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="truncate text-[14.5px] font-semibold text-olive">{s.name}</span>
+                  <span className="truncate text-[14.5px] font-semibold text-[#2F8F60]">{s.name}</span>
                   {s.grade && <span className="text-[11.5px] text-olive-mute">{s.grade}</span>}
                   {s.mbti && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.mbti}</span>}
                   {s.disc && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.disc}</span>}
@@ -433,6 +434,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 )}
                 {/* V53：管理员可重置任意学员登录密码（默认 123456） */}
                 <ResetPasswordButton userId={s.userId} name={s.name} />
+                {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
+                <DeleteStudentButton userId={s.userId} name={s.name} />
                 <button
                   onClick={() => setDetailId(s.userId)}
                   className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
@@ -481,7 +484,7 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
           {tutors?.map((t) => (
             <div key={t.id} className="paper-card overflow-hidden">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-5 py-3.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive text-[14px] font-bold text-cream">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
                   {(t.name || "伴")[0]}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -525,7 +528,7 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
 function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => void }) {
   const { data, isLoading } = trpc.admin.userDetail.useQuery({ userId });
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-olive/30 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-brand/30 backdrop-blur-sm" onClick={onClose}>
       <div
         className="h-full w-full max-w-md overflow-y-auto bg-cream p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -544,7 +547,7 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
           <div className="mt-4 space-y-4">
             <div className="paper-card p-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-olive text-[15px] font-bold text-cream">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-cream">
                   {(data.user.name ?? "学")[0]}
                 </span>
                 <div>

@@ -13,8 +13,8 @@ const CAUSE_COLORS: Record<string, string> = {
   概念不清: "#3CC078",
   审题失误: "#c7a23a",
   计算错误: "#FF961F",
-  方法不会: "#2E7D55",
-  粗心大意: "#6E8579",
+  方法不会: "#43564C",
+  粗心大意: "#7A8A82",
 };
 
 const FIELD_CLS = "mt-2 w-full rounded-xl border border-input bg-cream px-4 py-2.5 text-[15px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime focus:ring-2 focus:ring-lime/25";
@@ -68,7 +68,7 @@ export default function Gaps() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-[14.5px] font-medium transition-colors ${tab === t.key ? "bg-olive text-cream" : "bg-cream-card border border-border text-olive-soft hover:bg-lime-pale/60"}`}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-[14.5px] font-medium transition-colors ${tab === t.key ? "bg-brand text-cream" : "bg-cream-card border border-border text-olive-soft hover:bg-lime-pale/60"}`}
           >
             <t.icon size={16} />
             {t.label}
@@ -151,7 +151,7 @@ function ReviewQueue() {
           </div>
           <button
             onClick={() => setActiveId(it.id)}
-            className="shrink-0 rounded-xl bg-olive px-4 py-2 text-sm font-medium text-cream hover:bg-lime"
+            className="shrink-0 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-cream hover:bg-lime"
           >
             开始复习
           </button>
@@ -277,7 +277,7 @@ function ErrorDetail({ errorId, streak, hasImage }: { errorId: number; streak: n
         onClick={() => navigate(`/learn/${errorId}`)}
         className="flex w-full items-center gap-3 rounded-xl border border-lime/60 bg-lime-pale/50 px-4 py-3.5 text-left transition-colors hover:bg-lime-pale"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-olive text-cream">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-cream">
           <GraduationCap size={18} />
         </span>
         <span className="flex-1">
@@ -404,7 +404,7 @@ function AddErrorForm({ onDone }: { onDone: () => void }) {
           >
             再录一道
           </button>
-          <button onClick={onDone} className="rounded-xl bg-olive px-4 py-2 text-sm font-medium text-cream hover:bg-lime">
+          <button onClick={onDone} className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-cream hover:bg-lime">
             去错题本看看 →
           </button>
         </div>
@@ -481,7 +481,7 @@ function AddErrorForm({ onDone }: { onDone: () => void }) {
             <button
               key={c}
               onClick={() => setCause(c)}
-              className={`rounded-xl border px-4 py-2 text-[14px] font-medium transition-colors ${cause === c ? "border-olive bg-olive text-cream" : "border-border bg-cream text-olive-soft hover:border-olive/40"}`}
+              className={`rounded-xl border px-4 py-2 text-[14px] font-medium transition-colors ${cause === c ? "border-olive bg-brand text-cream" : "border-border bg-cream text-olive-soft hover:border-olive/40"}`}
             >
               {c}
             </button>
@@ -537,7 +537,7 @@ function AddErrorForm({ onDone }: { onDone: () => void }) {
       <button
         onClick={() => valid && add.mutate({ kpId: Number(kpId), stem: stem.trim(), cause: cause as never, band, note: note || undefined, imageData: imageData ?? undefined })}
         disabled={!valid || add.isPending}
-        className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+        className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
       >
         {add.isPending ? "正在分析根因…" : "收入错题本，自动安排复习"}
       </button>

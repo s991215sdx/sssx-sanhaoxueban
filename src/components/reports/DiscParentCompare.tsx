@@ -71,13 +71,13 @@ function FactorBars({ label, tag, result, hot = [] }: { label: string; tag?: str
           return (
             <div
               key={k}
-              className={`flex items-center gap-2 rounded-lg px-1.5 py-0.5 -mx-1.5 ${isHot ? "bg-[#fbe3df] ring-1 ring-[#b91c1c]/50" : ""}`}
+              className={`flex items-center gap-2 rounded-lg px-1.5 py-0.5 -mx-1.5 ${isHot ? "bg-[#FAF3EB] ring-1 ring-[#b91c1c]/50" : ""}`}
             >
               <span className={`w-16 shrink-0 text-[11.5px] ${isHot ? "font-bold text-[#8f1313]" : inCombo ? "font-bold text-olive" : "text-olive-mute"}`}>
                 {k} · {DISC_THEORY.find((ty) => ty.type === k)?.name}
               </span>
               <div className="relative h-2.5 flex-1 rounded-full bg-cream-deep">
-                <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
+                <div className="absolute left-1/2 top-0 h-full w-px bg-brand-mute/50" />
                 <div
                   className="absolute top-0 h-full rounded-full"
                   style={{
@@ -119,7 +119,7 @@ function DimDeltaBadges({ label, parent, student }: { label: string; parent: Dis
       {strong.map((d) => (
         <span
           key={d.k}
-          className="rounded-md border border-[#b91c1c]/50 bg-[#fbe3df] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]"
+          className="rounded-md border border-[#b91c1c]/50 bg-[#FAF3EB] px-2 py-0.5 text-[11px] font-bold text-[#8f1313]"
         >
           ⚠ {d.k}（{DISC_DIM_PLAIN[d.k]}）差得最多、容易对着干：你 {discTendencyText(d.student)} / {label} {discTendencyText(d.parent)}，差 {Math.round(d.abs)}%
         </span>

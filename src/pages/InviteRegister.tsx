@@ -77,7 +77,7 @@ export default function InviteRegister() {
         {/* 品牌区 */}
         <div className="flex flex-col items-center text-center">
           <svg width="56" height="56" viewBox="0 0 34 34" fill="none" aria-hidden>
-            <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#1F6B43" />
+            <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#20362B" />
             <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#6FD9A4" />
             <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#B9ECD0" />
             <circle cx="17" cy="9.5" r="2.2" fill="#FFC600" />
@@ -138,7 +138,7 @@ export default function InviteRegister() {
           <button
             type="submit"
             disabled={register.isPending || phone.length !== 11 || password.length < 6 || password2.length < 6}
-            className="mt-5 w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-5 w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
           >
             {register.isPending ? "注册中…" : "完成注册，开始使用"}
           </button>

@@ -11,13 +11,15 @@ describe("v91 明快色系", () => {
   it("tailwind 令牌为深绿/鲜绿/亮底", () => {
     const src = read("tailwind.config.js");
     for (const [tok, hex] of [
-      ['DEFAULT: "#1F6B43"', "olive 深绿"],
+      /* v91 的 #1F6B43 偏"鲜绿"，v94 改墨绿炭黑 #20362B，v98 改报告深绿 #0B3D2E（不再锁死单一值） */
+      ['DEFAULT: "#(1F6B43|20362B|0B3D2E)"', "olive 深绿"],
       ['DEFAULT: "#3CC078"', "lime 鲜绿"],
-      ['DEFAULT: "#F7F9F8"', "亮底"],
       ['pale: "#E4F7EC"', "浅绿 tint"],
     ]) {
-      if (!src.includes(tok)) throw new Error("缺 " + hex + "：" + tok);
+      if (!src.includes(tok) && !new RegExp(tok).test(src)) throw new Error("缺 " + hex + "：" + tok);
     }
+    /* 亮底：v91 引入 #F7F9F8，v93 起进一步提为纯白（不再锁死具体值） */
+    if (!/DEFAULT: "#(F7F9F8|FFFFFF)"/.test(src)) throw new Error("缺：亮底 cream");
   });
 
   it("正文前景色为近黑而非中绿", () => {

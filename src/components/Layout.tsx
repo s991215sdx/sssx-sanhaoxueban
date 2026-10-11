@@ -1,5 +1,5 @@
-import { NavLink, useLocation } from "react-router";
-import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { NavLink } from "react-router";
+import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -32,7 +32,7 @@ const MOBILE_NAV = [
 function LogoMark() {
   return (
     <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
-      <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#1F6B43" />
+      <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#0EA875" />
       <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#6FD9A4" />
       <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#B9ECD0" />
       <circle cx="17" cy="9.5" r="2.2" fill="#FFC600" />
@@ -55,7 +55,7 @@ function Logo({ brand }: { brand: string }) {
 /** 用户名首字头像。 */
 function Avatar({ name }: { name: string }) {
   return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-olive text-[14px] font-bold text-cream">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
       {(name || "学")[0]}
     </span>
   );
@@ -99,10 +99,6 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   /* v80：手机从左向右滑 = 返回上一步（全局手势，输入控件/横向滚动容器自动豁免） */
   useSwipeBack();
-
-  /* v93：报告类页面（学习报告/测评详细报告）桌面端接近全屏，左右留白少、字图更大 */
-  const { pathname } = useLocation();
-  const isReportPage = pathname.startsWith("/report");
 
   return (
     <div className="min-h-screen bg-cream">
@@ -174,7 +170,27 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && "后台管理"}
             </NavLink>
           )}
+          {/* v96：回收站（已删学员 2 个月保留期，可恢复） */}
+          {showCoach && (
+            <NavLink
+              to="/recycle-bin"
+              title={collapsed ? "回收站" : undefined}
+              className={({ isActive }) =>
+                `group flex items-center rounded-xl transition-colors ${
+                  collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+                } ${isActive ? "bg-lime-pale font-semibold text-olive" : "text-olive-soft hover:bg-lime-pale/50"}`
+              }
+            >
+              <Trash2 size={18} strokeWidth={2.2} />
+              {!collapsed && "回收站"}
+            </NavLink>
+          )}
         </nav>
+        {/* v104：侧栏底部低存在感树苗装饰，呼应「三好树」品牌意象 */}
+        <div className={`mt-auto flex items-center gap-1.5 text-[10px] text-olive-mute/70 ${collapsed ? "justify-center" : "px-3.5"}`}>
+          <Sprout size={14} strokeWidth={1.8} />
+          {!collapsed && <span>伴每一棵小树，长成大树</span>}
+        </div>
         {collapsed ? (
           <div className="mt-auto flex flex-col items-center gap-2.5">
             <span title={displayName}>
@@ -251,9 +267,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             本机构服务已暂停，部分功能可能不可用。如有疑问请联系机构老师。
           </div>
         )}
-        {/* v87：桌面端内容区加白色卡片背景板（灰底太飘），卡片随屏宽自适应并留内外边距；移动端保持全宽。
-            v93：报告页桌面端放宽到近全屏（1560px），其余页面维持 5xl/6xl/7xl 自适应 */}
-        <div className={`mx-auto px-4 pt-6 md:pt-5 ${isReportPage ? "md:px-8 xl:max-w-[1560px]" : "max-w-5xl md:max-w-6xl md:px-5 xl:max-w-7xl"}`}>
+        {/* v87/v93：桌面端内容区加白色卡片背景板；v93 起 2xl 超大屏放宽到 1560px，消灭两侧大片留白；移动端保持全宽 */}
+        <div className="mx-auto max-w-5xl px-4 pt-6 md:max-w-6xl md:px-5 md:pt-5 lg:max-w-7xl 2xl:max-w-[1560px]">
           <div className="md:paper-card md:min-h-[calc(100vh-4.5rem)] md:px-8 md:py-7">
             <BackBar />
             {children}

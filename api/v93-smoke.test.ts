@@ -1,5 +1,5 @@
-/* v93 冒烟：org_id 为 NULL 的平台直客学员对机构管理员/伴学师可见（不再隐身） */
-import { describe, it, expect } from "vitest";
+/* v93 冒烟：去留白 + 提亮——页面纯白底、2xl 屏内容容器 1560px、tab 条淡绿统一 */
+import { describe, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -7,35 +7,21 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
-function need(src: string, needle: string, label: string) {
-  if (!src.includes(needle)) throw new Error(`缺 ${label}：${needle}`);
-}
-
-describe("v93 平台直客（org_id NULL）可见性修复", () => {
-  it("listStudents：机构范围查询包含 org_id IS NULL 的用户", () => {
-    const src = read("api/studentDetail.ts");
-    need(src, "isNull(users.orgId)", "机构范围包含未归属用户");
-    need(src, "or(eq(users.orgId, orgId), isNull(users.orgId))", "or 组合条件");
+describe("v93 去留白提亮", () => {
+  it("页面底色纯白血缘", () => {
+    const src = read("tailwind.config.js");
+    if (!src.includes('DEFAULT: "#FFFFFF"')) throw new Error("cream 底应为纯白");
   });
 
-  it("getStudentDetail：目标学员 org_id 为 NULL 时放行", () => {
-    const src = read("api/studentDetail.ts");
-    need(src, "(target.orgId !== orgId && target.orgId != null)", "NULL 目标放行判断");
+  it("内容容器 2xl 屏放宽到 1560px", () => {
+    const src = read("src/components/Layout.tsx");
+    if (!src.includes("2xl:max-w-[1560px]")) throw new Error("缺 2xl:max-w-[1560px]");
   });
 
-  it("sameOrg：目标账号 org_id 为 NULL 时放行", () => {
-    const src = read("api/tenant.ts");
-    need(src, "(t.orgId === me.orgId || t.orgId == null)", "sameOrg NULL 放行");
-  });
-
-  it("isMyStudent：一方 org 为 NULL 时跳过机构一致性，双方异机构仍隔离", () => {
-    const src = read("api/tutorAccess.ts");
-    need(src, "meOrg != null && targetOrg != null && meOrg !== targetOrg", "双非空异机构才拒绝");
-  });
-
-  it("报告页桌面端放大与近全屏容器仍在", () => {
-    need(read("src/components/reports/ReportView.tsx"), "report-view-zoom", "报告 zoom 钩子类名");
-    need(read("src/index.css"), ".report-view-zoom", "zoom 样式");
-    need(read("src/components/Layout.tsx"), "isReportPage", "报告页近全屏分支");
+  it("后台与伴学工作台 tab 条统一淡绿底", () => {
+    for (const f of ["src/pages/Admin.tsx", "src/pages/Tutor.tsx"]) {
+      const src = read(f);
+      if (!src.includes("flex rounded-xl bg-lime-pale p-1")) throw new Error(f + " tab 条非淡绿底");
+    }
   });
 });

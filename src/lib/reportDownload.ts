@@ -409,13 +409,13 @@ export function answerSheetsPrintHtml(
   e3?: E3V37Result | null,
 ): string {
   const ansColor = (r: { bad?: boolean; band?: "bad" | "mid" | "ok" }) =>
-    r.band === "bad" ? "#8f1313" : r.band === "mid" ? "#8a6d1a" : r.band === "ok" ? "#2F8F60" : r.bad ? "#c25e3a" : "#1F6B43";
+    r.band === "bad" ? "#8f1313" : r.band === "mid" ? "#8a6d1a" : r.band === "ok" ? "#2F8F60" : r.bad ? "#c25e3a" : "#20362B";
   const parts: string[] = [];
   /* E3 三阶九能得分速览（得分表口径：每能一行 小计+判定） */
   if (e3 && isE3V37Result(e3)) {
     const lvColor = (lv: string) => (lv === "卡点" ? "#8f1313" : lv === "待提升" ? "#8a6d1a" : "#2F8F60");
     const sectionRows = (label: string, list: { label: string; score: number; level: string }[], note?: string) =>
-      `<tr><td colspan="3" style="border:1px solid #E4EAE6;padding:5px 8px;background:#f5f3e6;font-weight:700">${esc(label)}${note ? `<span style="font-weight:400;font-size:11px;color:#6E8579">（${esc(note)}）</span>` : ""}</td></tr>` +
+      `<tr><td colspan="3" style="border:1px solid #E4EAE6;padding:5px 8px;background:#f5f3e6;font-weight:700">${esc(label)}${note ? `<span style="font-weight:400;font-size:11px;color:#7A8A82">（${esc(note)}）</span>` : ""}</td></tr>` +
       list
         .map(
           (r) =>
@@ -448,7 +448,7 @@ export function answerSheetsPrintHtml(
         <tbody>${b.rows
           .map(
             (r) =>
-              `<tr style="page-break-inside:avoid"><td style="border-bottom:1px solid #EEF4F0;padding:4px 6px;width:52px;font-family:monospace;color:#6E8579;vertical-align:top">${esc(r.no)}.</td><td style="border-bottom:1px solid #EEF4F0;padding:4px 6px;vertical-align:top">${esc(r.text)}</td><td style="border-bottom:1px solid #EEF4F0;padding:4px 6px;width:200px;text-align:right;font-weight:700;color:${ansColor(r)};vertical-align:top">${esc(r.ans)}</td></tr>`,
+              `<tr style="page-break-inside:avoid"><td style="border-bottom:1px solid #EEF4F0;padding:4px 6px;width:52px;font-family:monospace;color:#7A8A82;vertical-align:top">${esc(r.no)}.</td><td style="border-bottom:1px solid #EEF4F0;padding:4px 6px;vertical-align:top">${esc(r.text)}</td><td style="border-bottom:1px solid #EEF4F0;padding:4px 6px;width:200px;text-align:right;font-weight:700;color:${ansColor(r)};vertical-align:top">${esc(r.ans)}</td></tr>`,
           )
           .join("")}</tbody>
       </table>`,
@@ -462,13 +462,13 @@ export function answerSheetsPrintHtml(
 
 const PRINT_CSS = `
   body { font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color: #333a22; background: #fff; margin: 0; padding: 32px 40px; line-height: 1.75; font-size: 14px; }
-  h1 { font-size: 22px; margin: 0 0 4px; color: #1F6B43; }
-  h2 { font-size: 16px; margin: 26px 0 8px; color: #1F6B43; border-left: 4px solid #3CC078; padding-left: 10px; page-break-after: avoid; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: #20362B; }
+  h2 { font-size: 16px; margin: 26px 0 8px; color: #20362B; border-left: 4px solid #3CC078; padding-left: 10px; page-break-after: avoid; }
   p { margin: 6px 0; }
   ul, ol { margin: 6px 0; padding-left: 22px; }
   li { margin: 4px 0; }
-  strong { color: #1F6B43; }
-  .meta { color: #6E8579; font-size: 12px; margin-bottom: 18px; }
+  strong { color: #20362B; }
+  .meta { color: #7A8A82; font-size: 12px; margin-bottom: 18px; }
   .box { border: 1px solid #E4EAE6; border-radius: 8px; padding: 10px 14px; margin: 8px 0; page-break-inside: avoid; }
   .lv-ok { border-left: 4px solid #3CC078; }
   .lv-warn { border-left: 4px solid #e2c25e; }
@@ -477,12 +477,12 @@ const PRINT_CSS = `
   .bar-label { width: 200px; flex-shrink: 0; }
   .bar-track { flex: 1; height: 10px; background: #f1eedd; border-radius: 6px; overflow: hidden; }
   .bar-fill { display: block; height: 100%; background: #3CC078; border-radius: 6px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .bar-val { font-family: monospace; color: #2E7D55; width: 72px; text-align: right; flex-shrink: 0; }
+  .bar-val { font-family: monospace; color: #43564C; width: 72px; text-align: right; flex-shrink: 0; }
   .cards { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
   .card { border: 1px solid #E4EAE6; border-radius: 8px; padding: 10px 14px; min-width: 140px; flex: 1; }
-  .card-label { font-size: 11.5px; color: #6E8579; }
-  .card-value { font-size: 16px; font-weight: 700; color: #1F6B43; }
-  .card-note { font-size: 11px; color: #2E7D55; }
+  .card-label { font-size: 11.5px; color: #7A8A82; }
+  .card-value { font-size: 16px; font-weight: 700; color: #20362B; }
+  .card-note { font-size: 11px; color: #43564C; }
   @media print { body { padding: 12mm; } .bar-fill { background: #3CC078 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 `;
 

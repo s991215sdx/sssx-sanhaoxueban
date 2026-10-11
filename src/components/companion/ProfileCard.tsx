@@ -71,7 +71,7 @@ export default function ProfileCard() {
         <p className="mt-1 text-sm text-olive-mute">先花两分钟认识一下，之后的计划才好量体裁衣。</p>
         <button
           onClick={() => navigate("/welcome")}
-          className="mt-4 rounded-xl bg-olive px-5 py-2.5 text-sm font-semibold text-cream hover:bg-lime"
+          className="mt-4 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-cream hover:bg-lime"
         >
           去建立档案 →
         </button>
@@ -154,7 +154,7 @@ export default function ProfileCard() {
                   dailyMinutes: profile?.dailyMinutes ?? 45,
                 })
               }
-              className="flex-1 rounded-xl bg-olive py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
+              className="flex-1 rounded-xl bg-brand py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
             >
               {saveBasic.isPending ? "保存中…" : "保存基本信息"}
             </button>
@@ -201,7 +201,7 @@ export default function ProfileCard() {
           <button
             disabled={update.isPending}
             onClick={() => update.mutate({ dailyMinutes: cur })}
-            className="mt-3 w-full rounded-xl bg-olive py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
+            className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
           >
             {update.isPending ? "保存中…" : "保存新的时长"}
           </button>
@@ -255,7 +255,7 @@ export default function ProfileCard() {
               className="w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
             />
             {pwMsg && (
-              <p className={`rounded-lg px-3 py-2 text-[12.5px] ${pwMsg.ok ? "bg-lime-pale text-[#1F6B43]" : "bg-terra/10 text-terra"}`}>
+              <p className={`rounded-lg px-3 py-2 text-[12.5px] ${pwMsg.ok ? "bg-lime-pale text-[#20362B]" : "bg-terra/10 text-terra"}`}>
                 {pwMsg.text}
               </p>
             )}
@@ -263,7 +263,7 @@ export default function ProfileCard() {
               type="button"
               disabled={changePw.isPending || !oldPw || newPw.length < 6 || newPw2.length < 6}
               onClick={submitPw}
-              className="w-full rounded-xl bg-olive py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
             >
               {changePw.isPending ? "保存中…" : "保存新密码"}
             </button>

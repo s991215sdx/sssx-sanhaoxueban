@@ -131,7 +131,7 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
             </button>
             <button
               onClick={onDone}
-              className="rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+              className="rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
             >
               完成，返回测评中心
             </button>
@@ -194,7 +194,7 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
             </button>
             <button
               disabled={!customLabel.trim()}
-              className="flex-1 rounded-xl bg-olive py-2.5 text-[14px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+              className="flex-1 rounded-xl bg-brand py-2.5 text-[14px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
             >
               开始测评 →
             </button>

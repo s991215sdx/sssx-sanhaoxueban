@@ -83,7 +83,7 @@ export default function AbilityPlanCard({
                       title={selected ? "从开方清单移除" : "加入开方清单"}
                       onClick={() => onToggleSelect(m, ability)}
                       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                        selected ? "border-olive bg-olive text-cream" : "border-border bg-white text-transparent hover:border-lime"
+                        selected ? "border-olive bg-brand text-cream" : "border-border bg-white text-transparent hover:border-lime"
                       }`}
                     >
                       <Check size={13} strokeWidth={3} />

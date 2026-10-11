@@ -96,7 +96,7 @@ export default function VariantTrainer({
         <button
           onClick={() => submit.mutate({ errorId, questionId: q.id, given: value })}
           disabled={!value.trim() || submit.isPending}
-          className="w-full rounded-xl bg-olive py-2.5 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+          className="w-full rounded-xl bg-brand py-2.5 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           {submit.isPending ? "批改中…" : "提交答案"}
         </button>
@@ -107,7 +107,7 @@ export default function VariantTrainer({
             setValue("");
             setResult(null);
           }}
-          className="w-full rounded-xl bg-olive py-2.5 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime"
+          className="w-full rounded-xl bg-brand py-2.5 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime"
         >
           {result.correct ? "下一题 →" : "没关系，再来一题 →"}
         </button>

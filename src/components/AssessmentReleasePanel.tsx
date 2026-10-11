@@ -73,7 +73,7 @@ export default function AssessmentReleasePanel({
               type="button"
               onClick={() => save.mutate({ userId, kinds: selected })}
               disabled={save.isPending}
-              className="rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+              className="rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
             >
               {save.isPending ? "保存中…" : "保存推送"}
             </button>

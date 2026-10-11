@@ -130,7 +130,7 @@ function StageConfirm({ defaultName, onDone }: { defaultName: string; onDone: ()
                     setGrade(STAGE_GRADES[s][0]);
                   }}
                   className={`rounded-xl border px-4 py-3 text-[15px] font-semibold transition-colors ${
-                    stage === s ? "border-olive bg-olive text-cream" : "border-border bg-cream text-olive-soft hover:border-olive/40"
+                    stage === s ? "border-olive bg-brand text-cream" : "border-border bg-cream text-olive-soft hover:border-olive/40"
                   }`}
                 >
                   {s}
@@ -153,7 +153,7 @@ function StageConfirm({ defaultName, onDone }: { defaultName: string; onDone: ()
           <button
             onClick={() => valid && setup.mutate({ name: name.trim(), grade, dailyMinutes: 45 })}
             disabled={!valid || setup.isPending}
-            className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+            className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
           >
             {setup.isPending ? "正在确认…" : "确认学段，开始诊断 →"}
           </button>
@@ -431,7 +431,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
           </p>
           <button
             onClick={() => setPhase({ kind: "quiz", part: phase.part, qi: 0 })}
-            className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             开始这一部分 →
           </button>
@@ -476,7 +476,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                   type="button"
                   onClick={() => answerCurrent(v)}
                   className={`flex flex-col items-center gap-1.5 rounded-xl border px-1 py-3 transition-colors ${
-                    sel ? "border-olive bg-olive text-cream" : "border-border bg-cream text-olive-soft hover:border-lime"
+                    sel ? "border-olive bg-brand text-cream" : "border-border bg-cream text-olive-soft hover:border-lime"
                   }`}
                 >
                   <span className={`h-4 w-4 rounded-full border-2 ${sel ? "border-cream bg-cream" : "border-olive-mute/40"}`} />
@@ -538,7 +538,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
           </p>
           <button
             onClick={() => setPhase(isLastPart ? { kind: "motivation" } : { kind: "intro", part: phase.part + 1 })}
-            className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             继续 →
           </button>
@@ -576,7 +576,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
           <button
             disabled={!motivation}
             onClick={() => setPhase({ kind: "subjects" })}
-            className="mt-4 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+            className="mt-4 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
           >
             继续 →（学科快扫，约 3 分钟）
           </button>
@@ -592,7 +592,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
     const chipCls = (active: boolean, disabled = false) =>
       `rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors ${
         active
-          ? "border-olive bg-olive text-cream"
+          ? "border-olive bg-brand text-cream"
           : disabled
             ? "border-border bg-cream text-olive-mute/50"
             : "border-border bg-cream text-olive-soft hover:border-lime/60"
@@ -629,7 +629,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                 )
               }
               className={`rounded-full border px-3 py-1 text-[12px] transition-colors ${
-                closed ? "border-terra/50 bg-[#fbe3df] text-[#b91c1c]" : "border-border bg-cream text-olive-mute hover:border-lime/60"
+                closed ? "border-terra/50 bg-[#FAF3EB] text-[#b91c1c]" : "border-border bg-cream text-olive-mute hover:border-lime/60"
               }`}
             >
               {closed ? "未开设 · 点击恢复" : "未开设"}
@@ -654,7 +654,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                           type="button"
                           onClick={() => setSubject(i, { [field]: v })}
                           className={`h-6 w-6 rounded-full border-2 text-[11px] transition-colors ${
-                            s[field] === v ? "border-olive bg-olive text-cream" : "border-border bg-cream text-olive-mute hover:border-lime"
+                            s[field] === v ? "border-olive bg-brand text-cream" : "border-border bg-cream text-olive-mute hover:border-lime"
                           }`}
                         >
                           {v}
@@ -824,7 +824,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
           </div>
           <button
             onClick={() => setPhase({ kind: "life" })}
-            className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             继续 →（生活事件，约 1 分钟）
           </button>
@@ -867,7 +867,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
           </div>
           <button
             onClick={() => setPhase({ kind: "open" })}
-            className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             继续 →（最后一步，可留空）
           </button>
@@ -928,7 +928,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
               },
             } as never)
           }
-          className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
+          className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
         >
           {submit.isPending
             ? "正在生成诊断…"

@@ -37,7 +37,7 @@ export default function ReportAccessButton({
           className={
             compact
               ? "rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive disabled:opacity-50"
-              : "rounded-lg bg-olive px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
+              : "rounded-lg bg-brand px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
           }
         >
           {compact ? <Send size={15} /> : setAccess.isPending ? "推送中…" : "推送报告"}
@@ -78,8 +78,8 @@ export default function ReportAccessButton({
         onClick={() => setConfirmRecall(true)}
         className={
           compact
-            ? "rounded-lg bg-lime-pale p-1.5 text-[#1F6B43] transition-colors hover:bg-lime/30"
-            : "inline-flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-3 py-1.5 text-[12.5px] font-semibold text-[#1F6B43] hover:bg-lime/20"
+            ? "rounded-lg bg-lime-pale p-1.5 text-[#2F8F60] transition-colors hover:bg-lime/30"
+            : "inline-flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-3 py-1.5 text-[12.5px] font-semibold text-[#2F8F60] hover:bg-lime/20"
         }
       >
         <CheckCircle2 size={compact ? 15 : 13} />

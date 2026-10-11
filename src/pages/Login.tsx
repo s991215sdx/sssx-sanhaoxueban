@@ -34,7 +34,7 @@ export default function Login() {
         {/* 品牌区 */}
         <div className="flex flex-col items-center text-center">
           <svg width="64" height="64" viewBox="0 0 34 34" fill="none" aria-hidden>
-            <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#1F6B43" />
+            <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#20362B" />
             <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#6FD9A4" />
             <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#B9ECD0" />
             <circle cx="17" cy="9.5" r="2.2" fill="#FFC600" />
@@ -95,7 +95,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loginMutation.isPending || phone.length !== 11 || password.length < 6}
-            className="mt-5 w-full rounded-xl bg-olive py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-5 w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loginMutation.isPending ? "正在进入…" : "进入三好学伴"}
           </button>
@@ -118,7 +118,7 @@ export default function Login() {
       {/* 忘记密码说明弹层：重置由伴学师/管理员在后台操作，默认密码 123456 */}
       {showForgot && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-olive/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-brand/40 px-4"
           onClick={() => setShowForgot(false)}
         >
           <div
@@ -140,7 +140,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowForgot(false)}
-              className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+              className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
             >
               我知道了
             </button>

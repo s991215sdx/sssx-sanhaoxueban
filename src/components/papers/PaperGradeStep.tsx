@@ -85,7 +85,7 @@ export default function PaperGradeStep({
           />
           <button
             onClick={generate}
-            className="rounded-xl bg-olive px-5 py-2.5 text-[14.5px] font-medium text-cream hover:bg-lime"
+            className="rounded-xl bg-brand px-5 py-2.5 text-[14.5px] font-medium text-cream hover:bg-lime"
           >
             生成题号列表
           </button>
@@ -227,7 +227,7 @@ export default function PaperGradeStep({
           <button
             onClick={() => analyze.mutate({ id: paperId, items })}
             disabled={analyze.isPending}
-            className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+            className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
           >
             {analyze.isPending
               ? "正在分析，并把错题收进错题本…"

@@ -5,9 +5,9 @@ import type { E3V27Result, E3Level } from "@contracts/assessments";
 const DIM_COLORS: Record<string, string> = {
   乐学: "#3CC078",
   会学: "#B9ECD0",
-  善学: "#2E7D55",
+  善学: "#43564C",
   品格: "#e8a33d",
-  环境: "#6E8579",
+  环境: "#7A8A82",
 };
 
 const LEVEL_CLASS: Record<E3Level, string> = {
@@ -42,7 +42,7 @@ export default function E3ResultCard({ result, action }: { result: E3V27Result; 
             </div>
           ))}
         </div>
-        <div className="mt-4 flex items-center justify-center rounded-xl bg-olive py-2.5">
+        <div className="mt-4 flex items-center justify-center rounded-xl bg-brand py-2.5">
           <span className="text-[16px] font-bold tracking-wide text-cream">五维定位：{result.priority}</span>
         </div>
       </div>

@@ -32,7 +32,7 @@ function greeting() {
 const MINUTE_OPTIONS = [20, 40, 60, 90];
 
 const KIND_CHIP_COLORS: Record<PlanKind, string> = {
-  review: "#2E7D55",
+  review: "#43564C",
   band1: BANDS[0].color,
   band2: BANDS[1].color,
   band3: BANDS[2].color,
@@ -91,7 +91,7 @@ function TodayPlan() {
               onClick={() => setMinutes(m)}
               className={`mono relative rounded-full border px-3 py-1 text-[13px] font-medium transition-colors ${
                 effectiveMinutes === m
-                  ? "border-olive bg-olive text-cream"
+                  ? "border-olive bg-brand text-cream"
                   : "border-border bg-cream text-olive-soft hover:border-olive/40"
               }`}
             >
@@ -177,7 +177,7 @@ function TodayPlan() {
                   </button>
                   <span
                     className="chip shrink-0 !border-0 !text-[10.5px]"
-                    style={{ backgroundColor: `${KIND_CHIP_COLORS[kind] ?? "#6E8579"}1f`, color: KIND_CHIP_COLORS[kind] ?? "#6E8579" }}
+                    style={{ backgroundColor: `${KIND_CHIP_COLORS[kind] ?? "#7A8A82"}1f`, color: KIND_CHIP_COLORS[kind] ?? "#7A8A82" }}
                   >
                     {PLAN_KIND_LABELS[kind] ?? item.kind}
                   </span>
@@ -296,7 +296,7 @@ export default function Dashboard() {
       <div className="paper-card accent-l border-terra mx-auto mt-16 max-w-md p-6">
         <p className="font-semibold text-olive">数据暂时连不上</p>
         <p className="mt-1 text-sm text-olive-mute">首次启动需要初始化题库，稍等片刻再试。</p>
-        <button onClick={() => refetch()} className="mt-4 rounded-xl bg-olive px-5 py-2.5 text-sm font-medium text-cream">
+        <button onClick={() => refetch()} className="mt-4 rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-cream">
           重新加载
         </button>
       </div>

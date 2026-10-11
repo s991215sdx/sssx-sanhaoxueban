@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import InviteRegister from "./pages/InviteRegister";
 import Admin from "./pages/Admin";
 import Tutor from "./pages/Tutor";
+import RecycleBin from "./pages/RecycleBin";
 import { trpc } from "./providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import ProfileStage from "@/components/welcome/ProfileStage";
@@ -115,7 +116,7 @@ function RoleGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const isStaff = user?.role === "admin" || user?.role === "tutor";
-  const staffPaths = ["/tutor", "/admin"];
+  const staffPaths = ["/tutor", "/admin", "/recycle-bin"];
   const onStaffPath = staffPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`));
   if (isStaff && !onStaffPath) {
     return <Navigate to="/tutor" replace />;
@@ -164,6 +165,7 @@ export default function App() {
                     <Route path="/report-detail" element={<ReportDetail />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/tutor" element={<Tutor />} />
+                    <Route path="/recycle-bin" element={<RecycleBin />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                   </BasicsGate>

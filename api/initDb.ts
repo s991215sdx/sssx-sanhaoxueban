@@ -305,6 +305,15 @@ export async function initDb(maxAttempts = 5) {
       initStatus.readyAt = Date.now();
       initStatus.lastError = null;
       console.log("[initDb] database ready");
+      /* v96：启动时清扫一次回收站——已删超 2 个月未恢复的学员物理清除（惰性，失败不阻塞启动） */
+      try {
+        const { getDb } = await import("./queries/connection");
+        const { purgeExpiredStudents } = await import("./recycle");
+        const purged = await purgeExpiredStudents(getDb());
+        if (purged > 0) console.log(`[initDb] recycle bin purged ${purged} expired student(s)`);
+      } catch (e) {
+        console.warn("[initDb] recycle purge skipped:", formatErr(e));
+      }
       return;
     } catch (err) {
       lastErr = err;

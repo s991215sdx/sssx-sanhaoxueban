@@ -57,7 +57,7 @@ function ReportAccessEditor({
               onClick={() => toggleKind("all")}
               className={`rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${
                 allPicked
-                  ? "border-lime bg-olive text-cream"
+                  ? "border-lime bg-brand text-cream"
                   : "border-olive/40 bg-cream-card text-olive hover:bg-lime-pale"
               }`}
             >
@@ -87,7 +87,7 @@ function ReportAccessEditor({
             type="button"
             disabled={saving || picked.length === 0}
             onClick={() => onSave(true, picked)}
-            className="mt-2.5 rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+            className="mt-2.5 rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
           >
             {saving ? "保存中…" : "保存报告设置"}
           </button>
@@ -161,7 +161,7 @@ function AssessAccessEditor({
               onClick={() => toggleKind("all")}
               className={`rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${
                 allPicked
-                  ? "border-lime bg-olive text-cream"
+                  ? "border-lime bg-brand text-cream"
                   : "border-olive/40 bg-cream-card text-olive hover:bg-lime-pale"
               }`}
             >
@@ -191,7 +191,7 @@ function AssessAccessEditor({
             type="button"
             disabled={saving || picked.length === 0}
             onClick={() => onSave(true, picked)}
-            className="mt-2.5 rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+            className="mt-2.5 rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
           >
             {saving ? "保存中…" : "保存测评套餐"}
           </button>
@@ -240,7 +240,7 @@ function ChannelQr({ code, name }: { code: string; name: string }) {
               a.download = `注册二维码-${name}.png`;
               a.click();
             }}
-            className="flex items-center gap-1.5 rounded-lg bg-olive px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime"
+            className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-cream hover:bg-lime"
           >
             <Download size={13} />
             下载二维码
@@ -384,7 +384,7 @@ export default function InviteChannelsTab() {
             (reportOn && reportKinds.length === 0) ||
             (assessOn && assessKinds.length === 0)
           }
-          className="mt-3 flex items-center gap-1.5 rounded-xl bg-olive px-4 py-2.5 text-[14px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
+          className="mt-3 flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-[14px] font-semibold text-cream hover:bg-lime disabled:opacity-40"
         >
           {create.isPending ? <RefreshCw size={15} className="animate-spin" /> : <Plus size={15} />}
           生成渠道二维码
@@ -409,7 +409,7 @@ export default function InviteChannelsTab() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[14.5px] font-bold text-olive">{c.name}</span>
                       <span className="chip !text-[11px]">{c.kind}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${c.active ? "bg-lime-pale text-olive" : "bg-olive-mute/15 text-olive-mute"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${c.active ? "bg-lime-pale text-olive" : "bg-brand-mute/15 text-olive-mute"}`}>
                         {c.active ? "投放中" : "已停用"}
                       </span>
                       {c.reportAccess && (

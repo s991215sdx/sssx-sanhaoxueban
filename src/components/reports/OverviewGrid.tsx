@@ -6,7 +6,7 @@ export type OverviewCardTone = "red" | "amber" | "green";
 export type OverviewCardData = { label: string; value: string; note: string; tone?: OverviewCardTone };
 
 const TONE_CLASS: Record<OverviewCardTone, string> = {
-  red: "border-[#8f1313]/50 bg-[#fbe3df]",
+  red: "border-[#8f1313]/50 bg-[#FAF3EB]",
   amber: "border-[#8a6d1a]/50 bg-[#f5e7c1]",
   green: "border-[#2F8F60]/50 bg-lime-pale",
 };

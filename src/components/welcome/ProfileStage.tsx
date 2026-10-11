@@ -127,7 +127,7 @@ export default function ProfileStage({ onNext }: { onNext: () => void }) {
             dailyMinutes,
           })
         }
-        className="mt-6 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
+        className="mt-6 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
       >
         {setup.isPending ? "保存中…" : "下一步 →"}
       </button>

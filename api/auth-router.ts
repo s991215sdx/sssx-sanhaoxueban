@@ -103,6 +103,10 @@ export const authRouter = createRouter({
       if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "密码不对，再想想～" });
       }
+      /* v96：已删除（软删）的学员账号禁止登录——伴学师/管理员可在回收站恢复 */
+      if (user.deletedAt) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "该账号已被删除，如需恢复请联系你的伴学师" });
+      }
 
       await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, user.id));
       const token = await signSessionToken({ unionId: user.unionId, clientId: env.appId });

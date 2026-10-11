@@ -154,7 +154,7 @@ export default function PaperDetail({ id, onBack }: { id: number; onBack: () => 
       {/* 大图灯箱 */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-olive/80 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
           onClick={() => setLightbox(null)}
         >
           <button

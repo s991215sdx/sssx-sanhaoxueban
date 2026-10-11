@@ -135,7 +135,7 @@ export default function PaperResultView({ summary, onDone }: { summary: PaperSum
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           onClick={() => navigate("/gaps")}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
         >
           去查漏补缺，把 {summary.totalLost > 0 ? `这 ${summary.totalLost} 分` : "错题"} 捞回来
           <ArrowRight size={16} />

@@ -65,7 +65,7 @@ const DEEP_TRAITS: { key: "mbti" | "disc" | "anchor" | "holland"; label: string 
 function LinkChip({ done, label, onClick }: { done: boolean; label: string; onClick?: () => void }) {
   const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${
     done
-      ? "border border-[#3CC078]/60 bg-[#E4F7EC] text-[#1F6B43]"
+      ? "border border-[#3CC078]/60 bg-[#E4F7EC] text-[#20362B]"
       : "border border-dashed border-[#A3B8AB]/80 text-olive-mute"
   }`;
   if (!onClick) return <span className={cls}>{label}</span>;
@@ -94,9 +94,9 @@ const LV = (level: E3V37Level) => E3V37_LEVEL_STYLE[level];
 
 /** 心理健康档色（V52）：ok=绿 / warn=关注·黄 / bad=预警及以上·红。 */
 const MENTAL_TONE_STYLE = {
-  ok: { border: "#3CC07899", bg: "#E4F7EC", text: "#1F6B43" },
+  ok: { border: "#3CC07899", bg: "#E4F7EC", text: "#20362B" },
   warn: { border: "#c7a23a99", bg: "#f5e7c1", text: "#8a6d1a" },
-  bad: { border: "#b91c1c99", bg: "#fbe3df", text: "#8f1313" },
+  bad: { border: "#b91c1c99", bg: "#FAF3EB", text: "#8f1313" },
 } as const;
 
 /** 一级单元块：能力名 + 均分，按红黄绿三档浅色底 + 深色字。 */
@@ -109,7 +109,7 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
       style={done ? { borderColor: `${st.bar}55`, background: st.bg } : { borderColor: "rgba(168,176,140,0.4)", background: "rgba(255,255,255,0.7)" }}
     >
       <div className="flex items-baseline justify-center gap-1">
-        <span className="text-[12px] font-semibold" style={done ? { color: st.text } : { color: "#1F6B43" }}>
+        <span className="text-[12px] font-semibold" style={done ? { color: st.text } : { color: "#20362B" }}>
           {name}
         </span>
         {done && unit?.score != null && (
@@ -147,7 +147,7 @@ export default function SystemFramework({
   return (
     <div className="rounded-xl border border-border bg-cream/60 p-4 sm:p-5">
       {/* 顶部：学习目标 · 成绩（冰山上） */}
-      <div className="mx-auto w-fit rounded-full bg-olive px-6 py-1.5 text-[13px] font-bold text-cream">
+      <div className="mx-auto w-fit rounded-full bg-brand px-6 py-1.5 text-[13px] font-bold text-cream">
         学习目标 · 成绩
       </div>
       {status?.academics && (
@@ -163,7 +163,7 @@ export default function SystemFramework({
           />
         </div>
       )}
-      <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
+      <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
       {/* 三阶递进：底色统一按红黄绿档着色 */}
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -198,7 +198,7 @@ export default function SystemFramework({
           );
         })}
       </div>
-      <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
+      <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
       {/* 底座：条件 + 学能（同样按档着色） */}
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -276,7 +276,7 @@ export default function SystemFramework({
       {/* 深层特质行：性格与方向的长期底色（仅 status 提供时显示） */}
       {showDeep && (
         <>
-          <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
+          <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
           <div className="rounded-xl border border-[#A3B8AB]/60 bg-[#EFF5F1] px-3.5 py-3">
             <div className="text-center text-[12.5px] font-bold text-[#6b7452]">深层特质 · 性格与方向的长期底色</div>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">

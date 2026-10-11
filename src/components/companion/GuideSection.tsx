@@ -62,7 +62,7 @@ export default function GuideSection() {
         <button
           disabled={start.isPending}
           onClick={() => start.mutate()}
-          className="mt-5 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
+          className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
         >
           {start.isPending ? "准备中…" : "开始今日导学 →"}
         </button>
@@ -84,7 +84,7 @@ export default function GuideSection() {
                   i < session.step || allDone
                     ? "bg-lime text-cream"
                     : i === session.step
-                      ? "bg-olive text-cream"
+                      ? "bg-brand text-cream"
                       : "border border-border bg-cream text-olive-mute"
                 }`}
                 title={s.title}
@@ -119,7 +119,7 @@ export default function GuideSection() {
           <button
             disabled={finish.isPending}
             onClick={() => finish.mutate({ sessionId: session.id })}
-            className="mt-4 rounded-xl bg-olive px-6 py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
+            className="mt-4 rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-cream hover:bg-lime disabled:opacity-50"
           >
             {finish.isPending ? "生成中…" : "完成今日导学"}
           </button>
@@ -157,7 +157,7 @@ export default function GuideSection() {
           <button
             disabled={draft.trim().length === 0 || answer.isPending}
             onClick={() => answer.mutate({ sessionId: session.id, stepKey, answer: draft.trim() })}
-            className="mt-3 w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
+            className="mt-3 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-50"
           >
             {answer.isPending ? "保存中…" : savedAnswer ? "改好了，下一步 →" : "写好啦，下一步 →"}
           </button>

@@ -49,7 +49,7 @@ export default function PreviewList() {
                 onClick={() => setPicked(g)}
                 className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
                   grade === g
-                    ? "bg-olive text-cream"
+                    ? "bg-brand text-cream"
                     : "bg-lime-pale/60 text-olive-soft hover:bg-lime-pale"
                 }`}
               >
@@ -82,7 +82,7 @@ export default function PreviewList() {
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center">
             <span className="flex items-center gap-2 rounded-full bg-lime-pale/70 px-3 py-1.5">
-              <span className="mono flex h-5 w-5 items-center justify-center rounded-full bg-olive text-[11px] font-bold text-cream">
+              <span className="mono flex h-5 w-5 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-cream">
                 {i + 1}
               </span>
               <span className="text-[13px] font-medium text-olive">{s}</span>
@@ -102,7 +102,7 @@ export default function PreviewList() {
         <div className="paper-card accent-l border-terra p-6">
           <p className="font-semibold text-olive">题库暂时连不上</p>
           <p className="mt-1 text-sm text-olive-mute">服务正在初始化，请稍候重试。</p>
-          <button onClick={() => refetch()} className="mt-3 rounded-xl bg-olive px-4 py-2 text-sm font-medium text-cream">
+          <button onClick={() => refetch()} className="mt-3 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-cream">
             重新加载
           </button>
         </div>
@@ -140,7 +140,7 @@ export default function PreviewList() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-xl bg-olive-mute/40 px-3.5 py-2 text-sm font-medium text-cream">
+                    <div className="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-xl bg-brand-mute/40 px-3.5 py-2 text-sm font-medium text-cream">
                       <Hammer size={15} />
                       建设中
                     </div>
@@ -178,7 +178,7 @@ export default function PreviewList() {
                       <span className="mono text-xs text-olive-mute">{kp.score}</span>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5 rounded-xl bg-olive px-3.5 py-2 text-sm font-medium text-cream transition-colors group-hover:bg-lime">
+                  <div className="flex shrink-0 items-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-sm font-medium text-cream transition-colors group-hover:bg-lime">
                     <GraduationCap size={15} />
                     预习
                   </div>

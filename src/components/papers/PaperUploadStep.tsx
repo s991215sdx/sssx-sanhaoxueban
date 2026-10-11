@@ -55,7 +55,7 @@ export default function PaperUploadStep({ onCreated }: { onCreated: (id: number)
               <button
                 onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
                 aria-label="删除这张照片"
-                className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-olive/80 text-cream hover:bg-terra"
+                className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand/80 text-cream hover:bg-terra"
               >
                 <X size={13} />
               </button>
@@ -133,7 +133,7 @@ export default function PaperUploadStep({ onCreated }: { onCreated: (id: number)
           })
         }
         disabled={!valid || create.isPending || busy}
-        className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+        className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
       >
         {create.isPending ? "正在保存试卷…" : "下一步：逐题定性 →"}
       </button>

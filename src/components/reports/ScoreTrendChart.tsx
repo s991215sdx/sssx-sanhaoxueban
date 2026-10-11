@@ -69,7 +69,7 @@ export default function ScoreTrendChart({ records }: { records: ScoreRecord[] })
             </g>
           ))}
           {chron.map((r, ri) => (
-            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#2E7D55" className="max-w-[70px]">
+            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#43564C" className="max-w-[70px]">
               {labelOf(r).slice(0, 8)}
             </text>
           ))}

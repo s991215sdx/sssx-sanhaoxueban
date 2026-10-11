@@ -349,7 +349,7 @@ function RoadmapSection({
     <span
       className={`mr-1.5 mb-1 inline-block rounded-md border px-1.5 py-0.5 text-[11.5px] leading-tight ${
         bad
-          ? "border-[#b91c1c]/50 bg-[#fbe3df] font-bold text-[#8f1313]"
+          ? "border-[#b91c1c]/50 bg-[#FAF3EB] font-bold text-[#8f1313]"
           : trait
             ? "border-[#c7a23a]/70 bg-[#f5e7c1] font-bold text-[#8a6d1a]"
             : "border-border bg-cream text-olive-soft"
@@ -573,7 +573,7 @@ function RoadmapSection({
       {/* V52 · 总览先读：主卡点 + 关键状态 + 总策略一句话（对应一页看懂报告的总述块） */}
       {e3 && (
         <div className="paper-card p-4 text-center">
-          <div className="inline-flex items-center gap-2 rounded-2xl bg-olive px-5 py-2.5 text-[17px] font-bold text-cream">
+          <div className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-2.5 text-[17px] font-bold text-cream">
             {e3.mainBlock ? `主卡点：${e3.mainBlock.label} ${e3.mainBlock.score}/5` : "三阶九能全部正常"}
           </div>
           <p className="mt-2 text-[12.5px] text-olive-soft">
@@ -629,13 +629,13 @@ function RoadmapSection({
                     return (
                       <td
                         key={x.name}
-                        className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 ${gap > 0 ? "bg-[#fbe3df] font-bold text-[#b91c1c]" : "text-[#2F8F60]"}`}
+                        className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 ${gap > 0 ? "bg-[#FAF3EB] font-bold text-[#b91c1c]" : "text-[#2F8F60]"}`}
                       >
                         {gap > 0 ? `+${gap}` : "已达标"}
                       </td>
                     );
                   })}
-                  <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${targetTotal - lastTotal > 0 ? "bg-[#fbe3df] text-[#b91c1c]" : "text-[#2F8F60]"}`}>
+                  <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${targetTotal - lastTotal > 0 ? "bg-[#FAF3EB] text-[#b91c1c]" : "text-[#2F8F60]"}`}>
                     {targetTotal - lastTotal > 0 ? `+${targetTotal - lastTotal}` : "已达标"}
                   </td>
                 </tr>
@@ -694,7 +694,7 @@ function RoadmapSection({
               <button
                 type="button"
                 onClick={() => onReveal({ kind: "fill-academics" })}
-                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#1F6B43] transition hover:bg-lime-pale"
+                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#20362B] transition hover:bg-lime-pale"
               >
                 去填写 →
               </button>
@@ -721,7 +721,7 @@ function RoadmapSection({
                         <button
                           type="button"
                           onClick={() => onReveal({ kind: "fill-academics" })}
-                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#1F6B43] transition hover:bg-lime-pale hover:shadow-sm"
+                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#20362B] transition hover:bg-lime-pale hover:shadow-sm"
                         >
                           去填写成绩与目标 →
                         </button>
@@ -879,7 +879,7 @@ function RoadmapSection({
                 const weakDims = l.dims.filter((n) => n.level !== "正常");
                 return (
                   <tr key={l.layer} className={bad ? "" : "opacity-70"}>
-                    <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${l.level === "卡点" ? "bg-[#fbe3df] text-[#8f1313]" : l.level === "待提升" ? "bg-[#f5e7c1] text-[#8a6d1a]" : "text-[#2F8F60]"}`}>
+                    <td className={`border border-border px-1.5 py-1 sm:px-2 sm:py-1.5 font-bold ${l.level === "卡点" ? "bg-[#FAF3EB] text-[#8f1313]" : l.level === "待提升" ? "bg-[#f5e7c1] text-[#8a6d1a]" : "text-[#2F8F60]"}`}>
                       {l.layer}层 {l.score}/5 · {l.level}
                     </td>
                     <td className="border border-border px-1.5 py-1 sm:px-2 sm:py-1.5">
@@ -1152,7 +1152,7 @@ function MbtiDetail({ result, onGoCombined }: { result: MbtiResult; onGoCombined
 
       <button
         onClick={onGoCombined}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
       >
         <Sparkles size={16} />
         看看 MBTI × DISC × 学习力 三合一综合报告 →
@@ -1258,7 +1258,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
 
       <button
         onClick={onGoCombined}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream hover:bg-lime-deep"
       >
         <Sparkles size={16} />
         看看 MBTI × DISC × 学习力 三合一综合报告 →
@@ -1430,7 +1430,7 @@ function ParentReportTab({
           <h3 className="font-bold text-olive">家庭支持与环境观察（家长卷）</h3>
           <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">{e3parent.summary}</p>
           {e3parent.severeConflict && (
-            <div className="mt-2.5 rounded-xl border border-[#8f1313]/40 bg-[#fbe3df] p-3 text-[12.5px] font-semibold text-[#8f1313]">
+            <div className="mt-2.5 rounded-xl border border-[#8f1313]/40 bg-[#FAF3EB] p-3 text-[12.5px] font-semibold text-[#8f1313]">
               !! 红线提醒：家庭近期出现严重亲子冲突信号——建议先修复关系，必要时寻求学校心理老师或专业机构支持。
             </div>
           )}
@@ -1445,7 +1445,7 @@ function ParentReportTab({
                       className="chip !text-[11px]"
                       style={
                         cv.studentLevel === "卡点"
-                          ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#fbe3df" }
+                          ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#FAF3EB" }
                           : cv.studentLevel === "待提升"
                             ? { borderColor: "#c7a23a66", color: "#8a6d1a", background: "#f5e7c1" }
                             : { borderColor: "#3CC07866", color: "#2F8F60", background: "#E4F7EC" }
@@ -1489,7 +1489,7 @@ function ParentReportTab({
                   <div
                     key={b.key}
                     className={`rounded-xl border p-3.5 ${
-                      strong ? "border-[#b91c1c]/50 bg-[#fbe3df]/60" : over ? "border-[#c7a23a]/50 bg-[#f5e7c1]/40" : "border-lime/40 bg-lime-pale/40"
+                      strong ? "border-[#b91c1c]/50 bg-[#FAF3EB]/60" : over ? "border-[#c7a23a]/50 bg-[#f5e7c1]/40" : "border-lime/40 bg-lime-pale/40"
                     }`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
@@ -1541,7 +1541,7 @@ function ParentReportTab({
                   key={i}
                   className={
                     c.hot
-                      ? "rounded-lg bg-[#fbe3df] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
+                      ? "rounded-lg bg-[#FAF3EB] px-2.5 py-1.5 text-[12.5px] font-semibold leading-relaxed text-[#8f1313] ring-1 ring-[#b91c1c]/50"
                       : "text-[12.5px] leading-relaxed text-olive-soft"
                   }
                 >
@@ -1641,7 +1641,7 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData} outerRadius="72%">
               <PolarGrid stroke="#D8E2DC" />
-              <PolarAngleAxis dataKey="dim" tick={{ fill: "#2E7D55", fontSize: 12 }} />
+              <PolarAngleAxis dataKey="dim" tick={{ fill: "#43564C", fontSize: 12 }} />
               <Radar dataKey="得分" stroke="#3CC078" fill="#3CC078" fillOpacity={0.35} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
@@ -1695,7 +1695,7 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
                 {!neg ? val : ""}
               </span>
               <div className="relative h-3 flex-1 rounded-full bg-cream-deep">
-                <div className="absolute left-1/2 top-0 h-full w-px bg-olive-mute/50" />
+                <div className="absolute left-1/2 top-0 h-full w-px bg-brand-mute/50" />
                 <div
                   className="absolute top-0 h-full rounded-full"
                   style={{ left: t > 0 ? `${50 - t / 2}%` : "50%", width: `${Math.abs(t) / 2}%`, background: DISC_COLOR[k] }}
@@ -1827,7 +1827,7 @@ function Multi5Radar({ multi5 }: { multi5: Multi5Result }) {
               tick={({ x, y, payload }: any) => {
                 const v = Number(String(payload.value).split(" ").pop());
                 return (
-                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 60 ? "#b91c1c" : "#2E7D55"} fontWeight={v < 60 ? 700 : 400}>
+                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 60 ? "#b91c1c" : "#43564C"} fontWeight={v < 60 ? 700 : 400}>
                     {payload.value}
                   </text>
                 );
@@ -1900,7 +1900,7 @@ function MentalV2Bars({
         ))}
       </div>
       {mental.selfHarm && (
-        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3">
+        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#FAF3EB] p-3">
           <div className="text-[12.5px] font-bold text-[#8f1313]">⚠ 需要立即关注的信号</div>
           <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_V2_ITEM9_NOTICE}主动求助是勇敢，不是软弱。</p>
         </div>
@@ -1943,7 +1943,7 @@ function MentalSdqBars({ mental }: { mental: MentalSdqResult }) {
       </div>
       <p className="mt-2 text-[11.5px] text-olive-mute">亲社会行为是优势维度（分越高越好）；其余四维与困难总分越低越好。</p>
       {mental.selfHarm && (
-        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3">
+        <div className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#FAF3EB] p-3">
           <div className="text-[12.5px] font-bold text-[#8f1313]">⚠ 需要立即关注的信号</div>
           <p className="mt-1 text-[12.5px] leading-relaxed text-[#8f1313]">{MENTAL_SDQ_SAFETY_NOTICE}主动求助是勇敢，不是软弱。</p>
         </div>
@@ -2001,7 +2001,7 @@ function SdqDimExplainCard({ mental }: { mental: MentalSdqResult }) {
                       ? "border-lime/50 bg-lime-pale text-[#2F8F60]"
                       : mental.dimBands[k] === "边缘"
                         ? "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]"
-                        : "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]"
+                        : "border-[#b91c1c]/50 bg-[#FAF3EB] text-[#8f1313]"
                   }`}
                 >
                   本次 {mental.dims[k]}/10「{mental.dimBands[k]}」
@@ -2086,7 +2086,7 @@ const SCL90_LEVEL_BADGE: Record<string, string> = {
   正常: "border-lime/50 bg-lime-pale text-[#2F8F60]",
   轻度: "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]",
   中度: "border-[#c77b3a]/60 bg-[#f8e3d1] text-[#9a4d17]",
-  偏重: "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]",
+  偏重: "border-[#b91c1c]/50 bg-[#FAF3EB] text-[#8f1313]",
   严重: "border-[#b91c1c] bg-[#f6d4ce] text-[#8f1313]",
 };
 
@@ -2151,7 +2151,7 @@ function Scl90ReportCard({ result }: { result: Scl90Result }) {
                   className={`absolute inset-y-0 left-0 rounded-full ${overNorm(k) ? "bg-terra/80" : "bg-lime/80"}`}
                   style={{ width: `${Math.min(100, (result.factors[k] / 5) * 100)}%` }}
                 />
-                <span className="absolute inset-y-0 w-px bg-olive/40" style={{ left: `${(SCL90_NORM[k] / 5) * 100}%` }} />
+                <span className="absolute inset-y-0 w-px bg-brand/40" style={{ left: `${(SCL90_NORM[k] / 5) * 100}%` }} />
               </span>
               <span className={`mono w-12 text-right font-semibold ${overNorm(k) ? "text-terra" : "text-olive"}`}>{result.factors[k].toFixed(2)}</span>
               <span className="mono w-12 text-right text-olive-mute">{SCL90_NORM[k].toFixed(2)}</span>
@@ -2246,8 +2246,8 @@ function MentalBar({ mental }: { mental: MentalResult }) {
             barSize={12}
             margin={{ left: 8, right: 40 }}
           >
-            <XAxis type="number" domain={[0, 5]} tick={{ fill: "#6E8579", fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="name" width={88} tick={{ fill: "#2E7D55", fontSize: 12 }} axisLine={false} tickLine={false} />
+            <XAxis type="number" domain={[0, 5]} tick={{ fill: "#7A8A82", fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="name" width={88} tick={{ fill: "#43564C", fontSize: 12 }} axisLine={false} tickLine={false} />
             <ReferenceLine x={2} stroke="#FF961F" strokeDasharray="6 4" label={{ value: "阳性线 2", position: "top", fontSize: 10.5, fill: "#FF961F" }} />
             <Bar dataKey="得分" radius={[0, 6, 6, 0]}>
               {MENTAL_FACTOR_ORDER.map((f) => (
@@ -2256,7 +2256,7 @@ function MentalBar({ mental }: { mental: MentalResult }) {
               <LabelList
                 dataKey="得分"
                 position="right"
-                style={{ fontSize: 11, fill: "#2E7D55" }}
+                style={{ fontSize: 11, fill: "#43564C" }}
                 formatter={(v: number) => {
                   const s = v > 2 ? (v >= 3 ? "重度" : v >= 2.5 ? "中度" : "轻度") : "";
                   return s ? `${v}（${s}）` : `${v}`;
@@ -2616,7 +2616,7 @@ export default function ReportView({
               {onEditAcademics && (
                 <button
                   onClick={onEditAcademics}
-                  className="mt-3 rounded-xl bg-olive px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
+                  className="mt-3 rounded-xl bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
                 >
                   帮TA填写 →
                 </button>
@@ -2685,7 +2685,7 @@ export default function ReportView({
             {viewer === "tutor" && onEditAcademics && (
               <button
                 onClick={onEditAcademics}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream hover:bg-lime-deep"
               >
                 修改成绩与目标
               </button>
@@ -2724,7 +2724,7 @@ export default function ReportView({
                 <span className="chip !text-[11px]">外驱依赖 {e3v37.extDrive}/5 · 内驱 {e3v37.intDrive}/5</span>
                 <span className="chip !text-[11px]">生活事件 {e3v37.lifeEventScore}/24（{e3v37.lifeEventLevel}）</span>
                 {e3v37.mainBlock && (
-                  <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">
+                  <span className="chip !border-[#8f1313]/50 !bg-[#FAF3EB] !text-[11px] !text-[#8f1313]">
                     主卡点：{e3v37.mainBlock.label} {e3v37.mainBlock.score}/5
                   </span>
                 )}
@@ -2777,7 +2777,7 @@ export default function ReportView({
                     <span className="chip !text-[11px]">家长没看到的闪光点：{parentResult.underestimates.map((d) => d.kp).join("、")}</span>
                   )}
                   {parentResult.severeConflict && (
-                    <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
+                    <span className="chip !border-[#8f1313]/50 !bg-[#FAF3EB] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
                   )}
                 </div>
               </div>
@@ -3403,7 +3403,7 @@ function AssessmentChartsLite({
                   tick={({ x, y, payload }: any) => {
                     const v = Number(String(payload.value).split(" ").pop());
                     return (
-                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 60 ? "#b91c1c" : "#2E7D55"} fontWeight={v < 60 ? 700 : 400}>
+                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 60 ? "#b91c1c" : "#43564C"} fontWeight={v < 60 ? 700 : 400}>
                         {payload.value}
                       </text>
                     );
@@ -3439,7 +3439,7 @@ function AssessmentChartsLite({
             ]}
           />
           {mental.selfHarm && (
-            <p className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#fbe3df] p-3 text-[12.5px] font-bold leading-relaxed text-[#8f1313]">
+            <p className="mt-3 rounded-xl border border-[#b91c1c]/50 bg-[#FAF3EB] p-3 text-[12.5px] font-bold leading-relaxed text-[#8f1313]">
               ⚠ 有自伤念头信号——请今天就告诉家长或信任的老师，必要时拨打心理援助热线 12356。
             </p>
           )}
@@ -3554,7 +3554,7 @@ function CombinedLite({
           <span className="chip !border-lime/50 !bg-lime-pale !text-[12.5px]">性格 {mbti.type} 型{mr ? ` · ${mr.tags.slice(0, 2).join("、")}` : ""}</span>
           <span className="chip !border-lime/50 !bg-lime-pale !text-[12.5px]">行为 {combo.join("")} 组合{dr ? ` · ${dr.keywords.slice(0, 2).join("、")}` : ""}</span>
           {e3.mainBlock && (
-            <span className="chip !border-[#8f1313]/50 !bg-[#fbe3df] !text-[12.5px] !text-[#8f1313]">主卡点 · {e3.mainBlock.label} {e3.mainBlock.score}/5</span>
+            <span className="chip !border-[#8f1313]/50 !bg-[#FAF3EB] !text-[12.5px] !text-[#8f1313]">主卡点 · {e3.mainBlock.label} {e3.mainBlock.score}/5</span>
           )}
         </div>
       </div>
@@ -3606,7 +3606,7 @@ function CombinedLite({
       {/* 现状定位（放在图之后） */}
       <div className="paper-card accent-l border-lime p-5 text-center">
         <div className="mono text-[11px] tracking-wider text-olive-mute">{name ? `${name} 的` : ""}学习力 · 一页看懂（{e3.stageLabel}）</div>
-        <div className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-olive px-5 py-2.5 text-[18px] font-bold text-cream">
+        <div className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-2.5 text-[18px] font-bold text-cream">
           {e3.mainBlock ? `主卡点：${e3.mainBlock.label} ${e3.mainBlock.score}/5` : "三阶九能全部正常"}
         </div>
         <p className="mt-2 text-[13px] text-olive-soft">
@@ -3713,7 +3713,7 @@ function MissingCard({ text, actionText, to }: { text: string; actionText?: stri
       <p className="mt-2 text-[13.5px] leading-relaxed text-olive-mute">{text}</p>
       <button
         onClick={() => navigate(to ?? "/assessments")}
-        className="mt-3 rounded-xl bg-olive px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
+        className="mt-3 rounded-xl bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
       >
         {actionText ?? "去测评 →"}
       </button>

@@ -123,7 +123,7 @@ export default function DiscTendencyChart({
         <polyline
           points={keys.map((k, i) => `${xs[i]},${yOf(tendency[k])}`).join(" ")}
           fill="none"
-          stroke="#2E7D55"
+          stroke="#43564C"
           strokeWidth={2}
           opacity={0.55}
           strokeLinejoin="round"
@@ -200,8 +200,8 @@ export default function DiscTendencyChart({
                       className="border-b border-border/60 px-1 py-[3px] text-center text-[11px] leading-tight"
                       style={
                         hit
-                          ? { background: `${DISC_COLOR[k]}${inCombo ? "40" : "22"}`, color: "#1F6B43", fontWeight: inCombo ? 800 : 600 }
-                          : { color: "#6E8579" }
+                          ? { background: `${DISC_COLOR[k]}${inCombo ? "40" : "22"}`, color: "#20362B", fontWeight: inCombo ? 800 : 600 }
+                          : { color: "#7A8A82" }
                       }
                     >
                       {w}

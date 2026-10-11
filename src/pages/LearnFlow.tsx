@@ -52,7 +52,7 @@ export default function LearnFlow() {
     return (
       <div className="mx-auto mt-20 max-w-md text-center">
         <p className="text-olive">出错了：{start.error.message}</p>
-        <button onClick={() => navigate(-1)} className="mt-4 rounded-xl bg-olive px-5 py-2.5 text-cream">
+        <button onClick={() => navigate(-1)} className="mt-4 rounded-xl bg-brand px-5 py-2.5 text-cream">
           返回
         </button>
       </div>
@@ -138,7 +138,7 @@ export default function LearnFlow() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 onClick={() => setShowVariants(true)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
               >
                 <Sparkles size={16} />
                 举一反三，钉牢它
@@ -216,7 +216,7 @@ function ReviewCard({
 
       <button
         onClick={onReady}
-        className="w-full rounded-xl bg-olive py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+        className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
       >
         我看完了，来检验一下 →
       </button>
@@ -269,7 +269,7 @@ function QuizStep({ sessionId, onPassed, onFailed }: { sessionId: number; onPass
       <button
         onClick={() => submit.mutate({ sessionId, given: value })}
         disabled={!value.trim() || submit.isPending}
-        className="w-full rounded-xl bg-olive py-2.5 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
+        className="w-full rounded-xl bg-brand py-2.5 text-[14.5px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
       >
         {submit.isPending ? "批改中…" : "提交答案"}
       </button>
@@ -374,7 +374,7 @@ function TutorChat({ sessionId, onUnderstood }: { sessionId: number; onUnderstoo
           <div key={i} className={`flex gap-2.5 ${m.role === "student" ? "flex-row-reverse" : ""}`}>
             <span
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                m.role === "tutor" ? "bg-olive text-cream" : "bg-lime text-white"
+                m.role === "tutor" ? "bg-brand text-cream" : "bg-lime text-white"
               }`}
             >
               {m.role === "tutor" ? <Bot size={16} /> : <User size={16} />}
@@ -390,7 +390,7 @@ function TutorChat({ sessionId, onUnderstood }: { sessionId: number; onUnderstoo
         ))}
         {chat.isPending && (
           <div className="flex gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-olive text-cream">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-cream">
               <Bot size={16} />
             </span>
             <div className="rounded-2xl rounded-tl-sm bg-cream-card px-4 py-3 text-[13px] text-olive-mute">
@@ -425,7 +425,7 @@ function TutorChat({ sessionId, onUnderstood }: { sessionId: number; onUnderstoo
         <button
           onClick={send}
           disabled={!input.trim() || chat.isPending}
-          className="rounded-xl bg-olive px-4 text-cream transition-colors hover:bg-lime disabled:opacity-40"
+          className="rounded-xl bg-brand px-4 text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           <SendHorizonal size={17} />
         </button>
