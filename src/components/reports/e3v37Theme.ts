@@ -35,11 +35,11 @@ export function e3v37LevelBarColor(level: E3V37Level): string {
 
 /**
  * v106：三阶板块色（与产品「三阶九能阶梯图」同色系）。
- * solid=实心色（圆点/色块），text=白底上的可读文字色。
+ * solid=实心色（圆点/色块），text=白底上的可读文字色，tint=分组标题横幅的浅底色。
  * 乐学=青绿、会学=亮黄、善学=橙。
  */
-export const E3V37_SYSTEM_COLOR: Record<"乐学" | "会学" | "善学", { solid: string; text: string }> = {
-  乐学: { solid: "#15C7BA", text: "#0E9488" },
-  会学: { solid: "#FFCA01", text: "#C79400" },
-  善学: { solid: "#FE7B01", text: "#D96A00" },
+export const E3V37_SYSTEM_COLOR: Record<"乐学" | "会学" | "善学", { solid: string; text: string; tint: string }> = {
+  乐学: { solid: "#15C7BA", text: "#0E9488", tint: "#E2FAF7" },
+  会学: { solid: "#FFCA01", text: "#C79400", tint: "#FFF6D9" },
+  善学: { solid: "#FE7B01", text: "#D96A00", tint: "#FFE9DB" },
 };

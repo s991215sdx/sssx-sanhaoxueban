@@ -146,16 +146,33 @@ export default function AbilityScoreTable({
   const group = (label: string, subs: SubRow[], groupNote?: string) => (
     <div key={label} className="mt-3 first:mt-0">
       <div className="flex flex-wrap items-baseline gap-2">
-        {/* v106：乐学/会学/善学分组标题用三阶板块色（阶梯图同色系） */}
+        {/* v110：乐学/会学/善学分组标题做成同色系浅色渐变横幅（左深右隐），高级质感 */}
         {label in E3V37_SYSTEM_COLOR ? (
-          <span className="flex items-center gap-1.5 text-[13.5px] font-bold" style={{ color: E3V37_SYSTEM_COLOR[label as keyof typeof E3V37_SYSTEM_COLOR].text }}>
-            <span className="inline-block h-2.5 w-2.5 rounded-[4px]" style={{ background: E3V37_SYSTEM_COLOR[label as keyof typeof E3V37_SYSTEM_COLOR].solid }} />
-            {label}
-          </span>
+          (() => {
+            const sys = E3V37_SYSTEM_COLOR[label as keyof typeof E3V37_SYSTEM_COLOR];
+            return (
+              <div
+                className="flex flex-wrap items-center gap-x-2 rounded-lg px-2.5 py-1.5"
+                style={{ background: `linear-gradient(90deg, ${sys.tint} 0%, ${sys.tint}A6 55%, transparent 100%)` }}
+              >
+                <span className="flex items-center gap-1.5 text-[13.5px] font-bold" style={{ color: sys.text }}>
+                  <span className="inline-block h-2.5 w-2.5 rounded-[4px]" style={{ background: sys.solid }} />
+                  {label}
+                </span>
+                {coreScore(label) != null && (
+                  <span className="mono text-[12px] font-semibold" style={{ color: sys.text }}>
+                    {coreScore(label)}/5
+                  </span>
+                )}
+              </div>
+            );
+          })()
         ) : (
-          <span className="text-[13.5px] font-bold text-olive">{label}</span>
+          <>
+            <span className="text-[13.5px] font-bold text-olive">{label}</span>
+            {coreScore(label) != null && <span className="mono text-[12px] font-semibold text-olive-soft">{coreScore(label)}/5</span>}
+          </>
         )}
-        {coreScore(label) != null && <span className="mono text-[12px] font-semibold text-olive-soft">{coreScore(label)}/5</span>}
         {groupNote && <span className="text-[11px] text-olive-mute">{groupNote}</span>}
       </div>
       <div className="mt-1.5 space-y-1.5">

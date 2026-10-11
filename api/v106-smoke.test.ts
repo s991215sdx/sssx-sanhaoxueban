@@ -11,9 +11,9 @@ describe("v106 三阶板块色", () => {
   it("主题定义：乐学青绿 / 会学亮黄 / 善学橙（solid + text）", () => {
     const src = read("src/components/reports/e3v37Theme.ts");
     for (const tok of [
-      '乐学: { solid: "#15C7BA", text: "#0E9488" }',
-      '会学: { solid: "#FFCA01", text: "#C79400" }',
-      '善学: { solid: "#FE7B01", text: "#D96A00" }',
+      '乐学: { solid: "#15C7BA", text: "#0E9488", tint: "#E2FAF7" }',
+      '会学: { solid: "#FFCA01", text: "#C79400", tint: "#FFF6D9" }',
+      '善学: { solid: "#FE7B01", text: "#D96A00", tint: "#FFE9DB" }',
     ]) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }
