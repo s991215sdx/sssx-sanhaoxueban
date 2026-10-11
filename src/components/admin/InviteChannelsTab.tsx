@@ -419,7 +419,7 @@ export default function InviteChannelsTab() {
                         </span>
                       )}
                       {c.assessmentAccess && (
-                        <span className="flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] font-bold text-[#5a9326]">
+                        <span className="flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] font-bold text-[#379E6B]">
                           <ClipboardList size={11} />
                           测评套餐 · {(c.assessmentKinds ?? []).includes("all") ? "全部" : (c.assessmentKinds ?? []).length} 项
                         </span>

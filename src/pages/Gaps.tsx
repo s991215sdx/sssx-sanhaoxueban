@@ -10,11 +10,11 @@ import { pickAndCompress } from "@/lib/image";
 import { AlarmClock, BookMarked, PenLine, GitBranch, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, Camera, X, GraduationCap, Mic } from "lucide-react";
 
 const CAUSE_COLORS: Record<string, string> = {
-  概念不清: "#7cb83c",
+  概念不清: "#44B979",
   审题失误: "#c7a23a",
-  计算错误: "#cf6a3c",
-  方法不会: "#556339",
-  粗心大意: "#8b9468",
+  计算错误: "#FF961F",
+  方法不会: "#4C9E70",
+  粗心大意: "#8AA695",
 };
 
 const FIELD_CLS = "mt-2 w-full rounded-xl border border-input bg-cream px-4 py-2.5 text-[15px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime focus:ring-2 focus:ring-lime/25";

@@ -165,7 +165,9 @@ describe("v84 前端接线", () => {
     need(src, "签名：＿＿＿＿＿＿", "信签名留白");
     need(src, "不是唯一的决策依据", "免责声明三条");
   });
-  it("BUILD_TAG 递增到 v84", () => {
-    need(read("api/router.ts"), 'BUILD_TAG = "v84-2026-10-10"', "版本号");
+  it("BUILD_TAG 保持 vNn-YYYY-MM-DD 格式（v85 起不锁死具体版本号，避免每次发版必改）", () => {
+    const src = read("api/router.ts");
+    if (!/BUILD_TAG = "v\d+-\d{4}-\d{2}-\d{2}"/.test(src))
+      throw new Error("BUILD_TAG 缺失或格式不是 vNn-YYYY-MM-DD");
   });
 });

@@ -26,7 +26,7 @@ export default function AnchorBarChart({ anchor }: { anchor: AnchorResult }) {
                   className="h-full rounded-full"
                   style={{
                     width: `${Math.max(3, Math.min(100, (anchor.dims[k] / 5) * 100))}%`,
-                    background: isTop ? "#c7a23a" : "#7cb83c",
+                    background: isTop ? "#c7a23a" : "#44B979",
                   }}
                 />
               </div>

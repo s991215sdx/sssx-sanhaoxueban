@@ -28,7 +28,7 @@ const LEVEL_STYLE: Record<MentalV2Band, string> = {
 };
 
 const BAND_STYLE: Record<SdqBand, string> = {
-  正常: "border-lime/50 bg-lime-pale text-[#5a9326]",
+  正常: "border-lime/50 bg-lime-pale text-[#379E6B]",
   边缘: "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]",
   明显: "border-[#b91c1c]/50 bg-[#fbe3df] text-[#8f1313]",
 };

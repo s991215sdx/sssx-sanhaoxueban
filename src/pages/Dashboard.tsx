@@ -32,12 +32,12 @@ function greeting() {
 const MINUTE_OPTIONS = [20, 40, 60, 90];
 
 const KIND_CHIP_COLORS: Record<PlanKind, string> = {
-  review: "#556339",
+  review: "#4C9E70",
   band1: BANDS[0].color,
   band2: BANDS[1].color,
   band3: BANDS[2].color,
-  preview: "#7cb83c",
-  feynman: "#7cb83c",
+  preview: "#44B979",
+  feynman: "#44B979",
   rest: "#c7a23a",
 };
 
@@ -177,7 +177,7 @@ function TodayPlan() {
                   </button>
                   <span
                     className="chip shrink-0 !border-0 !text-[10.5px]"
-                    style={{ backgroundColor: `${KIND_CHIP_COLORS[kind] ?? "#8b9468"}1f`, color: KIND_CHIP_COLORS[kind] ?? "#8b9468" }}
+                    style={{ backgroundColor: `${KIND_CHIP_COLORS[kind] ?? "#8AA695"}1f`, color: KIND_CHIP_COLORS[kind] ?? "#8AA695" }}
                   >
                     {PLAN_KIND_LABELS[kind] ?? item.kind}
                   </span>

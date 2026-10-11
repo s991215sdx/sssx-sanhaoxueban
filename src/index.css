@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 46 85% 95%;
-    --foreground: 82 38% 19%;
-    --card: 53 100% 98%;
-    --card-foreground: 82 38% 19%;
-    --popover: 53 100% 98%;
-    --popover-foreground: 82 38% 19%;
-    --primary: 82 38% 19%;
-    --primary-foreground: 46 85% 95%;
-    --secondary: 49 76% 87%;
-    --secondary-foreground: 82 38% 19%;
-    --muted: 49 55% 89%;
-    --muted-foreground: 56 19% 41%;
-    --accent: 89 51% 48%;
+    --background: 0 0% 96%;
+    --foreground: 147 50% 36%;
+    --card: 0 0% 100%;
+    --card-foreground: 147 50% 36%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 147 50% 36%;
+    --primary: 147 50% 36%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 150 47% 94%;
+    --secondary-foreground: 147 50% 36%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 143 10% 60%;
+    --accent: 147 46% 50%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 19 60% 52%;
+    --destructive: 32 100% 56%;
     --destructive-foreground: 0 0% 98%;
-    --border: 49 45% 84%;
-    --input: 48 39% 80%;
-    --ring: 89 51% 48%;
+    --border: 140 8% 88%;
+    --input: 150 9% 83%;
+    --ring: 147 46% 50%;
     --radius: 0.875rem;
   }
 }
@@ -51,7 +51,7 @@
 
 @layer utilities {
   .paper-card {
-    @apply bg-card border border-border rounded-2xl shadow-[0_1px_0_rgba(61,74,39,0.06),0_8px_24px_-12px_rgba(61,74,39,0.18)];
+    @apply bg-card border border-border rounded-2xl shadow-[0_1px_0_rgba(46,139,87,0.06),0_8px_24px_-12px_rgba(46,139,87,0.18)];
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border border-border bg-secondary/60 px-2.5 py-0.5 text-xs mono;

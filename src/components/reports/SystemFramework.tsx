@@ -65,8 +65,8 @@ const DEEP_TRAITS: { key: "mbti" | "disc" | "anchor" | "holland"; label: string 
 function LinkChip({ done, label, onClick }: { done: boolean; label: string; onClick?: () => void }) {
   const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${
     done
-      ? "border border-[#7cb83c]/60 bg-[#e9f4d2] text-[#4e7d20]"
-      : "border border-dashed border-[#a8b08c]/80 text-olive-mute"
+      ? "border border-[#44B979]/60 bg-[#E7F5ED] text-[#2E8B57]"
+      : "border border-dashed border-[#A9B8AF]/80 text-olive-mute"
   }`;
   if (!onClick) return <span className={cls}>{label}</span>;
   return (
@@ -94,7 +94,7 @@ const LV = (level: E3V37Level) => E3V37_LEVEL_STYLE[level];
 
 /** 心理健康档色（V52）：ok=绿 / warn=关注·黄 / bad=预警及以上·红。 */
 const MENTAL_TONE_STYLE = {
-  ok: { border: "#7cb83c99", bg: "#e9f4d2", text: "#4e7d20" },
+  ok: { border: "#44B97999", bg: "#E7F5ED", text: "#2E8B57" },
   warn: { border: "#c7a23a99", bg: "#f5e7c1", text: "#8a6d1a" },
   bad: { border: "#b91c1c99", bg: "#fbe3df", text: "#8f1313" },
 } as const;
@@ -109,7 +109,7 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
       style={done ? { borderColor: `${st.bar}55`, background: st.bg } : { borderColor: "rgba(168,176,140,0.4)", background: "rgba(255,255,255,0.7)" }}
     >
       <div className="flex items-baseline justify-center gap-1">
-        <span className="text-[12px] font-semibold" style={done ? { color: st.text } : { color: "#35421e" }}>
+        <span className="text-[12px] font-semibold" style={done ? { color: st.text } : { color: "#2E8B57" }}>
           {name}
         </span>
         {done && unit?.score != null && (
@@ -124,7 +124,7 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
 
 /** 按分着色的容器框（三阶 / 底座用）：浅色底 + 深色标题。 */
 function levelBoxStyle(level: E3V37Level | undefined) {
-  if (!level) return { borderColor: "#a8b08c60", background: "#eef0e4", titleColor: "#6b7452" };
+  if (!level) return { borderColor: "#a8b08c60", background: "#EEF2EF", titleColor: "#6b7452" };
   const st = LV(level);
   return { borderColor: `${st.bar}80`, background: st.bg, titleColor: st.text };
 }
@@ -277,7 +277,7 @@ export default function SystemFramework({
       {showDeep && (
         <>
           <div className="mx-auto my-1.5 h-3 w-px bg-olive-mute/50" />
-          <div className="rounded-xl border border-[#a8b08c]/60 bg-[#eef0e4] px-3.5 py-3">
+          <div className="rounded-xl border border-[#A9B8AF]/60 bg-[#EEF2EF] px-3.5 py-3">
             <div className="text-center text-[12.5px] font-bold text-[#6b7452]">深层特质 · 性格与方向的长期底色</div>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {DEEP_TRAITS.map((d) => {
@@ -304,7 +304,7 @@ export default function SystemFramework({
                   </>
                 );
                 return (
-                  <div key={d.key} className="rounded-lg border border-[#a8b08c]/50 bg-white/70 px-2 py-1.5 text-center">
+                  <div key={d.key} className="rounded-lg border border-[#A9B8AF]/50 bg-white/70 px-2 py-1.5 text-center">
                     {box}
                   </div>
                 );

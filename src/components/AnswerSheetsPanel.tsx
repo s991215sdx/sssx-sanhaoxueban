@@ -11,7 +11,7 @@ import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import { answerSheetsPrintHtml, downloadReport } from "@/lib/reportDownload";
 
 /** 分数段文字色（与 e3v37Theme 一致）。 */
-const BAND_CLASS = { bad: "text-[#8f1313]", mid: "text-[#8a6d1a]", ok: "text-[#5a9326]" } as const;
+const BAND_CLASS = { bad: "text-[#8f1313]", mid: "text-[#8a6d1a]", ok: "text-[#379E6B]" } as const;
 
 const printBtn =
   "inline-flex shrink-0 items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-2 py-0.5 text-[11px] font-semibold text-olive hover:bg-lime/20";

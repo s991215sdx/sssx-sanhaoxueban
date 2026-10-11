@@ -5,24 +5,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // v85：品牌主题色换成「上上升学」绿黄橙搭配（参考 MBTI 测评报告视觉）
         olive: {
-          DEFAULT: "#35421e",
-          soft: "#556339",
-          mute: "#8b9468",
+          DEFAULT: "#2E8B57",
+          soft: "#4C9E70",
+          mute: "#8AA695",
         },
         lime: {
-          DEFAULT: "#7cb83c",
-          light: "#9ccb52",
-          tint: "#cfe07a",
-          pale: "#f0f7dd",
+          DEFAULT: "#44B979",
+          light: "#7ED3A5",
+          tint: "#C4EBD6",
+          pale: "#E9F7F0",
         },
         cream: {
-          DEFAULT: "#fdf8e7",
-          deep: "#f6efc8",
-          card: "#fffef6",
+          DEFAULT: "#F6F6F6",
+          deep: "#ECECEC",
+          card: "#FFFFFF",
         },
-        butter: "#f9de81",
-        terra: "#cf6a3c",
+        butter: "#FFC600",
+        terra: "#FF961F",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
