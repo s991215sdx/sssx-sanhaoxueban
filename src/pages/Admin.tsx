@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
@@ -92,7 +92,14 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   const [detailId, setDetailId] = useState<number | null>(null);
   const utils = trpc.useUtils();
   const { data: overview } = trpc.admin.overview.useQuery(orgScope);
-  const { data: users, isLoading } = trpc.admin.users.useQuery(orgScope);
+  /* V86：总览用户列表模糊搜索（姓名/手机号/邮箱），防抖 300ms 再发查询 */
+  const [userSearch, setUserSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(userSearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [userSearch]);
+  const { data: users, isLoading } = trpc.admin.users.useQuery({ ...orgScope, search: debouncedSearch || undefined });
   const setRole = trpc.admin.setRole.useMutation({
     onSuccess: () => {
       utils.admin.users.invalidate();
@@ -180,10 +187,19 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
             </div>
           )}
 
-          {/* 用户列表 */}
+          {/* 用户列表（V86：支持按姓名/手机号/邮箱模糊搜索） */}
           <div className="paper-card overflow-hidden">
-            <div className="border-b border-border px-5 py-3.5">
+            <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3.5">
               <span className="text-[14.5px] font-semibold text-olive">用户列表</span>
+              <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+                <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-olive-mute" />
+                <input
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="搜索姓名 / 手机号 / 邮箱"
+                  className="w-full rounded-lg border border-border bg-cream py-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none transition-colors placeholder:text-olive-mute/60 focus:border-lime"
+                />
+              </div>
             </div>
             {isLoading ? (
               <div className="flex justify-center py-10">
@@ -208,7 +224,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                         {u.id === selfId && <span className="text-[11px] text-olive-mute">（我）</span>}
                       </div>
                       <div className="mono mt-0.5 text-[11px] text-olive-mute">
-                        注册 {new Date(u.createdAt).toLocaleDateString("zh-CN")} · 最近登录{" "}
+                        {u.phone ? `手机 ${u.phone} · ` : ""}注册 {new Date(u.createdAt).toLocaleDateString("zh-CN")} · 最近登录{" "}
                         {new Date(u.lastSignInAt).toLocaleDateString("zh-CN")}
                       </div>
                     </div>
@@ -246,7 +262,11 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                     </div>
                   </div>
                 ))}
-                {users?.length === 0 && <p className="px-5 py-8 text-center text-[13px] text-olive-mute">还没有用户。</p>}
+                {users?.length === 0 && (
+                  <p className="px-5 py-8 text-center text-[13px] text-olive-mute">
+                    {debouncedSearch ? `没有匹配「${debouncedSearch}」的用户。` : "还没有用户。"}
+                  </p>
+                )}
               </div>
             )}
           </div>

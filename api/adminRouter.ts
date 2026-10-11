@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { attempts, dailyPlans, errorLogs, moodEntries, organizations, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
@@ -211,16 +211,23 @@ export const adminRouter = createRouter({
     };
   }),
 
-  /** 用户列表：每人一行的学习概览（V59：限本机构；V60 超管看全部并带机构名；V61 超管可按系统查看）。 */
+  /** 用户列表：每人一行的学习概览（V59：限本机构；V60 超管看全部并带机构名；V61 超管可按系统查看；V86：支持按姓名/手机号/邮箱模糊搜索）。 */
   users: adminQuery
-    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null }))
+    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null; search?: string }))
     .query(async ({ ctx, input }) => {
     const db = getDb();
     const orgId = ctx.user.orgId ?? input.orgId ?? null;
+    /* V86：模糊搜索——转义 LIKE 通配符后按姓名/手机号/邮箱匹配 */
+    const kw = input.search?.trim();
+    const likeKw = kw ? `%${kw.replace(/[\\%_]/g, (m) => "\\" + m)}%` : null;
+    const searchCond = likeKw
+      ? or(like(users.name, likeKw), like(users.phone, likeKw), like(users.email, likeKw))
+      : undefined;
+    const whereCond = orgId == null ? searchCond : searchCond ? and(eq(users.orgId, orgId), searchCond) : eq(users.orgId, orgId);
     const allUsers =
       orgId == null
-        ? await db.select().from(users).orderBy(desc(users.createdAt)) // 平台超管：全部机构
-        : await db.select().from(users).where(eq(users.orgId, orgId)).orderBy(desc(users.createdAt));
+        ? await db.select().from(users).where(whereCond).orderBy(desc(users.createdAt)) // 平台超管：全部机构
+        : await db.select().from(users).where(whereCond).orderBy(desc(users.createdAt));
     /* V60：机构名映射（超管看全量时分辨归属） */
     const orgRows = await db.select().from(organizations);
     const orgNameMap = new Map(orgRows.map((o) => [o.id, o.brandName]));
@@ -236,6 +243,7 @@ export const adminRouter = createRouter({
       id: u.id,
       name: u.name ?? "未命名",
       email: u.email,
+      phone: u.phone,
       role: u.role,
       createdAt: u.createdAt,
       lastSignInAt: u.lastSignInAt,
