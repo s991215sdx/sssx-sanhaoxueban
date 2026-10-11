@@ -9,7 +9,6 @@
  *      浅色底 + 深色字；心理健康按 关注=黄 / 预警及以上=红 着色。
  * 不传 status / onOpen 时退化为纯静态图（零 props 向后兼容）。
  */
-import { E3V37_LEVEL_STYLE } from "./e3v37Theme";
 import type { E3V37Level } from "./e3v37Theme";
 
 /** 节点点击行为：assess=去测评（未测节点）；fill-academics=去填成绩（未填节点）。 */
@@ -82,55 +81,49 @@ function LinkChip({ done, label, onClick }: { done: boolean; label: string; onCl
   );
 }
 
-/** 分数档判定（与 V3.7 全局口径一致）：红 <3.0 卡点；黄 3.0–3.7 待提升；绿 ≥3.8 正常。 */
+/**
+ * v116：按新设计稿统一三档视觉——绿=正常(≥3.0) / 黄橙=预警(2.0–2.9) / 红=重点关注(<2.0)。
+ * 卡片=浅底+同色系细边框；能力块=白色小卡（名在上、分数在下按档着色）。
+ */
+const BAND: Record<E3V37Level, { label: string; border: string; bg: string; text: string }> = {
+  卡点: { label: "重点关注", border: "#D84E4E", bg: "#FDECEC", text: "#B42323" },
+  待提升: { label: "预警", border: "#E3A008", bg: "#FCF3DC", text: "#B07800" },
+  正常: { label: "正常", border: "#3CC078", bg: "#E4F7EC", text: "#2F8F60" },
+};
+
+/** 分数档判定（v116 框架图专用口径）：红 <2.0 重点关注；黄 2.0–2.9 预警；绿 ≥3.0 正常。 */
 export function frameworkScoreLevel(score: number): E3V37Level {
-  if (score < 3.0) return "卡点";
-  if (score < 3.8) return "待提升";
+  if (score < 2.0) return "卡点";
+  if (score < 3.0) return "待提升";
   return "正常";
 }
 
-/** 三档样式：浅色底 + 深色字（V52 统一底色）。 */
-const LV = (level: E3V37Level) => E3V37_LEVEL_STYLE[level];
-
-/** 心理健康档色（V52）：ok=绿 / warn=关注·黄 / bad=预警及以上·红。v108 底色与左条色系协调到三档浅色系。 */
-const MENTAL_TONE_STYLE = {
-  ok: { border: "#3CC07899", bg: "#E4F7EC", text: "#20362B" },
-  warn: { border: "#FFC60099", bg: "#FFF6D9", text: "#C79400" },
-  bad: { border: "#b91c1c99", bg: "#FDEBEB", text: "#8f1313" },
-} as const;
-
-/** 一级单元块：能力名 + 均分，按红黄绿三档浅色底 + 深色字。 */
+/** 一级单元块（v116）：白色小卡，名称在上、分数在下按档着色。 */
 function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; done: boolean }) {
   const lv: E3V37Level = unit?.level ?? (done ? "正常" : "待提升");
-  const st = LV(lv);
+  const band = BAND[lv];
+  if (!done)
+    return (
+      <div className="rounded-xl border border-dashed border-[#A3B8AB]/70 bg-white/60 px-1 py-2 text-center">
+        <div className="text-[11.5px] font-semibold text-olive-soft">{name}</div>
+        <div className="mono mt-0.5 text-[15px] font-bold text-olive-mute">-</div>
+      </div>
+    );
   return (
-    <div
-      className="rounded-lg border px-1.5 py-1 text-center"
-      style={done ? { borderColor: `${st.bar}55`, background: st.bg } : { borderColor: "rgba(168,176,140,0.4)", background: "rgba(255,255,255,0.7)" }}
-    >
-      <div className="flex items-baseline justify-center gap-1">
-        <span className="text-[12px] font-semibold" style={done ? { color: st.text } : { color: "#20362B" }}>
-          {name}
-        </span>
-        {done && unit?.score != null && (
-          <span className="mono text-[11.5px] font-bold" style={{ color: st.text }}>
-            {unit.score}
-          </span>
-        )}
+    <div className="rounded-xl bg-white px-1 py-2 text-center shadow-sm">
+      <div className="text-[11.5px] font-semibold text-olive">{name}</div>
+      <div className="mono mt-0.5 text-[15px] font-bold" style={{ color: band.text }}>
+        {unit?.score ?? "-"}
       </div>
     </div>
   );
 }
 
-/**
- * v108：按档着色容器框——参考官网服务卡的「左侧加粗色条 + 浅色底 + 同色系深标题」。
- * 卡点=浅红底+深红左条+深红标题；待提升=浅黄底+亮黄左条+金黄标题；正常=浅绿底+绿左条+绿标题。
- */
-const BOX_BG: Record<E3V37Level, string> = { 卡点: "#FDEBEB", 待提升: "#FFF6D9", 正常: "#E4F7EC" };
+/** 按档着色的容器框（v116：浅底 + 同色系细边框 + 同色系标题）。 */
 function levelBoxStyle(level: E3V37Level | undefined) {
-  if (!level) return { frame: "#a8b08c60", borderLeft: "#A3B8AB", background: "#EFF5F1", titleColor: "#6b7452" };
-  const st = LV(level);
-  return { frame: `${st.bar}30`, borderLeft: st.bar, background: BOX_BG[level], titleColor: st.text };
+  if (!level) return { borderColor: "#a8b08c60", background: "#EFF5F1", titleColor: "#6b7452" };
+  const band = BAND[level];
+  return { borderColor: band.border, background: band.bg, titleColor: band.text };
 }
 
 export default function SystemFramework({
@@ -169,6 +162,20 @@ export default function SystemFramework({
       )}
       <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
+      {/* v116 三档图例（绿=正常 / 黄橙=预警 / 红=重点关注） */}
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-medium text-olive-soft">
+        {(["正常", "待提升", "卡点"] as const).map((lv) => (
+          <span key={lv} className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: BAND[lv].border }} />
+            {BAND[lv].label}
+            <span className="font-normal text-olive-mute">
+              {lv === "正常" ? "≥ 3.0" : lv === "待提升" ? "2.0 – 2.9" : "< 2.0"}
+            </span>
+          </span>
+        ))}
+      </div>
+      <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
+
       {/* 三阶递进：底色统一按红黄绿档着色 */}
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         {TIERS.map((t, i) => {
@@ -177,8 +184,8 @@ export default function SystemFramework({
           return (
             <div
               key={t.name}
-              className="rounded-xl border border-l-[5px] px-3 py-3 text-center"
-              style={{ borderColor: box.frame, borderLeftColor: box.borderLeft, background: box.background }}
+              className="rounded-xl border px-3 py-3 text-center"
+              style={{ borderColor: box.borderColor, background: box.background }}
             >
               <div className="text-[13.5px] font-bold" style={{ color: box.titleColor }}>
                 {i + 1} 阶 · {t.name}
@@ -209,7 +216,7 @@ export default function SystemFramework({
         {BASES.map((b) => {
           const box = levelBoxStyle(b.key === "条件" ? condLevel : aptLevel);
           return (
-            <div key={b.name} className="rounded-xl border border-l-[5px] px-3 py-3 text-center" style={{ borderColor: box.frame, borderLeftColor: box.borderLeft, background: box.background }}>
+            <div key={b.name} className="rounded-xl border px-3 py-3 text-center" style={{ borderColor: box.borderColor, background: box.background }}>
               <div className="text-[13.5px] font-bold" style={{ color: box.titleColor }}>
                 {b.name}
               </div>
@@ -230,12 +237,11 @@ export default function SystemFramework({
                     ))}
                   {status?.mental && (
                     (() => {
-                      const tone = status.mental.tone ?? "ok";
-                      const ms = MENTAL_TONE_STYLE[tone];
+                      const band = BAND[(status.mental.tone ?? "ok") === "ok" ? "正常" : (status.mental.tone ?? "ok") === "warn" ? "待提升" : "卡点"];
                       return (
                         <span
-                          className="inline-block rounded-full border px-2 py-0.5 text-[10.5px] font-semibold leading-tight"
-                          style={{ borderColor: ms.border, background: ms.bg, color: ms.text }}
+                          className="inline-block rounded-full border px-2.5 py-1 text-[10.5px] font-semibold leading-tight"
+                          style={{ borderColor: band.border, background: band.bg, color: band.text }}
                         >
                           {status.mental.done ? `心理健康 · ${status.mental.note ?? "已测"}` : "心理健康 · 未测"}
                         </span>
@@ -262,13 +268,11 @@ export default function SystemFramework({
                   )}
                 </div>
               )}
-              {/* 多元五项二级维度分 */}
+              {/* 多元五项二级维度分（v116：按设计稿改绿色纯文字，不用 chip） */}
               {b.key === "学能" && status?.multi5?.done && (status.multi5.subs?.length ?? 0) > 0 && (
-                <div className="mt-1.5 flex flex-wrap justify-center gap-1">
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] font-medium text-[#2F8F60]">
                   {status.multi5.subs!.map((s) => (
-                    <span key={s} className="rounded border border-border bg-white/70 px-1.5 py-px text-[10px] leading-tight text-olive-soft">
-                      {s}
-                    </span>
+                    <span key={s}>{s}</span>
                   ))}
                 </div>
               )}
@@ -322,23 +326,23 @@ export default function SystemFramework({
       </p>
       {onOpen && (
         <p className="mt-1 text-center text-[10.5px] text-olive-mute">
-          灰虚线徽章可直接点击开始测评；红 &lt;3.0 卡点 · 黄 3.0-3.7 待提升 · 绿 ≥3.8 正常。
+          灰虚线徽章可直接点击开始测评；红 &lt;2.0 重点关注 · 黄 2.0–2.9 预警 · 绿 ≥3.0 正常。
         </p>
       )}
     </div>
   );
 }
 
-/** 系统均分徽标：按分数红黄绿着色（描边 + 浅底 + 深色字）。 */
+/** 系统均分徽标（v116）：按档描边 + 浅底 + 档色字，如「乐学 2.0 · 预警」。 */
 function ScoreChip({ name, score }: { name: string; score: number }) {
   const lv = frameworkScoreLevel(score);
-  const st = LV(lv);
+  const band = BAND[lv];
   return (
     <span
-      className="inline-block rounded-full border px-2 py-0.5 text-[10.5px] font-semibold leading-tight"
-      style={{ borderColor: `${st.bar}99`, color: st.text, background: st.bg }}
+      className="inline-block rounded-full border px-2.5 py-1 text-[10.5px] font-semibold leading-tight"
+      style={{ borderColor: band.border, background: band.bg, color: band.text }}
     >
-      {name} {score}/5 · {lv}
+      {name} {score} · {band.label}
     </span>
   );
 }

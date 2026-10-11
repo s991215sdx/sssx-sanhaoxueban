@@ -1,4 +1,4 @@
-/* v108 冒烟：框架图卡片改「左加粗色条 + 浅底色 + 同色系深标题」，红黄绿三档协调 */
+/* v108 冒烟（v116 重设计后更新）：框架图卡片浅色底 + 同色系描边 + 同色系深标题 */
 import { describe, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -10,23 +10,16 @@ const read = (p: string) => readFileSync(join(root, p), "utf8");
 describe("v108 框架图卡片三档协调配色", () => {
   it("三档浅底色：卡点浅红/待提升浅黄/正常浅绿", () => {
     const src = read("src/components/reports/SystemFramework.tsx");
-    if (!/卡点: "#FDEBEB"/.test(src)) throw new Error("缺：卡点浅红底");
-    if (!/待提升: "#FFF6D9"/.test(src)) throw new Error("缺：待提升浅黄底");
-    if (!/正常: "#E4F7EC"/.test(src)) throw new Error("缺：正常浅绿底");
+    for (const tok of ['bg: "#FDECEC"', 'bg: "#FCF3DC"', 'bg: "#E4F7EC"']) {
+      if (!src.includes(tok)) throw new Error(`缺：${tok}`);
+    }
   });
 
-  it("卡片用左色条 + 浅色框 + 深标题（三阶与底座两处）", () => {
+  it("卡片用同色系细边框（三阶与底座两处容器）", () => {
     const src = read("src/components/reports/SystemFramework.tsx");
-    const n = (src.match(/border-l-\[5px\]/g) ?? []).length;
-    if (n < 2) throw new Error(`缺：左色条卡片（应≥2处，实际${n}）`);
-    if (!/borderLeftColor: box\.borderLeft/.test(src)) throw new Error("缺：左条取档色");
-  });
-
-  it("心理健康徽标同步新黄/红浅色系", () => {
-    const src = read("src/components/reports/SystemFramework.tsx");
-    if (!/warn: \{ border: "#FFC60099", bg: "#FFF6D9", text: "#C79400" \}/.test(src))
-      throw new Error("缺：心理健康关注档新黄");
-    if (!/bad: \{ border: "#b91c1c99", bg: "#FDEBEB", text: "#8f1313" \}/.test(src))
-      throw new Error("缺：心理健康预警档浅红");
+    const n = (src.match(/rounded-xl border px-3 py-3 text-center/g) ?? []).length;
+    if (n < 2) throw new Error(`缺：档色边框卡片（应≥2处，实际${n}）`);
+    if (!/borderColor: box\.borderColor, background: box\.background/.test(src))
+      throw new Error("缺：容器取档色");
   });
 });
