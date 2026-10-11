@@ -8,7 +8,7 @@ import { useState } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
-import { e3v37LevelTextClass, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
+import { e3v37LevelTextClass, e3v37LevelBgClass, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
 /** 1-5 分选项文案（与作答端一致）：显示原答案，得分列显示换算后的有效分。 */
 const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
@@ -40,7 +40,7 @@ function AbilityGroup({
         type="button"
         onClick={onToggle}
         className={`flex w-full items-center gap-2 px-3 py-2 text-left transition ${
-          sub.level && sub.level !== "正常" ? "bg-[#FAF3EB]/40" : "bg-cream/70 hover:bg-cream"
+          sub.level ? e3v37LevelBgClass(sub.level) : "bg-cream/70 hover:bg-cream"
         }`}
       >
         {hasItems ? (
@@ -79,7 +79,7 @@ function AbilityGroup({
           </thead>
           <tbody>
             {qItems.map((it) => (
-              <tr key={it.no} className={it.level !== "正常" ? "bg-[#FAF3EB]/30" : ""}>
+              <tr key={it.no} className={e3v37LevelBgClass(it.level)}>
                 <td className="border-t border-border px-3 py-1.5 text-olive-soft">
                   <span className="mono text-[11px] text-olive-mute">{it.no}.</span>{" "}
                   <span className="font-medium">{it.kp}</span>

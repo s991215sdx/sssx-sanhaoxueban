@@ -8,8 +8,8 @@ export type { E3V37Level };
 
 /** 三档判定的颜色常量：text=文字色，bar=条形/描边色，bg=底色。 */
 export const E3V37_LEVEL_STYLE: Record<E3V37Level, { text: string; bar: string; bg: string }> = {
-  卡点: { text: "#8f1313", bar: "#b91c1c", bg: "#FAF3EB" },
-  待提升: { text: "#8a6d1a", bar: "#c7a23a", bg: "#f5e7c1" },
+  卡点: { text: "#8f1313", bar: "#b91c1c", bg: "#FBEAE8" },
+  待提升: { text: "#8a6d1a", bar: "#c7a23a", bg: "#FBF3DC" },
   正常: { text: "#2F8F60", bar: "#3CC078", bg: "#E4F7EC" }, // bg = lime-pale
 };
 
@@ -26,6 +26,11 @@ export const E3V37_LEVEL_CAPTION = "红 <3.0 卡点 · 黄 3.0-3.7 待提升 · 
 /** 判定文字色（Tailwind arbitrary class）。 */
 export function e3v37LevelTextClass(level: E3V37Level): string {
   return level === "卡点" ? "text-[#8f1313]" : level === "待提升" ? "text-[#8a6d1a]" : "text-[#2F8F60]";
+}
+
+/** v101：判定底色（得分表逐行着色，与图例红黄绿一致，不再"点开了也没区分"）。 */
+export function e3v37LevelBgClass(level: E3V37Level): string {
+  return level === "卡点" ? "bg-[#FBEAE8]" : level === "待提升" ? "bg-[#FBF3DC]" : "bg-[#F0FAF5]";
 }
 
 /** 判定条色（hex，供 inline style / recharts 使用）。 */
