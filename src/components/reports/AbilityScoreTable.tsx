@@ -8,7 +8,7 @@ import { useState } from "react";
 import { ChevronRight, ChevronDown, TreePine } from "lucide-react";
 import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
-import { e3v37LevelTextClass, e3v37LevelBarColor, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
+import { e3v37LevelTextClass, e3v37LevelBarColor, E3V37_SYSTEM_COLOR, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
 /** 1-5 分选项文案（与作答端一致）：显示原答案，得分列显示换算后的有效分。 */
 const FREQ5 = ["从不", "很少", "有时", "经常", "总是"] as const;
@@ -146,7 +146,15 @@ export default function AbilityScoreTable({
   const group = (label: string, subs: SubRow[], groupNote?: string) => (
     <div key={label} className="mt-3 first:mt-0">
       <div className="flex flex-wrap items-baseline gap-2">
-        <span className="text-[13.5px] font-bold text-olive">{label}</span>
+        {/* v106：乐学/会学/善学分组标题用三阶板块色（阶梯图同色系） */}
+        {label in E3V37_SYSTEM_COLOR ? (
+          <span className="flex items-center gap-1.5 text-[13.5px] font-bold" style={{ color: E3V37_SYSTEM_COLOR[label as keyof typeof E3V37_SYSTEM_COLOR].text }}>
+            <span className="inline-block h-2.5 w-2.5 rounded-[4px]" style={{ background: E3V37_SYSTEM_COLOR[label as keyof typeof E3V37_SYSTEM_COLOR].solid }} />
+            {label}
+          </span>
+        ) : (
+          <span className="text-[13.5px] font-bold text-olive">{label}</span>
+        )}
         {coreScore(label) != null && <span className="mono text-[12px] font-semibold text-olive-soft">{coreScore(label)}/5</span>}
         {groupNote && <span className="text-[11px] text-olive-mute">{groupNote}</span>}
       </div>
