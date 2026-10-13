@@ -5,7 +5,7 @@ describe("v139 报告选择器选中按钮改竖向渐变", () => {
   it("选中态断言随 v143 更新：白底墨绿字框", () => {
     const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
     const n = (src.match(/border-\[#0C7064\] bg-white text-\[#0C7064\] shadow-sm/g) || []).length;
-    if (n < 2) throw new Error("缺：白底墨绿字框选中（应有两处）");
+    if (n < 1) throw new Error("缺：白底墨绿字框选中（栏目宫格）");
     if (/linear-gradient/.test(src)) throw new Error("残留：渐变选中");
   });
 

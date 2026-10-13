@@ -3060,26 +3060,32 @@ export default function ReportView({
           <MissingCard text="综合报告需要 MBTI、DISC、学习力诊断三项测评都完成。先去「测评中心」补齐吧。" />
         ) : (
           <div className="space-y-4">
-            {/* 详版 / 简版切换（v143：轨道=白色，选中=白底墨绿字框） */}
+            {/* 详版 / 简版切换（v145：去按钮包裹，选中项文字下加墨绿色条） */}
             <div className="flex gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
               {(
                 [
                   { key: "full", label: "详版报告" },
                   { key: "lite", label: "简版 · 一页看懂" },
                 ] as const
-              ).map((v) => (
-                <button
-                  key={v.key}
-                  onClick={() => setCombinedView(v.key)}
-                  className={`flex-1 rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                    combinedView === v.key
-                      ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
-                      : "border-transparent bg-white text-olive hover:border-[#1E3530]/15"
-                  }`}
-                >
-                  {v.label}
-                </button>
-              ))}
+              ).map((v) => {
+                const active = combinedView === v.key;
+                return (
+                  <button
+                    key={v.key}
+                    onClick={() => setCombinedView(v.key)}
+                    className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+                      active ? "font-semibold text-[#0C7064]" : "font-medium text-olive hover:text-[#1E3530]"
+                    }`}
+                  >
+                    <span className="relative inline-block">
+                      {v.label}
+                      {active && (
+                        <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full bg-[#0C7064]" />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {combinedView === "lite" ? (

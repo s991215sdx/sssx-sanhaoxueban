@@ -11,7 +11,7 @@ describe("v140 收起按钮去底 + 未选中卡简化", () => {
   it("未选中卡断言随 v143 更新：白底无边框", () => {
     const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
     const n = (src.match(/: "border-transparent bg-white text-olive hover:border-\[#1E3530\]\/15"/g) || []).length;
-    if (n < 2) throw new Error("缺：白底未选中（应有两处）");
+    if (n < 1) throw new Error("缺：白底未选中（栏目宫格）");
   });
 
   it("版本标记存在（具体版本号由最新版测试锁定）", () => {

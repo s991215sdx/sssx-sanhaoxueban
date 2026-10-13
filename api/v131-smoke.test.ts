@@ -6,7 +6,7 @@ describe("v131 报告栏目选择器：白卡 + 米白→墨绿渐变选中", ()
 
   it("两个选择器均为白底选中（墨绿字框）+ 白底未选中（v143 断言随设计更新）", () => {
     const matches = (src.match(/border-\[#0C7064\] bg-white text-\[#0C7064\] shadow-sm/g) || []).length;
-    if (matches < 2) throw new Error("缺：白底墨绿字框选中（应有两处）");
+    if (matches < 1) throw new Error("缺：白底墨绿字框选中（栏目宫格）");
     if (!/: "border-transparent bg-white text-olive/.test(src)) throw new Error("缺：白底未选中");
   });
 

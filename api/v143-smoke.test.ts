@@ -11,7 +11,7 @@ describe("v143 报告选择器：白轨道 + 白底选中墨绿字框", () => {
 
   it("选中态白底+墨绿字+墨绿框，未选中白底", () => {
     const sel = (src.match(/border-\[#0C7064\] bg-white text-\[#0C7064\] shadow-sm/g) || []).length;
-    if (sel < 2) throw new Error("缺：选中态（应有两处）");
+    if (sel < 1) throw new Error("缺：选中态（栏目宫格）");
     if (/linear-gradient/.test(src)) throw new Error("残留：渐变选中");
   });
 
