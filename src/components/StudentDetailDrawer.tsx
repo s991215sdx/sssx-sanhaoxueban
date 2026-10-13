@@ -129,7 +129,7 @@ export default function StudentDetailDrawer({
                 </div>
                 <button
                   onClick={() => setReportOpen((v) => !v)}
-                  className="flex shrink-0 items-center gap-0.5 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-butter/25"
+                  className="flex shrink-0 items-center gap-0.5 px-1 py-1 text-[12px] font-medium text-[#1E3530] hover:text-[#0C7064]"
                 >
                   {reportOpen ? (
                     <>

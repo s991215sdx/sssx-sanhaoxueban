@@ -2583,7 +2583,7 @@ export default function ReportView({
             className={`grow basis-[30%] rounded-lg px-2 py-2 text-[12.5px] font-semibold transition ${
               tab === t.key
                 ? "bg-[linear-gradient(180deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
-                : "bg-white text-olive shadow-sm hover:bg-white"
+                : "bg-white text-olive"
             }`}
           >
             {t.label}
@@ -3074,7 +3074,7 @@ export default function ReportView({
                   className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
                     combinedView === v.key
                       ? "bg-[linear-gradient(180deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
-                      : "bg-white text-olive shadow-sm"
+                      : "bg-white text-olive"
                   }`}
                 >
                   {v.label}
