@@ -379,7 +379,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="truncate text-[14.5px] font-semibold text-[#2F7A41]">{s.name}</span>
+                  <span className="truncate text-[14.5px] font-semibold text-[#1E3530]">{s.name}</span>
                   {s.grade && <span className="text-[11.5px] text-olive-mute">{s.grade}</span>}
                   {s.mbti && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.mbti}</span>}
                   {s.disc && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.disc}</span>}

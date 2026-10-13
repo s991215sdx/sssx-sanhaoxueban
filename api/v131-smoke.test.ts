@@ -13,8 +13,8 @@ describe("v131 报告栏目选择器：白卡 + 米白→墨绿渐变选中", ()
     if (/bg-cream text-olive shadow-sm/.test(src)) throw new Error("残留：旧米色选中卡");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v131-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v131");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
