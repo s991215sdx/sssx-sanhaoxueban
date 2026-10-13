@@ -27,7 +27,7 @@ describe("v116 框架图三档视觉", () => {
 
   it("能力块白色小卡（名上分数下）+ 顶部图例", () => {
     const src = read("src/components/reports/SystemFramework.tsx");
-    if (!/rounded-xl bg-white px-1 py-2 text-center shadow-sm/.test(src)) throw new Error("缺：白卡能力块");
+    if (!/rounded-xl border bg-white px-1 py-2 text-center shadow-sm/.test(src)) throw new Error("缺：白卡能力块（v133 加档色边框）");
     if (!/三档图例/.test(src)) throw new Error("缺：三档图例");
     if (/border-l-\[5px\]/.test(src)) throw new Error("残留：v108 左色条");
   });

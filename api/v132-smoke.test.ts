@@ -7,8 +7,8 @@ describe("v132 后台学员列表姓名改黑色", () => {
     if (!/font-semibold text-\[#1E3530\]">\{s\.name\}/.test(src)) throw new Error("缺：姓名黑色");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const src = readFileSync("api/router.ts", "utf-8");
-    if (!src.includes('const BUILD_TAG = "v132-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v132");
+    if (!/const BUILD_TAG = "v\d+-/.test(src)) throw new Error("BUILD_TAG 缺失");
   });
 });

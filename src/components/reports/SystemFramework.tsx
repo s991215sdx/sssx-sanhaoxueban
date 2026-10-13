@@ -98,7 +98,7 @@ export function frameworkScoreLevel(score: number): E3V37Level {
   return "正常";
 }
 
-/** 一级单元块（v116）：白色小卡，名称在上、分数在下按档着色。 */
+/** 一级单元块（v133）：白色小卡 + 按档着色边框，名称与分数同色按档变化。 */
 function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; done: boolean }) {
   const lv: E3V37Level = unit?.level ?? (done ? "正常" : "待提升");
   const band = BAND[lv];
@@ -110,8 +110,13 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
       </div>
     );
   return (
-    <div className="rounded-xl bg-white px-1 py-2 text-center shadow-sm">
-      <div className="text-[12px] font-semibold text-olive">{name}</div>
+    <div
+      className="rounded-xl border bg-white px-1 py-2 text-center shadow-sm"
+      style={{ borderColor: band.border }}
+    >
+      <div className="text-[12px] font-semibold" style={{ color: band.text }}>
+        {name}
+      </div>
       <div className="mono mt-0.5 text-[16px] font-bold" style={{ color: band.text }}>
         {unit?.score ?? "-"}
       </div>
