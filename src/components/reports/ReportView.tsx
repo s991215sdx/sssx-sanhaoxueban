@@ -2582,7 +2582,7 @@ export default function ReportView({
             onClick={() => setTab(t.key)}
             className={`grow basis-[30%] rounded-lg px-2 py-2 text-[12.5px] font-semibold transition ${
               tab === t.key
-                ? "bg-[linear-gradient(100deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
+                ? "bg-[linear-gradient(180deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
                 : "bg-white text-olive shadow-sm hover:bg-white"
             }`}
           >
@@ -3073,7 +3073,7 @@ export default function ReportView({
                   onClick={() => setCombinedView(v.key)}
                   className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
                     combinedView === v.key
-                      ? "bg-[linear-gradient(100deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
+                      ? "bg-[linear-gradient(180deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
                       : "bg-white text-olive shadow-sm"
                   }`}
                 >
