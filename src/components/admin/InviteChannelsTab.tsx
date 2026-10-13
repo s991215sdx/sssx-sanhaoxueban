@@ -38,7 +38,7 @@ function ReportAccessEditor({
           role="switch"
           aria-checked={on}
           onClick={() => setOn((v) => !v)}
-          className={`relative h-5.5 w-10 shrink-0 rounded-full transition-colors ${on ? "bg-lime" : "bg-cream-deep"}`}
+          className={`relative h-5.5 w-10 shrink-0 rounded-full transition-colors ${on ? "bg-brand" : "bg-cream-deep"}`}
           style={{ height: 22 }}
         >
           <span
@@ -142,7 +142,7 @@ function AssessAccessEditor({
           role="switch"
           aria-checked={on}
           onClick={() => setOn((v) => !v)}
-          className={`relative w-10 shrink-0 rounded-full transition-colors ${on ? "bg-lime" : "bg-cream-deep"}`}
+          className={`relative w-10 shrink-0 rounded-full transition-colors ${on ? "bg-brand" : "bg-cream-deep"}`}
           style={{ height: 22 }}
         >
           <span

@@ -117,7 +117,7 @@ export default function Tutor() {
               key={t.key}
               onClick={() => setSection(t.key)}
               className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
-                section === t.key ? "bg-[#52A965] text-white shadow" : "text-[#1E3530] hover:bg-[#52A965]/10"
+                section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
               }`}
             >
               {t.label}

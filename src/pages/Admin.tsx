@@ -124,7 +124,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight text-[#2F7A41]">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight text-[#1E3530]">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
         <p className="mt-1 text-[13px] text-olive-mute">
           {platform
             ? "平台超管：可查看所有机构的数据，并可给任意账号开通管理员。树洞内容属于隐私，只看得到心情曲线。"
@@ -153,7 +153,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
-              tab === t.key ? "bg-[#52A965] text-white shadow" : "text-[#1E3530] hover:bg-[#52A965]/10"
+              tab === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
             }`}
           >
             {t.label}

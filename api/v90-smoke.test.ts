@@ -11,7 +11,7 @@ describe("v90 后台去灰", () => {
   it("tab 切换条为淡绿底、激活 tab 纯白", () => {
     const src = read("src/pages/Admin.tsx");
     if (!/bg-white p-1/.test(src)) throw new Error("缺：tab 条白底");
-    if (!src.includes('tab === t.key ? "bg-[#52A965] text-white shadow"')) throw new Error("缺：激活 tab 草绿色卡");
+    if (!src.includes('tab === t.key ? "bg-[#0C7064] text-white shadow"')) throw new Error("缺：激活 tab 草绿色卡");
   });
 
   it("白色卡片上的控件不再用灰底 bg-cream", () => {

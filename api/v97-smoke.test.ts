@@ -14,7 +14,7 @@ function need(src: string, needle: string, label: string) {
 describe("v97 后台管理去黑改绿", () => {
   it("页面标题、学员名绿色，头像绿底白字", () => {
     const src = read("src/pages/Admin.tsx");
-    need(src, 'tracking-tight text-[#2F7A41]">{platform ? "总系统 · 后台管理"', "页面标题绿色");
+    need(src, 'tracking-tight text-[#1E3530]">{platform ? "总系统 · 后台管理"', "页面标题黑色（v128 改）");
     need(src, 'font-semibold text-[#2F7A41]">{s.name}', "学员姓名绿色");
     need(src, "rounded-full bg-[#2F7A41] text-[14px] font-bold text-white", "头像绿底白字");
   });
