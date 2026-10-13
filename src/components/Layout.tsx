@@ -135,7 +135,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
+                } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <n.icon size={18} strokeWidth={2.2} />
@@ -149,7 +149,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
+                } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <GraduationCap size={18} strokeWidth={2.2} />
@@ -163,7 +163,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
+                } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <ShieldCheck size={18} strokeWidth={2.2} />
@@ -178,7 +178,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
+                } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <Trash2 size={18} strokeWidth={2.2} />

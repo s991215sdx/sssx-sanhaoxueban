@@ -1,4 +1,4 @@
-/* v124 冒烟：框架强调色浅绿→色卡浅米黄，整体提亮 */
+/* v124/v125 冒烟：框架强调色浅绿→色卡浅米黄（v125 起选中态为深青绿底白字），整体提亮 */
 import { describe, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -21,12 +21,12 @@ describe("v124 浅米黄框架强调色", () => {
     }
   });
 
-  it("后台页签/侧栏激活态为浅米黄+深青绿，无 lime-pale 残留", () => {
+  it("后台页签/侧栏激活态为深青绿底白字（v125），无 lime-pale 残留", () => {
     const admin = read("src/pages/Admin.tsx");
-    if (!admin.includes("bg-butter-pale font-semibold text-brand")) throw new Error("缺：页签激活态");
+    if (!admin.includes("border-transparent bg-brand font-semibold text-white shadow-sm")) throw new Error("缺：页签激活态");
     if (/bg-lime-pale/.test(admin)) throw new Error("残留：Admin lime-pale");
     const layout = read("src/components/Layout.tsx");
-    if (!layout.includes('bg-butter-pale font-semibold text-brand')) throw new Error("缺：侧栏激活态");
+    if (!layout.includes("bg-brand font-semibold text-white shadow-sm")) throw new Error("缺：侧栏激活态");
     if (/bg-lime-pale(?!\/)/.test(layout)) throw new Error("残留：Layout lime-pale");
   });
 

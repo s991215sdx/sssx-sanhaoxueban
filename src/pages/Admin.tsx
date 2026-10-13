@@ -424,7 +424,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                     onClick={() => setReleaseFor(releaseFor === s.userId ? null : s.userId)}
                     className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                       releaseFor === s.userId
-                        ? "border-[#E3B53A]/60 bg-butter-pale font-semibold text-brand"
+                        ? "border-transparent bg-brand font-semibold text-white shadow-sm"
                         : "border-border bg-cream-card text-olive hover:bg-butter-pale/70"
                     }`}
                   >

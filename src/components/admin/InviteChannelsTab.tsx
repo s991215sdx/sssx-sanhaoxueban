@@ -73,7 +73,7 @@ function ReportAccessEditor({
                 onClick={() => toggleKind(k.key)}
                 className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${
                   active
-                    ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                    ? "border-transparent bg-brand font-semibold text-white shadow-sm"
                     : "border-border bg-cream-card text-olive-mute hover:bg-butter-pale/60"
                 }`}
               >
@@ -177,7 +177,7 @@ function AssessAccessEditor({
                   onClick={() => toggleKind(k.key)}
                   className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${
                     active
-                      ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                      ? "border-transparent bg-brand font-semibold text-white shadow-sm"
                       : "border-border bg-cream-card text-olive-mute hover:bg-butter-pale/60"
                   }`}
                 >
@@ -438,7 +438,7 @@ export default function InviteChannelsTab() {
                         onClick={() => setQrFor(qrFor === c.id ? null : c.id)}
                         className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                           qrFor === c.id
-                            ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                            ? "border-transparent bg-brand font-semibold text-white shadow-sm"
                             : "border-border bg-cream-card text-olive hover:bg-butter-pale"
                         }`}
                       >
@@ -466,7 +466,7 @@ export default function InviteChannelsTab() {
                         onClick={() => setEditReportsFor(editReportsFor === c.id ? null : c.id)}
                         className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                           editReportsFor === c.id
-                            ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                            ? "border-transparent bg-brand font-semibold text-white shadow-sm"
                             : "border-border bg-cream-card text-olive hover:bg-butter-pale"
                         }`}
                       >
@@ -477,7 +477,7 @@ export default function InviteChannelsTab() {
                         onClick={() => setEditAssessFor(editAssessFor === c.id ? null : c.id)}
                         className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                           editAssessFor === c.id
-                            ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                            ? "border-transparent bg-brand font-semibold text-white shadow-sm"
                             : "border-border bg-cream-card text-olive hover:bg-butter-pale"
                         }`}
                       >

@@ -496,9 +496,9 @@ function AddErrorForm({ onDone }: { onDone: () => void }) {
             <button
               key={b.band}
               onClick={() => setBand(b.band)}
-              className={`rounded-xl border p-3 text-left transition-colors ${band === b.band ? "border-brand bg-butter-pale" : "border-border bg-cream hover:border-olive/40"}`}
+              className={`rounded-xl border p-3 text-left transition-colors ${band === b.band ? "border-transparent bg-brand shadow-sm" : "border-border bg-cream hover:border-olive/40"}`}
             >
-              <div className="text-[13.5px] font-semibold" style={{ color: b.color }}>
+              <div className="text-[13.5px] font-semibold" style={{ color: band === b.band ? "#FFFFFF" : b.color }}>
                 {b.name}
               </div>
               <p className="mt-1 text-[12px] leading-relaxed text-olive-mute">{b.desc}</p>
