@@ -220,7 +220,7 @@ export default function GuidanceTab({
                 <span className={`rounded-full border px-2 py-0.5 text-[10.5px] font-bold ${TONE_STYLE[c.tone].chip}`}>{c.tone}</span>
                 {c.trend === "up" && <span className="text-[11px] font-bold text-lime">↗ +{c.trendPct}%</span>}
                 {c.trend === "down" && <span className="text-[11px] font-bold text-rose">↘ {c.trendPct}%</span>}
-                <b className={`ml-auto text-[14px] ${c.pct >= 70 ? "text-lime" : c.pct >= 60 ? "text-amber" : "text-rose"}`}>{c.pct}%</b>
+                <b className={`ml-auto text-[14px] ${c.pct >= 70 ? "text-lime" : c.pct >= 50 ? "text-amber" : "text-rose"}`}>{c.pct}%</b>
               </div>
               <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-brand/8">
                 <div className={`h-full rounded-full ${TONE_STYLE[c.tone].bar}`} style={{ width: `${Math.min(100, c.pct)}%` }} />
@@ -381,12 +381,12 @@ export default function GuidanceTab({
                 <span className="flex items-center gap-2">
                   {trendIcon(r.trend, r.trendPct)}
                   {r.targetPct != null && <span className="text-olive-mute">目标 {r.targetPct}%</span>}
-                  <b className={r.pct >= 70 ? "text-lime" : r.pct >= 60 ? "text-amber" : "text-rose"}>{r.pct}%</b>
+                  <b className={r.pct >= 70 ? "text-lime" : r.pct >= 50 ? "text-amber" : "text-rose"}>{r.pct}%</b>
                 </span>
               </div>
               <div className="mt-1 h-2 overflow-hidden rounded-full bg-brand/8">
                 <div
-                  className={`h-full rounded-full ${r.pct >= 70 ? "bg-lime" : r.pct >= 60 ? "bg-amber" : "bg-rose"}`}
+                  className={`h-full rounded-full ${r.pct >= 70 ? "bg-lime" : r.pct >= 50 ? "bg-amber" : "bg-rose"}`}
                   style={{ width: `${Math.min(100, r.pct)}%` }}
                 />
               </div>

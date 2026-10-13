@@ -82,19 +82,19 @@ function LinkChip({ done, label, onClick }: { done: boolean; label: string; onCl
 }
 
 /**
- * v116：按新设计稿统一三档视觉——绿=正常(≥3.0) / 黄橙=预警(2.0–2.9) / 红=重点关注(<2.0)。
+ * v121：三档视觉与全局口径统一——绿=正常(≥3.8) / 黄=待提升(3.0–3.7) / 红=卡点(<3.0)。
  * 卡片=浅底+同色系细边框；能力块=白色小卡（名在上、分数在下按档着色）。
  */
 const BAND: Record<E3V37Level, { label: string; border: string; bg: string; text: string }> = {
-  卡点: { label: "重点关注", border: "#D84E4E", bg: "#FDECEC", text: "#B42323" },
-  待提升: { label: "预警", border: "#E3A008", bg: "#FCF3DC", text: "#B07800" },
+  卡点: { label: "卡点", border: "#D84E4E", bg: "#FDECEC", text: "#B42323" },
+  待提升: { label: "待提升", border: "#E3A008", bg: "#FCF3DC", text: "#B07800" },
   正常: { label: "正常", border: "#3CC078", bg: "#E4F7EC", text: "#2F8F60" },
 };
 
-/** 分数档判定（v116 框架图专用口径）：红 <2.0 重点关注；黄 2.0–2.9 预警；绿 ≥3.0 正常。 */
+/** 分数档判定（v121 起与全局统一）：红 <3.0 卡点；黄 3.0–3.7 待提升；绿 ≥3.8 正常。 */
 export function frameworkScoreLevel(score: number): E3V37Level {
-  if (score < 2.0) return "卡点";
-  if (score < 3.0) return "待提升";
+  if (score < 3.0) return "卡点";
+  if (score < 3.8) return "待提升";
   return "正常";
 }
 
@@ -162,14 +162,14 @@ export default function SystemFramework({
       )}
       <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
-      {/* v116 三档图例（绿=正常 / 黄橙=预警 / 红=重点关注） */}
+      {/* v121 三档图例（绿=正常 / 黄=待提升 / 红=卡点，与全局口径一致） */}
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11.5px] font-medium text-olive-soft">
         {(["正常", "待提升", "卡点"] as const).map((lv) => (
           <span key={lv} className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: BAND[lv].border }} />
             {BAND[lv].label}
             <span className="font-normal text-olive-mute">
-              {lv === "正常" ? "≥ 3.0" : lv === "待提升" ? "2.0 – 2.9" : "< 2.0"}
+              {lv === "正常" ? "≥ 3.8" : lv === "待提升" ? "3.0 – 3.7" : "< 3.0"}
             </span>
           </span>
         ))}
@@ -326,14 +326,14 @@ export default function SystemFramework({
       </p>
       {onOpen && (
         <p className="mt-1 text-center text-[10.5px] text-olive-mute">
-          灰虚线徽章可直接点击开始测评；红 &lt;2.0 重点关注 · 黄 2.0–2.9 预警 · 绿 ≥3.0 正常。
+          灰虚线徽章可直接点击开始测评；红 &lt;3.0 卡点 · 黄 3.0–3.7 待提升 · 绿 ≥3.8 正常。
         </p>
       )}
     </div>
   );
 }
 
-/** 系统均分徽标（v116）：按档描边 + 浅底 + 档色字，如「乐学 2.0 · 预警」。 */
+/** 系统均分徽标（v121）：按档描边 + 浅底 + 档色字，如「乐学 2.0 · 卡点」。 */
 function ScoreChip({ name, score }: { name: string; score: number }) {
   const lv = frameworkScoreLevel(score);
   const band = BAND[lv];

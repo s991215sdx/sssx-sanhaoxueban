@@ -169,7 +169,7 @@ export default function PreviewList() {
                           {state}
                         </span>
                       )}
-                      {kp.previewed && kp.score < 60 && (
+                      {kp.previewed && kp.score < 50 && (
                         <span className="chip !border-0 bg-lime !text-[11px] text-white">已预习</span>
                       )}
                     </div>

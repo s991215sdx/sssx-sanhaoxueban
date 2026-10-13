@@ -491,9 +491,9 @@ function RoadmapSection({
         {layer === "学能" && multi5 && (
           <div className="mt-1 border-t border-border/60 pt-1">
             {MULTI5_DIM_ORDER.map((k) => (
-              <Chip key={k} label={`${MULTI5_DIM_LABEL[k]} ${multi5.dims[k]}`} bad={multi5.dims[k] < 60} />
+              <Chip key={k} label={`${MULTI5_DIM_LABEL[k]} ${multi5.dims[k]}`} bad={multi5.dims[k] < 50} />
             ))}
-            <Chip label={`细心指数 ${multi5.carefulIndex}%`} bad={multi5.carefulIndex < 70} />
+            <Chip label={`细心指数 ${multi5.carefulIndex}%`} bad={multi5.carefulIndex < 50} />
           </div>
         )}
         <AnswersFold kinds={LAYER_KINDS[layer]} onlyAbilities={(layerUnits[layer] ?? []).filter((u) => u.level !== "正常").map((u) => u.label)} />
@@ -745,8 +745,8 @@ function RoadmapSection({
                     {subject.subjects.map((s) => (
                       <Chip
                         key={s.name}
-                        label={`${s.name} ${s.overall} · ${s.grade}${s.overall < 3.5 ? ` · 短板「${s.weakest}」` : ""}`}
-                        bad={s.overall < 3.5}
+                        label={`${s.name} ${s.overall} · ${s.grade}${s.overall < 3.0 ? ` · 短板「${s.weakest}」` : ""}`}
+                        bad={s.overall < 3.0}
                       />
                     ))}
                     <Chip label={`综合 ${subject.totalAvg}/5`} trait />
@@ -765,7 +765,7 @@ function RoadmapSection({
             </tbody>
           </table>
         </div>
-        <p className="mt-1.5 text-[11.5px] text-olive-mute">红底芯片 = 需要关注的点（观察点未达正常 / 五项&lt;60 / 心理阳性 / 学科自评偏弱）；琥珀底芯片 = 你的主导类型与特点（性格/行为/兴趣没有好坏，不是缺点）。</p>
+        <p className="mt-1.5 text-[11.5px] text-olive-mute">红底芯片 = 需要关注的点（观察点未达正常 / 五项&lt;50 / 心理阳性 / 学科自评偏弱）；琥珀底芯片 = 你的主导类型与特点（性格/行为/兴趣没有好坏，不是缺点）。</p>
 
         {/* V78 冰山上 · 学科能力自评分析图（有测评结果才显示）：九科全貌 + 环节对比 */}
         {subject && (
@@ -1827,7 +1827,7 @@ function Multi5Radar({ multi5 }: { multi5: Multi5Result }) {
               tick={({ x, y, payload }: any) => {
                 const v = Number(String(payload.value).split(" ").pop());
                 return (
-                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 60 ? "#b91c1c" : "#43564C"} fontWeight={v < 60 ? 700 : 400}>
+                  <text x={x} y={y} textAnchor="middle" fontSize={12} fill={v < 50 ? "#b91c1c" : "#43564C"} fontWeight={v < 50 ? 700 : 400}>
                     {payload.value}
                   </text>
                 );
@@ -3014,7 +3014,7 @@ export default function ReportView({
                           <span className="w-14 shrink-0 text-[11.5px] text-olive-soft">{st.stage}</span>
                           <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
                             <div
-                              className={`h-full rounded-full ${st.avg < 2.5 ? "bg-terra" : st.avg < 3.5 ? "bg-[#c7a23a]" : "bg-lime"}`}
+                              className={`h-full rounded-full ${st.avg < 3.0 ? "bg-terra" : st.avg < 3.8 ? "bg-[#c7a23a]" : "bg-lime"}`}
                               style={{ width: `${(st.avg / 5) * 100}%` }}
                             />
                           </div>
@@ -3403,7 +3403,7 @@ function AssessmentChartsLite({
                   tick={({ x, y, payload }: any) => {
                     const v = Number(String(payload.value).split(" ").pop());
                     return (
-                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 60 ? "#b91c1c" : "#43564C"} fontWeight={v < 60 ? 700 : 400}>
+                      <text x={x} y={y} textAnchor="middle" fontSize={11} fill={v < 50 ? "#b91c1c" : "#43564C"} fontWeight={v < 50 ? 700 : 400}>
                         {payload.value}
                       </text>
                     );
@@ -3414,11 +3414,11 @@ function AssessmentChartsLite({
             </ResponsiveContainer>
           </div>
           <p className="mt-3 text-[12.5px] leading-relaxed text-olive-soft">
-            百分制客观作答：「{m5sorted[0]?.label}」{m5sorted[0]?.score} 分最强，「{m5sorted[m5sorted.length - 1]?.label}」{m5sorted[m5sorted.length - 1]?.score} 分相对最弱（&lt;60 标红）。
+            百分制客观作答：「{m5sorted[0]?.label}」{m5sorted[0]?.score} 分最强，「{m5sorted[m5sorted.length - 1]?.label}」{m5sorted[m5sorted.length - 1]?.score} 分相对最弱（&lt;50 标红）。
           </p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-olive">
             <b>对学习力：</b>{m5sorted[m5sorted.length - 1]?.studyAdvice?.[0] ?? "用最弱项的针对性练习把底子补齐，成绩天花板才会抬高。"}
-            {multi5.carefulIndex < 70 ? "另外细心指数偏低，粗心丢分值得先抓。" : ""}
+            {multi5.carefulIndex < 50 ? "另外细心指数偏低，粗心丢分值得先抓。" : ""}
           </p>
         </div>
       )}

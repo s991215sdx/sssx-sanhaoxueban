@@ -523,7 +523,7 @@ export function buildCombinedReport(
       label: "多元智能五项",
       value: `综合 ${multi5.overall} 分`,
       note: `细心指数 ${multi5.carefulIndex}%（全卷正确率）`,
-      tone: multi5.carefulIndex < 70 ? "amber" : "green",
+      tone: multi5.carefulIndex < 50 ? "amber" : "green",
     });
   }
   /* V72：霍兰德与职业锚已从学习力综合报告移出，迁入「升学指导综合报告」（data/reports/guidance.ts）。 */
@@ -620,8 +620,8 @@ export function buildCombinedReport(
   belowIce.push(`${discComboLabel} 型（${discComboAnimals}）的行为惯性 + ${mbti.type}「${mbtiReport.name}」的性格特质`);
   if (multi5) {
     const w = (Object.entries(multi5.dims) as [keyof typeof multi5.dims, number][]).sort((a, b) => a[1] - b[1])[0];
-    if (w && w[1] < 60) belowIce.push(`客观能力短板「${MULTI5_DIM_LABEL[w[0]]}」${w[1]} 分`);
-    if (multi5.carefulIndex < 70) belowIce.push(`细心指数 ${multi5.carefulIndex}%`);
+    if (w && w[1] < 50) belowIce.push(`客观能力短板「${MULTI5_DIM_LABEL[w[0]]}」${w[1]} 分`);
+    if (multi5.carefulIndex < 50) belowIce.push(`细心指数 ${multi5.carefulIndex}%`);
   }
   if (mentalV2 && mentalV2.level !== "良好") {
     belowIce.push(
@@ -1079,7 +1079,7 @@ export function buildCombinedReport(
       `多元智能五项（客观作答）：**综合 ${multi5.overall} 分、细心指数 ${multi5.carefulIndex}%**；最强「${m5top.label}」${m5top.score} 分，最弱「${m5bottom.label}」${m5bottom.score} 分。`,
     );
     secAptParas.push(
-      `**学习提醒**：${weakestApt.level !== "正常" ? `学能里「${weakestApt.label}」当前偏弱（${weakestApt.score}/5），听课做题会在效率上吃亏，跟着训练计划练起来就能涨；` : "学能三项都在正常线上，效率底子不错；"}${multi5.carefulIndex < 70 ? `细心指数 ${multi5.carefulIndex}% 偏低，**粗心丢分**可能正在悄悄吃掉你的分数——考场检查两条铁律（开卷先通览 2 分钟、一题卡 5 分钟就跳过）请刻进习惯。` : "细心指数在线，继续保持检查习惯。"}`,
+      `**学习提醒**：${weakestApt.level !== "正常" ? `学能里「${weakestApt.label}」当前偏弱（${weakestApt.score}/5），听课做题会在效率上吃亏，跟着训练计划练起来就能涨；` : "学能三项都在正常线上，效率底子不错；"}${multi5.carefulIndex < 50 ? `细心指数 ${multi5.carefulIndex}% 偏低，**粗心丢分**可能正在悄悄吃掉你的分数——考场检查两条铁律（开卷先通览 2 分钟、一题卡 5 分钟就跳过）请刻进习惯。` : "细心指数在线，继续保持检查习惯。"}`,
     );
     for (const dim of m5r.dims) {
       secAptItems.push({
