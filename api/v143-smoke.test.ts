@@ -15,8 +15,8 @@ describe("v143 报告选择器：白轨道 + 白底选中墨绿字框", () => {
     if (/linear-gradient/.test(src)) throw new Error("残留：渐变选中");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v143-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v143");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

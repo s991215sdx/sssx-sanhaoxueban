@@ -52,19 +52,24 @@ export default function AbilityPlanCard({
           </li>
         ))}
       </ul>
-      {/* 简要方案（一句话）：点击展开/收起详细方案（v142：白底，边框色随三阶主题色） */}
+      {/* 简要方案（一句话）：点击展开/收起详细方案（v144：去边框，左侧竖色条随三阶主题色，两边 10px 边距） */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="mt-2.5 rounded-lg border bg-white px-3 py-2.5 text-left transition hover:bg-cream/60"
-        style={{ borderColor: THREE_TIER_STYLE[tier].color }}
+        className="mt-2.5 flex gap-2.5 rounded-lg bg-white px-2.5 py-2.5 text-left transition hover:bg-cream/60"
       >
-        <span className="block text-[10.5px] font-semibold tracking-wide text-olive-mute">
-          简要方案 · 点开看详细做法
-        </span>
-        <span className="mt-0.5 flex items-start justify-between gap-1.5 text-[13px] font-semibold leading-snug text-olive">
-          {rx?.rationale ?? "结合学员诊断结果匹配训练方法。"}
-          {open ? <ChevronUp size={14} className="mt-0.5 shrink-0" /> : <ChevronDown size={14} className="mt-0.5 shrink-0" />}
+        <span
+          className="w-1 shrink-0 self-stretch rounded-full"
+          style={{ background: THREE_TIER_STYLE[tier].color }}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[10.5px] font-semibold tracking-wide text-olive-mute">
+            简要方案 · 点开看详细做法
+          </span>
+          <span className="mt-0.5 flex items-start justify-between gap-1.5 text-[13px] font-semibold leading-snug text-olive">
+            {rx?.rationale ?? "结合学员诊断结果匹配训练方法。"}
+            {open ? <ChevronUp size={14} className="mt-0.5 shrink-0" /> : <ChevronDown size={14} className="mt-0.5 shrink-0" />}
+          </span>
         </span>
       </button>
       {/* 详细方案（折叠）：每个方法可勾选入开方清单，也可再单独收起 */}
