@@ -10,14 +10,14 @@ const read = (p: string) => readFileSync(join(root, p), "utf8");
 describe("v105 待提升亮黄", () => {
   it("LEVEL_STYLE 待提升：bar 亮黄 #FCCE45，text 可读金黄", () => {
     const src = read("src/components/reports/e3v37Theme.ts");
-    if (!/待提升: \{ text: "#C79400", bar: "#(FFC600|FCCE45)"/.test(src))
+    if (!/待提升: \{ text: "#8A6500", bar: "#(FFC600|FCCE45)"/.test(src))
       throw new Error("缺：待提升亮黄定义");
   });
 
   it("文字色助手与条款卡同步用新色", () => {
     const src = read("src/components/reports/e3v37Theme.ts");
-    if (!/待提升" \? "text-\[#C79400\]"/.test(src)) throw new Error("缺：文字色助手新色");
-    if (!src.includes("border-[#C79400]/50 bg-[#f5e7c1] text-[#C79400]"))
+    if (!/待提升" \? "text-\[#8A6500\]"/.test(src)) throw new Error("缺：文字色助手新色");
+    if (!src.includes("border-[#8A6500]/50 bg-[#FAF0CC] text-[#8A6500]"))
       throw new Error("缺：条款卡新色");
   });
 

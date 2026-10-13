@@ -11,7 +11,7 @@ describe("v104 得分表标题", () => {
   it("附录标题：绿色字体 + 小树图标", () => {
     const src = read("src/components/reports/AbilityScoreTable.tsx");
     if (!/TreePine size=\{16\}/.test(src)) throw new Error("缺：附录标题 TreePine 图标");
-    if (!/text-\[#2F8F60\][\s\S]{0,120}三阶九能观察点得分表/.test(src) &&
+    if (!/text-\[#2F7A41\][\s\S]{0,120}三阶九能观察点得分表/.test(src) &&
         !/三阶九能观察点得分表/.test(src)) throw new Error("缺：附录标题文案");
     if (!/from "lucide-react"/.test(src) || !/TreePine/.test(src.split("from \"lucide-react\"")[0]))
       throw new Error("缺：TreePine 未引入");
@@ -21,7 +21,7 @@ describe("v104 得分表标题", () => {
     const src = read("src/components/AnswerSheetsPanel.tsx");
     if (!/ClipboardList size=\{14\}/.test(src)) throw new Error("缺：答题卷标题 ClipboardList 图标");
     if (!/TreePine size=\{14\}/.test(src)) throw new Error("缺：三阶九能得分表标题 TreePine 图标");
-    if (!/text-\[#2F8F60\]/.test(src)) throw new Error("缺：标题绿色字体");
+    if (!/text-\[#2F7A41\]/.test(src)) throw new Error("缺：标题绿色字体");
   });
 });
 

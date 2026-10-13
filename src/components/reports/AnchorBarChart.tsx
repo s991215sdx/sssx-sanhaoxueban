@@ -18,7 +18,7 @@ export default function AnchorBarChart({ anchor }: { anchor: AnchorResult }) {
           const isTop = anchor.top2.includes(k);
           return (
             <div key={k} className="flex items-center gap-2">
-              <span className={`w-28 shrink-0 truncate text-[12px] ${isTop ? "font-bold text-[#8a6d1a]" : "font-medium text-olive"}`}>
+              <span className={`w-28 shrink-0 truncate text-[12px] ${isTop ? "font-bold text-[#8A6500]" : "font-medium text-olive"}`}>
                 {ANCHOR_LABEL[k]}
               </span>
               <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
@@ -26,11 +26,11 @@ export default function AnchorBarChart({ anchor }: { anchor: AnchorResult }) {
                   className="h-full rounded-full"
                   style={{
                     width: `${Math.max(3, Math.min(100, (anchor.dims[k] / 5) * 100))}%`,
-                    background: isTop ? "#c7a23a" : "#52A965",
+                    background: isTop ? "#E3B53A" : "#52A965",
                   }}
                 />
               </div>
-              <span className={`mono w-10 shrink-0 text-right text-[11.5px] ${isTop ? "font-bold text-[#8a6d1a]" : "text-olive-soft"}`}>
+              <span className={`mono w-10 shrink-0 text-right text-[11.5px] ${isTop ? "font-bold text-[#8A6500]" : "text-olive-soft"}`}>
                 {anchor.dims[k].toFixed(1)}
               </span>
             </div>

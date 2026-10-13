@@ -12,7 +12,7 @@ describe("v91 明快色系", () => {
     const src = read("tailwind.config.js");
     for (const [tok, hex] of [
       /* v91 的 #1F6B43 偏"鲜绿"，v94 改墨绿炭黑 #20362B，v98 改报告深绿 #0B3D2E，v122 改深青墨绿 #0A3B34（不再锁死单一值） */
-      ['DEFAULT: "#(1F6B43|20362B|0B3D2E|0A3B34)"', "olive 深绿"],
+      ['DEFAULT: "#(1F6B43|20362B|0B3D2E|0A3B34|1E3530)"', "olive 深绿"],
       ['DEFAULT: "#(3CC078|52A965)"', "lime 鲜绿"],
       ['pale: "#(E4F7EC|E9F3E6)"', "浅绿 tint"],
     ]) {
@@ -24,7 +24,7 @@ describe("v91 明快色系", () => {
 
   it("正文前景色为近黑而非中绿", () => {
     const src = read("src/index.css");
-    if (!/--foreground: (160 12% 14%|172 40% 13%)/.test(src)) throw new Error("缺：近黑正文色");
+    if (!/--foreground: (160 12% 14%|172 40% 13%|168 31% 17%)/.test(src)) throw new Error("缺：近黑正文色");
   });
 
   it("不再残留 v85 雾感色值", () => {

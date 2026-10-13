@@ -45,7 +45,7 @@ export default function RecycleBin() {
           已删除的学员在这里保留 <b className="text-olive">2 个月</b>：期间可随时恢复（学员即可正常登录、数据原样）；
           到期未恢复的将<b className="text-olive">自动彻底删除，不可找回</b>。
           {data && data.purged > 0 && (
-            <span className="ml-1 font-semibold text-[#8f1313]">本次已自动清理 {data.purged} 位到期学员。</span>
+            <span className="ml-1 font-semibold text-[#A82524]">本次已自动清理 {data.purged} 位到期学员。</span>
           )}
         </p>
       </header>
@@ -72,7 +72,7 @@ export default function RecycleBin() {
                 <div className="mt-0.5 text-[11.5px] text-olive-mute">
                   删除于 {new Date(s.deletedAt).toLocaleString("zh-CN")}
                   {s.deletedByName && <> · 由 {s.deletedByName} 删除</>}
-                  <span className={s.remainingDays <= 7 ? "font-semibold text-[#8f1313]" : ""}>
+                  <span className={s.remainingDays <= 7 ? "font-semibold text-[#A82524]" : ""}>
                     {" "}· 还剩 {s.remainingDays} 天自动彻底清除
                   </span>
                 </div>

@@ -41,7 +41,7 @@ export default function AbilityPlanCard({
     });
 
   return (
-    <div className="flex flex-col rounded-xl border border-[#A3B8AB]/50 bg-white/80 p-3.5">
+    <div className="flex flex-col rounded-xl border border-[#A9B8B0]/50 bg-white/80 p-3.5">
       <div className="text-[14.5px] font-bold text-olive">{plan.ability}</div>
       {/* 典型问题 */}
       <ul className="mt-1.5 space-y-1">

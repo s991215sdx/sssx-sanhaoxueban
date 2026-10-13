@@ -95,10 +95,10 @@ function RatingDetail({
                 v == null || v < 1
                   ? "text-olive"
                   : adj < 3
-                    ? "text-[#8f1313]"
+                    ? "text-[#A82524]"
                     : adj < 3.8
-                      ? "text-[#8a6d1a]"
-                      : "text-[#2F8F60]"
+                      ? "text-[#8A6500]"
+                      : "text-[#2F7A41]"
               }`}
             >
               {v != null && v >= 1 && v <= 5 ? (

@@ -10,8 +10,8 @@ import { E3V37_LEVEL_STYLE, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 /** 三阶分组配色（乐学/会学/善学）。 */
 const SYSTEM_COLOR: Record<string, string> = {
   乐学: "#52A965",
-  会学: "#3d8ec4",
-  善学: "#c7a23a",
+  会学: "#3991A5",
+  善学: "#E3B53A",
 };
 
 export default function NineAbilityRadar({
@@ -43,14 +43,14 @@ export default function NineAbilityRadar({
       <div className="mt-2" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={data} outerRadius="68%">
-            <PolarGrid stroke="#D8E2DC" />
+            <PolarGrid stroke="#DFE4DA" />
             <PolarRadiusAxis domain={[0, 5]} tick={false} axisLine={false} />
             <PolarAngleAxis
               dataKey="label"
               tick={({ x, y, payload }: any) => {
                 const d = data.find((dd) => dd.label === payload.value);
-                const lvColor = d ? E3V37_LEVEL_STYLE[d.level as keyof typeof E3V37_LEVEL_STYLE].text : "#43564C";
-                const sysColor = d ? SYSTEM_COLOR[d.system] : "#43564C";
+                const lvColor = d ? E3V37_LEVEL_STYLE[d.level as keyof typeof E3V37_LEVEL_STYLE].text : "#475550";
+                const sysColor = d ? SYSTEM_COLOR[d.system] : "#475550";
                 const [name, score] = String(payload.value).split(" ");
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>

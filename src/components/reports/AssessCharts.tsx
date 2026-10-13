@@ -13,12 +13,12 @@ import { ANCHOR_LABEL, ANCHOR_ORDER } from "@contracts/careerAnchor";
 import type { Multi5Result } from "@contracts/multi5";
 import { MULTI5_DIM_LABEL, MULTI5_DIM_ORDER } from "@contracts/multi5";
 
-const OLIVE = "#43564C";
-const GRID = "#D8E2DC";
+const OLIVE = "#475550";
+const GRID = "#DFE4DA";
 const LIME = "#52A965";
-const SKY = "#3d8ec4";
-const AMBER = "#c7a23a";
-const TERRA = "#c05a3a";
+const SKY = "#3991A5";
+const AMBER = "#E3B53A";
+const TERRA = "#CC6B3D";
 
 function BlockTitle({ children }: { children: React.ReactNode }) {
   return <p className="text-[12.5px] font-bold text-olive">{children}</p>;
@@ -49,7 +49,7 @@ export function HollandRadar({ result, height = 230 }: { result: HollandResult; 
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>
                     <tspan fill={d?.hot ? LIME : OLIVE} fontWeight={700}>{name}</tspan>
-                    <tspan dx={3} fill={d?.hot ? LIME : "#93A79B"} fontWeight={700}>{score}</tspan>
+                    <tspan dx={3} fill={d?.hot ? LIME : "#8CA098"} fontWeight={700}>{score}</tspan>
                   </text>
                 );
               }}
@@ -90,8 +90,8 @@ export function MbtiBars({ result }: { result: MbtiResult }) {
                 <span className="font-bold" style={{ color: bv > av ? SKY : OLIVE }}>{bv > av ? "▶" : ""} {b}</span>
               </div>
               <div className="mt-0.5 flex h-2.5 overflow-hidden rounded-full bg-brand/8">
-                <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#ABC0B2" }} />
-                <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#ABC0B2" }} />
+                <div className="h-full rounded-l-full" style={{ width: `${(av / sum) * 100}%`, background: av >= bv ? SKY : "#B4C4BB" }} />
+                <div className="h-full rounded-r-full" style={{ width: `${(bv / sum) * 100}%`, background: bv > av ? SKY : "#B4C4BB" }} />
               </div>
             </div>
           );
@@ -127,7 +127,7 @@ export function DiscBars({ result }: { result: DiscResult }) {
             <YAxis type="category" dataKey="label" width={58} tick={{ fontSize: 11, fill: OLIVE }} />
             <Bar dataKey="得分" radius={[0, 6, 6, 0]} barSize={16}>
               {data.map((d) => (
-                <Cell key={d.key} fill={d.key === result.primary ? DISC_META[d.key as DiscType].color : "#c9cfae"} />
+                <Cell key={d.key} fill={d.key === result.primary ? DISC_META[d.key as DiscType].color : "#C4CDBB"} />
               ))}
             </Bar>
           </BarChart>
@@ -155,7 +155,7 @@ export function AnchorBars({ result, height = 210 }: { result: AnchorResult; hei
             <YAxis type="category" dataKey="label" width={76} tick={{ fontSize: 11, fill: OLIVE }} />
             <Bar dataKey="得分" radius={[0, 6, 6, 0]} barSize={13}>
               {data.map((d) => (
-                <Cell key={d.key} fill={top.has(d.key as AnchorKey) ? AMBER : "#d5d9bd"} />
+                <Cell key={d.key} fill={top.has(d.key as AnchorKey) ? AMBER : "#D5DCCB"} />
               ))}
             </Bar>
           </BarChart>
@@ -219,7 +219,7 @@ export function SubjectOverallRadar({ result, height = 240 }: { result: SubjectA
                 return (
                   <text x={x} y={y} textAnchor="middle" fontSize={11}>
                     <tspan fill={d?.weak ? TERRA : OLIVE} fontWeight={700}>{name}</tspan>
-                    <tspan dx={3} fill={d?.weak ? TERRA : "#93A79B"} fontWeight={700}>{score}</tspan>
+                    <tspan dx={3} fill={d?.weak ? TERRA : "#8CA098"} fontWeight={700}>{score}</tspan>
                   </text>
                 );
               }}
@@ -249,9 +249,9 @@ export function SubjectStageBars({ result, height = 240 }: { result: SubjectAsse
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
             <XAxis dataKey="subject" tick={{ fontSize: 11, fill: OLIVE }} />
-            <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "#93A79B" }} />
+            <YAxis domain={[0, 5]} tick={{ fontSize: 10, fill: "#8CA098" }} />
             {stageKeys.map((k) => (
-              <Bar key={k} dataKey={k} fill={colors[k] ?? "#ABC0B2"} radius={[3, 3, 0, 0]} barSize={12} />
+              <Bar key={k} dataKey={k} fill={colors[k] ?? "#B4C4BB"} radius={[3, 3, 0, 0]} barSize={12} />
             ))}
           </BarChart>
         </ResponsiveContainer>

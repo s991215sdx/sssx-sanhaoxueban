@@ -413,13 +413,13 @@ export default function InviteChannelsTab() {
                         {c.active ? "投放中" : "已停用"}
                       </span>
                       {c.reportAccess && (
-                        <span className="flex items-center gap-1 rounded-full bg-butter/70 px-2 py-0.5 text-[11px] font-bold text-[#8a6d1a]">
+                        <span className="flex items-center gap-1 rounded-full bg-butter/70 px-2 py-0.5 text-[11px] font-bold text-[#8A6500]">
                           <FileText size={11} />
                           报告已开放
                         </span>
                       )}
                       {c.assessmentAccess && (
-                        <span className="flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] font-bold text-[#2F8F60]">
+                        <span className="flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] font-bold text-[#2F7A41]">
                           <ClipboardList size={11} />
                           测评套餐 · {(c.assessmentKinds ?? []).includes("all") ? "全部" : (c.assessmentKinds ?? []).length} 项
                         </span>

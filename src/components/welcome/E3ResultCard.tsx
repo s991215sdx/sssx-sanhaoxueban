@@ -5,9 +5,9 @@ import type { E3V27Result, E3Level } from "@contracts/assessments";
 const DIM_COLORS: Record<string, string> = {
   乐学: "#52A965",
   会学: "#CDE3CC",
-  善学: "#43564C",
-  品格: "#e8a33d",
-  环境: "#7A8A82",
+  善学: "#475550",
+  品格: "#F09A3E",
+  环境: "#8CA098",
 };
 
 const LEVEL_CLASS: Record<E3Level, string> = {

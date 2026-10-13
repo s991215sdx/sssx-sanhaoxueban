@@ -28,9 +28,9 @@ const LEVEL_STYLE: Record<MentalV2Band, string> = {
 };
 
 const BAND_STYLE: Record<SdqBand, string> = {
-  正常: "border-lime/50 bg-lime-pale text-[#2F8F60]",
-  边缘: "border-[#c7a23a]/70 bg-[#f5e7c1] text-[#8a6d1a]",
-  明显: "border-[#b91c1c]/50 bg-[#FAF3EB] text-[#8f1313]",
+  正常: "border-lime/50 bg-lime-pale text-[#2F7A41]",
+  边缘: "border-[#E3B53A]/70 bg-[#FAF0CC] text-[#8A6500]",
+  明显: "border-[#DD3534]/50 bg-[#FAF2E4] text-[#A82524]",
 };
 
 const SDQ_DIMS: SdqDim[] = ["emotion", "conduct", "hyper", "peer", "prosocial"];

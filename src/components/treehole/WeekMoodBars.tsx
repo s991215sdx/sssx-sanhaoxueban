@@ -11,7 +11,7 @@ function dayStr(offset = 0): string {
 
 const BAR_COLORS: Record<number, string> = {
   1: "#FA872A",
-  2: "#d9a05b",
+  2: "#E8AC66",
   3: "#CDE3CC",
   4: "#8EBD86",
   5: "#52A965",

@@ -22,7 +22,7 @@ describe("v121 全局判定口径统一", () => {
     if (/dims\[k\] < 60|carefulIndex < 70|overall < 3\.5|v < 60|avg < 2\.5|avg < 3\.5/.test(src))
       throw new Error("残留：旧阈值");
     for (const tok of ["bad={multi5.dims[k] < 50}", "bad={multi5.carefulIndex < 50}",
-      "bad={s.overall < 3.0}", 'st.avg < 3.0 ? "bg-terra" : st.avg < 3.8 ? "bg-[#c7a23a]"']) {
+      "bad={s.overall < 3.0}", 'st.avg < 3.0 ? "bg-terra" : st.avg < 3.8 ? "bg-[#E3B53A]"']) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }
   });
@@ -32,7 +32,7 @@ describe("v121 全局判定口径统一", () => {
     if (!g.includes('c.pct >= 70 ? "text-lime" : c.pct >= 50 ? "text-amber" : "text-rose"'))
       throw new Error("缺：GuidanceTab 得分率阈值");
     const q = read("src/components/companion/SubjectQuiz.tsx");
-    if (!q.includes('st.avg < 3.0 ? "bg-terra" : st.avg < 3.8 ? "bg-[#c7a23a]"'))
+    if (!q.includes('st.avg < 3.0 ? "bg-terra" : st.avg < 3.8 ? "bg-[#E3B53A]"'))
       throw new Error("缺：SubjectQuiz 学科条阈值");
     const c = read("src/data/reports/combined.ts");
     if (/carefulIndex < 70|w\[1\] < 60/.test(c)) throw new Error("残留：combined.ts 旧阈值");

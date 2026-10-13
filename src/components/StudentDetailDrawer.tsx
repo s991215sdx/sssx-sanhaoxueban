@@ -79,23 +79,23 @@ export default function StudentDetailDrawer({
         ) : (
           <div className={`mt-4 space-y-4 ${wide ? "mx-auto max-w-4xl" : ""}`}>
             {/* 档案（v115：参考新设计——薄荷浅底实底，姓名+年级学校首行，ID+目标次行，白统计格） */}
-            <div className="rounded-2xl bg-[#E1F5EE] p-4 shadow-[0_4px_16px_-8px_rgba(29,158,117,0.35)]">
+            <div className="rounded-2xl bg-[#E9F3E6] p-4 shadow-[0_4px_16px_-8px_rgba(29,158,117,0.35)]">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1D9E75] text-[16px] font-bold text-white shadow-sm">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[16px] font-bold text-white shadow-sm">
                   {(data.profile?.name || data.user.name || "学")[0]}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="text-[16px] font-bold text-[#1F2937]">
+                    <span className="text-[16px] font-bold text-[#1E3530]">
                       {data.profile?.name || data.user.name || "未命名"}
                     </span>
                     {[data.profile?.grade, data.profile?.school].filter(Boolean).length > 0 && (
-                      <span className="text-[12.5px] font-semibold text-[#0F6E56]">
+                      <span className="text-[12.5px] font-semibold text-[#0C7064]">
                         {[data.profile?.grade, data.profile?.school].filter(Boolean).join(" · ")}
                       </span>
                     )}
                   </div>
-                  <div className="mono mt-0.5 text-[11.5px] text-[#0F6E56]">
+                  <div className="mono mt-0.5 text-[11.5px] text-[#0C7064]">
                     ID {data.user.phone}
                     {data.profile?.targetSchool && <span className="ml-1.5">· 目标：{data.profile.targetSchool}</span>}
                   </div>
@@ -109,7 +109,7 @@ export default function StudentDetailDrawer({
                   { label: "计划", value: data.learning.planCount },
                 ].map((s) => (
                   <div key={s.label} className="rounded-xl bg-white px-1 py-2.5 shadow-[0_1px_4px_rgba(29,158,117,0.18)]">
-                    <div className="text-[17px] font-bold text-[#1F2937]">{s.value}</div>
+                    <div className="text-[17px] font-bold text-[#1E3530]">{s.value}</div>
                     <div className="text-[10.5px] text-olive-mute">{s.label}</div>
                   </div>
                 ))}
@@ -195,7 +195,7 @@ export default function StudentDetailDrawer({
                       <span className="chip !text-[11px] text-terra">低估：{data.assessments.e3parent.underestimates.map((d) => d.kp).join("、")}</span>
                     )}
                     {data.assessments.e3parent.severeConflict && (
-                      <span className="chip !border-[#8f1313]/50 !bg-[#FAF3EB] !text-[11px] !text-[#8f1313]">家庭近期有严重亲子冲突信号</span>
+                      <span className="chip !border-[#A82524]/50 !bg-[#FAF2E4] !text-[11px] !text-[#A82524]">家庭近期有严重亲子冲突信号</span>
                     )}
                   </div>
                   <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">{data.assessments.e3parent.summary}</p>

@@ -12,7 +12,7 @@ describe("v114 答题卷列表样式", () => {
     const src = read("src/components/AnswerSheetsPanel.tsx");
     if (!/startsWith\("e3"\) \? "E" : "S"/.test(src)) throw new Error("缺：E/S 信标逻辑");
     if (!/divide-y divide-border\/70/.test(src)) throw new Error("缺：细线分隔");
-    if (!/h-9 w-9[\s\S]{0,60}rounded-lg bg-\[#EFF3F1\]/.test(src)) throw new Error("缺：信标样式");
+    if (!/h-9 w-9[\s\S]{0,60}rounded-lg bg-\[#EFF2EC\]/.test(src)) throw new Error("缺：信标样式");
   });
 
   it("标题末尾日期拆出单独灰色显示", () => {

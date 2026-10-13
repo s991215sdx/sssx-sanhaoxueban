@@ -10,7 +10,7 @@ const read = (p: string) => readFileSync(join(root, p), "utf8");
 describe("v110 三阶分组标题横幅", () => {
   it("板块色带浅底色 tint", () => {
     const src = read("src/components/reports/e3v37Theme.ts");
-    for (const tok of ['tint: "#E2FAF7"', 'tint: "#FFF6D9"', 'tint: "#FFE9DB"']) {
+    for (const tok of ['tint: "#E3F0F3"', 'tint: "#FFF7D8"', 'tint: "#FDEBD9"']) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }
   });

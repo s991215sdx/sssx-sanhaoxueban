@@ -10,7 +10,7 @@ const read = (p: string) => readFileSync(join(root, p), "utf8");
 describe("v108 框架图卡片三档协调配色", () => {
   it("三档浅底色：卡点浅红/待提升浅黄/正常浅绿", () => {
     const src = read("src/components/reports/SystemFramework.tsx");
-    for (const tok of ['bg: "#FDECEC"', 'bg: "#FCF3DC"', 'bg: "#E9F3E6"']) {
+    for (const tok of ['bg: "#F9E4E1"', 'bg: "#FAF0CC"', 'bg: "#E9F3E6"']) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }
   });

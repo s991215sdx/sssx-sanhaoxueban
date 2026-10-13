@@ -25,12 +25,12 @@ describe("v119 冰山模型区域样式", () => {
 
   it("芯片新色系：浅红 #FDECEC/#B42323、新琥珀 #FCF3DC/#B07800，旧暗黄清除", () => {
     const src = read("src/components/reports/ReportView.tsx");
-    if (!/border-\[#D84E4E\]\/60 bg-\[#FDECEC\] font-bold text-\[#B42323\]/.test(src))
+    if (!/border-\[#DD3534\]\/60 bg-\[#F9E4E1\] font-bold text-\[#A82524\]/.test(src))
       throw new Error("缺：红芯新色系");
-    if (!/border-\[#E3A008\]\/70 bg-\[#FCF3DC\] font-bold text-\[#B07800\]/.test(src))
+    if (!/border-\[#E3B53A\]\/70 bg-\[#FAF0CC\] font-bold text-\[#8A6500\]/.test(src))
       throw new Error("缺：琥珀芯新色系");
     // 旧暗黄只要求从 Chip 组件定义内清除；心理量表/框架图等独立配色不在本次范围
     const chipBlock = src.slice(src.indexOf("const Chip ="), src.indexOf("const Chip =") + 800);
-    if (/#c7a23a|#8a6d1a|#f5e7c1/.test(chipBlock)) throw new Error("残留：Chip 内旧暗黄");
+    if (/#e3b53a|#8a6500|#faf0cc/.test(chipBlock)) throw new Error("残留：Chip 内旧暗黄");
   });
 });

@@ -13,7 +13,7 @@ export type ScoreRecord = {
   createdAt: Date | string;
 };
 
-const PALETTE = ["#2F8F60", "#FA872A", "#3a6ea5", "#b03a5b", "#8a6d1a", "#4a8a8a", "#7a5ba8", "#a8763e", "#3e8a5a", "#a83e6a"];
+const PALETTE = ["#2F7A41", "#FA872A", "#3991A5", "#A85C72", "#8A6500", "#3991A5", "#8A7BA8", "#AB7F4C", "#2F7A41", "#9D6179"];
 
 export default function ScoreTrendChart({ records }: { records: ScoreRecord[] }) {
   const [hover, setHover] = useState<{ si: number; ri: number } | null>(null);
@@ -64,12 +64,12 @@ export default function ScoreTrendChart({ records }: { records: ScoreRecord[] })
           {/* 横向网格线：0/25/50/75/100% */}
           {[0, 25, 50, 75, 100].map((p) => (
             <g key={p}>
-              <line x1={PAD.l} x2={W - PAD.r} y1={yOf(p)} y2={yOf(p)} stroke={p === 0 ? "#b9bfa0" : "#e6e9d4"} strokeWidth={p === 0 ? 1.2 : 1} />
-              <text x={PAD.l - 6} y={yOf(p) + 3.5} textAnchor="end" fontSize={10} fill="#8a9170">{p}%</text>
+              <line x1={PAD.l} x2={W - PAD.r} y1={yOf(p)} y2={yOf(p)} stroke={p === 0 ? "#A9B8B0" : "#E9EDE0"} strokeWidth={p === 0 ? 1.2 : 1} />
+              <text x={PAD.l - 6} y={yOf(p) + 3.5} textAnchor="end" fontSize={10} fill="#8CA098">{p}%</text>
             </g>
           ))}
           {chron.map((r, ri) => (
-            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#43564C" className="max-w-[70px]">
+            <text key={ri} x={xOf(ri)} y={H - 10} textAnchor="middle" fontSize={10.5} fill="#475550" className="max-w-[70px]">
               {labelOf(r).slice(0, 8)}
             </text>
           ))}
@@ -112,8 +112,8 @@ export default function ScoreTrendChart({ records }: { records: ScoreRecord[] })
             const full = s.fullScore ?? 100;
             return (
               <g>
-                <rect x={Math.min(W - 150, xOf(hover.ri) + 8)} y={Math.max(2, yOf(Math.min(100, (s.lastScore / Math.max(1, full)) * 100)) - 34)} width={142} height={28} rx={6} fill="#3C2E25" opacity={0.92} />
-                <text x={Math.min(W - 150, xOf(hover.ri) + 8) + 71} y={Math.max(2, yOf(Math.min(100, (s.lastScore / Math.max(1, full)) * 100)) - 15)} textAnchor="middle" fontSize={11} fill="#f5f2e8">
+                <rect x={Math.min(W - 150, xOf(hover.ri) + 8)} y={Math.max(2, yOf(Math.min(100, (s.lastScore / Math.max(1, full)) * 100)) - 34)} width={142} height={28} rx={6} fill="#3A342A" opacity={0.92} />
+                <text x={Math.min(W - 150, xOf(hover.ri) + 8) + 71} y={Math.max(2, yOf(Math.min(100, (s.lastScore / Math.max(1, full)) * 100)) - 15)} textAnchor="middle" fontSize={11} fill="#F6F2E6">
                   {name} {s.lastScore}/{full} 分
                 </text>
               </g>

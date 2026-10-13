@@ -11,10 +11,10 @@ import { AlarmClock, BookMarked, PenLine, GitBranch, CheckCircle2, ChevronDown, 
 
 const CAUSE_COLORS: Record<string, string> = {
   概念不清: "#52A965",
-  审题失误: "#c7a23a",
+  审题失误: "#E3B53A",
   计算错误: "#FA872A",
-  方法不会: "#43564C",
-  粗心大意: "#7A8A82",
+  方法不会: "#475550",
+  粗心大意: "#8CA098",
 };
 
 const FIELD_CLS = "mt-2 w-full rounded-xl border border-input bg-cream px-4 py-2.5 text-[15px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime focus:ring-2 focus:ring-lime/25";

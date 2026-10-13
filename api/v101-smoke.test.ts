@@ -19,9 +19,9 @@ describe("v102 得分表白底+色字", () => {
   it("判定文字三档：卡点深红/待提升琥珀/正常绿，标签+分数+判定都着色", () => {
     const theme = read("src/components/reports/e3v37Theme.ts");
     for (const [tok, label] of [
-      ['level === "卡点" ? "text-[#8f1313]"', "卡点深红"],
-      ['"待提升" ? "text-[#C79400]"', "待提升亮黄"],
-      ['"text-[#2F8F60]"', "正常绿"],
+      ['level === "卡点" ? "text-[#A82524]"', "卡点深红"],
+      ['"待提升" ? "text-[#8A6500]"', "待提升琥珀"],
+      ['"text-[#2F7A41]"', "正常绿"],
     ]) {
       if (!theme.includes(tok)) throw new Error(`缺 ${label}：${tok}`);
     }

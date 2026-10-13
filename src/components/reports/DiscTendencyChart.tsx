@@ -14,10 +14,10 @@ const DISC_WORD_GRID: Record<"D" | "I" | "S" | "C", string[]> = {
   C: ["吹毛求疵", "逃避推诿", "追求完美", "固守成规", "细致完备", "系统逻辑", "内敛敏感", "有条不紊", "善于分析", "较高标准", "关注细节", "流程导向", "独立自主", "不拘细节", "自有主张", "随心所欲", "坚持己见", "粗枝大叶", "敢于挑战", "不讲策略", "自以为是", "毫无章法", "公然违抗", "顽固不化"],
 };
 export const DISC_COLOR: Record<"D" | "I" | "S" | "C", string> = {
-  D: "#d44f3a",
-  I: "#e8a33d",
-  S: "#4e9e5f",
-  C: "#3d8ec4",
+  D: "#DD3534",
+  I: "#F09A3E",
+  S: "#52A965",
+  C: "#3991A5",
 };
 /** 因子进入高反弹区（倾向度 ≥ +80%）时的「物极必反」提示。 */
 const DISC_REBOUND_HIGH: Record<"D" | "I" | "S" | "C", string> = {
@@ -77,27 +77,27 @@ export default function DiscTendencyChart({
       </p>
       <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="DISC 四因子双极倾向度图">
         {/* 高反弹区灰带（+80%…+100%） */}
-        <rect x={PLOT_L} y={TOP} width={PLOT_R - PLOT_L} height={Math.max(0, highY - TOP)} rx={6} fill="#6b7280" opacity={0.15} />
-        <text x={PLOT_R - 4} y={TOP + 12} fontSize={10} fill="#6b7280" textAnchor="end">
+        <rect x={PLOT_L} y={TOP} width={PLOT_R - PLOT_L} height={Math.max(0, highY - TOP)} rx={6} fill="#8C8B89" opacity={0.15} />
+        <text x={PLOT_R - 4} y={TOP + 12} fontSize={10} fill="#8C8B89" textAnchor="end">
           高反弹区 ≥+{DISC_REBOUND_PCT}%
         </text>
-        <line x1={PLOT_L} y1={highY} x2={PLOT_R} y2={highY} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+        <line x1={PLOT_L} y1={highY} x2={PLOT_R} y2={highY} stroke="#8C8B89" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
         {/* 低反弹区灰带（-80%…-100%） */}
-        <rect x={PLOT_L} y={lowY} width={PLOT_R - PLOT_L} height={Math.max(0, TOP + plotH - lowY)} rx={6} fill="#6b7280" opacity={0.15} />
-        <text x={PLOT_R - 4} y={TOP + plotH - 5} fontSize={10} fill="#6b7280" textAnchor="end">
+        <rect x={PLOT_L} y={lowY} width={PLOT_R - PLOT_L} height={Math.max(0, TOP + plotH - lowY)} rx={6} fill="#8C8B89" opacity={0.15} />
+        <text x={PLOT_R - 4} y={TOP + plotH - 5} fontSize={10} fill="#8C8B89" textAnchor="end">
           低反弹区 ≤-{DISC_REBOUND_PCT}%
         </text>
-        <line x1={PLOT_L} y1={lowY} x2={PLOT_R} y2={lowY} stroke="#6b7280" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+        <line x1={PLOT_L} y1={lowY} x2={PLOT_R} y2={lowY} stroke="#8C8B89" strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
         {/* 分段刻度线（每 25%，中线 0% 加粗带箭头） */}
         {[-75, -50, -25, 25, 50, 75].map((t) => (
-          <line key={`seg-${t}`} x1={PLOT_L} y1={yOf(t)} x2={PLOT_R} y2={yOf(t)} stroke="#A3B8AB" strokeWidth={Math.abs(t) === 50 ? 0.9 : 0.6} strokeDasharray={Math.abs(t) === 50 ? "none" : "2 4"} opacity={0.45} />
+          <line key={`seg-${t}`} x1={PLOT_L} y1={yOf(t)} x2={PLOT_R} y2={yOf(t)} stroke="#A9B8B0" strokeWidth={Math.abs(t) === 50 ? 0.9 : 0.6} strokeDasharray={Math.abs(t) === 50 ? "none" : "2 4"} opacity={0.45} />
         ))}
-        <line x1={PLOT_L} y1={yOf(0)} x2={PLOT_R} y2={yOf(0)} stroke="#8AA698" strokeWidth={1.6} opacity={0.85} />
-        <polygon points={`${PLOT_L - 6},${yOf(0)} ${PLOT_L},${yOf(0) - 4} ${PLOT_L},${yOf(0) + 4}`} fill="#8AA698" opacity={0.85} />
-        <polygon points={`${PLOT_R + 6},${yOf(0)} ${PLOT_R},${yOf(0) - 4} ${PLOT_R},${yOf(0) + 4}`} fill="#8AA698" opacity={0.85} />
+        <line x1={PLOT_L} y1={yOf(0)} x2={PLOT_R} y2={yOf(0)} stroke="#8CA098" strokeWidth={1.6} opacity={0.85} />
+        <polygon points={`${PLOT_L - 6},${yOf(0)} ${PLOT_L},${yOf(0) - 4} ${PLOT_L},${yOf(0) + 4}`} fill="#8CA098" opacity={0.85} />
+        <polygon points={`${PLOT_R + 6},${yOf(0)} ${PLOT_R},${yOf(0) - 4} ${PLOT_R},${yOf(0) + 4}`} fill="#8CA098" opacity={0.85} />
         {/* 左侧刻度标签 */}
         {[100, 50, 0, -50, -100].map((t) => (
-          <text key={`tick-${t}`} x={PLOT_L - 8} y={yOf(t) + 3.5} fontSize={9.5} fill="#8AA698" textAnchor="end">
+          <text key={`tick-${t}`} x={PLOT_L - 8} y={yOf(t) + 3.5} fontSize={9.5} fill="#8CA098" textAnchor="end">
             {t > 0 ? `+${t}` : t}%
           </text>
         ))}
@@ -106,7 +106,7 @@ export default function DiscTendencyChart({
           <line key={`line-${k}`} x1={xs[i]} y1={TOP} x2={xs[i]} y2={TOP + plotH} stroke={DISC_COLOR[k]} strokeWidth={3} opacity={0.28} strokeLinecap="round" />
         ))}
         {/* 底部基线 */}
-        <line x1={PLOT_L} y1={TOP + plotH} x2={PLOT_R} y2={TOP + plotH} stroke="#A3B8AB" strokeWidth={1} />
+        <line x1={PLOT_L} y1={TOP + plotH} x2={PLOT_R} y2={TOP + plotH} stroke="#A9B8B0" strokeWidth={1} />
         {/* 顶部维度徽章 */}
         {keys.map((k, i) => {
           const inCombo = combo.includes(k);
@@ -123,7 +123,7 @@ export default function DiscTendencyChart({
         <polyline
           points={keys.map((k, i) => `${xs[i]},${yOf(tendency[k])}`).join(" ")}
           fill="none"
-          stroke="#43564C"
+          stroke="#475550"
           strokeWidth={2}
           opacity={0.55}
           strokeLinejoin="round"
@@ -137,7 +137,7 @@ export default function DiscTendencyChart({
           const y = yOf(t);
           return (
             <g key={`dot-${k}`}>
-              {inRebound && <circle cx={xs[i]} cy={y} r={13} fill="#6b7280" opacity={0.3} />}
+              {inRebound && <circle cx={xs[i]} cy={y} r={13} fill="#8C8B89" opacity={0.3} />}
               {positive ? (
                 <>
                   <circle cx={xs[i]} cy={y} r={12} fill={DISC_COLOR[k]} stroke="#ffffff" strokeWidth={2.5} />
@@ -164,12 +164,12 @@ export default function DiscTendencyChart({
         {combo.join("")} 型{primaryReport ? `（${primaryReport.name}）` : ""}
       </div>
       {reboundHighDims.length > 0 && (
-        <p className="mt-2 rounded-lg bg-[#6b7280]/10 px-3 py-1.5 text-[11.5px] leading-relaxed text-olive-soft">
+        <p className="mt-2 rounded-lg bg-[#8C8B89]/10 px-3 py-1.5 text-[11.5px] leading-relaxed text-olive-soft">
           ⚠ 高反弹区：{reboundHighDims.map((k) => `${k}（${DISC_REBOUND_HIGH[k]}）`).join("、")}——强项拉满不等于无限好，物极必反，越是强项越要留意别用过头。
         </p>
       )}
       {reboundLowDims.length > 0 && (
-        <p className="mt-2 rounded-lg bg-[#6b7280]/10 px-3 py-1.5 text-[11.5px] leading-relaxed text-olive-soft">
+        <p className="mt-2 rounded-lg bg-[#8C8B89]/10 px-3 py-1.5 text-[11.5px] leading-relaxed text-olive-soft">
           ⚠ 低反弹区：{reboundLowDims.map((k) => `${k}（${DISC_REBOUND_LOW[k]}）`).join("、")}——长期把这一面压到极低，消耗大，也容易以反面形式反弹回来。
         </p>
       )}
@@ -200,8 +200,8 @@ export default function DiscTendencyChart({
                       className="border-b border-border/60 px-1 py-[3px] text-center text-[11px] leading-tight"
                       style={
                         hit
-                          ? { background: `${DISC_COLOR[k]}${inCombo ? "40" : "22"}`, color: "#20362B", fontWeight: inCombo ? 800 : 600 }
-                          : { color: "#7A8A82" }
+                          ? { background: `${DISC_COLOR[k]}${inCombo ? "40" : "22"}`, color: "#1E3530", fontWeight: inCombo ? 800 : 600 }
+                          : { color: "#8CA098" }
                       }
                     >
                       {w}

@@ -255,7 +255,7 @@ export default function ProfileCard() {
               className="w-full rounded-xl border border-olive/20 bg-cream/60 px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime"
             />
             {pwMsg && (
-              <p className={`rounded-lg px-3 py-2 text-[12.5px] ${pwMsg.ok ? "bg-lime-pale text-[#20362B]" : "bg-terra/10 text-terra"}`}>
+              <p className={`rounded-lg px-3 py-2 text-[12.5px] ${pwMsg.ok ? "bg-lime-pale text-[#1E3530]" : "bg-terra/10 text-terra"}`}>
                 {pwMsg.text}
               </p>
             )}

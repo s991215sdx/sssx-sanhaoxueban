@@ -11,9 +11,9 @@ describe("v116 框架图三档视觉", () => {
   it("BAND 三档配色保留（档位名 v121 起与全局统一：卡点/待提升/正常）", () => {
     const src = read("src/components/reports/SystemFramework.tsx");
     for (const tok of [
-      '卡点: { label: "卡点", border: "#D84E4E", bg: "#FDECEC", text: "#B42323" }',
-      '待提升: { label: "待提升", border: "#E3A008", bg: "#FCF3DC", text: "#B07800" }',
-      '正常: { label: "正常", border: "#52A965", bg: "#E9F3E6", text: "#2F8F60" }',
+      '卡点: { label: "卡点", border: "#DD3534", bg: "#F9E4E1", text: "#A82524" }',
+      '待提升: { label: "待提升", border: "#E3B53A", bg: "#FAF0CC", text: "#8A6500" }',
+      '正常: { label: "正常", border: "#52A965", bg: "#E9F3E6", text: "#2F7A41" }',
     ]) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }

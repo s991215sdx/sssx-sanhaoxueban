@@ -38,7 +38,7 @@ export default function AnchorDetail({ result }: { result: AnchorResult }) {
                   className="h-full rounded-full"
                   style={{
                     width: `${(result.dims[k] / 5) * 100}%`,
-                    background: result.top2.includes(k) ? "#c7a23a" : "#52A965", // Top2 标琥珀
+                    background: result.top2.includes(k) ? "#E3B53A" : "#52A965", // Top2 标琥珀
                   }}
                 />
               </div>

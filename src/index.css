@@ -6,25 +6,25 @@
   :root {
     /* v122：主题迁入「栖川烟渚」色卡；正文近黑墨绿，深青绿只留给主按钮/强调 */
     --background: 45 55% 96%;
-    --foreground: 172 40% 13%;
+    --foreground: 168 31% 17%;
     --card: 0 0% 100%;
-    --card-foreground: 172 40% 13%;
+    --card-foreground: 168 31% 17%;
     --popover: 0 0% 100%;
-    --popover-foreground: 172 40% 13%;
+    --popover-foreground: 168 31% 17%;
     /* v122：primary 改深青绿 #0C7064（hsl 173 81% 24%） */
     --primary: 173 81% 24%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 165 30% 92%;
-    --secondary-foreground: 172 40% 13%;
+    --secondary: 45 33% 93%;
+    --secondary-foreground: 168 31% 17%;
     --muted: 45 25% 94%;
-    --muted-foreground: 165 6% 40%;
+    --muted-foreground: 155 10% 37%;
     --accent: 134 33% 47%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 68% 53%;
     --destructive-foreground: 0 0% 98%;
-    --border: 40 14% 88%;
-    --input: 40 10% 84%;
-    --ring: 173 55% 32%;
+    --border: 42 22% 86%;
+    --input: 42 14% 82%;
+    --ring: 173 51% 30%;
     --radius: 0.875rem;
   }
 }

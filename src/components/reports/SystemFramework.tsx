@@ -64,8 +64,8 @@ const DEEP_TRAITS: { key: "mbti" | "disc" | "anchor" | "holland"; label: string 
 function LinkChip({ done, label, onClick }: { done: boolean; label: string; onClick?: () => void }) {
   const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${
     done
-      ? "border border-[#52A965]/60 bg-[#E9F3E6] text-[#20362B]"
-      : "border border-dashed border-[#A3B8AB]/80 text-olive-mute"
+      ? "border border-[#52A965]/60 bg-[#E9F3E6] text-[#1E3530]"
+      : "border border-dashed border-[#A9B8B0]/80 text-olive-mute"
   }`;
   if (!onClick) return <span className={cls}>{label}</span>;
   return (
@@ -86,9 +86,9 @@ function LinkChip({ done, label, onClick }: { done: boolean; label: string; onCl
  * 卡片=浅底+同色系细边框；能力块=白色小卡（名在上、分数在下按档着色）。
  */
 const BAND: Record<E3V37Level, { label: string; border: string; bg: string; text: string }> = {
-  卡点: { label: "卡点", border: "#D84E4E", bg: "#FDECEC", text: "#B42323" },
-  待提升: { label: "待提升", border: "#E3A008", bg: "#FCF3DC", text: "#B07800" },
-  正常: { label: "正常", border: "#52A965", bg: "#E9F3E6", text: "#2F8F60" },
+  卡点: { label: "卡点", border: "#DD3534", bg: "#F9E4E1", text: "#A82524" },
+  待提升: { label: "待提升", border: "#E3B53A", bg: "#FAF0CC", text: "#8A6500" },
+  正常: { label: "正常", border: "#52A965", bg: "#E9F3E6", text: "#2F7A41" },
 };
 
 /** 分数档判定（v121 起与全局统一）：红 <3.0 卡点；黄 3.0–3.7 待提升；绿 ≥3.8 正常。 */
@@ -104,7 +104,7 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
   const band = BAND[lv];
   if (!done)
     return (
-      <div className="rounded-xl border border-dashed border-[#A3B8AB]/70 bg-white/60 px-1 py-2 text-center">
+      <div className="rounded-xl border border-dashed border-[#A9B8B0]/70 bg-white/60 px-1 py-2 text-center">
         <div className="text-[12px] font-semibold text-olive-soft">{name}</div>
         <div className="mono mt-0.5 text-[16px] font-bold text-olive-mute">-</div>
       </div>
@@ -121,7 +121,7 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
 
 /** 按档着色的容器框（v116：浅底 + 同色系细边框 + 同色系标题）。 */
 function levelBoxStyle(level: E3V37Level | undefined) {
-  if (!level) return { borderColor: "#a8b08c60", background: "#EFF5F1", titleColor: "#6b7452" };
+  if (!level) return { borderColor: "#a8b08c60", background: "#F0F3EC", titleColor: "#707A6C" };
   const band = BAND[level];
   return { borderColor: band.border, background: band.bg, titleColor: band.text };
 }
@@ -270,7 +270,7 @@ export default function SystemFramework({
               )}
               {/* 多元五项二级维度分（v116：按设计稿改绿色纯文字，不用 chip） */}
               {b.key === "学能" && status?.multi5?.done && (status.multi5.subs?.length ?? 0) > 0 && (
-                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11.5px] font-medium text-[#2F8F60]">
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11.5px] font-medium text-[#2F7A41]">
                   {status.multi5.subs!.map((s) => (
                     <span key={s}>{s}</span>
                   ))}
@@ -285,8 +285,8 @@ export default function SystemFramework({
       {showDeep && (
         <>
           <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
-          <div className="rounded-xl border border-[#A3B8AB]/60 bg-[#EFF5F1] px-3.5 py-3">
-            <div className="text-center text-[12.5px] font-bold text-[#6b7452]">深层特质 · 性格与方向的长期底色</div>
+          <div className="rounded-xl border border-[#A9B8B0]/60 bg-[#F0F3EC] px-3.5 py-3">
+            <div className="text-center text-[12.5px] font-bold text-[#707A6C]">深层特质 · 性格与方向的长期底色</div>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {DEEP_TRAITS.map((d) => {
                 const st = status?.[d.key];
@@ -312,7 +312,7 @@ export default function SystemFramework({
                   </>
                 );
                 return (
-                  <div key={d.key} className="rounded-lg border border-[#A3B8AB]/50 bg-white/70 px-2 py-1.5 text-center">
+                  <div key={d.key} className="rounded-lg border border-[#A9B8B0]/50 bg-white/70 px-2 py-1.5 text-center">
                     {box}
                   </div>
                 );

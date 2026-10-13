@@ -26,11 +26,11 @@ describe("v95 卡点底色去粉", () => {
   it("三阶九能主题使用浅色区分底（v95 暖沙 → v101 淡红/淡琥珀），红色警示文字保留", () => {
     const src = read("src/components/reports/e3v37Theme.ts");
     /* v101 起三档底色：卡点淡红 / 待提升淡琥珀 / 正常浅绿，与图例红黄绿一致 */
-    if (!/bg:\s*"#(FAF3EB|FBEAE8)"/.test(src)) throw new Error("缺：卡点浅色底");
-    if (!/text:\s*"#8f1313"/.test(src)) throw new Error("缺：卡点红色文字 #8f1313");
-    if (!/bar:\s*"#b91c1c"/.test(src)) throw new Error("缺：卡点红色条 #b91c1c");
+    if (!/bg:\s*"#(FAF3EB|FBEAE8|F9E4E1|FAF2E4)"/.test(src)) throw new Error("缺：卡点浅色底");
+    if (!/text:\s*"#(8f1313|A82524)"/.test(src)) throw new Error("缺：卡点红色文字");
+    if (!/bar:\s*"#(b91c1c|DD3534)"/.test(src)) throw new Error("缺：卡点红色条");
     /* 待提升琥珀色与正常绿色不变 */
-    if (!/#f5e7c1/.test(src)) throw new Error("待提升琥珀底色被改动");
+    if (!/#(f5e7c1|FAF0CC)/i.test(src)) throw new Error("待提升琥珀底色被改动");
   });
 
   it("得分表行白底 + 判定文字着色（v102 起，替代 v101 的三档淡 tint）", () => {

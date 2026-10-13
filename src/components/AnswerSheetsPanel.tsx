@@ -11,7 +11,7 @@ import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import { answerSheetsPrintHtml, downloadReport } from "@/lib/reportDownload";
 
 /** 分数段文字色（与 e3v37Theme 一致）。 */
-const BAND_CLASS = { bad: "text-[#8f1313]", mid: "text-[#8a6d1a]", ok: "text-[#2F8F60]" } as const;
+const BAND_CLASS = { bad: "text-[#A82524]", mid: "text-[#8A6500]", ok: "text-[#2F7A41]" } as const;
 
 const printBtn =
   "inline-flex shrink-0 items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-2 py-0.5 text-[11px] font-semibold text-olive hover:bg-lime/20";
@@ -39,7 +39,7 @@ export default function AnswerSheetsPanel({
   return (
     <div className="paper-card p-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-[#2F8F60]">
+        <div className="flex items-center gap-1.5 text-[#2F7A41]">
           <ClipboardList size={14} />
           <span className="mono text-[10px] tracking-wider">答题卷 · 得分表</span>
         </div>
@@ -58,7 +58,7 @@ export default function AnswerSheetsPanel({
       {e3v37 && (
         <div className="mt-3">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#2F8F60]">
+            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#2F7A41]">
               <TreePine size={14} />
               三阶九能得分表
             </span>
@@ -84,7 +84,7 @@ export default function AnswerSheetsPanel({
           return (
             <details key={b.key} id={`sheet-${b.key}`} className="group">
               <summary className="flex cursor-pointer items-center gap-3 py-3 transition-colors hover:bg-cream-deep/40">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EFF3F1] text-[12.5px] font-bold text-olive-soft">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EFF2EC] text-[12.5px] font-bold text-olive-soft">
                   {letter}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-olive">

@@ -34,8 +34,8 @@ export default function DashboardCharts({
         <div className="mt-2 h-64">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radar} outerRadius="72%">
-              <PolarGrid stroke="#D8E2DC" />
-              <PolarAngleAxis dataKey="chapter" tick={{ fill: "#43564C", fontSize: 13 }} />
+              <PolarGrid stroke="#DFE4DA" />
+              <PolarAngleAxis dataKey="chapter" tick={{ fill: "#475550", fontSize: 13 }} />
               <Radar dataKey="score" stroke="#52A965" fill="#52A965" fillOpacity={0.35} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
@@ -47,10 +47,10 @@ export default function DashboardCharts({
         <div className="mt-2 h-44">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weekly} barSize={18}>
-              <XAxis dataKey="day" tick={{ fill: "#7A8A82", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="day" tick={{ fill: "#8CA098", fontSize: 11 }} axisLine={false} tickLine={false} />
               <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                 {weekly.map((w, i) => (
-                  <Cell key={i} fill={w.total > 0 ? "#52A965" : "#E8EFEA"} />
+                  <Cell key={i} fill={w.total > 0 ? "#52A965" : "#ECEFE6"} />
                 ))}
               </Bar>
             </BarChart>

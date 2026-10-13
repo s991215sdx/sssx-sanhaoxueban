@@ -30,11 +30,11 @@ const LEVEL_STYLE: Record<MentalV2Band, string> = {
 };
 
 const FACTOR_LEVEL_STYLE: Record<string, string> = {
-  正常: "text-[#2F8F60]",
-  轻度: "text-[#8a6d1a]",
-  中度: "text-[#b45309]",
-  偏重: "text-[#8f1313]",
-  严重: "text-[#8f1313]",
+  正常: "text-[#2F7A41]",
+  轻度: "text-[#8A6500]",
+  中度: "text-[#B05E14]",
+  偏重: "text-[#A82524]",
+  严重: "text-[#A82524]",
 };
 
 const PAGE_SIZE = 10;

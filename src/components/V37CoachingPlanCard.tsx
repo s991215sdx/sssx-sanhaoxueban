@@ -150,7 +150,7 @@ export default function V37CoachingPlanCard({
       {open && (
         <div className="mt-3 space-y-3 border-t border-cream-deep pt-3">
           {items.length === 0 ? (
-            <div className="rounded-xl border border-lime/50 bg-lime-pale px-3.5 py-3 text-[13px] font-semibold text-[#2F8F60]">
+            <div className="rounded-xl border border-lime/50 bg-lime-pale px-3.5 py-3 text-[13px] font-semibold text-[#2F7A41]">
               九能全部在正常线以上，保持节奏。
             </div>
           ) : (

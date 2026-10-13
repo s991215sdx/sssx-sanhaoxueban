@@ -36,7 +36,7 @@ export default function DeleteStudentButton({
 
   if (done) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-lg bg-[#FAF3EB] px-2 py-1 text-[11.5px] font-semibold text-[#8f1313]">
+      <span className="inline-flex items-center gap-1 rounded-lg bg-[#FAF2E4] px-2 py-1 text-[11.5px] font-semibold text-[#A82524]">
         <Trash2 size={12} />
         已移入回收站
       </span>
@@ -53,7 +53,7 @@ export default function DeleteStudentButton({
           type="button"
           disabled={del.isPending}
           onClick={() => del.mutate({ userId })}
-          className="rounded-lg bg-[#8f1313] px-2 py-1 text-[11.5px] font-semibold text-white hover:bg-[#b91c1c] disabled:opacity-50"
+          className="rounded-lg bg-[#A82524] px-2 py-1 text-[11.5px] font-semibold text-white hover:bg-[#DD3534] disabled:opacity-50"
         >
           {del.isPending ? "删除中…" : "确认删除"}
         </button>
@@ -76,8 +76,8 @@ export default function DeleteStudentButton({
         onClick={() => setConfirming(true)}
         className={
           compact
-            ? "rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-[#FAF3EB] hover:text-[#8f1313]"
-            : "rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-[#8f1313] whitespace-nowrap transition-colors hover:border-[#b91c1c]/50 hover:bg-[#FAF3EB]"
+            ? "rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-[#FAF2E4] hover:text-[#A82524]"
+            : "rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-[#A82524] whitespace-nowrap transition-colors hover:border-[#DD3534]/50 hover:bg-[#FAF2E4]"
         }
       >
         {compact ? <Trash2 size={15} /> : "删除学员"}

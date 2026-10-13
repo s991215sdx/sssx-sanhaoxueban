@@ -11,9 +11,9 @@ describe("v106 三阶板块色", () => {
   it("主题定义：乐学青绿 / 会学亮黄 / 善学橙（solid + text）", () => {
     const src = read("src/components/reports/e3v37Theme.ts");
     for (const tok of [
-      '乐学: { solid: "#15C7BA", text: "#0E9488", tint: "#E2FAF7" }',
-      '会学: { solid: "#FFCA01", text: "#C79400", tint: "#FFF6D9" }',
-      '善学: { solid: "#FE7B01", text: "#D96A00", tint: "#FFE9DB" }',
+      '乐学: { solid: "#3991A5", text: "#2A6E7E", tint: "#E3F0F3" }',
+      '会学: { solid: "#FCCE45", text: "#8A6500", tint: "#FFF7D8" }',
+      '善学: { solid: "#FA872A", text: "#B05E14", tint: "#FDEBD9" }',
     ]) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }
@@ -27,7 +27,7 @@ describe("v106 三阶板块色", () => {
 
   it("训练方案库三阶样式同色系", () => {
     const src = read("src/data/training/threeTierPlans.ts");
-    for (const tok of ['color: "#0E9488"', 'color: "#C79400"', 'color: "#D96A00"']) {
+    for (const tok of ['color: "#2A6E7E"', 'color: "#8A6500"', 'color: "#B05E14"']) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }
     if (src.includes("#3d8ec4") || src.includes("#c7a23a")) throw new Error("残留：旧蓝/旧暗黄");

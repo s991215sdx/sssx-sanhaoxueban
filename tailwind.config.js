@@ -9,13 +9,13 @@ module.exports = {
         // 深青绿 #0C7064=brand 主色，草绿 #52A965=lime 正向色，橙 #FA872A=terra，黄 #FCCE45=butter。
         // olive=文字色系（深青墨绿），brand=品牌动作色（深青绿按钮/头部/头像）
         olive: {
-          DEFAULT: "#0A3B34",
-          soft: "#4E6A61",
+          DEFAULT: "#1E3530",
+          soft: "#55645C",
           mute: "#8CA098",
         },
         brand: {
           DEFAULT: "#0C7064",
-          deep: "#095048",
+          deep: "#08463E",
           pale: "#D9EDE8",
         },
         lime: {

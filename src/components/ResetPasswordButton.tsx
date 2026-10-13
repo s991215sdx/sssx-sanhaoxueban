@@ -32,7 +32,7 @@ export default function ResetPasswordButton({
 
   if (done) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-lg bg-lime-pale px-2 py-1 text-[11.5px] font-semibold text-[#20362B]">
+      <span className="inline-flex items-center gap-1 rounded-lg bg-lime-pale px-2 py-1 text-[11.5px] font-semibold text-[#1E3530]">
         <KeyRound size={12} />
         已重置为 123456
       </span>

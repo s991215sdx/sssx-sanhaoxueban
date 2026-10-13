@@ -124,7 +124,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight text-[#2F8F60]">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
+        <h1 className="text-[22px] font-bold tracking-tight text-[#2F7A41]">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
         <p className="mt-1 text-[13px] text-olive-mute">
           {platform
             ? "平台超管：可查看所有机构的数据，并可给任意账号开通管理员。树洞内容属于隐私，只看得到心情曲线。"
@@ -374,12 +374,12 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
         <div className="divide-y divide-border">
           {filtered.map((s) => (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2F8F60] text-[14px] font-bold text-white">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2F7A41] text-[14px] font-bold text-white">
                 {(s.name || "学")[0]}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="truncate text-[14.5px] font-semibold text-[#2F8F60]">{s.name}</span>
+                  <span className="truncate text-[14.5px] font-semibold text-[#2F7A41]">{s.name}</span>
                   {s.grade && <span className="text-[11.5px] text-olive-mute">{s.grade}</span>}
                   {s.mbti && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.mbti}</span>}
                   {s.disc && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.disc}</span>}

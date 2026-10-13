@@ -27,9 +27,9 @@ describe("v103 判定颜色标识", () => {
 function needHelper() {
   const src = read("src/components/reports/e3v37Theme.ts");
   for (const [tok, label] of [
-    ['卡点: { text: "#8f1313", bar: "#b91c1c"', "卡点红"],
-    ['待提升: { text: "#C79400", bar: "#FCCE45"', "待提升亮黄"],
-    ['正常: { text: "#2F8F60", bar: "#52A965"', "正常绿"],
+    ['卡点: { text: "#A82524", bar: "#DD3534"', "卡点红"],
+    ['待提升: { text: "#8A6500", bar: "#FCCE45"', "待提升亮黄"],
+    ['正常: { text: "#2F7A41", bar: "#52A965"', "正常绿"],
   ]) {
     if (!src.includes(tok)) throw new Error(`缺 ${label}：${tok}`);
   }

@@ -15,8 +15,8 @@ describe("v98 品牌主色主题", () => {
   it("tailwind：brand 主色令牌 + olive 报告深绿", () => {
     const src = read("tailwind.config.js");
     need(src, 'DEFAULT: "#(0EA875|0C7064)"', "brand 主色");
-    need(src, 'deep: "#(0B8A63|095048)"', "brand 深色（hover）");
-    need(src, 'DEFAULT: "#(0B3D2E|0A3B34)"', "olive 报告深绿文字");
+    need(src, 'deep: "#(0B8A63|095048|08463E)"', "brand 深色（hover）");
+    need(src, 'DEFAULT: "#(0B3D2E|0A3B34|1E3530)"', "olive 报告深绿文字");
     need(src, 'mute: "#(8FA39B|8CA098)"', "olive 灰绿辅助文字");
   });
 
