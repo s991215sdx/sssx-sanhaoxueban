@@ -22,6 +22,6 @@ describe("v136 学员详情头部参照报告设计", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v136-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v136");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

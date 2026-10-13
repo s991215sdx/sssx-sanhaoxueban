@@ -22,7 +22,7 @@ export default function StudentAdvicePanel({ userId }: { userId: number }) {
   const tierOf = (ability: string) => THREE_TIER_PLANS.find((p) => p.ability === ability)?.tier ?? "乐学";
 
   return (
-    <div className="mt-3 rounded-xl border border-lime/40 bg-lime-pale/40 p-3" onClick={(e) => e.stopPropagation()}>
+    <div className="mt-3 rounded-xl border border-[#A9B8B0]/40 bg-white p-3 shadow-sm" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -58,8 +58,13 @@ export default function StudentAdvicePanel({ userId }: { userId: number }) {
               <p className="text-[11.5px] text-olive-mute">
                 按诊断弱项（前 {weak.length} 项）匹配的训练方案：
               </p>
-              {weak.map((a) => (
-                <div key={a.label} className="rounded-xl border border-[#A9B8B0]/40 bg-white/70 p-2.5">
+              {weak.map((a, i) => (
+                <div
+                  key={a.label}
+                  className={`rounded-lg border border-[#E3B53A]/30 bg-[#FFF7D8] p-2.5 shadow-[0_2px_8px_rgba(30,53,48,0.10)] ${
+                    i % 2 === 0 ? "-rotate-[0.4deg]" : "rotate-[0.4deg]"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-bold text-olive">{a.label}</span>
                     <span
