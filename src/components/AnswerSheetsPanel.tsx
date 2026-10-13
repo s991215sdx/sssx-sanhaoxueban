@@ -39,9 +39,10 @@ export default function AnswerSheetsPanel({
   return (
     <div className="paper-card p-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-[#2F7A41]">
-          <ClipboardList size={14} />
-          <span className="mono text-[10px] tracking-wider">答题卷 · 得分表</span>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-3.5 w-1 rounded-full bg-[#0C7064]" />
+          <ClipboardList size={14} className="text-[#0C7064]" />
+          <span className="text-[14px] font-bold text-[#1E3530]">答题卷 · 得分表</span>
         </div>
         <button
           onClick={() => downloadReport("答题卷 · 得分表", answerSheetsPrintHtml(blocks, e3v37), studentName)}

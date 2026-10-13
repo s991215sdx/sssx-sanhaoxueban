@@ -13,8 +13,8 @@ describe("v135 框架图大卡片白底 + 小项底色随档", () => {
     if (!/borderColor: band\.border, background: band\.bg/.test(src)) throw new Error("缺：小项档色底");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v135-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v135");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

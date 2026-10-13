@@ -78,28 +78,32 @@ export default function StudentDetailDrawer({
           </div>
         ) : (
           <div className={`mt-4 space-y-4 ${wide ? "mx-auto max-w-4xl" : ""}`}>
-            {/* 档案（v129：米白→墨绿渐变底，半透明白统计格+墨绿数字，与色卡统一） */}
-            <div className="rounded-2xl bg-gradient-to-br from-[#FFFAEE] via-[#D8E8D2] to-[#0C7064] p-4 shadow-[0_4px_16px_-8px_rgba(12,112,100,0.35)]">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[16px] font-bold text-white shadow-sm ring-2 ring-white/70">
+            {/* 档案（v136：参考报告设计——墨绿整卡 + 顶部小字标签 + 白字信息 + 分隔线 + 半透明统计格） */}
+            <div className="rounded-2xl bg-[#0C7064] p-4 shadow-[0_4px_16px_-8px_rgba(12,112,100,0.45)]">
+              <div className="mono text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
+                Student Profile · 学员档案
+              </div>
+              <div className="mt-2 flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-[16px] font-bold text-[#0C7064] shadow-sm">
                   {(data.profile?.name || data.user.name || "学")[0]}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="text-[16px] font-bold text-[#1E3530]">
+                    <span className="text-[18px] font-bold text-white">
                       {data.profile?.name || data.user.name || "未命名"}
                     </span>
                     {[data.profile?.grade, data.profile?.school].filter(Boolean).length > 0 && (
-                      <span className="text-[12.5px] font-semibold text-[#0C7064]">
+                      <span className="text-[12.5px] font-semibold text-white/85">
                         {[data.profile?.grade, data.profile?.school].filter(Boolean).join(" · ")}
                       </span>
                     )}
                   </div>
-                  <div className="mono mt-0.5 text-[11.5px] text-[#1E3530]/70">
-                    ID {data.user.phone}
-                    {data.profile?.targetSchool && <span className="ml-1.5">· 目标：{data.profile.targetSchool}</span>}
-                  </div>
                 </div>
+              </div>
+              <div className="my-2.5 h-px bg-white/25" />
+              <div className="mono text-[11.5px] text-white/80">
+                ID {data.user.phone}
+                {data.profile?.targetSchool && <span className="ml-1.5">· 目标：{data.profile.targetSchool}</span>}
               </div>
               <div className="mono mt-3 grid grid-cols-4 gap-2 text-center">
                 {[
@@ -108,9 +112,9 @@ export default function StudentDetailDrawer({
                   { label: "预习", value: data.learning.previewsDone },
                   { label: "计划", value: data.learning.planCount },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-xl bg-white/85 px-1 py-2.5 shadow-[0_1px_4px_rgba(12,112,100,0.15)] backdrop-blur-sm">
-                    <div className="text-[17px] font-bold text-[#0C7064]">{s.value}</div>
-                    <div className="text-[10.5px] font-medium text-[#1E3530]/60">{s.label}</div>
+                  <div key={s.label} className="rounded-xl border border-white/20 bg-white/15 px-1 py-2.5 backdrop-blur-sm">
+                    <div className="text-[17px] font-bold text-white">{s.value}</div>
+                    <div className="text-[10.5px] font-medium text-white/75">{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -119,7 +123,10 @@ export default function StudentDetailDrawer({
             {/* 测评报告：默认一行摘要，展开渲染与学生端完全一致的 ReportView */}
             <div className="paper-card p-4">
               <div className="flex items-center justify-between gap-2">
-                <div className="mono text-[10px] tracking-wider text-olive-mute">测评报告</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-3.5 w-1 rounded-full bg-[#0C7064]" />
+                  <span className="text-[14px] font-bold text-[#1E3530]">测评报告</span>
+                </div>
                 <button
                   onClick={() => setReportOpen((v) => !v)}
                   className="flex shrink-0 items-center gap-0.5 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-butter/25"

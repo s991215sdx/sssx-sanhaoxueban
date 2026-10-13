@@ -7,10 +7,10 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
-describe("v129 统计格半透明白 + 墨绿数值", () => {
-  it("四个统计格白底 + 墨绿数值（v129：随渐变底改半透明+backdrop）", () => {
+describe("v136 统计格墨绿卡上半透明白（断言随设计更新）", () => {
+  it("四个统计格白边半透明底 + 白色数值", () => {
     const src = read("src/components/StudentDetailDrawer.tsx");
-    if (!/rounded-xl bg-white\/85 px-1 py-2\.5/.test(src)) throw new Error("缺：统计格半透明白");
-    if (!/font-bold text-\[#0C7064\]/.test(src)) throw new Error("缺：数值墨绿");
+    if (!/rounded-xl border border-white\/20 bg-white\/15 px-1 py-2\.5/.test(src)) throw new Error("缺：统计格半透明白");
+    if (!/text-\[17px\] font-bold text-white/.test(src)) throw new Error("缺：数值白色");
   });
 });
