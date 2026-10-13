@@ -10,9 +10,9 @@ describe("v136 学员详情头部参照报告设计", () => {
     if (!/h-px bg-white\/25/.test(src)) throw new Error("缺：分隔线");
   });
 
-  it("统计格为白边半透明底 + 白色数值", () => {
+  it("统计格为纯白底（v138 断言随设计更新）", () => {
     const src = readFileSync("src/components/StudentDetailDrawer.tsx", "utf-8");
-    if (!/border border-white\/20 bg-white\/15/.test(src)) throw new Error("缺：半透明统计格");
+    if (!/rounded-xl bg-white px-1 py-2\.5/.test(src)) throw new Error("缺：白底统计格");
   });
 
   it("测评为绿色竖条 + 黑色粗体标题", () => {

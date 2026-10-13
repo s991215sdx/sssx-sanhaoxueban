@@ -112,9 +112,9 @@ export default function StudentDetailDrawer({
                   { label: "预习", value: data.learning.previewsDone },
                   { label: "计划", value: data.learning.planCount },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-xl border border-white/20 bg-white/15 px-1 py-2.5 backdrop-blur-sm">
-                    <div className="text-[17px] font-bold text-white">{s.value}</div>
-                    <div className="text-[10.5px] font-medium text-white/75">{s.label}</div>
+                  <div key={s.label} className="rounded-xl bg-white px-1 py-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.15)]">
+                    <div className="text-[17px] font-bold text-[#0C7064]">{s.value}</div>
+                    <div className="text-[10.5px] font-medium text-[#1E3530]/60">{s.label}</div>
                   </div>
                 ))}
               </div>

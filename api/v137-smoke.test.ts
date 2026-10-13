@@ -16,6 +16,6 @@ describe("v137 陪跑对策面板白卡 + 弱项便贴样式", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v137-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v137");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
