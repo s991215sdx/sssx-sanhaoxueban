@@ -2574,8 +2574,8 @@ export default function ReportView({
         </section>
       )}
 
-      {/* Tab 切换（v131：未选中=白色卡，选中=米白→墨绿渐变卡） */}
-      <div className="flex flex-wrap gap-1 rounded-xl bg-cream-deep p-1">
+      {/* Tab 切换（v134：轨道=淡淡浅绿，未选中=纯白卡，选中=米白→墨绿渐变卡） */}
+      <div className="flex flex-wrap gap-1 rounded-xl bg-[#E9F3E6] p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -3060,8 +3060,8 @@ export default function ReportView({
           <MissingCard text="综合报告需要 MBTI、DISC、学习力诊断三项测评都完成。先去「测评中心」补齐吧。" />
         ) : (
           <div className="space-y-4">
-            {/* 详版 / 简版切换（v131：未选中=白色卡，选中=米白→墨绿渐变卡） */}
-            <div className="flex gap-1 rounded-xl bg-cream-deep p-1">
+            {/* 详版 / 简版切换（v134：轨道=淡淡浅绿，未选中=纯白卡，选中=渐变卡） */}
+            <div className="flex gap-1 rounded-xl bg-[#E9F3E6] p-1">
               {(
                 [
                   { key: "full", label: "详版报告" },

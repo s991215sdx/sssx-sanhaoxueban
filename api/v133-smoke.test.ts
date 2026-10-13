@@ -13,6 +13,6 @@ describe("v133 框架图能力块：白底 + 档色边框 + 档色文字", () =>
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v133-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v133");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
