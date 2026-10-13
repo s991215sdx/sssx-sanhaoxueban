@@ -146,14 +146,14 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       </header>
 
       {/* Tab 切换 */}
-      {/* v126：tab 条草绿底（色卡），选中=白色卡+深青绿字，未选中=白字 */}
-      <div className="flex rounded-xl bg-[#52A965] p-1">
+      {/* v127：tab 条白底，选中=草绿色卡（色卡）+白字，未选中=白底墨字 */}
+      <div className="flex rounded-xl border border-[#1E3530]/10 bg-white p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
-              tab === t.key ? "bg-white text-[#0C7064] shadow" : "text-white hover:bg-white/15"
+              tab === t.key ? "bg-[#52A965] text-white shadow" : "text-[#1E3530] hover:bg-[#52A965]/10"
             }`}
           >
             {t.label}

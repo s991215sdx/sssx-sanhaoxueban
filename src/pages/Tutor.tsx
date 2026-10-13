@@ -105,8 +105,8 @@ export default function Tutor() {
           </div>
         </div>
         {/* V57：两大专栏切换 */}
-        {/* v126：与后台统一——tab 条草绿底（色卡），选中=白色卡 */}
-        <div className="mt-3 flex rounded-xl bg-[#52A965] p-1">
+        {/* v127：与后台统一——tab 条白底，选中=草绿色卡+白字 */}
+        <div className="mt-3 flex rounded-xl border border-[#1E3530]/10 bg-white p-1">
           {(
             [
               { key: "students", label: "学员管理" },
@@ -117,7 +117,7 @@ export default function Tutor() {
               key={t.key}
               onClick={() => setSection(t.key)}
               className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
-                section === t.key ? "bg-white text-[#0C7064] shadow" : "text-white hover:bg-white/15"
+                section === t.key ? "bg-[#52A965] text-white shadow" : "text-[#1E3530] hover:bg-[#52A965]/10"
               }`}
             >
               {t.label}
