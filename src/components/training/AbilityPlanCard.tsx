@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, CircleHelp, Check } from "lucide-react";
-import { THREE_TIER_PLANS } from "@/data/training/threeTierPlans";
+import { THREE_TIER_PLANS, THREE_TIER_STYLE } from "@/data/training/threeTierPlans";
 import { E3V37_ABILITY_TRAINING } from "@/data/training/e3v37Training";
 import { METHOD_BY_ID, BOARD_LABEL, type TrainingMethod } from "@/data/training/methods";
 import { RichText } from "@/components/RichText";
@@ -52,11 +52,12 @@ export default function AbilityPlanCard({
           </li>
         ))}
       </ul>
-      {/* 简要方案（一句话）：点击展开/收起详细方案 */}
+      {/* 简要方案（一句话）：点击展开/收起详细方案（v142：白底，边框色随三阶主题色） */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="mt-2.5 rounded-lg border border-lime/60 bg-lime-pale px-3 py-2.5 text-left transition hover:bg-butter/25"
+        className="mt-2.5 rounded-lg border bg-white px-3 py-2.5 text-left transition hover:bg-cream/60"
+        style={{ borderColor: THREE_TIER_STYLE[tier].color }}
       >
         <span className="block text-[10.5px] font-semibold tracking-wide text-olive-mute">
           简要方案 · 点开看详细做法
