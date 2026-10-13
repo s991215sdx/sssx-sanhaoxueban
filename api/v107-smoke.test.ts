@@ -7,11 +7,11 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
-describe("v115 薄荷浅底头卡", () => {
-  it("档案卡用参考图薄荷浅底实底", () => {
+describe("v129 米白→墨绿渐变头卡", () => {
+  it("档案卡用米白到墨绿渐变底（v129 改）", () => {
     const src = read("src/components/StudentDetailDrawer.tsx");
-    if (!/rounded-2xl bg-\[#E9F3E6\]/.test(src)) throw new Error("缺：薄荷浅底");
-    if (/linear-gradient/.test(src)) throw new Error("残留：渐变底");
+    if (!/rounded-2xl bg-gradient-to-br from-\[#FFFAEE\]/.test(src)) throw new Error("缺：米白→墨绿渐变底");
+    if (!/to-\[#0C7064\]/.test(src)) throw new Error("缺：渐变墨绿端");
   });
 
   it("首行姓名+年级学校，次行 ID+目标", () => {

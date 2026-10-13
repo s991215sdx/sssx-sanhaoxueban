@@ -78,10 +78,10 @@ export default function StudentDetailDrawer({
           </div>
         ) : (
           <div className={`mt-4 space-y-4 ${wide ? "mx-auto max-w-4xl" : ""}`}>
-            {/* 档案（v115：参考新设计——薄荷浅底实底，姓名+年级学校首行，ID+目标次行，白统计格） */}
-            <div className="rounded-2xl bg-[#E9F3E6] p-4 shadow-[0_4px_16px_-8px_rgba(29,158,117,0.35)]">
+            {/* 档案（v129：米白→墨绿渐变底，半透明白统计格+墨绿数字，与色卡统一） */}
+            <div className="rounded-2xl bg-gradient-to-br from-[#FFFAEE] via-[#D8E8D2] to-[#0C7064] p-4 shadow-[0_4px_16px_-8px_rgba(12,112,100,0.35)]">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[16px] font-bold text-white shadow-sm">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[16px] font-bold text-white shadow-sm ring-2 ring-white/70">
                   {(data.profile?.name || data.user.name || "学")[0]}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -95,7 +95,7 @@ export default function StudentDetailDrawer({
                       </span>
                     )}
                   </div>
-                  <div className="mono mt-0.5 text-[11.5px] text-[#0C7064]">
+                  <div className="mono mt-0.5 text-[11.5px] text-[#1E3530]/70">
                     ID {data.user.phone}
                     {data.profile?.targetSchool && <span className="ml-1.5">· 目标：{data.profile.targetSchool}</span>}
                   </div>
@@ -108,9 +108,9 @@ export default function StudentDetailDrawer({
                   { label: "预习", value: data.learning.previewsDone },
                   { label: "计划", value: data.learning.planCount },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-xl bg-white px-1 py-2.5 shadow-[0_1px_4px_rgba(29,158,117,0.18)]">
-                    <div className="text-[17px] font-bold text-[#1E3530]">{s.value}</div>
-                    <div className="text-[10.5px] text-olive-mute">{s.label}</div>
+                  <div key={s.label} className="rounded-xl bg-white/85 px-1 py-2.5 shadow-[0_1px_4px_rgba(12,112,100,0.15)] backdrop-blur-sm">
+                    <div className="text-[17px] font-bold text-[#0C7064]">{s.value}</div>
+                    <div className="text-[10.5px] font-medium text-[#1E3530]/60">{s.label}</div>
                   </div>
                 ))}
               </div>

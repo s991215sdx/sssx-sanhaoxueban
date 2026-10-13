@@ -21,8 +21,8 @@ describe("v128 后台标题改黑色 + 选中态全局统一墨绿 #0C7064", () 
     if (src.includes('${on ? "bg-lime"')) throw new Error("开关开启态仍是草绿");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const src = readFileSync("api/router.ts", "utf-8");
-    if (!src.includes('const BUILD_TAG = "v128-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v128");
+    if (!/const BUILD_TAG = "v\d+-/.test(src)) throw new Error("BUILD_TAG 缺失");
   });
 });
