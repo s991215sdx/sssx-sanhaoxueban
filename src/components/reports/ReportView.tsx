@@ -2574,14 +2574,16 @@ export default function ReportView({
         </section>
       )}
 
-      {/* Tab 切换 */}
+      {/* Tab 切换（v131：未选中=白色卡，选中=米白→墨绿渐变卡） */}
       <div className="flex flex-wrap gap-1 rounded-xl bg-cream-deep p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`grow basis-[30%] rounded-lg px-2 py-2 text-[12.5px] font-semibold transition ${
-              tab === t.key ? "bg-cream text-olive shadow-sm" : "text-olive-mute"
+              tab === t.key
+                ? "bg-[linear-gradient(100deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
+                : "bg-white text-olive shadow-sm hover:bg-white"
             }`}
           >
             {t.label}
@@ -3058,7 +3060,7 @@ export default function ReportView({
           <MissingCard text="综合报告需要 MBTI、DISC、学习力诊断三项测评都完成。先去「测评中心」补齐吧。" />
         ) : (
           <div className="space-y-4">
-            {/* 详版 / 简版切换 */}
+            {/* 详版 / 简版切换（v131：未选中=白色卡，选中=米白→墨绿渐变卡） */}
             <div className="flex gap-1 rounded-xl bg-cream-deep p-1">
               {(
                 [
@@ -3070,7 +3072,9 @@ export default function ReportView({
                   key={v.key}
                   onClick={() => setCombinedView(v.key)}
                   className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                    combinedView === v.key ? "bg-cream text-olive shadow-sm" : "text-olive-mute"
+                    combinedView === v.key
+                      ? "bg-[linear-gradient(100deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
+                      : "bg-white text-olive shadow-sm"
                   }`}
                 >
                   {v.label}
