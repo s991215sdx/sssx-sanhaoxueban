@@ -58,12 +58,10 @@ export default function StudentAdvicePanel({ userId }: { userId: number }) {
               <p className="text-[11.5px] text-olive-mute">
                 按诊断弱项（前 {weak.length} 项）匹配的训练方案：
               </p>
-              {weak.map((a, i) => (
+              {weak.map((a) => (
                 <div
                   key={a.label}
-                  className={`rounded-lg border border-[#E3B53A]/30 bg-[#FFF7D8] p-2.5 shadow-[0_2px_8px_rgba(30,53,48,0.10)] ${
-                    i % 2 === 0 ? "-rotate-[0.4deg]" : "rotate-[0.4deg]"
-                  }`}
+                  className="rounded-lg border border-[#1E3530]/10 bg-[#FFFAEE] p-2.5 shadow-[0_2px_8px_rgba(30,53,48,0.08)]"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-bold text-olive">{a.label}</span>

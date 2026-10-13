@@ -14,8 +14,8 @@ describe("v140 收起按钮去底 + 未选中卡简化", () => {
     if (n < 2) throw new Error("缺：简化白卡（应有两处）");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v140-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v140");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

@@ -9,9 +9,9 @@ describe("v137 陪跑对策面板白卡 + 弱项便贴样式", () => {
     if (/bg-lime-pale\/40/.test(src)) throw new Error("残留：浅绿底面板");
   });
 
-  it("弱项小卡片为便贴样式（浅黄底+微旋转+投影）", () => {
-    if (!/bg-\[#FFF7D8\]/.test(src)) throw new Error("缺：便贴浅黄底");
-    if (!/rotate-\[0\.4deg\]/.test(src)) throw new Error("缺：便贴微旋转");
+  it("弱项小卡片为米白便签底（v141：去旋转、浅黄改米白）", () => {
+    if (!/bg-\[#FFFAEE\]/.test(src)) throw new Error("缺：米白便签底");
+    if (/rotate-\[/.test(src)) throw new Error("残留：倾斜");
   });
 
   it("版本标记已递增", () => {
