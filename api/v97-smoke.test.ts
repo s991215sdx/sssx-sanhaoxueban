@@ -21,7 +21,7 @@ describe("v97 后台管理去黑改绿", () => {
 
   it("已推送 chip 文字绿色（icon 与文字两种模式）", () => {
     const src = read("src/components/ReportAccessButton.tsx");
-    const greenCount = (src.match(/text-\[#2F7A41\]/g) ?? []).length;
+    const greenCount = (src.match(/text-(brand|\[#2F7A41\])/g) ?? []).length;
     if (greenCount < 2) throw new Error(`已推送绿色文字缺（compact + 文字模式），实际 ${greenCount} 处`);
     /* 不应再残留近黑的已推送文字 */
     if (/bg-lime-pale[^"]*text-\[#1E3530\]/.test(src)) throw new Error("已推送仍残留深色文字");

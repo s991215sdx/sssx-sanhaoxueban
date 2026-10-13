@@ -79,7 +79,7 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
         <div className="mt-6 flex gap-3">
           <button
             onClick={onDone}
-            className="flex-1 rounded-xl border border-lime/60 bg-lime-pale py-3 text-[14px] font-semibold text-olive hover:bg-lime/20"
+            className="flex-1 rounded-xl border border-lime/60 bg-lime-pale py-3 text-[14px] font-semibold text-olive hover:bg-butter/25"
           >
             返回报告
           </button>
@@ -143,7 +143,7 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
                 className={`rounded-xl border px-4 py-3 text-center text-[14.5px] leading-relaxed transition-colors ${
                   answers[idx] === i + 1
                     ? "border-lime bg-lime-pale font-medium text-olive"
-                    : "border-border bg-cream text-olive-soft hover:border-lime/60 hover:bg-lime-pale/50"
+                    : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60 hover:bg-butter-pale/60"
                 }`}
               >
                 {opt}

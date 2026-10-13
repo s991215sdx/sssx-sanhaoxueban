@@ -21,7 +21,7 @@ describe("v93 去留白提亮", () => {
   it("后台与伴学工作台 tab 条统一淡绿底", () => {
     for (const f of ["src/pages/Admin.tsx", "src/pages/Tutor.tsx"]) {
       const src = read(f);
-      if (!src.includes("flex rounded-xl bg-lime-pale p-1")) throw new Error(f + " tab 条非淡绿底");
+      if (!/flex rounded-xl bg-(lime-pale|\[#F6EFD9\]) p-1/.test(src)) throw new Error(f + " tab 条非浅米底");
     }
   });
 });

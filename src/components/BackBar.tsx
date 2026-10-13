@@ -20,7 +20,7 @@ export default function BackBar() {
           else navigate("/");
         }}
         aria-label="返回上一步"
-        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13.5px] font-semibold text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive"
+        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13.5px] font-semibold text-olive-mute transition-colors hover:bg-butter-pale hover:text-brand"
       >
         <ArrowLeft size={16} strokeWidth={2.4} />
         返回

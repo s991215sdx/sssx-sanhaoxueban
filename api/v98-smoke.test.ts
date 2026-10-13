@@ -17,7 +17,7 @@ describe("v98 品牌主色主题", () => {
     need(src, 'DEFAULT: "#(0EA875|0C7064)"', "brand 主色");
     need(src, 'deep: "#(0B8A63|095048|08463E)"', "brand 深色（hover）");
     need(src, 'DEFAULT: "#(0B3D2E|0A3B34|1E3530)"', "olive 报告深绿文字");
-    need(src, 'mute: "#(8FA39B|8CA098)"', "olive 灰绿辅助文字");
+    need(src, 'mute: "#(8FA39B|8CA098|7C8C84)"', "olive 灰绿辅助文字");
   });
 
   it("primary CSS 变量为翡翠绿", () => {

@@ -35,7 +35,7 @@ function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabl
               type="button"
               onClick={() => toggle(m.key)}
               className={`rounded-full border px-2.5 py-1 text-[11.5px] font-semibold transition-colors ${
-                on ? "border-lime/60 bg-lime-pale text-olive" : "border-border bg-cream-card text-olive-mute"
+                on ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold" : "border-border bg-cream-card text-olive-mute"
               }`}
             >
               {m.label}
@@ -106,7 +106,7 @@ export default function Tutor() {
         </div>
         {/* V57：两大专栏切换 */}
         {/* v93：与后台统一——tab 条淡绿底 */}
-        <div className="mt-3 flex rounded-xl bg-lime-pale p-1">
+        <div className="mt-3 flex rounded-xl bg-[#F6EFD9] p-1">
           {(
             [
               { key: "students", label: "学员管理" },
@@ -183,7 +183,7 @@ export default function Tutor() {
                         setModulesFor(modulesFor === s.userId ? null : s.userId);
                       }}
                       className={`rounded-lg p-1.5 transition-colors ${
-                        modulesFor === s.userId ? "bg-lime-pale text-olive" : "text-olive-mute hover:bg-lime-pale hover:text-olive"
+                        modulesFor === s.userId ? "bg-lime-pale text-olive" : "text-olive-mute hover:bg-butter-pale hover:text-brand"
                       }`}
                     >
                       <SlidersHorizontal size={15} />
@@ -204,7 +204,7 @@ export default function Tutor() {
                           setReleaseFor(releaseFor === s.userId ? null : s.userId);
                         }}
                         className={`rounded-lg p-1.5 transition-colors ${
-                          releaseFor === s.userId ? "bg-lime-pale text-olive" : "text-olive-mute hover:bg-lime-pale hover:text-olive"
+                          releaseFor === s.userId ? "bg-lime-pale text-olive" : "text-olive-mute hover:bg-butter-pale hover:text-brand"
                         }`}
                       >
                         <ClipboardList size={15} />

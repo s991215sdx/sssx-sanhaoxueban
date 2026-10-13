@@ -55,7 +55,7 @@ function ClaimAdminCard({ onClaimed }: { onClaimed: () => void }) {
 function StatCard({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) {
   return (
     <div className="paper-card flex items-center gap-3 p-4">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-pale text-olive">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-butter-pale text-brand">
         <Icon size={19} />
       </span>
       <div>
@@ -147,7 +147,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
 
       {/* Tab 切换 */}
       {/* v90/v93：tab 条淡绿底（v93 起全不透明更鲜亮），不再是大灰板 */}
-      <div className="flex rounded-xl bg-lime-pale p-1">
+      <div className="flex rounded-xl bg-[#F6EFD9] p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -289,7 +289,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setDetailId(u.id)}
-                        className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
+                        className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60"
                       >
                         详情
                       </button>
@@ -300,7 +300,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                             <button
                               onClick={() => setRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" })}
                               disabled={setRole.isPending}
-                              className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50 disabled:opacity-40"
+                              className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60 disabled:opacity-40"
                             >
                               {u.role === "admin" ? "取消管理员" : "设为管理员"}
                             </button>
@@ -308,7 +308,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                           <button
                             onClick={() => setRole.mutate({ userId: u.id, role: u.role === "tutor" ? "user" : "tutor" })}
                             disabled={setRole.isPending}
-                            className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50 disabled:opacity-40"
+                            className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60 disabled:opacity-40"
                           >
                             {u.role === "tutor" ? "取消伴学师" : "设为伴学师"}
                           </button>
@@ -397,7 +397,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                     <span className="text-[11px] text-olive-mute">未分配</span>
                   ) : (
                     s.tutors.map((t) => (
-                      <span key={t.id} className="rounded-full bg-lime-pale px-1.5 py-px text-[10.5px] font-semibold text-olive">
+                      <span key={t.id} className="rounded-full bg-butter-pale px-1.5 py-px text-[10.5px] font-semibold text-brand">
                         {t.name}
                       </span>
                     ))
@@ -424,8 +424,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                     onClick={() => setReleaseFor(releaseFor === s.userId ? null : s.userId)}
                     className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                       releaseFor === s.userId
-                        ? "border-lime bg-lime-pale text-olive"
-                        : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                        ? "border-[#E3B53A]/60 bg-butter-pale font-semibold text-brand"
+                        : "border-border bg-cream-card text-olive hover:bg-butter-pale/70"
                     }`}
                   >
                     <ClipboardList size={13} />
@@ -438,7 +438,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 <DeleteStudentButton userId={s.userId} name={s.name} />
                 <button
                   onClick={() => setDetailId(s.userId)}
-                  className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
+                  className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60"
                 >
                   详情
                 </button>
@@ -535,7 +535,7 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
       >
         <div className="flex items-center justify-between">
           <h2 className="text-[17px] font-bold text-olive">用户详情</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-olive-mute hover:bg-lime-pale hover:text-olive">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-olive-mute hover:bg-butter-pale hover:text-brand">
             <X size={18} />
           </button>
         </div>
@@ -658,7 +658,7 @@ function PlatformDashboard({ onPickOrg }: { onPickOrg: (orgId: number) => void }
                 </div>
                 <button
                   onClick={() => onPickOrg(r.id)}
-                  className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-lime hover:bg-lime-pale/50"
+                  className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60"
                 >
                   查看该系统
                 </button>

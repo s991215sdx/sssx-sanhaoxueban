@@ -49,7 +49,7 @@ export default function Gaps() {
         </div>
         <Link
           to="/papers"
-          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-cream-card px-4 py-2 text-sm font-medium text-olive transition-colors hover:bg-lime-pale"
+          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-cream-card px-4 py-2 text-sm font-medium text-olive transition-colors hover:bg-butter-pale"
         >
           <ClipboardList size={15} />
           试卷分析 →
@@ -68,7 +68,7 @@ export default function Gaps() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-[14.5px] font-medium transition-colors ${tab === t.key ? "bg-brand text-cream" : "bg-cream-card border border-border text-olive-soft hover:bg-lime-pale/60"}`}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-[14.5px] font-medium transition-colors ${tab === t.key ? "bg-brand text-cream" : "bg-cream-card border border-border text-olive-soft hover:bg-butter-pale/60"}`}
           >
             <t.icon size={16} />
             {t.label}
@@ -275,7 +275,7 @@ function ErrorDetail({ errorId, streak, hasImage }: { errorId: number; streak: n
       {/* 学伴引导学习：复习卡 → 重做 → 苏格拉底一问一答 */}
       <button
         onClick={() => navigate(`/learn/${errorId}`)}
-        className="flex w-full items-center gap-3 rounded-xl border border-lime/60 bg-lime-pale/50 px-4 py-3.5 text-left transition-colors hover:bg-lime-pale"
+        className="flex w-full items-center gap-3 rounded-xl border border-[#E3B53A]/50 bg-butter-pale/60 px-4 py-3.5 text-left transition-colors hover:bg-butter-pale"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-cream">
           <GraduationCap size={18} />
@@ -400,7 +400,7 @@ function AddErrorForm({ onDone }: { onDone: () => void }) {
               setRootInfo(null);
               add.reset();
             }}
-            className="rounded-xl border border-olive px-4 py-2 text-sm font-medium text-olive hover:bg-lime-pale"
+            className="rounded-xl border border-olive px-4 py-2 text-sm font-medium text-olive hover:bg-butter-pale"
           >
             再录一道
           </button>
@@ -460,7 +460,7 @@ function AddErrorForm({ onDone }: { onDone: () => void }) {
             type="button"
             disabled={analyzing || (!imageData && stem.trim().length < 2)}
             onClick={() => void runClassify(imageData, stem)}
-            className="flex items-center gap-1 rounded-lg border border-lime bg-lime-pale/60 px-2.5 py-1 text-[12px] font-medium text-olive transition-colors hover:bg-lime-pale disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1 rounded-lg border border-[#E3B53A]/60 bg-butter-pale px-2.5 py-1 text-[12px] font-medium text-brand transition-colors hover:bg-butter/25 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {analyzing ? "AI 识别中…" : "✨ AI 自动识别知识点与错因"}
           </button>
@@ -496,7 +496,7 @@ function AddErrorForm({ onDone }: { onDone: () => void }) {
             <button
               key={b.band}
               onClick={() => setBand(b.band)}
-              className={`rounded-xl border p-3 text-left transition-colors ${band === b.band ? "border-olive bg-lime-pale/60" : "border-border bg-cream hover:border-olive/40"}`}
+              className={`rounded-xl border p-3 text-left transition-colors ${band === b.band ? "border-brand bg-butter-pale" : "border-border bg-cream hover:border-olive/40"}`}
             >
               <div className="text-[13.5px] font-semibold" style={{ color: b.color }}>
                 {b.name}

@@ -102,7 +102,7 @@ export default function ProfileCard() {
         </div>
         <button
           onClick={openEdit}
-          className="flex items-center gap-1.5 rounded-xl border border-olive px-3.5 py-2 text-[13px] font-medium text-olive hover:bg-lime-pale"
+          className="flex items-center gap-1.5 rounded-xl border border-olive px-3.5 py-2 text-[13px] font-medium text-olive hover:bg-butter-pale"
         >
           <RotateCcw size={14} />
           编辑基本信息
@@ -180,7 +180,7 @@ export default function ProfileCard() {
             type="button"
             aria-label="减少 5 分钟"
             onClick={() => setMinutes(Math.max(10, cur - 5))}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-lime-pale"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-butter-pale"
           >
             <Minus size={16} />
           </button>
@@ -192,7 +192,7 @@ export default function ProfileCard() {
             type="button"
             aria-label="增加 5 分钟"
             onClick={() => setMinutes(Math.min(240, cur + 5))}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-lime-pale"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-butter-pale"
           >
             <Plus size={16} />
           </button>

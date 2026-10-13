@@ -128,7 +128,7 @@ export default function PaperDetail({ id, onBack }: { id: number; onBack: () => 
                   {linkedErrorId && (
                     <button
                       onClick={() => navigate(`/learn/${linkedErrorId}`)}
-                      className="ml-auto flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale/50 px-2.5 py-1 text-[12px] font-medium text-olive transition-colors hover:bg-lime-pale"
+                      className="ml-auto flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale/50 px-2.5 py-1 text-[12px] font-medium text-olive transition-colors hover:bg-butter-pale"
                     >
                       <GraduationCap size={13} />
                       学伴带我学

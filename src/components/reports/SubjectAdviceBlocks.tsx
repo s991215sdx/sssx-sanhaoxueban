@@ -33,7 +33,7 @@ function defaultFullScoreLocal(name: string, grade?: string | null): number {
 function Fold({ title, sub, children, accent }: { title: string; sub?: string; children: React.ReactNode; accent?: string }) {
   return (
     <details className="group overflow-hidden rounded-xl border border-border bg-cream/50">
-      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
+      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
         <span>
           {title}
           {sub && <span className="ml-2 font-normal text-olive-mute">{sub}</span>}

@@ -148,7 +148,7 @@ export default function ChoiceStage({
                 className={`rounded-2xl border px-5 py-4 text-left text-[15px] leading-relaxed transition-colors ${
                   answers[idx] === i
                     ? "border-lime bg-lime-pale font-medium text-olive"
-                    : "border-border bg-cream text-olive-soft hover:border-lime/60 hover:bg-lime-pale/50"
+                    : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60 hover:bg-butter-pale/60"
                 }`}
               >
                 <span className="mono mr-2 text-[12px] font-bold text-olive-mute">{side.toUpperCase()}</span>

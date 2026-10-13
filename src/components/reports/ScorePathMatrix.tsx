@@ -52,7 +52,7 @@ export default function ScorePathMatrix({ first, estScore }: { first: "物理" |
           isActive ? "border-lime ring-1 ring-lime" : "border-olive/12"
         }`}
       >
-        <button onClick={() => toggle(b.score)} className="flex w-full items-center gap-2 bg-cream/70 px-3 py-2 text-left hover:bg-lime-pale/40">
+        <button onClick={() => toggle(b.score)} className="flex w-full items-center gap-2 bg-cream/70 px-3 py-2 text-left hover:bg-butter-pale/40">
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${TIER_BADGE[b.tier]}`}>{b.tier}</span>
           <span className="text-[13px] font-bold text-olive">{b.score} 分</span>
           {isActive && <span className="rounded-full bg-lime px-2 py-0.5 text-[10.5px] font-bold text-cream">当前预估所在段</span>}

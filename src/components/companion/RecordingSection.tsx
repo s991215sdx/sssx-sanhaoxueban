@@ -109,7 +109,7 @@ export default function RecordingSection() {
                   type="button"
                   onClick={() => toggleKp(k.code)}
                   className={`chip transition-colors ${
-                    kpCodes.includes(k.code) ? "!border-lime !bg-lime-pale font-semibold text-olive" : "hover:border-lime/60"
+                    kpCodes.includes(k.code) ? "!border-lime !bg-lime-pale font-semibold text-olive" : "hover:border-[#E3B53A]/60"
                   }`}
                 >
                   {k.title}
@@ -144,7 +144,7 @@ export default function RecordingSection() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowForm(false)}
-              className="flex-1 rounded-xl border border-olive py-2.5 text-sm font-medium text-olive hover:bg-lime-pale"
+              className="flex-1 rounded-xl border border-olive py-2.5 text-sm font-medium text-olive hover:bg-butter-pale"
             >
               先不记了
             </button>

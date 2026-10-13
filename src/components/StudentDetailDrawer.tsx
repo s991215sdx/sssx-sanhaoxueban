@@ -61,12 +61,12 @@ export default function StudentDetailDrawer({
             <button
               onClick={() => setWide((w) => !w)}
               title={wide ? "还原为半屏" : "放大到全屏"}
-              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[12px] text-olive-mute hover:bg-lime-pale hover:text-olive"
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[12px] text-olive-mute hover:bg-butter-pale hover:text-brand"
             >
               {wide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               {wide ? "还原" : "全屏"}
             </button>
-            <button onClick={onClose} className="rounded-lg p-1.5 text-olive-mute hover:bg-lime-pale hover:text-olive">
+            <button onClick={onClose} className="rounded-lg p-1.5 text-olive-mute hover:bg-butter-pale hover:text-brand">
               <X size={18} />
             </button>
           </div>
@@ -122,7 +122,7 @@ export default function StudentDetailDrawer({
                 <div className="mono text-[10px] tracking-wider text-olive-mute">测评报告</div>
                 <button
                   onClick={() => setReportOpen((v) => !v)}
-                  className="flex shrink-0 items-center gap-0.5 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-lime/20"
+                  className="flex shrink-0 items-center gap-0.5 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-butter/25"
                 >
                   {reportOpen ? (
                     <>
@@ -246,7 +246,7 @@ export default function StudentDetailDrawer({
                       setEditAcad((v) => !v);
                       setAcadSaved(false);
                     }}
-                    className="rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-lime/20"
+                    className="rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-butter/25"
                   >
                     {editAcad ? "收起填写" : "帮TA填写 / 修改"}
                   </button>

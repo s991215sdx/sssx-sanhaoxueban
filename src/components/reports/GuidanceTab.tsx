@@ -52,7 +52,7 @@ function reportNoOf(name: string | null | undefined, grade: string | null | unde
 function Fold({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
   return (
     <details className="group mt-3 overflow-hidden rounded-xl border border-olive/12 bg-cream/50">
-      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
+      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
         <span>
           {title}
           {sub && <span className="ml-2 font-normal text-olive-mute">{sub}</span>}

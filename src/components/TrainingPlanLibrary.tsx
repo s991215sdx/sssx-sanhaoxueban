@@ -86,7 +86,7 @@ export default function TrainingPlanLibrary() {
             </button>
             <button
               onClick={() => setComposerOpen(true)}
-              className="rounded-xl bg-cream px-4 py-2 text-[13px] font-bold text-olive hover:bg-lime-pale"
+              className="rounded-xl bg-cream px-4 py-2 text-[13px] font-bold text-olive hover:bg-butter-pale"
             >
               开方
             </button>
@@ -158,7 +158,7 @@ ${full?.tool && full.tool !== "无" ? `<p><b>工具：</b>${esc(full.tool)}</p>`
           <h2 className="flex items-center gap-2 text-[17px] font-bold text-olive">
             <FileSignature size={18} /> 开方确认
           </h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-olive-mute hover:bg-lime-pale hover:text-olive">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-olive-mute hover:bg-butter-pale hover:text-brand">
             <X size={18} />
           </button>
         </div>

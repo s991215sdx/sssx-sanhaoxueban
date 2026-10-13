@@ -88,7 +88,7 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
           </button>
           <button
             onClick={onExit}
-            className="flex-1 rounded-xl border border-border bg-cream-card py-3 text-[14px] text-olive-mute hover:border-lime/60 hover:text-olive"
+            className="flex-1 rounded-xl border border-border bg-cream-card py-3 text-[14px] text-olive-mute hover:border-[#E3B53A]/60 hover:text-olive"
           >
             返回测评中心
           </button>
@@ -105,7 +105,7 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
         <div className="flex items-center gap-2">
           <ClipboardList size={16} className="text-olive" />
           <span className="text-[14.5px] font-bold text-olive">综合学习力系统测评</span>
-          <button onClick={onExit} className="ml-auto rounded-lg p-1 text-olive-mute hover:bg-lime-pale hover:text-olive">
+          <button onClick={onExit} className="ml-auto rounded-lg p-1 text-olive-mute hover:bg-butter-pale hover:text-brand">
             <X size={16} />
           </button>
         </div>
@@ -120,7 +120,7 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
                     active
                       ? "border-lime bg-brand text-cream"
                       : done
-                        ? "border-lime/60 bg-lime-pale text-olive"
+                        ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
                         : "border-border bg-cream text-olive-mute"
                   }`}
                 >

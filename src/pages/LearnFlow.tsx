@@ -71,7 +71,7 @@ export default function LearnFlow() {
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <header className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="rounded-lg p-2 text-olive-mute hover:bg-lime-pale hover:text-olive">
+        <button onClick={() => navigate(-1)} className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand">
           <ArrowLeft size={18} />
         </button>
         <div>
@@ -145,7 +145,7 @@ export default function LearnFlow() {
               </button>
               <button
                 onClick={() => navigate("/gaps")}
-                className="rounded-xl border border-olive px-5 py-3 text-[14.5px] font-medium text-olive hover:bg-lime-pale"
+                className="rounded-xl border border-olive px-5 py-3 text-[14.5px] font-medium text-olive hover:bg-butter-pale"
               >
                 回到错题本
               </button>
@@ -414,7 +414,7 @@ function TutorChat({ sessionId, onUnderstood }: { sessionId: number; onUnderstoo
             <button
               onClick={toggleListen}
               className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 ${
-                listening ? "bg-terra text-white" : "text-olive-mute hover:bg-lime-pale hover:text-olive"
+                listening ? "bg-terra text-white" : "text-olive-mute hover:bg-butter-pale hover:text-brand"
               }`}
               title={listening ? "停止语音" : "语音输入"}
             >

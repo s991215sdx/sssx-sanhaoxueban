@@ -35,7 +35,7 @@ export default function FullPathwayMap({ stages }: { stages: PathwayStage[] }) {
               <span className={`absolute left-1 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-cream ${STAGE_DOT[i % STAGE_DOT.length]}`} />
               <button
                 onClick={() => toggle(s.key)}
-                className="flex w-full items-center justify-between rounded-xl border border-olive/12 bg-cream/70 px-3 py-2 text-left transition-colors hover:bg-lime-pale/40"
+                className="flex w-full items-center justify-between rounded-xl border border-olive/12 bg-cream/70 px-3 py-2 text-left transition-colors hover:bg-butter-pale/40"
               >
                 <span>
                   <span className="block text-[13.5px] font-bold text-olive">{s.title}</span>

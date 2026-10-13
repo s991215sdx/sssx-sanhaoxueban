@@ -564,7 +564,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                 className={`rounded-2xl border px-4 py-3 text-left text-[14.5px] leading-relaxed transition-colors ${
                   motivation === o.key
                     ? "border-lime bg-lime-pale font-medium text-olive"
-                    : "border-border bg-cream text-olive-soft hover:border-lime/60"
+                    : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60"
                 }`}
               >
                 <span className="mono mr-2 text-[12px] font-bold text-olive-mute">{o.key}</span>
@@ -595,7 +595,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
           ? "border-olive bg-brand text-cream"
           : disabled
             ? "border-border bg-cream text-olive-mute/50"
-            : "border-border bg-cream text-olive-soft hover:border-lime/60"
+            : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60"
       }`;
 
     /** 单个科目行。fixedName=true 时科目名只读（高中选科生成的行）。 */
@@ -629,7 +629,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                 )
               }
               className={`rounded-full border px-3 py-1 text-[12px] transition-colors ${
-                closed ? "border-terra/50 bg-[#FAF2E4] text-[#DD3534]" : "border-border bg-cream text-olive-mute hover:border-lime/60"
+                closed ? "border-terra/50 bg-[#FAF2E4] text-[#DD3534]" : "border-border bg-cream text-olive-mute hover:border-[#E3B53A]/60"
               }`}
             >
               {closed ? "未开设 · 点击恢复" : "未开设"}
@@ -795,7 +795,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                   className={`rounded-full border px-3 py-1.5 text-[12.5px] transition-colors ${
                     lossReasons.includes(r)
                       ? "border-lime bg-lime-pale font-medium text-olive"
-                      : "border-border bg-cream text-olive-mute hover:border-lime/60"
+                      : "border-border bg-cream text-olive-mute hover:border-[#E3B53A]/60"
                   }`}
                 >
                   {r}
@@ -814,7 +814,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                   className={`rounded-full border px-3 py-1.5 text-[12.5px] transition-colors ${
                     scoreTrend === t
                       ? "border-lime bg-lime-pale font-medium text-olive"
-                      : "border-border bg-cream text-olive-mute hover:border-lime/60"
+                      : "border-border bg-cream text-olive-mute hover:border-[#E3B53A]/60"
                   }`}
                 >
                   {t}
@@ -855,7 +855,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                           ? v === 0
                             ? "border-lime bg-lime-pale font-medium text-olive"
                             : "border-butter bg-butter/70 font-medium text-olive"
-                          : "border-border bg-cream text-olive-mute hover:border-lime/60"
+                          : "border-border bg-cream text-olive-mute hover:border-[#E3B53A]/60"
                       }`}
                     >
                       {h}

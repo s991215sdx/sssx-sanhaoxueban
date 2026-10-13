@@ -198,7 +198,7 @@ function SectionBullets({ bullets }: { bullets: string[] }) {
 function Fold({ title, children, defaultOpen }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
   return (
     <details open={defaultOpen || undefined} className="group mt-3 overflow-hidden rounded-xl border border-border bg-cream/50">
-      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
+      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
         <span>{title}</span>
         <ChevronDown size={15} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
       </summary>
@@ -278,7 +278,7 @@ function SectionToc({ sections }: { sections: CombinedSection[] }) {
           <button
             key={i}
             onClick={() => document.getElementById(`sec-${i}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            className="rounded-lg border border-border bg-cream px-2.5 py-1 text-[12px] text-olive transition-colors hover:border-lime hover:bg-lime-pale"
+            className="rounded-lg border border-border bg-cream px-2.5 py-1 text-[12px] text-olive transition-colors hover:border-lime hover:bg-butter-pale"
           >
             <span className="mono mr-1 text-[#2F7A41]">{i + 1}</span>
             {s.title.replace(/[*（(].*$/, "")}
@@ -451,7 +451,7 @@ function RoadmapSection({
     if (blocks.length === 0) return null;
     return (
       <details className="group mt-1.5 overflow-hidden rounded-lg border border-border/70 bg-white/60 print:hidden">
-        <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-lime-pale/50">
+        <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
           <span>{title ?? (filtered ? "答题明细（仅对应问题，点击展开）" : "答题明细（点击展开）")}</span>
           <ChevronDown size={13} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
         </summary>
@@ -694,7 +694,7 @@ function RoadmapSection({
               <button
                 type="button"
                 onClick={() => onReveal({ kind: "fill-academics" })}
-                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#1E3530] transition hover:bg-lime-pale"
+                className="ml-1.5 rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[11px] font-semibold text-[#1E3530] transition hover:bg-butter-pale"
               >
                 去填写 →
               </button>
@@ -721,7 +721,7 @@ function RoadmapSection({
                         <button
                           type="button"
                           onClick={() => onReveal({ kind: "fill-academics" })}
-                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#1E3530] transition hover:bg-lime-pale hover:shadow-sm"
+                          className="mb-1 inline-block rounded-full border border-lime/60 bg-lime-pale/70 px-2 py-px text-[10.5px] font-semibold text-[#1E3530] transition hover:bg-butter-pale hover:shadow-sm"
                         >
                           去填写成绩与目标 →
                         </button>
@@ -1181,7 +1181,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
           {version !== 2 && (
             <a
               href="/assessments?start=disc"
-              className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60"
+              className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-[#E3B53A]/60"
             >
               旧版题目 · 已升级为更准的「最像/最不像」版，点这里重测 →
             </a>
@@ -1764,7 +1764,7 @@ function DiscParentDetail({ label, result, student }: { label: string; result: D
         {result.version !== 2 && (
           <a
             href="/assessments?start=discparent"
-            className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-lime/60"
+            className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-[#E3B53A]/60"
           >
             旧版题目 · 建议重测 →
           </a>
@@ -2593,7 +2593,7 @@ export default function ReportView({
       {canDownload && (
         <button
           onClick={onDownload}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-lime/60 bg-lime-pale py-2.5 text-[13.5px] font-semibold text-olive transition-colors hover:bg-lime/20"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-lime/60 bg-lime-pale py-2.5 text-[13.5px] font-semibold text-olive transition-colors hover:bg-butter/25"
         >
           <Download size={15} />
           下载报告（可另存为 PDF）

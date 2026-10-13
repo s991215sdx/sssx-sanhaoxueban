@@ -5,7 +5,7 @@
 @layer base {
   :root {
     /* v122：主题迁入「栖川烟渚」色卡；正文近黑墨绿，深青绿只留给主按钮/强调 */
-    --background: 45 55% 96%;
+    --background: 45 85% 97%;
     --foreground: 168 31% 17%;
     --card: 0 0% 100%;
     --card-foreground: 168 31% 17%;
@@ -14,16 +14,16 @@
     /* v122：primary 改深青绿 #0C7064（hsl 173 81% 24%） */
     --primary: 173 81% 24%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 45 33% 93%;
+    --secondary: 45 42% 93%;
     --secondary-foreground: 168 31% 17%;
-    --muted: 45 25% 94%;
-    --muted-foreground: 155 10% 37%;
+    --muted: 45 30% 95%;
+    --muted-foreground: 160 10% 34%;
     --accent: 134 33% 47%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 68% 53%;
     --destructive-foreground: 0 0% 98%;
-    --border: 42 22% 86%;
-    --input: 42 14% 82%;
+    --border: 42 26% 84%;
+    --input: 42 18% 80%;
     --ring: 173 51% 30%;
     --radius: 0.875rem;
   }

@@ -123,13 +123,13 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
               resetAll();
               submit.reset();
             }}
-            className="flex-1 rounded-xl border border-lime/60 bg-lime-pale py-3 text-[14px] font-semibold text-olive hover:bg-lime/20"
+            className="flex-1 rounded-xl border border-lime/60 bg-lime-pale py-3 text-[14px] font-semibold text-olive hover:bg-butter/25"
           >
             再测其他科
           </button>
           <button
             onClick={onDone}
-            className="flex-1 rounded-xl border border-border bg-cream-card py-3 text-[14px] font-semibold text-olive-soft hover:bg-lime-pale"
+            className="flex-1 rounded-xl border border-border bg-cream-card py-3 text-[14px] font-semibold text-olive-soft hover:bg-butter-pale"
           >
             返回测评中心
           </button>
@@ -186,7 +186,7 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
                     className={`rounded-xl border px-2 py-3 text-center transition-colors ${
                       on
                         ? "border-lime bg-lime-pale font-bold text-olive"
-                        : "border-border bg-cream text-olive-soft hover:border-lime/60"
+                        : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60"
                     }`}
                   >
                     <div className="text-[14.5px]">{s}</div>
@@ -257,7 +257,7 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
                 key={opt}
                 disabled={submit.isPending}
                 onClick={() => pick(i + 1)}
-                className="rounded-xl border border-border bg-cream px-4 py-3 text-center text-[14.5px] leading-relaxed text-olive-soft transition-colors hover:border-lime/60 hover:bg-lime-pale/50"
+                className="rounded-xl border border-border bg-cream px-4 py-3 text-center text-[14.5px] leading-relaxed text-olive-soft transition-colors hover:border-[#E3B53A]/60 hover:bg-butter-pale/60"
               >
                 {opt}
               </button>

@@ -10,8 +10,8 @@ module.exports = {
         // olive=文字色系（深青墨绿），brand=品牌动作色（深青绿按钮/头部/头像）
         olive: {
           DEFAULT: "#1E3530",
-          soft: "#55645C",
-          mute: "#8CA098",
+          soft: "#46564F",
+          mute: "#7C8C84",
         },
         brand: {
           DEFAULT: "#0C7064",
@@ -29,7 +29,7 @@ module.exports = {
           deep: "#FFFAEE",
           card: "#FFFFFF",
         },
-        butter: "#FCCE45",
+        butter: { DEFAULT: "#FCCE45", pale: "#FFF7D8" },
         terra: "#FA872A",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

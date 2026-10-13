@@ -58,7 +58,7 @@ function ReportAccessEditor({
               className={`rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${
                 allPicked
                   ? "border-lime bg-brand text-cream"
-                  : "border-olive/40 bg-cream-card text-olive hover:bg-lime-pale"
+                  : "border-olive/40 bg-cream-card text-olive hover:bg-butter-pale"
               }`}
             >
               {allPicked ? "✓ " : ""}
@@ -73,8 +73,8 @@ function ReportAccessEditor({
                 onClick={() => toggleKind(k.key)}
                 className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${
                   active
-                    ? "border-lime bg-lime-pale text-olive"
-                    : "border-border bg-cream-card text-olive-mute hover:bg-lime-pale/50"
+                    ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                    : "border-border bg-cream-card text-olive-mute hover:bg-butter-pale/60"
                 }`}
               >
                 {active ? "✓ " : ""}
@@ -162,7 +162,7 @@ function AssessAccessEditor({
               className={`rounded-full border px-2.5 py-1 text-[12px] font-bold transition-colors ${
                 allPicked
                   ? "border-lime bg-brand text-cream"
-                  : "border-olive/40 bg-cream-card text-olive hover:bg-lime-pale"
+                  : "border-olive/40 bg-cream-card text-olive hover:bg-butter-pale"
               }`}
             >
               {allPicked ? "✓ " : ""}
@@ -177,8 +177,8 @@ function AssessAccessEditor({
                   onClick={() => toggleKind(k.key)}
                   className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${
                     active
-                      ? "border-lime bg-lime-pale text-olive"
-                      : "border-border bg-cream-card text-olive-mute hover:bg-lime-pale/50"
+                      ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                      : "border-border bg-cream-card text-olive-mute hover:bg-butter-pale/60"
                   }`}
                 >
                   {active ? "✓ " : ""}
@@ -409,7 +409,7 @@ export default function InviteChannelsTab() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[14.5px] font-bold text-olive">{c.name}</span>
                       <span className="chip !text-[11px]">{c.kind}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${c.active ? "bg-lime-pale text-olive" : "bg-brand-mute/15 text-olive-mute"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${c.active ? "bg-butter-pale text-brand" : "bg-brand-mute/15 text-olive-mute"}`}>
                         {c.active ? "投放中" : "已停用"}
                       </span>
                       {c.reportAccess && (
@@ -419,7 +419,7 @@ export default function InviteChannelsTab() {
                         </span>
                       )}
                       {c.assessmentAccess && (
-                        <span className="flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] font-bold text-[#2F7A41]">
+                        <span className="flex items-center gap-1 rounded-full bg-butter-pale px-2 py-0.5 text-[11px] font-bold text-brand">
                           <ClipboardList size={11} />
                           测评套餐 · {(c.assessmentKinds ?? []).includes("all") ? "全部" : (c.assessmentKinds ?? []).length} 项
                         </span>
@@ -438,8 +438,8 @@ export default function InviteChannelsTab() {
                         onClick={() => setQrFor(qrFor === c.id ? null : c.id)}
                         className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                           qrFor === c.id
-                            ? "border-lime bg-lime-pale text-olive"
-                            : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                            ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                            : "border-border bg-cream-card text-olive hover:bg-butter-pale"
                         }`}
                       >
                         <QrCode size={13} />
@@ -447,7 +447,7 @@ export default function InviteChannelsTab() {
                       </button>
                       <button
                         onClick={() => copyLink(c.id, c.code)}
-                        className="flex items-center gap-1 rounded-lg border border-border bg-cream-card px-2.5 py-1.5 text-[12px] font-semibold text-olive hover:bg-lime-pale"
+                        className="flex items-center gap-1 rounded-lg border border-border bg-cream-card px-2.5 py-1.5 text-[12px] font-semibold text-olive hover:bg-butter-pale"
                       >
                         <Link2 size={13} />
                         {copied === c.id ? "已复制链接 ✓" : "复制注册链接"}
@@ -457,7 +457,7 @@ export default function InviteChannelsTab() {
                         className={`rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                           c.active
                             ? "border-terra/40 text-terra hover:bg-terra/10"
-                            : "border-lime/50 text-olive hover:bg-lime-pale"
+                            : "border-lime/50 text-olive hover:bg-butter-pale"
                         }`}
                       >
                         {c.active ? "停用（二维码立即失效）" : "重新启用"}
@@ -466,8 +466,8 @@ export default function InviteChannelsTab() {
                         onClick={() => setEditReportsFor(editReportsFor === c.id ? null : c.id)}
                         className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                           editReportsFor === c.id
-                            ? "border-lime bg-lime-pale text-olive"
-                            : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                            ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                            : "border-border bg-cream-card text-olive hover:bg-butter-pale"
                         }`}
                       >
                         <FileText size={13} />
@@ -477,8 +477,8 @@ export default function InviteChannelsTab() {
                         onClick={() => setEditAssessFor(editAssessFor === c.id ? null : c.id)}
                         className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
                           editAssessFor === c.id
-                            ? "border-lime bg-lime-pale text-olive"
-                            : "border-border bg-cream-card text-olive hover:bg-lime-pale"
+                            ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                            : "border-border bg-cream-card text-olive hover:bg-butter-pale"
                         }`}
                       >
                         <ClipboardList size={13} />

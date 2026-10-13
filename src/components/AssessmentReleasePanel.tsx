@@ -57,8 +57,8 @@ export default function AssessmentReleasePanel({
                     bound
                       ? "cursor-not-allowed border-lime/60 bg-lime-pale/60 text-olive-mute"
                       : on
-                        ? "border-lime/60 bg-lime-pale text-olive"
-                        : "border-border bg-cream-card text-olive-mute hover:bg-lime-pale/50"
+                        ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
+                        : "border-border bg-cream-card text-olive-mute hover:bg-butter-pale/60"
                   }`}
                 >
                   {on ? "✓ " : ""}

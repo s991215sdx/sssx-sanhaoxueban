@@ -42,7 +42,7 @@ export default function TutorAssignButton({
         onClick={toggleOpen}
         className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
           assigned.length > 0
-            ? "border-lime/60 bg-lime-pale text-olive"
+            ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold"
             : "border-border bg-cream text-olive-soft hover:border-lime"
         }`}
       >
@@ -68,7 +68,7 @@ export default function TutorAssignButton({
                 <label
                   key={t.id}
                   className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[12.5px] ${
-                    on ? "border-lime/60 bg-lime-pale text-olive" : "border-border bg-cream text-olive-soft"
+                    on ? "border-[#E3B53A]/60 bg-butter-pale text-brand font-semibold" : "border-border bg-cream text-olive-soft"
                   }`}
                 >
                   <input

@@ -56,7 +56,7 @@ export default function AbilityPlanCard({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="mt-2.5 rounded-lg border border-lime/60 bg-lime-pale px-3 py-2.5 text-left transition hover:bg-lime/20"
+        className="mt-2.5 rounded-lg border border-lime/60 bg-lime-pale px-3 py-2.5 text-left transition hover:bg-butter/25"
       >
         <span className="block text-[10.5px] font-semibold tracking-wide text-olive-mute">
           简要方案 · 点开看详细做法

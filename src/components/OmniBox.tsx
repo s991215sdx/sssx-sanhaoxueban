@@ -140,7 +140,7 @@ export default function OmniBox() {
               <button
                 onClick={() => fileRef.current?.click()}
                 aria-label="上传图片"
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-olive-mute transition-colors hover:bg-butter-pale hover:text-brand"
               >
                 <ImagePlus size={18} />
               </button>
@@ -150,7 +150,7 @@ export default function OmniBox() {
                   title={listening ? "再点一下停止" : "语音输入（说话自动转文字）"}
                   aria-label={listening ? "停止语音输入" : "开始语音输入"}
                   className={`flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
-                    listening ? "bg-terra text-white animate-pulse" : "text-olive-mute hover:bg-lime-pale hover:text-olive"
+                    listening ? "bg-terra text-white animate-pulse" : "text-olive-mute hover:bg-butter-pale hover:text-brand"
                   }`}
                 >
                   {listening ? <Square size={16} /> : <Mic size={18} />}

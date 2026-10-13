@@ -14,7 +14,7 @@ describe("v122 栖川烟渚主题色", () => {
       'DEFAULT: "#0C7064"', 'deep: "#08463E"', 'pale: "#D9EDE8"',
       'DEFAULT: "#52A965"', 'light: "#8EBD86"', 'tint: "#CDE3CC"', 'pale: "#E9F3E6"',
       'deep: "#FFFAEE"', '"#FCCE45"', '"#FA872A"',
-      'DEFAULT: "#1E3530"', 'soft: "#55645C"', 'mute: "#8CA098"',
+      'DEFAULT: "#1E3530"', 'soft: "#46564F"', 'mute: "#7C8C84"',
     ]) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }
@@ -25,7 +25,7 @@ describe("v122 栖川烟渚主题色", () => {
     const src = read("src/index.css");
     if (!/--primary: 173 81% 24%;/.test(src)) throw new Error("缺：primary 深青绿");
     if (!/--foreground: 168 31% 17%;/.test(src)) throw new Error("缺：墨色正文");
-    if (!/--background: 45 55% 96%;/.test(src)) throw new Error("缺：米白底");
+    if (!/--background: 45 (55|85)% 97%;/.test(src)) throw new Error("缺：米白底");
     if (/159 85% 36%|150 20% 97%/.test(src)) throw new Error("残留：旧 CSS 变量");
   });
 

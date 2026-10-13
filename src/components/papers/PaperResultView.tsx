@@ -143,7 +143,7 @@ export default function PaperResultView({ summary, onDone }: { summary: PaperSum
         {onDone && (
           <button
             onClick={onDone}
-            className="rounded-xl border border-olive px-5 py-3 text-[14.5px] font-medium text-olive hover:bg-lime-pale"
+            className="rounded-xl border border-olive px-5 py-3 text-[14.5px] font-medium text-olive hover:bg-butter-pale"
           >
             回到试卷列表
           </button>

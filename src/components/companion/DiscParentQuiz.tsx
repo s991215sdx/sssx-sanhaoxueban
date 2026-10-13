@@ -125,7 +125,7 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
                 submit.reset(); // 退出成功态，回到身份选择
                 resetAll();
               }}
-              className="rounded-xl border border-border bg-cream-card py-3 text-[15px] font-semibold text-olive transition-colors hover:border-lime/60"
+              className="rounded-xl border border-border bg-cream-card py-3 text-[15px] font-semibold text-olive transition-colors hover:border-[#E3B53A]/60"
             >
               再测一位家长
             </button>

@@ -14,7 +14,7 @@ import { answerSheetsPrintHtml, downloadReport } from "@/lib/reportDownload";
 const BAND_CLASS = { bad: "text-[#A82524]", mid: "text-[#8A6500]", ok: "text-[#2F7A41]" } as const;
 
 const printBtn =
-  "inline-flex shrink-0 items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-2 py-0.5 text-[11px] font-semibold text-olive hover:bg-lime/20";
+  "inline-flex shrink-0 items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-2 py-0.5 text-[11px] font-semibold text-olive hover:bg-butter/25";
 
 export default function AnswerSheetsPanel({
   raw,

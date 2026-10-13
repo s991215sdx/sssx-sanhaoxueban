@@ -72,7 +72,7 @@ export function DiscV2GroupsUI({
                   ? "border-lime bg-lime-pale font-medium text-olive"
                   : isLeast
                     ? "border-terra/60 bg-terra/10 font-medium text-olive"
-                    : "border-border bg-cream text-olive-soft hover:border-lime/60 hover:bg-lime-pale/50"
+                    : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60 hover:bg-butter-pale/60"
               }`}
             >
               <span>{w}</span>

@@ -113,7 +113,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           onClick={toggleCollapsed}
           title={collapsed ? "展开侧边栏" : "收起侧边栏，给阅读区让出空间"}
           aria-label={collapsed ? "展开侧边栏" : "收起侧边栏，给阅读区让出空间"}
-          className="absolute -right-3.5 top-9 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-cream-card text-olive-mute shadow-sm transition-colors hover:bg-lime-pale hover:text-olive"
+          className="absolute -right-3.5 top-9 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-cream-card text-olive-mute shadow-sm transition-colors hover:bg-butter-pale hover:text-brand"
         >
           {collapsed ? <ChevronsRight size={15} strokeWidth={2.4} /> : <ChevronsLeft size={15} strokeWidth={2.4} />}
         </button>
@@ -135,7 +135,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-lime-pale font-semibold text-olive" : "text-olive-soft hover:bg-lime-pale/50"}`
+                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <n.icon size={18} strokeWidth={2.2} />
@@ -149,7 +149,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-lime-pale font-semibold text-olive" : "text-olive-soft hover:bg-lime-pale/50"}`
+                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <GraduationCap size={18} strokeWidth={2.2} />
@@ -163,7 +163,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-lime-pale font-semibold text-olive" : "text-olive-soft hover:bg-lime-pale/50"}`
+                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <ShieldCheck size={18} strokeWidth={2.2} />
@@ -178,7 +178,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-lime-pale font-semibold text-olive" : "text-olive-soft hover:bg-lime-pale/50"}`
+                } ${isActive ? "bg-butter-pale font-semibold text-brand" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <Trash2 size={18} strokeWidth={2.2} />
@@ -199,7 +199,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <button
               onClick={logout}
               title="退出登录"
-              className="rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive"
+              className="rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-butter-pale hover:text-brand"
             >
               <LogOut size={16} />
             </button>
@@ -228,7 +228,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <button
                 onClick={logout}
                 title="退出登录"
-                className="rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive"
+                className="rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-butter-pale hover:text-brand"
               >
                 <LogOut size={16} />
               </button>
@@ -242,19 +242,19 @@ export default function Layout({ children }: { children: ReactNode }) {
         <Logo brand={brand} />
         <div className="flex items-center gap-2">
           {showCoach && (
-            <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-lime-pale hover:text-olive" title="伴学工作台">
+            <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title="伴学工作台">
               <GraduationCap size={18} />
             </NavLink>
           )}
           {isAdmin && (
-            <NavLink to="/admin" className="rounded-lg p-2 text-olive-mute hover:bg-lime-pale hover:text-olive" title="后台管理">
+            <NavLink to="/admin" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title="后台管理">
               <ShieldCheck size={18} />
             </NavLink>
           )}
           <span className="flex items-center gap-1.5">
             <Avatar name={displayName} />
           </span>
-          <button onClick={logout} title="退出登录" className="rounded-lg p-2 text-olive-mute hover:bg-lime-pale hover:text-olive">
+          <button onClick={logout} title="退出登录" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand">
             <LogOut size={17} />
           </button>
         </div>

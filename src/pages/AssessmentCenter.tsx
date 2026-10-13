@@ -253,7 +253,7 @@ function MentalChooser({ onDone }: { onDone: () => void }) {
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {OPTIONS.map((o) => (
-          <div key={o.key} className="flex flex-col rounded-xl border border-lime/40 bg-lime-pale/40 p-4">
+          <div key={o.key} className="flex flex-col rounded-xl border border-[#E3B53A]/40 bg-butter-pale/50 p-4">
             <div className="flex items-center justify-between gap-2">
               <span className="rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-bold text-cream">{o.badge}</span>
               {o.done ? (
@@ -354,7 +354,7 @@ export default function AssessmentCenter() {
     <div className="space-y-4">
       {/* v82：一站式连测进度（注册套餐落地时逐项连做） */}
       {testing && queue.length > 0 && (
-        <div className="paper-card flex items-center justify-between border-lime bg-lime-pale/50 px-4 py-2.5">
+        <div className="paper-card flex items-center justify-between border-[#E3B53A]/60 bg-butter-pale/60 px-4 py-2.5">
           <span className="text-[12.5px] font-bold text-olive">
             测评套餐进行中 · 第 {queueTotal - queue.length + 1} / {queueTotal} 项
           </span>
@@ -373,7 +373,7 @@ export default function AssessmentCenter() {
       {!testing && allRequired && suiteVisible && (
         <button
           onClick={() => navigate("/report-detail?tab=combined")}
-          className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
+          className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
         >
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime text-cream">
             <Sparkles size={24} />
@@ -395,7 +395,7 @@ export default function AssessmentCenter() {
       {!testing && !allRequired && suiteVisible && (
         <button
           onClick={() => setSuiteOpen(true)}
-          className="paper-card accent-l flex w-full items-center gap-4 border-lime bg-gradient-to-r from-lime-pale/60 to-cream p-5 text-left shadow-sm hover:from-lime-pale"
+          className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
         >
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-cream">
             <Rocket size={24} />
@@ -435,7 +435,7 @@ export default function AssessmentCenter() {
         <div className="grid gap-3 sm:grid-cols-2">
           <button
             onClick={() => navigate("/report-detail?tab=combined")}
-            className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-lime-pale/40"
+            className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-butter-pale/40"
           >
             <Sparkles size={30} className="shrink-0 text-lime-deep" />
             <div>
@@ -450,7 +450,7 @@ export default function AssessmentCenter() {
           {/* V72：升学指导综合报告（霍兰德×职业锚×MBTI×DISC×五项智能） */}
           <button
             onClick={() => navigate("/report-detail?tab=guidance")}
-            className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-lime-pale/40"
+            className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-butter-pale/40"
           >
             <Compass size={30} className="shrink-0 text-terra" />
             <div>
@@ -462,7 +462,7 @@ export default function AssessmentCenter() {
           </button>
           <button
             onClick={() => navigate("/report-detail")}
-            className="paper-card accent-l border-lime flex items-center gap-3.5 p-5 text-left shadow-sm hover:bg-lime-pale/40"
+            className="paper-card accent-l border-lime flex items-center gap-3.5 p-5 text-left shadow-sm hover:bg-butter-pale/40"
           >
             <Target size={30} className="shrink-0 text-lime-deep" />
             <div>
@@ -490,7 +490,7 @@ export default function AssessmentCenter() {
                   <h3 className="font-bold text-olive">{t.name}</h3>
                   <span
                     className={`chip !py-0.5 text-[11px] ${
-                      t.required ? "!border-lime/50 !bg-lime-pale" : ""
+                      t.required ? "!border-[#E3B53A]/50 !bg-butter-pale" : ""
                     }`}
                   >
                     {t.required ? "必测" : "选做"}
@@ -516,7 +516,7 @@ export default function AssessmentCenter() {
                       </button>
                       <button
                         onClick={() => setTesting(t.kind)}
-                        className="flex-1 rounded-xl border border-border bg-cream-card py-2 text-[13px] text-olive-mute transition-colors hover:border-lime/60 hover:text-olive"
+                        className="flex-1 rounded-xl border border-border bg-cream-card py-2 text-[13px] text-olive-mute transition-colors hover:border-[#E3B53A]/60 hover:text-olive"
                       >
                         重新测
                       </button>
@@ -549,14 +549,14 @@ export default function AssessmentCenter() {
         <div className="space-y-3">
           <button
             onClick={() => navigate("/report-detail")}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-cream-card py-2.5 text-[13px] text-olive-mute hover:border-lime/60 hover:text-olive"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-cream-card py-2.5 text-[13px] text-olive-mute hover:border-[#E3B53A]/60 hover:text-olive"
           >
             <RotateCcw size={14} />
             修改基本信息 / 成绩
           </button>
           <button
             onClick={() => navigate("/report-detail")}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-cream-card py-2.5 text-[13px] text-olive-mute hover:border-lime/60 hover:text-olive"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-cream-card py-2.5 text-[13px] text-olive-mute hover:border-[#E3B53A]/60 hover:text-olive"
           >
             <Compass size={14} />
             打开完整报告页

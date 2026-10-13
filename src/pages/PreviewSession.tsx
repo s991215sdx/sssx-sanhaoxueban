@@ -123,7 +123,7 @@ export default function PreviewSession() {
     <div className="space-y-6">
       {/* 头部 */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/preview")} className="rounded-lg p-1.5 text-olive-mute hover:bg-lime-pale hover:text-olive">
+        <button onClick={() => navigate("/preview")} className="rounded-lg p-1.5 text-olive-mute hover:bg-butter-pale hover:text-brand">
           <ArrowLeft size={20} />
         </button>
         <div>
@@ -207,7 +207,7 @@ export default function PreviewSession() {
                     也可以硬着头皮继续——但明天上课要重点听这部分。
                   </p>
                   <div className="mt-3 flex gap-2">
-                    <Link to="/gaps" className="rounded-xl border border-olive px-4 py-2 text-sm font-medium text-olive hover:bg-lime-pale">
+                    <Link to="/gaps" className="rounded-xl border border-olive px-4 py-2 text-sm font-medium text-olive hover:bg-butter-pale">
                       去查漏补缺
                     </Link>
                     <button onClick={nextStep} className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-cream hover:bg-lime">

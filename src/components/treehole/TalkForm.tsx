@@ -54,7 +54,7 @@ export default function TalkForm() {
         <p className="text-center text-[12.5px] text-olive-mute">回信已存进树洞，只有你能看到。</p>
         <button
           onClick={reset}
-          className="w-full rounded-xl border border-olive py-2.5 text-[14px] font-medium text-olive hover:bg-lime-pale"
+          className="w-full rounded-xl border border-olive py-2.5 text-[14px] font-medium text-olive hover:bg-butter-pale"
         >
           再说点什么
         </button>

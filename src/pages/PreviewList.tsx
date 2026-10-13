@@ -50,7 +50,7 @@ export default function PreviewList() {
                 className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
                   grade === g
                     ? "bg-brand text-cream"
-                    : "bg-lime-pale/60 text-olive-soft hover:bg-lime-pale"
+                    : "bg-lime-pale/60 text-olive-soft hover:bg-butter-pale"
                 }`}
               >
                 {g}
@@ -68,7 +68,7 @@ export default function PreviewList() {
               key={s}
               onClick={() => setPickedSubject(s)}
               className={`rounded-full px-4 py-1.5 text-[13.5px] font-medium transition-colors ${
-                subject === s ? "bg-lime text-white" : "bg-lime-pale/60 text-olive-soft hover:bg-lime-pale"
+                subject === s ? "bg-brand text-white" : "bg-butter-pale text-olive-soft hover:bg-butter-pale"
               }`}
             >
               {s}
@@ -81,7 +81,7 @@ export default function PreviewList() {
       <div className="paper-card flex flex-wrap items-center gap-x-1 gap-y-2 p-4">
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center">
-            <span className="flex items-center gap-2 rounded-full bg-lime-pale/70 px-3 py-1.5">
+            <span className="flex items-center gap-2 rounded-full bg-butter-pale px-3 py-1.5">
               <span className="mono flex h-5 w-5 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-cream">
                 {i + 1}
               </span>

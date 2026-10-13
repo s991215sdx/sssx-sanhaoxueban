@@ -119,13 +119,13 @@ export default function V37CoachingPlanCard({
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => downloadReport(report.title, combinedPrintHtml(report, { e3, academics: academics ?? undefined }), name)}
-            className="flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-lime/20"
+            className="flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-2.5 py-1 text-[11.5px] font-semibold text-olive hover:bg-butter/25"
           >
             <Download size={12} /> 下载
           </button>
           <button
             onClick={() => setOpen(!open)}
-            className="flex items-center gap-0.5 rounded-lg px-2 py-1 text-[11.5px] text-olive-mute hover:bg-lime-pale hover:text-olive"
+            className="flex items-center gap-0.5 rounded-lg px-2 py-1 text-[11.5px] text-olive-mute hover:bg-butter-pale hover:text-brand"
           >
             {open ? (
               <>

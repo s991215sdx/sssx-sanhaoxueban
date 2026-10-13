@@ -93,7 +93,7 @@ export default function Papers() {
               setSummary(null);
               setView({ mode: "new" });
             }}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-olive/30 bg-cream-card py-4 text-[15px] font-semibold text-olive transition-colors hover:border-lime hover:bg-lime-pale/50"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-olive/30 bg-cream-card py-4 text-[15px] font-semibold text-olive transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60"
           >
             <Plus size={18} />
             丢一份试卷进来

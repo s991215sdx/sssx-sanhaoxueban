@@ -56,7 +56,7 @@ export default function DisciplineTreeChart({ matches, topN = 4 }: { matches?: D
                     key={d.key}
                     onClick={() => toggle(d.key)}
                     className={`relative rounded-xl border p-2.5 text-left transition-colors ${
-                      pct != null ? TIER_STYLE(pct) : "border-olive/12 bg-cream/60 hover:bg-lime-pale/40"
+                      pct != null ? TIER_STYLE(pct) : "border-olive/12 bg-cream/60 hover:bg-butter-pale/40"
                     } ${isTop ? "ring-1 ring-lime" : ""}`}
                   >
                     {isTop && (

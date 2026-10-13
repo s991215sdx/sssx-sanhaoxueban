@@ -10,7 +10,7 @@ const read = (p: string) => readFileSync(join(root, p), "utf8");
 describe("v94 文字去绿", () => {
   it("olive 令牌为深绿系（v94 墨绿炭黑 → v98 报告深绿，均为深绿非鲜绿文字）", () => {
     const src = read("tailwind.config.js");
-    for (const tok of ['DEFAULT: "#(20362B|0B3D2E|0A3B34|1E3530)"', 'soft: "#(43564C|4B5F57|4E6A61|55645C)"', 'mute: "#(7A8A82|8FA39B|8CA098)"']) {
+    for (const tok of ['DEFAULT: "#(20362B|0B3D2E|0A3B34|1E3530)"', 'soft: "#(43564C|4B5F57|4E6A61|55645C|46564F)"', 'mute: "#(7A8A82|8FA39B|8CA098|7C8C84)"']) {
       if (!src.includes(tok) && !new RegExp(tok).test(src)) throw new Error("缺 olive 令牌：" + tok);
     }
     /* lime 鲜绿点缀保留 */

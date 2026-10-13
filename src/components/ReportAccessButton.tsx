@@ -36,7 +36,7 @@ export default function ReportAccessButton({
           onClick={() => setAccess.mutate({ userId, released: true })}
           className={
             compact
-              ? "rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-lime-pale hover:text-olive disabled:opacity-50"
+              ? "rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-butter-pale hover:text-brand disabled:opacity-50"
               : "rounded-lg bg-brand px-3 py-1.5 text-[12.5px] font-semibold text-cream hover:bg-lime disabled:opacity-50"
           }
         >
@@ -78,8 +78,8 @@ export default function ReportAccessButton({
         onClick={() => setConfirmRecall(true)}
         className={
           compact
-            ? "rounded-lg bg-lime-pale p-1.5 text-[#2F7A41] transition-colors hover:bg-lime/30"
-            : "inline-flex items-center gap-1 rounded-lg border border-lime/60 bg-lime-pale px-3 py-1.5 text-[12.5px] font-semibold text-[#2F7A41] hover:bg-lime/20"
+            ? "rounded-lg bg-butter-pale p-1.5 text-brand transition-colors hover:bg-butter/30"
+            : "inline-flex items-center gap-1 rounded-lg border border-[#E3B53A]/60 bg-butter-pale px-3 py-1.5 text-[12.5px] font-semibold text-brand hover:bg-butter/25"
         }
       >
         <CheckCircle2 size={compact ? 15 : 13} />

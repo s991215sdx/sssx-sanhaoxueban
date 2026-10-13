@@ -163,7 +163,7 @@ export default function AcademicsEditorCore({
                     className={`rounded-lg px-2 py-1 text-[11.5px] transition-colors ${
                       d.selfLevel === lv.value
                         ? "bg-brand text-cream"
-                        : "border border-border text-olive-mute hover:border-lime/60 hover:text-olive"
+                        : "border border-border text-olive-mute hover:border-[#E3B53A]/60 hover:text-olive"
                     }`}
                   >
                     {lv.label}

@@ -95,7 +95,7 @@ export default function ProfileStage({ onNext }: { onNext: () => void }) {
               type="button"
               aria-label="减少 5 分钟"
               onClick={() => setDailyMinutes((m) => Math.max(15, m - 5))}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-lime-pale"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-butter-pale"
             >
               <Minus size={16} />
             </button>
@@ -107,7 +107,7 @@ export default function ProfileStage({ onNext }: { onNext: () => void }) {
               type="button"
               aria-label="增加 5 分钟"
               onClick={() => setDailyMinutes((m) => Math.min(120, m + 5))}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-lime-pale"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-cream-card text-olive hover:bg-butter-pale"
             >
               <Plus size={16} />
             </button>

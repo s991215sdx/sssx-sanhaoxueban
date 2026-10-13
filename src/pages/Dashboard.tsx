@@ -143,7 +143,7 @@ function TodayPlan() {
             还没有今天的安排——点「按建议生成安排」，学伴会按「复习 → 抢分 → 预习」的顺序帮你排好每一段时间。
           </p>
           {whyLines.length > 0 && (
-            <ul className="mt-2 space-y-1.5 rounded-xl bg-lime-pale/50 p-4">
+            <ul className="mt-2 space-y-1.5 rounded-xl bg-butter-pale/50 p-4">
               {whyLines.map((e, i) => (
                 <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-olive-soft">
                   <span className="mono shrink-0 text-olive-mute">{i + 1}.</span>
@@ -204,7 +204,7 @@ function TodayPlan() {
                 {whyOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
               {whyOpen && (
-                <ul className="mt-2 space-y-1.5 rounded-xl bg-lime-pale/50 p-4">
+                <ul className="mt-2 space-y-1.5 rounded-xl bg-butter-pale/50 p-4">
                   {whyLines.map((e, i) => (
                     <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-olive-soft">
                       <span className="mono shrink-0 text-olive-mute">{i + 1}.</span>
@@ -258,15 +258,15 @@ function ChartsSkeleton() {
   return (
     <div className="grid gap-4 lg:grid-cols-5">
       <div className="paper-card animate-pulse p-5 lg:col-span-3">
-        <div className="h-5 w-28 rounded bg-lime-pale" />
-        <div className="mt-2 h-64 rounded-xl bg-lime-pale/60" />
+        <div className="h-5 w-28 rounded bg-butter-pale" />
+        <div className="mt-2 h-64 rounded-xl bg-butter-pale/70" />
       </div>
       <div className="paper-card animate-pulse p-5 lg:col-span-2">
-        <div className="h-5 w-24 rounded bg-lime-pale" />
-        <div className="mt-2 h-44 rounded-xl bg-lime-pale/60" />
+        <div className="h-5 w-24 rounded bg-butter-pale" />
+        <div className="mt-2 h-44 rounded-xl bg-butter-pale/70" />
         <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border pt-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="mx-auto h-8 w-14 rounded bg-lime-pale/60" />
+            <div key={i} className="mx-auto h-8 w-14 rounded bg-butter-pale/70" />
           ))}
         </div>
       </div>
@@ -367,7 +367,7 @@ export default function Dashboard() {
           to="/preview"
           className="paper-card group relative overflow-hidden p-5 transition-transform hover:-translate-y-0.5"
         >
-          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-lime-pale" />
+          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-butter-pale" />
           <div className="flex items-center gap-2 text-olive">
             <BookOpenCheck size={18} className="text-lime" />
             <span className="mono text-xs tracking-wider text-olive-mute">高效预习 · 带问题上课</span>

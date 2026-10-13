@@ -80,7 +80,7 @@ export default function QuizCard({
                       ? "border-terra bg-terra/10 text-olive"
                       : selected
                         ? "border-olive bg-lime-pale/70 text-olive"
-                        : "border-border bg-cream text-olive-soft hover:border-olive/40 hover:bg-lime-pale/40"
+                        : "border-border bg-cream text-olive-soft hover:border-olive/40 hover:bg-butter-pale/40"
                 } ${graded ? "cursor-default" : "cursor-pointer"}`}
               >
                 <span
