@@ -3,8 +3,8 @@ import { HeartHandshake, Compass } from "lucide-react";
 import type { E3V27Result, E3Level } from "@contracts/assessments";
 
 const DIM_COLORS: Record<string, string> = {
-  乐学: "#3CC078",
-  会学: "#B9ECD0",
+  乐学: "#52A965",
+  会学: "#CDE3CC",
   善学: "#43564C",
   品格: "#e8a33d",
   环境: "#7A8A82",

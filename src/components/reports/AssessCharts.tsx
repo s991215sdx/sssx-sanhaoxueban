@@ -15,7 +15,7 @@ import { MULTI5_DIM_LABEL, MULTI5_DIM_ORDER } from "@contracts/multi5";
 
 const OLIVE = "#43564C";
 const GRID = "#D8E2DC";
-const LIME = "#3CC078";
+const LIME = "#52A965";
 const SKY = "#3d8ec4";
 const AMBER = "#c7a23a";
 const TERRA = "#c05a3a";

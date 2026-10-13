@@ -1448,7 +1448,7 @@ function ParentReportTab({
                           ? { borderColor: "#b91c1c66", color: "#8f1313", background: "#FAF3EB" }
                           : cv.studentLevel === "待提升"
                             ? { borderColor: "#c7a23a66", color: "#8a6d1a", background: "#f5e7c1" }
-                            : { borderColor: "#3CC07866", color: "#2F8F60", background: "#E4F7EC" }
+                            : { borderColor: "#52A96566", color: "#2F8F60", background: "#E9F3E6" }
                       }
                     >
                       孩子自评 {cv.studentScore}/5 · {cv.studentLevel}
@@ -1496,7 +1496,7 @@ function ParentReportTab({
                       <span className="text-[13px] font-bold text-olive">{b.kp}</span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                          strong ? "bg-[#b91c1c] text-white" : over ? "bg-[#f5e7c1] text-[#8a6d1a]" : "bg-[#E4F7EC] text-[#2F8F60]"
+                          strong ? "bg-[#b91c1c] text-white" : over ? "bg-[#f5e7c1] text-[#8a6d1a]" : "bg-[#E9F3E6] text-[#2F8F60]"
                         }`}
                       >
                         差 {Math.abs(b.gap)} 分 · {over ? "家长更乐观" : "家长没看到"}
@@ -1642,7 +1642,7 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
             <RadarChart data={radarData} outerRadius="72%">
               <PolarGrid stroke="#D8E2DC" />
               <PolarAngleAxis dataKey="dim" tick={{ fill: "#43564C", fontSize: 12 }} />
-              <Radar dataKey="得分" stroke="#3CC078" fill="#3CC078" fillOpacity={0.35} strokeWidth={2.5} />
+              <Radar dataKey="得分" stroke="#52A965" fill="#52A965" fillOpacity={0.35} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -1833,7 +1833,7 @@ function Multi5Radar({ multi5 }: { multi5: Multi5Result }) {
                 );
               }}
             />
-            <Radar dataKey="得分" stroke="#3CC078" fill="#3CC078" fillOpacity={0.35} strokeWidth={2.5} />
+            <Radar dataKey="得分" stroke="#52A965" fill="#52A965" fillOpacity={0.35} strokeWidth={2.5} />
           </RadarChart>
         </ResponsiveContainer>
       </div>
@@ -1870,7 +1870,7 @@ function MentalV2Bars({
   /** v2=通用版（PHQ-9）；pa=学生版 B（PHQ-A + GAD-7 标准版）。 */
   variant?: "v2" | "pa";
 }) {
-  const BAND_COLOR: Record<string, string> = { 良好: "#3CC078", 关注: "#c7a23a", 预警: "#FF961F", 高风险: "#b91c1c" };
+  const BAND_COLOR: Record<string, string> = { 良好: "#52A965", 关注: "#c7a23a", 预警: "#FA872A", 高风险: "#b91c1c" };
   const isPa = variant === "pa";
   const rows = [
     { label: isPa ? "PHQ-A 青少年抑郁筛查" : "PHQ-9 抑郁筛查", value: mental.phq9, max: 27, band: mental.phq9Level },
@@ -1912,7 +1912,7 @@ function MentalV2Bars({
 
 /** 学生版 A（SDQ）五维度条形图。 */
 function MentalSdqBars({ mental }: { mental: MentalSdqResult }) {
-  const BAND_COLOR: Record<string, string> = { 正常: "#3CC078", 边缘: "#c7a23a", 明显: "#b91c1c" };
+  const BAND_COLOR: Record<string, string> = { 正常: "#52A965", 边缘: "#c7a23a", 明显: "#b91c1c" };
   const dims = ["emotion", "conduct", "hyper", "peer", "prosocial"] as const;
   return (
     <div className="paper-card p-5">
@@ -2248,10 +2248,10 @@ function MentalBar({ mental }: { mental: MentalResult }) {
           >
             <XAxis type="number" domain={[0, 5]} tick={{ fill: "#7A8A82", fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="name" width={88} tick={{ fill: "#43564C", fontSize: 12 }} axisLine={false} tickLine={false} />
-            <ReferenceLine x={2} stroke="#FF961F" strokeDasharray="6 4" label={{ value: "阳性线 2", position: "top", fontSize: 10.5, fill: "#FF961F" }} />
+            <ReferenceLine x={2} stroke="#FA872A" strokeDasharray="6 4" label={{ value: "阳性线 2", position: "top", fontSize: 10.5, fill: "#FA872A" }} />
             <Bar dataKey="得分" radius={[0, 6, 6, 0]}>
               {MENTAL_FACTOR_ORDER.map((f) => (
-                <Cell key={f} fill={mental.factors[f] > 2 ? "#FF961F" : "#3CC078"} />
+                <Cell key={f} fill={mental.factors[f] > 2 ? "#FA872A" : "#52A965"} />
               ))}
               <LabelList
                 dataKey="得分"
@@ -3290,7 +3290,7 @@ function MiniBars({
               className="h-full rounded-full"
               style={{
                 width: `${Math.max(3, Math.min(100, (r.value / max) * 100))}%`,
-                background: r.state === "bad" ? "#b91c1c" : r.state === "trait" ? "#c7a23a" : "#3CC078",
+                background: r.state === "bad" ? "#b91c1c" : r.state === "trait" ? "#c7a23a" : "#52A965",
               }}
             />
           </div>
@@ -3409,7 +3409,7 @@ function AssessmentChartsLite({
                     );
                   }}
                 />
-                <Radar dataKey="得分" stroke="#3CC078" fill="#3CC078" fillOpacity={0.35} strokeWidth={2.5} />
+                <Radar dataKey="得分" stroke="#52A965" fill="#52A965" fillOpacity={0.35} strokeWidth={2.5} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -3527,7 +3527,7 @@ function CombinedLite({
               <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
                 <div
                   className="h-full rounded-full"
-                  style={{ width: `${(d.score / 5) * 100}%`, background: d.level === "正常" ? "#3CC078" : d.level === "待提升" ? "#c7a23a" : "#b91c1c" }}
+                  style={{ width: `${(d.score / 5) * 100}%`, background: d.level === "正常" ? "#52A965" : d.level === "待提升" ? "#c7a23a" : "#b91c1c" }}
                 />
               </div>
               <span className={`mono w-16 shrink-0 text-right text-[12px] ${e3v37LevelTextClass(d.level)}`}>

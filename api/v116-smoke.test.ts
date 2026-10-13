@@ -13,7 +13,7 @@ describe("v116 框架图三档视觉", () => {
     for (const tok of [
       '卡点: { label: "卡点", border: "#D84E4E", bg: "#FDECEC", text: "#B42323" }',
       '待提升: { label: "待提升", border: "#E3A008", bg: "#FCF3DC", text: "#B07800" }',
-      '正常: { label: "正常", border: "#3CC078", bg: "#E4F7EC", text: "#2F8F60" }',
+      '正常: { label: "正常", border: "#52A965", bg: "#E9F3E6", text: "#2F8F60" }',
     ]) {
       if (!src.includes(tok)) throw new Error(`缺：${tok}`);
     }

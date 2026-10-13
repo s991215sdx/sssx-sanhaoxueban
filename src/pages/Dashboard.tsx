@@ -36,8 +36,8 @@ const KIND_CHIP_COLORS: Record<PlanKind, string> = {
   band1: BANDS[0].color,
   band2: BANDS[1].color,
   band3: BANDS[2].color,
-  preview: "#3CC078",
-  feynman: "#3CC078",
+  preview: "#52A965",
+  feynman: "#52A965",
   rest: "#c7a23a",
 };
 

@@ -28,8 +28,8 @@ function needHelper() {
   const src = read("src/components/reports/e3v37Theme.ts");
   for (const [tok, label] of [
     ['卡点: { text: "#8f1313", bar: "#b91c1c"', "卡点红"],
-    ['待提升: { text: "#C79400", bar: "#FFC600"', "待提升亮黄"],
-    ['正常: { text: "#2F8F60", bar: "#3CC078"', "正常绿"],
+    ['待提升: { text: "#C79400", bar: "#FCCE45"', "待提升亮黄"],
+    ['正常: { text: "#2F8F60", bar: "#52A965"', "正常绿"],
   ]) {
     if (!src.includes(tok)) throw new Error(`缺 ${label}：${tok}`);
   }

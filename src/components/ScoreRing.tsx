@@ -1,7 +1,7 @@
 export function scoreColor(score: number) {
-  if (score >= 80) return "#3CC078";
-  if (score >= 60) return "#B9ECD0";
-  if (score > 0) return "#FF961F";
+  if (score >= 80) return "#52A965";
+  if (score >= 60) return "#CDE3CC";
+  if (score > 0) return "#FA872A";
   return "#D8E2DC";
 }
 

@@ -9,8 +9,8 @@ export type { E3V37Level };
 /** 三档判定的颜色常量：text=文字色，bar=条形/描边色，bg=底色。 */
 export const E3V37_LEVEL_STYLE: Record<E3V37Level, { text: string; bar: string; bg: string }> = {
   卡点: { text: "#8f1313", bar: "#b91c1c", bg: "#FAF3EB" },
-  待提升: { text: "#C79400", bar: "#FFC600", bg: "#f5e7c1" },
-  正常: { text: "#2F8F60", bar: "#3CC078", bg: "#E4F7EC" }, // bg = lime-pale
+  待提升: { text: "#C79400", bar: "#FCCE45", bg: "#f5e7c1" },
+  正常: { text: "#2F8F60", bar: "#52A965", bg: "#E9F3E6" }, // bg = lime-pale
 };
 
 /** 章节条款卡（CombinedSection.items level）的 Tailwind 类。 */

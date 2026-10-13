@@ -5,31 +5,32 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // v98：升学规划报告风格——翡翠绿主色 + 深绿文字（采样自参考图）
-        // olive=文字色系（深绿），brand=品牌动作色（翡翠绿按钮/头部/头像）
+        // v122：全局主题迁入「栖川烟渚」色卡（克制与温柔）——
+        // 深青绿 #0C7064=brand 主色，草绿 #52A965=lime 正向色，橙 #FA872A=terra，黄 #FCCE45=butter。
+        // olive=文字色系（深青墨绿），brand=品牌动作色（深青绿按钮/头部/头像）
         olive: {
-          DEFAULT: "#0B3D2E",
-          soft: "#4B5F57",
-          mute: "#8FA39B",
+          DEFAULT: "#0A3B34",
+          soft: "#4E6A61",
+          mute: "#8CA098",
         },
         brand: {
-          DEFAULT: "#0EA875",
-          deep: "#0B8A63",
-          pale: "#D4F2E8",
+          DEFAULT: "#0C7064",
+          deep: "#095048",
+          pale: "#D9EDE8",
         },
         lime: {
-          DEFAULT: "#3CC078",
-          light: "#6FD9A4",
-          tint: "#B9ECD0",
-          pale: "#E4F7EC",
+          DEFAULT: "#52A965",
+          light: "#8EBD86",
+          tint: "#CDE3CC",
+          pale: "#E9F3E6",
         },
         cream: {
           DEFAULT: "#FFFFFF",
-          deep: "#F0FAF5",
+          deep: "#FFFAEE",
           card: "#FFFFFF",
         },
-        butter: "#FFC600",
-        terra: "#FF961F",
+        butter: "#FCCE45",
+        terra: "#FA872A",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -35,9 +35,9 @@ export default function Login() {
         <div className="flex flex-col items-center text-center">
           <svg width="64" height="64" viewBox="0 0 34 34" fill="none" aria-hidden>
             <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#20362B" />
-            <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#6FD9A4" />
-            <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#B9ECD0" />
-            <circle cx="17" cy="9.5" r="2.2" fill="#FFC600" />
+            <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#8EBD86" />
+            <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#CDE3CC" />
+            <circle cx="17" cy="9.5" r="2.2" fill="#FCCE45" />
           </svg>
           <h1 className="mt-4 text-[26px] font-bold tracking-tight text-olive">三好学伴</h1>
           <p className="mt-1.5 text-[14px] leading-relaxed text-olive-mute">

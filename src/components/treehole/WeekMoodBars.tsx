@@ -10,11 +10,11 @@ function dayStr(offset = 0): string {
 }
 
 const BAR_COLORS: Record<number, string> = {
-  1: "#FF961F",
+  1: "#FA872A",
   2: "#d9a05b",
-  3: "#B9ECD0",
-  4: "#6FD9A4",
-  5: "#3CC078",
+  3: "#CDE3CC",
+  4: "#8EBD86",
+  5: "#52A965",
 };
 
 /** 近 7 天心情：纯 CSS 柱，高度 = mood/5，无记录灰矮柱，今天高亮。 */

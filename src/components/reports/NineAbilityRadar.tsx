@@ -9,7 +9,7 @@ import { E3V37_LEVEL_STYLE, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
 /** 三阶分组配色（乐学/会学/善学）。 */
 const SYSTEM_COLOR: Record<string, string> = {
-  乐学: "#3CC078",
+  乐学: "#52A965",
   会学: "#3d8ec4",
   善学: "#c7a23a",
 };
@@ -60,7 +60,7 @@ export default function NineAbilityRadar({
                 );
               }}
             />
-            <Radar dataKey="得分" stroke="#3CC078" fill="#3CC078" fillOpacity={0.3} strokeWidth={2.5} />
+            <Radar dataKey="得分" stroke="#52A965" fill="#52A965" fillOpacity={0.3} strokeWidth={2.5} />
           </RadarChart>
         </ResponsiveContainer>
       </div>

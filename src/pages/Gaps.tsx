@@ -10,9 +10,9 @@ import { pickAndCompress } from "@/lib/image";
 import { AlarmClock, BookMarked, PenLine, GitBranch, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, Camera, X, GraduationCap, Mic } from "lucide-react";
 
 const CAUSE_COLORS: Record<string, string> = {
-  概念不清: "#3CC078",
+  概念不清: "#52A965",
   审题失误: "#c7a23a",
-  计算错误: "#FF961F",
+  计算错误: "#FA872A",
   方法不会: "#43564C",
   粗心大意: "#7A8A82",
 };

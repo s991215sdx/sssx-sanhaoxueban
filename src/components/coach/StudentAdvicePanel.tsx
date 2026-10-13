@@ -68,7 +68,7 @@ export default function StudentAdvicePanel({ userId }: { userId: number }) {
                           ? "bg-[#FAF3EB] text-[#8f1313]"
                           : a.score < 3.8
                             ? "bg-[#f5e7c1] text-[#8a6d1a]"
-                            : "bg-[#E4F7EC] text-[#2F8F60]"
+                            : "bg-[#E9F3E6] text-[#2F8F60]"
                       }`}
                     >
                       {a.score}/5 · {a.level}

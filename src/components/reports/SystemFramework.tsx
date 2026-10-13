@@ -64,7 +64,7 @@ const DEEP_TRAITS: { key: "mbti" | "disc" | "anchor" | "holland"; label: string 
 function LinkChip({ done, label, onClick }: { done: boolean; label: string; onClick?: () => void }) {
   const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${
     done
-      ? "border border-[#3CC078]/60 bg-[#E4F7EC] text-[#20362B]"
+      ? "border border-[#52A965]/60 bg-[#E9F3E6] text-[#20362B]"
       : "border border-dashed border-[#A3B8AB]/80 text-olive-mute"
   }`;
   if (!onClick) return <span className={cls}>{label}</span>;
@@ -88,7 +88,7 @@ function LinkChip({ done, label, onClick }: { done: boolean; label: string; onCl
 const BAND: Record<E3V37Level, { label: string; border: string; bg: string; text: string }> = {
   卡点: { label: "卡点", border: "#D84E4E", bg: "#FDECEC", text: "#B42323" },
   待提升: { label: "待提升", border: "#E3A008", bg: "#FCF3DC", text: "#B07800" },
-  正常: { label: "正常", border: "#3CC078", bg: "#E4F7EC", text: "#2F8F60" },
+  正常: { label: "正常", border: "#52A965", bg: "#E9F3E6", text: "#2F8F60" },
 };
 
 /** 分数档判定（v121 起与全局统一）：红 <3.0 卡点；黄 3.0–3.7 待提升；绿 ≥3.8 正常。 */

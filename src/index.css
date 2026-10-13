@@ -4,27 +4,27 @@
 
 @layer base {
   :root {
-    /* v91：正文改近黑（原是中等绿导致雾蒙蒙），品牌绿只留给标题/强调 */
-    --background: 150 20% 97%;
-    --foreground: 160 12% 14%;
+    /* v122：主题迁入「栖川烟渚」色卡；正文近黑墨绿，深青绿只留给主按钮/强调 */
+    --background: 45 55% 96%;
+    --foreground: 172 40% 13%;
     --card: 0 0% 100%;
-    --card-foreground: 160 12% 14%;
+    --card-foreground: 172 40% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 160 12% 14%;
-    /* v98：primary 改翡翠绿 #0EA875（hsl 159 85% 36%），升学规划报告风格 */
-    --primary: 159 85% 36%;
+    --popover-foreground: 172 40% 13%;
+    /* v122：primary 改深青绿 #0C7064（hsl 173 81% 24%） */
+    --primary: 173 81% 24%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 150 47% 93%;
-    --secondary-foreground: 160 12% 14%;
-    --muted: 150 12% 94%;
-    --muted-foreground: 155 8% 38%;
-    --accent: 152 55% 49%;
+    --secondary: 165 30% 92%;
+    --secondary-foreground: 172 40% 13%;
+    --muted: 45 25% 94%;
+    --muted-foreground: 165 6% 40%;
+    --accent: 134 33% 47%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 32 100% 56%;
+    --destructive: 0 68% 53%;
     --destructive-foreground: 0 0% 98%;
-    --border: 150 10% 90%;
-    --input: 150 9% 85%;
-    --ring: 152 55% 49%;
+    --border: 40 14% 88%;
+    --input: 40 10% 84%;
+    --ring: 173 55% 32%;
     --radius: 0.875rem;
   }
 }
@@ -64,10 +64,10 @@
     }
   }
   .paper-card {
-    @apply bg-card border border-border rounded-2xl shadow-[0_1px_0_rgba(31,107,67,0.06),0_8px_24px_-12px_rgba(31,107,67,0.18)];
+    @apply bg-card border border-border rounded-2xl shadow-[0_1px_0_rgba(12,80,72,0.06),0_8px_24px_-12px_rgba(12,80,72,0.18)];
     background-image:
-      radial-gradient(260px 180px at 100% 0%, rgba(14, 168, 117, 0.05), transparent 70%),
-      radial-gradient(220px 160px at 0% 100%, rgba(60, 192, 120, 0.04), transparent 70%);
+      radial-gradient(260px 180px at 100% 0%, rgba(12, 112, 100, 0.05), transparent 70%),
+      radial-gradient(220px 160px at 0% 100%, rgba(82, 169, 101, 0.04), transparent 70%);
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border border-border bg-secondary/60 px-2.5 py-0.5 text-xs mono;

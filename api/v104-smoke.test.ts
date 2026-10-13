@@ -29,7 +29,7 @@ describe("v104 全局生动化装饰", () => {
   it("paper-card 卡片加极淡绿色渐变装饰", () => {
     const src = read("src/index.css");
     if (!/\.paper-card[\s\S]{0,400}radial-gradient/.test(src)) throw new Error("缺：paper-card 渐变装饰");
-    if (!/rgba\(14, 168, 117, 0\.0[0-9]\)/.test(src)) throw new Error("缺：brand 绿淡色渐变");
+    if (!/rgba\(12, 112, 100, 0\.0[0-9]\)/.test(src)) throw new Error("缺：brand 绿淡色渐变");
   });
 
   it("侧栏底部树苗装饰", () => {

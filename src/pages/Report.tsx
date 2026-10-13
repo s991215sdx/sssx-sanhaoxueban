@@ -4,7 +4,7 @@ import ReportLockedGate from "@/components/ReportLockedGate";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { MessageSquareHeart } from "lucide-react";
 
-const PIE_COLORS = ["#3CC078", "#B9ECD0", "#FF961F", "#43564C", "#FFC600"];
+const PIE_COLORS = ["#52A965", "#CDE3CC", "#FA872A", "#43564C", "#FCCE45"];
 
 export default function Report() {
   const { data, isLoading } = trpc.dashboard.summary.useQuery(undefined, { retry: 6, retryDelay: 3000 });
@@ -54,7 +54,7 @@ export default function Report() {
               <RadarChart data={data.radar} outerRadius="70%">
                 <PolarGrid stroke="#D8E2DC" />
                 <PolarAngleAxis dataKey="chapter" tick={{ fill: "#43564C", fontSize: 12 }} />
-                <Radar dataKey="score" stroke="#3CC078" fill="#3CC078" fillOpacity={0.35} strokeWidth={2.5} />
+                <Radar dataKey="score" stroke="#52A965" fill="#52A965" fillOpacity={0.35} strokeWidth={2.5} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -108,7 +108,7 @@ export default function Report() {
                 />
                 <Bar dataKey="pct" radius={[6, 6, 0, 0]}>
                   {data.weekly.map((w, i) => (
-                    <Cell key={i} fill={w.total > 0 ? "#3CC078" : "#E8EFEA"} />
+                    <Cell key={i} fill={w.total > 0 ? "#52A965" : "#E8EFEA"} />
                   ))}
                 </Bar>
               </BarChart>

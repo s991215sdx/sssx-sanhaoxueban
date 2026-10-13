@@ -23,7 +23,7 @@ export default function HollandDetail({ result }: { result: HollandResult }) {
             >
               <PolarGrid stroke="#D8E2DC" />
               <PolarAngleAxis dataKey="dim" tick={{ fill: "#43564C", fontSize: 12 }} />
-              <Radar dataKey="得分" stroke="#FF961F" fill="#FF961F" fillOpacity={0.3} strokeWidth={2.5} />
+              <Radar dataKey="得分" stroke="#FA872A" fill="#FA872A" fillOpacity={0.3} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
