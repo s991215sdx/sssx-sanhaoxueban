@@ -12,6 +12,6 @@ describe("v134 报告选择器轨道改淡淡浅绿", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v134-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v134");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

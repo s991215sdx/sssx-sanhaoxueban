@@ -98,7 +98,7 @@ export function frameworkScoreLevel(score: number): E3V37Level {
   return "正常";
 }
 
-/** 一级单元块（v133）：白色小卡 + 按档着色边框，名称与分数同色按档变化。 */
+/** 一级单元块（v135）：小项底色按档着色（浅底+同色系边+同色字），白大卡上的色块。 */
 function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; done: boolean }) {
   const lv: E3V37Level = unit?.level ?? (done ? "正常" : "待提升");
   const band = BAND[lv];
@@ -111,8 +111,8 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
     );
   return (
     <div
-      className="rounded-xl border bg-white px-1 py-2 text-center shadow-sm"
-      style={{ borderColor: band.border }}
+      className="rounded-xl border px-1 py-2 text-center shadow-sm"
+      style={{ borderColor: band.border, background: band.bg }}
     >
       <div className="text-[12px] font-semibold" style={{ color: band.text }}>
         {name}
@@ -124,11 +124,11 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
   );
 }
 
-/** 按档着色的容器框（v116：浅底 + 同色系细边框 + 同色系标题）。 */
+/** 按档着色的容器框（v135：大卡片白底，边框+标题仍按档着色）。 */
 function levelBoxStyle(level: E3V37Level | undefined) {
-  if (!level) return { borderColor: "#a8b08c60", background: "#F0F3EC", titleColor: "#707A6C" };
+  if (!level) return { borderColor: "#a8b08c60", background: "#FFFFFF", titleColor: "#707A6C" };
   const band = BAND[level];
-  return { borderColor: band.border, background: band.bg, titleColor: band.text };
+  return { borderColor: band.border, background: "#FFFFFF", titleColor: band.text };
 }
 
 export default function SystemFramework({
