@@ -16,7 +16,7 @@ describe("v97 后台管理去黑改绿", () => {
     const src = read("src/pages/Admin.tsx");
     need(src, 'tracking-tight text-[#1E3530]">{platform ? "总系统 · 后台管理"', "页面标题黑色（v128 改）");
     need(src, 'font-semibold text-[#2F7A41]">{s.name}', "学员姓名绿色");
-    need(src, "rounded-full bg-[#2F7A41] text-[14px] font-bold text-white", "头像绿底白字");
+    need(src, "rounded-full bg-[#0C7064] text-[14px] font-bold text-white", "头像墨绿底白字（v130 统一）");
   });
 
   it("已推送 chip 文字绿色（icon 与文字两种模式）", () => {

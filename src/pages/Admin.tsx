@@ -374,7 +374,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
         <div className="divide-y divide-border">
           {filtered.map((s) => (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2F7A41] text-[14px] font-bold text-white">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0C7064] text-[14px] font-bold text-white">
                 {(s.name || "学")[0]}
               </span>
               <div className="min-w-0 flex-1">

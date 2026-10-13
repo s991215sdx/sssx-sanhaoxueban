@@ -19,8 +19,8 @@ describe("v129 学员详情头卡：米白→墨绿渐变 + 内部色彩重搭",
     if (!/rounded-full bg-\[#0C7064\] text-\[16px\] font-bold text-white/.test(src)) throw new Error("缺：头像墨绿白字");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const src = readFileSync("api/router.ts", "utf-8");
-    if (!src.includes('const BUILD_TAG = "v129-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v129");
+    if (!/const BUILD_TAG = "v\d+-/.test(src)) throw new Error("BUILD_TAG 缺失");
   });
 });
