@@ -59,7 +59,7 @@ export default function AnswerSheetsPanel({
       {e3v37 && (
         <div className="mt-3">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#2F7A41]">
+            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#1E3530]">
               <TreePine size={14} />
               三阶九能得分表
             </span>

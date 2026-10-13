@@ -193,7 +193,7 @@ export default function AbilityScoreTable({
   );
   return (
     <div className="paper-card p-5">
-      <h3 className="flex items-center gap-1.5 font-bold text-[#2F7A41]">
+      <h3 className="flex items-center gap-1.5 font-bold text-[#1E3530]">
         <TreePine size={16} />
         附录 · 三阶九能观察点得分表
       </h3>
