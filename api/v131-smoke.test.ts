@@ -4,13 +4,10 @@ import { readFileSync } from "fs";
 describe("v131 报告栏目选择器：白卡 + 米白→墨绿渐变选中", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
-  it("两个选择器均为白卡未选中 + 渐变选中", () => {
-    const sel = /bg-\[linear-gradient\(180deg,#FFFAEE,#0C7064_45%\)\] text-white shadow-sm/;
-    const unsel = /: "bg-white text-olive"/;
-    const matches = (src.match(/bg-\[linear-gradient\(180deg,#FFFAEE,#0C7064_45%\)\] text-white shadow-sm/g) || []).length;
-    if (matches < 2) throw new Error("缺：米白→墨绿渐变选中卡（应有两处）");
-    if (!unsel.test(src)) throw new Error("缺：白色未选中卡");
-    if (/bg-cream text-olive shadow-sm/.test(src)) throw new Error("残留：旧米色选中卡");
+  it("两个选择器均为白底选中（墨绿字框）+ 白底未选中（v143 断言随设计更新）", () => {
+    const matches = (src.match(/border-\[#0C7064\] bg-white text-\[#0C7064\] shadow-sm/g) || []).length;
+    if (matches < 2) throw new Error("缺：白底墨绿字框选中（应有两处）");
+    if (!/: "border-transparent bg-white text-olive/.test(src)) throw new Error("缺：白底未选中");
   });
 
   it("版本标记存在（具体版本号由最新版测试锁定）", () => {

@@ -2574,16 +2574,16 @@ export default function ReportView({
         </section>
       )}
 
-      {/* Tab 切换（v134：轨道=淡淡浅绿，未选中=纯白卡，选中=米白→墨绿渐变卡） */}
-      <div className="flex flex-wrap gap-1 rounded-xl bg-[#E9F3E6] p-1">
+      {/* Tab 切换（v143：轨道=白色，选中=白底+墨绿字+墨绿框，未选中=白底墨绿灰字） */}
+      <div className="flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`grow basis-[30%] rounded-lg px-2 py-2 text-[12.5px] font-semibold transition ${
+            className={`grow basis-[30%] rounded-lg border px-2 py-2 text-[12.5px] font-semibold transition ${
               tab === t.key
-                ? "bg-[linear-gradient(180deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
-                : "bg-white text-olive"
+                ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
+                : "border-transparent bg-white text-olive hover:border-[#1E3530]/15"
             }`}
           >
             {t.label}
@@ -3060,8 +3060,8 @@ export default function ReportView({
           <MissingCard text="综合报告需要 MBTI、DISC、学习力诊断三项测评都完成。先去「测评中心」补齐吧。" />
         ) : (
           <div className="space-y-4">
-            {/* 详版 / 简版切换（v134：轨道=淡淡浅绿，未选中=纯白卡，选中=渐变卡） */}
-            <div className="flex gap-1 rounded-xl bg-[#E9F3E6] p-1">
+            {/* 详版 / 简版切换（v143：轨道=白色，选中=白底墨绿字框） */}
+            <div className="flex gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
               {(
                 [
                   { key: "full", label: "详版报告" },
@@ -3071,10 +3071,10 @@ export default function ReportView({
                 <button
                   key={v.key}
                   onClick={() => setCombinedView(v.key)}
-                  className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                  className={`flex-1 rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors ${
                     combinedView === v.key
-                      ? "bg-[linear-gradient(180deg,#FFFAEE,#0C7064_45%)] text-white shadow-sm"
-                      : "bg-white text-olive"
+                      ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
+                      : "border-transparent bg-white text-olive hover:border-[#1E3530]/15"
                   }`}
                 >
                   {v.label}

@@ -10,8 +10,8 @@ describe("v142 简要方案条白底 + 三阶主题色边框", () => {
     if (/bg-lime-pale px-3 py-2\.5/.test(src)) throw new Error("残留：浅绿方案条");
   });
 
-  it("版本标记已递增", () => {
+  it("版本标记存在（具体版本号由最新版测试锁定）", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v142-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v142");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
