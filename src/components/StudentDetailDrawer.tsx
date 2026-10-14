@@ -97,14 +97,15 @@ export default function StudentDetailDrawer({
                         {[data.profile?.grade, data.profile?.school].filter(Boolean).join(" · ")}
                       </span>
                     )}
+                    {/* v151：ID 与目标上移到学校后面，字号颜色不变 */}
+                    <span className="mono text-[11.5px] text-white/80">
+                      ID {data.user.phone}
+                      {data.profile?.targetSchool && <span className="ml-1.5">· 目标：{data.profile.targetSchool}</span>}
+                    </span>
                   </div>
                 </div>
               </div>
               <div className="my-2.5 h-px bg-white/25" />
-              <div className="mono text-[11.5px] text-white/80">
-                ID {data.user.phone}
-                {data.profile?.targetSchool && <span className="ml-1.5">· 目标：{data.profile.targetSchool}</span>}
-              </div>
               <div className="mono mt-3 grid grid-cols-4 gap-2 text-center">
                 {[
                   { label: "答题", value: data.learning.attemptCount },
