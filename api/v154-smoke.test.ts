@@ -8,7 +8,7 @@ describe("v154 章节卡卡片级左色条", () => {
 
   it("卡片根节点带档色标识", () => {
     // v159 起为内嵌胶囊色条（w-[16px] rounded-full），此处兼容历史边框写法
-    if (!/(paper-card scroll-mt-20 border-l-(\[?\d+px?\]|\d+) border-lime p-5 pl-6|paper-card relative scroll-mt-20 overflow-hidden p-5 pl-9)/.test(src))
+    if (!/(paper-card scroll-mt-20 border-l-(\[?\d+px?\]|\d+) border-lime p-5 pl-[67]|paper-card relative scroll-mt-20 overflow-hidden p-5 pl-9)/.test(src))
       throw new Error("缺：卡片级档色标识");
     if (!/E3V37_LEVEL_STYLE\[accent\]\.bar/.test(src)) throw new Error("缺：档色引用");
   });

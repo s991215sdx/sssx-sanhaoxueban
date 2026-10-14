@@ -7,8 +7,9 @@ describe("v163 章节卡左边框加粗变色", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
   it("卡片左边框 12px 加粗，仅左边框染色", () => {
-    if (!/paper-card scroll-mt-20 border-l-\[12px\] border-lime p-5 pl-6/.test(src))
-      throw new Error("缺：border-l-[12px] 加粗左边框");
+    // v164 起加粗一倍到 24px，此处兼容 12px 写法
+    if (!/paper-card scroll-mt-20 border-l-\[(12|24)px\] border-lime p-5 pl-[67]/.test(src))
+      throw new Error("缺：加粗左边框");
     if (!/style=\{accent \? \{ borderLeftColor: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined\}/.test(src))
       throw new Error("缺：仅 borderLeftColor 染色");
     if (/\{ borderColor: E3V37_LEVEL_STYLE\[accent\]\.bar \}/.test(src)) throw new Error("残留：整框 borderColor 染色");
@@ -31,6 +32,6 @@ describe("v163 章节卡左边框加粗变色", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v163-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v163");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });

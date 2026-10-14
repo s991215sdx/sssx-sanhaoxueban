@@ -13,7 +13,7 @@ describe("v153 章节卡左色条随评分", () => {
 
   it("头部左边框随档着色，无档保持 lime", () => {
     // v159 起改为内嵌胶囊色条（w-[16px] rounded-full），边框方案废弃，此处兼容全部历史写法
-    if (!/(border-l-(\[?\d+px?\]|\d+) border-lime p-5 pl-6|w-\[16px\] rounded-full)/.test(src))
+    if (!/(border-l-(\[?\d+px?\]|\d+) border-lime p-5 pl-[67]|w-\[16px\] rounded-full)/.test(src))
       throw new Error("缺：卡片级档色标识");
     if (!/E3V37_LEVEL_STYLE\[accent\]\.bar/.test(src)) throw new Error("缺：档色引用");
   });

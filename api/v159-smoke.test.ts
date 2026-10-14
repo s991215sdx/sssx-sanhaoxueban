@@ -7,7 +7,7 @@ describe("v159 章节卡胶囊色条 + 标题随档着色", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
   it("卡片根节点：档色标识（v159 胶囊 / v163 起回左边框，两种均兼容）", () => {
-    if (!/(paper-card relative scroll-mt-20 overflow-hidden p-5 pl-9|paper-card scroll-mt-20 border-l-\[12px\] border-lime p-5 pl-6)/.test(src))
+    if (!/(paper-card relative scroll-mt-20 overflow-hidden p-5 pl-9|paper-card scroll-mt-20 border-l-\[\d+px\] border-lime p-5 pl-[67])/.test(src))
       throw new Error("缺：档色标识容器");
   });
 

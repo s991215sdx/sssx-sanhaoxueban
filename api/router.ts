@@ -21,7 +21,7 @@ import { orgRouter } from "./orgRouter";
 import { ssoRouter } from "./ssoRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v163-2026-10-14";
+const BUILD_TAG = "v164-2026-10-14";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),

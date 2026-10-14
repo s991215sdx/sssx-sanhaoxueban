@@ -8,7 +8,7 @@ describe("v155 章节卡仅左边框加粗变色", () => {
 
   it("卡片左边框加粗（或 v159 胶囊色条）", () => {
     // v159 起为内嵌胶囊色条（w-[16px] rounded-full），兼容历史 border-l-8/12px 写法
-    if (!/(border-l-(8|\[12px\])|w-\[16px\] rounded-full)/.test(src)) throw new Error("缺：加粗左边框/胶囊色条");
+    if (!/(border-l-(8|\[\d+px\])|w-\[16px\] rounded-full)/.test(src)) throw new Error("缺：加粗左边框/胶囊色条");
   });
 
   it("档色只作用于左侧标识，不再有整框 borderColor", () => {

@@ -240,7 +240,7 @@ function CollapsibleSection({
   return (
     <div
       id={`sec-${index}`}
-      className="paper-card scroll-mt-20 border-l-[12px] border-lime p-5 pl-6"
+      className="paper-card scroll-mt-20 border-l-[24px] border-lime p-5 pl-7"
       style={accent ? { borderLeftColor: E3V37_LEVEL_STYLE[accent].bar } : undefined}
     >
       <div className="flex items-center gap-2.5">
