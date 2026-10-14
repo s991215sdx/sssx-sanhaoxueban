@@ -3665,10 +3665,10 @@ function AnswerBlocksView({ blocks }: { blocks: AnswerBlock[] }) {
             {b.rows.map((row, ri) => (
               <li key={`${row.no}-${ri}`} className="flex gap-2 text-[12.5px] leading-relaxed text-olive-soft">
                 <span className="mono shrink-0 text-olive-mute">{row.no}.</span>
-                <span className="flex-1">{row.text}</span>
-                {/* V62：带分数段(band)的题按 红<3.0/黄3.0-3.7/绿≥3.8 着色；无 band 的保持旧逻辑（仅警示标红） */}
+                <span className="min-w-0 flex-1">{row.text}</span>
+                {/* V62：带分数段(band)的题按 红<3.0/黄3.0-3.7/绿≥3.8 着色；无 band 的保持旧逻辑（仅警示标红）。v152：ans 限宽 60% 并右对齐，长文本（如 DISC 最像/最不像）不再挤爆题干列 */}
                 <span
-                  className={`shrink-0 font-semibold ${
+                  className={`max-w-[60%] shrink-0 text-right font-semibold ${
                     row.band === "bad"
                       ? "text-[#A82524]"
                       : row.band === "mid"

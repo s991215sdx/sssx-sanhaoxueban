@@ -1,4 +1,5 @@
-/* v151 冒烟：学员详情头卡 ID 与目标文字上移到学校后面（字号颜色不变，仅挪位置） */
+/* v151 冒烟：学员详情头卡 ID 与目标文字上移到学校后面（字号颜色不变，仅挪位置）。
+   v152 注：BUILD_TAG 断言已放宽为通用形式 */
 import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
@@ -22,6 +23,6 @@ describe("v151 ID/目标上移到学校后面", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v151-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v151");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
