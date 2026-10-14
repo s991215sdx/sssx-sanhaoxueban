@@ -10,7 +10,7 @@ import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
-import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search } from "lucide-react";
+import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
 
@@ -499,6 +499,11 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
   const { data: tutors, isLoading } = trpc.admin.tutors.useQuery(orgScope);
   const { data: students } = trpc.admin.students.useQuery(orgScope);
   const assignedOf = (userId: number) => students?.find((s) => s.userId === userId)?.tutors ?? [];
+  /* v161：每位伴学师名下学员默认折叠，点「展开」看全部；伴学师列表分页（每页 10 个） */
+  const [expandedTutors, setExpandedTutors] = useState<number[]>([]);
+  const toggleTutor = (id: number) =>
+    setExpandedTutors((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const tutorsPager = usePager(tutors ?? [], 10);
 
   return (
     <div className="space-y-3">
@@ -508,42 +513,59 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
         </div>
       ) : (
         <>
-          {tutors?.map((t) => (
-            <div key={t.id} className="paper-card overflow-hidden">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-5 py-3.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
-                  {(t.name || "伴")[0]}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14.5px] font-semibold text-olive">{t.name}</div>
-                  <div className="mono mt-0.5 text-[11px] text-olive-mute">
-                    学员 {t.studentCount} 人 · 总答题 {t.totalAttempts} · 最近登录{" "}
-                    {new Date(t.lastSignInAt).toLocaleDateString("zh-CN")}
+          {tutorsPager.pageItems.map((t) => {
+            const expanded = expandedTutors.includes(t.id);
+            return (
+              <div key={t.id} className="paper-card overflow-hidden">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-5 py-3.5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
+                    {(t.name || "伴")[0]}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14.5px] font-semibold text-olive">{t.name}</div>
+                    <div className="mono mt-0.5 text-[11px] text-olive-mute">
+                      学员 {t.studentCount} 人 · 总答题 {t.totalAttempts} · 最近登录{" "}
+                      {new Date(t.lastSignInAt).toLocaleDateString("zh-CN")}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="divide-y divide-border">
-                {t.students.map((s) => (
-                  <div key={s.userId} className="flex items-center gap-3 px-5 py-2.5">
-                    <span className="text-[13px] text-olive">
-                      {s.name}
-                      {s.grade && <span className="ml-1.5 text-[11.5px] text-olive-mute">{s.grade}</span>}
-                    </span>
-                    <span className="ml-auto">
-                      <TutorAssignButton studentUserId={s.userId} tutors={tutors} assigned={assignedOf(s.userId)} />
-                    </span>
+                <button
+                  onClick={() => toggleTutor(t.id)}
+                  className="flex w-full items-center gap-1.5 px-5 py-2.5 text-[12.5px] font-medium text-olive-mute transition-colors hover:bg-butter-pale/40 hover:text-olive"
+                >
+                  <ChevronDown size={14} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+                  {expanded ? "收起学员列表" : `学员 ${t.studentCount} 人 · 点击展开`}
+                </button>
+                {expanded && (
+                  <div className="divide-y divide-border">
+                    {t.students.map((s) => (
+                      <div key={s.userId} className="flex items-center gap-3 px-5 py-2.5">
+                        <span className="text-[13px] text-olive">
+                          {s.name}
+                          {s.grade && <span className="ml-1.5 text-[11.5px] text-olive-mute">{s.grade}</span>}
+                        </span>
+                        <span className="ml-auto">
+                          <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={assignedOf(s.userId)} />
+                        </span>
+                      </div>
+                    ))}
+                    {t.students.length === 0 && (
+                      <p className="px-5 py-4 text-[12.5px] text-olive-mute">还没有分配学员，可在「学员」tab 里分配。</p>
+                    )}
                   </div>
-                ))}
-                {t.students.length === 0 && (
-                  <p className="px-5 py-4 text-[12.5px] text-olive-mute">还没有分配学员，可在「学员」tab 里分配。</p>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {tutors?.length === 0 && (
             <p className="paper-card px-5 py-8 text-center text-[13px] text-olive-mute">
               还没有伴学师——在「总览」tab 的用户列表里可以把用户设为伴学师。
             </p>
+          )}
+          {tutorsPager.totalPages > 1 && (
+            <div className="paper-card overflow-hidden">
+              <Pager page={tutorsPager.page} totalPages={tutorsPager.totalPages} total={tutorsPager.total} onChange={tutorsPager.setPage} />
+            </div>
           )}
         </>
       )}

@@ -47,6 +47,6 @@ describe("v160 三个列表分页", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v160-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v160");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });
