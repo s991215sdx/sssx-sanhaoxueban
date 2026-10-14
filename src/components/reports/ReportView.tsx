@@ -438,7 +438,8 @@ function RoadmapSection({
     条件: ["e3:条件"],
   };
   /** 行内答题明细折叠（V36：折叠式直出在当前行，不再跳转到其他 tab）。
-   *  V52：onlyAbilities 只保留对应问题（弱项能力）的题目明细。 */
+   *  V52：onlyAbilities 只保留对应问题（弱项能力）的题目明细。
+   *  v149b：去外边框，标题左侧改墨绿色条（与文字间距 10px），与全局 Fold 样式统一。 */
   const AnswersFold = ({ kinds, title, onlyAbilities }: { kinds: string[]; title?: string; onlyAbilities?: string[] }) => {
     if (!raw || raw.length === 0) return null;
     let blocks = buildAnswerBlocks(raw, kinds);
@@ -451,9 +452,10 @@ function RoadmapSection({
     }
     if (blocks.length === 0) return null;
     return (
-      <details className="group mt-1.5 overflow-hidden rounded-lg border border-border/70 bg-white/60 print:hidden">
-        <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
-          <span>{title ?? (filtered ? "答题明细（仅对应问题，点击展开）" : "答题明细（点击展开）")}</span>
+      <details className="group mt-1.5 overflow-hidden rounded-lg bg-white/60 print:hidden">
+        <summary className="flex cursor-pointer select-none items-center gap-2.5 px-2.5 py-1.5 text-[11.5px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
+          <span className="inline-block h-3.5 w-1 shrink-0 rounded-full bg-[#0C7064]" aria-hidden />
+          <span className="flex-1">{title ?? (filtered ? "答题明细（仅对应问题，点击展开）" : "答题明细（点击展开）")}</span>
           <ChevronDown size={13} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
         </summary>
         <div className="border-t border-border/60 px-1 py-1">
