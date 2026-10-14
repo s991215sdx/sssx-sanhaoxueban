@@ -11,6 +11,8 @@ import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search } from "lucide-react";
+import Pager from "@/components/Pager";
+import { usePager } from "@/hooks/usePager";
 
 /** 后台管理：机构管理员=总览/学员/伴学师/注册邀请；平台超管=机构管理（总系统）。 */
 export default function Admin() {
@@ -102,6 +104,8 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
     return () => clearTimeout(t);
   }, [userSearch]);
   const { data: users, isLoading } = trpc.admin.users.useQuery({ ...orgScope, search: debouncedSearch || undefined });
+  /* v160：用户列表分页（搜索词变化自动回第 1 页） */
+  const usersPager = usePager(users ?? [], 20, debouncedSearch);
   const setRole = trpc.admin.setRole.useMutation({
     onSuccess: () => {
       utils.admin.users.invalidate();
@@ -219,7 +223,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {users?.map((u) => (
+                {usersPager.pageItems.map((u) => (
                   <div key={u.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
                       {(u.name || "学")[0]}
@@ -327,6 +331,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                 )}
               </div>
             )}
+            <Pager page={usersPager.page} totalPages={usersPager.totalPages} total={usersPager.total} onChange={usersPager.setPage} />
           </div>
 
           {detailId !== null && <UserDetailDrawer userId={detailId} onClose={() => setDetailId(null)} />}
@@ -368,6 +373,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
   const filtered = (students ?? []).filter(
     (s) => !kw || s.name.includes(kw) || (s.phone ?? "").includes(kw),
   );
+  /* v160：学员列表分页（搜索词变化自动回第 1 页） */
+  const studentsPager = usePager(filtered, 20, kw);
 
   return (
     <div className="paper-card overflow-hidden">
@@ -391,7 +398,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {filtered.map((s) => (
+          {studentsPager.pageItems.map((s) => (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0C7064] text-[14px] font-bold text-white">
                 {(s.name || "学")[0]}
@@ -481,6 +488,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
           )}
         </div>
       )}
+      <Pager page={studentsPager.page} totalPages={studentsPager.totalPages} total={studentsPager.total} onChange={studentsPager.setPage} />
       {detailId !== null && <StudentDetailDrawer userId={detailId} source="admin" onClose={closeDetail} />}
     </div>
   );

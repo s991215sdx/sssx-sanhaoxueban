@@ -13,6 +13,8 @@ import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList } from "lucide-react";
+import Pager from "@/components/Pager";
+import { usePager } from "@/hooks/usePager";
 
 /** 学员卡内联的「功能开关」面板：勾选该学员可用的模块（测评中心恒可用）。 */
 function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabledModules: string[] | null }) {
@@ -97,6 +99,8 @@ export default function Tutor() {
   const filtered = (students ?? []).filter(
     (s) => !kw || s.name.includes(kw) || (s.phone ?? "").includes(kw),
   );
+  /* v160：学员管理分页（每页 10 张卡，搜索词变化自动回第 1 页） */
+  const pager = usePager(filtered, 10, kw);
 
   if (!allowed) {
     return (
@@ -170,7 +174,7 @@ export default function Tutor() {
           ) : (
             /* V62：学员卡一行一个（去掉 sm:grid-cols-2），方便逐个扫读 */
             <div className="grid gap-3">
-              {filtered.map((s) => (
+              {pager.pageItems.map((s) => (
                 <div
                   key={s.userId}
                   onClick={() => openDetail(s.userId)}
@@ -277,6 +281,7 @@ export default function Tutor() {
               )}
             </div>
           )}
+          <Pager page={pager.page} totalPages={pager.totalPages} total={pager.total} onChange={pager.setPage} />
 
           {/* 邀请注册：伴学师自己的二维码（经此码注册的学员自动归到名下） */}
           <section className="pt-3">

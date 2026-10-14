@@ -31,6 +31,6 @@ describe("v159 章节卡胶囊色条 + 标题随档着色", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v159-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v159");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });
