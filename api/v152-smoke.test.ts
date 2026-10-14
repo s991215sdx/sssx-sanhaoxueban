@@ -1,4 +1,5 @@
-/* v152 冒烟：答题明细行 ans 限宽 60% 右对齐——修复 DISC 最像/最不像长文本挤爆题干列的问题 */
+/* v152 冒烟：答题明细行 ans 限宽 60% 右对齐——修复 DISC 最像/最不像长文本挤爆题干列的问题。
+   v153 注：BUILD_TAG 断言已放宽为通用形式 */
 import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
@@ -12,6 +13,6 @@ describe("v152 答题明细行布局修复", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v152-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v152");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

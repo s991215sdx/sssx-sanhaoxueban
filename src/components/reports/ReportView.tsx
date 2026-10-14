@@ -24,7 +24,7 @@ import {
   scoreE3V37Items,
   e3v37Level,
 } from "@contracts/e3v37";
-import type { E3V37Result, E3V37Stage, E3V37ItemScore } from "@contracts/e3v37";
+import type { E3V37Result, E3V37Stage, E3V37ItemScore, E3V37Level } from "@contracts/e3v37";
 import { E3V37P_MIRROR_QUESTIONS, isE3V37ParentResult, type E3V37ParentResult } from "@contracts/e3v37Parent";
 import { DISC_DIM_PLAIN, PARENT_DISC_ADJUST } from "./DiscParentCompare";
 import type { AnchorResult } from "@contracts/careerAnchor";
@@ -219,12 +219,15 @@ function CollapsibleSection({
   charts,
   detail,
   answers,
+  accent,
 }: {
   section: CombinedSection;
   index: number;
   charts?: ReactNode;
   detail?: ReactNode;
   answers?: ReactNode;
+  /** v153：章节卡左边框色条档位（红/黄/绿），无则保持默认 lime */
+  accent?: E3V37Level;
 }) {
   const hasParas = (section.paragraphs?.length ?? 0) > 0;
   /* 可见区兜底：没有结论段时条款直接可见；条款也没有时要点直接可见——保证每章先亮出核心内容 */
@@ -235,7 +238,11 @@ function CollapsibleSection({
   const hasDetail = !!(detailItems?.length || detailBullets?.length || detail || section.detailItems?.length);
   return (
     <div id={`sec-${index}`} className="paper-card scroll-mt-20 p-5">
-      <div className="flex items-center gap-2.5 border-l-4 border-lime pl-3">
+      {/* v153：左边框色条随该模块评分档（红<3.0 卡点 / 黄 3.0-3.7 待提升 / 绿 ≥3.8 正常） */}
+      <div
+        className="flex items-center gap-2.5 border-l-4 border-lime pl-3"
+        style={accent ? { borderColor: E3V37_LEVEL_STYLE[accent].bar } : undefined}
+      >
         <span className="mono text-[12px] font-bold text-[#2F7A41]">{String(index + 1).padStart(2, "0")}</span>
         <h3 className="text-[15.5px] font-bold text-olive">
           <RichText text={section.title} />
@@ -3256,7 +3263,20 @@ export default function ReportView({
                 !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec)
                   ? <div className="print:hidden"><AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} /></div>
                   : undefined;
-              const secNode = <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} />;
+              /* v153：章节卡左边框色条 = 该模块评分档（乐学/会学/善学取系统分档；条件/亲子对照取条件均分档；学能取学能均分档） */
+              const secAccent: E3V37Level | undefined = (() => {
+                if (!e3v37) return undefined;
+                if (modSys) return e3v37.systems.core.find((c) => c.key === modSys)?.level;
+                if (s.title.includes("条件模块") || s.title.includes("亲子对照")) {
+                  const cells = e3v37.systems.condition.cells;
+                  return e3v37Level(cells.reduce((a, c) => a + c.score, 0) / cells.length);
+                }
+                if (s.title.includes("学能模块")) {
+                  return e3v37Level(e3v37.aptitude.reduce((a, c) => a + c.score, 0) / e3v37.aptitude.length);
+                }
+                return undefined;
+              })();
+              const secNode = <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} accent={secAccent} />;
               /* 附录章整章不打印（详版） */
               return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
             });
