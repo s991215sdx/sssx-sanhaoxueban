@@ -194,12 +194,13 @@ function SectionBullets({ bullets }: { bullets: string[] }) {
   );
 }
 
-/** 通用折叠块：默认收起（defaultOpen 时默认展开），点击展开/收起；打印/导出 PDF 时会被强制展开（见 onDownload）。 */
+/** 通用折叠块：默认收起（defaultOpen 时默认展开），点击展开/收起；打印/导出 PDF 时会被强制展开（见 onDownload）。v149：去外边框，标题左侧改墨绿色条（与文字间距 10px）。 */
 function Fold({ title, children, defaultOpen }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
   return (
-    <details open={defaultOpen || undefined} className="group mt-3 overflow-hidden rounded-xl border border-border bg-cream/50">
-      <summary className="flex cursor-pointer select-none items-center justify-between gap-2 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
-        <span>{title}</span>
+    <details open={defaultOpen || undefined} className="group mt-3 overflow-hidden rounded-xl bg-cream/50">
+      <summary className="flex cursor-pointer select-none items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-semibold text-olive transition-colors hover:bg-butter-pale/60">
+        <span className="inline-block h-4 w-1 shrink-0 rounded-full bg-[#0C7064]" aria-hidden />
+        <span className="flex-1">{title}</span>
         <ChevronDown size={15} className="shrink-0 text-olive-mute transition-transform group-open:rotate-180" />
       </summary>
       <div className="border-t border-border/70 px-3.5 py-3">{children}</div>

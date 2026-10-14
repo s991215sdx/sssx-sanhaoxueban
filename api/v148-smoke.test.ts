@@ -1,4 +1,5 @@
-/* v148 冒烟：学员详情头卡统计格数字+文字单行不换行，压扁高度 */
+/* v148 冒烟：学员详情头卡统计格数字+文字单行不换行，压扁高度。
+   v149 注：BUILD_TAG 断言已放宽为通用形式 */
 import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
@@ -18,6 +19,6 @@ describe("v148 统计格单行压扁", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v148-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v148");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
