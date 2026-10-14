@@ -17,7 +17,7 @@ describe("v108 框架图卡片三档协调配色", () => {
 
   it("卡片用同色系细边框（三阶与底座两处容器）", () => {
     const src = read("src/components/reports/SystemFramework.tsx");
-    const n = (src.match(/rounded-xl border px-3 py-3 text-center/g) ?? []).length;
+    const n = (src.match(/rounded-xl border px-2\.5 py-2 text-center/g) ?? []).length;
     if (n < 2) throw new Error(`缺：档色边框卡片（应≥2处，实际${n}）`);
     if (!/borderColor: box\.borderColor, background: box\.background/.test(src))
       throw new Error("缺：容器取档色");

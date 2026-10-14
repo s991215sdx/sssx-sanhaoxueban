@@ -1,4 +1,5 @@
 /* v146 冒烟：得分表两处标题（三阶九能得分表 / 附录·三阶九能观察点得分表）绿字改黑字 */
+/* v147 注：BUILD_TAG 断言按惯例放宽为通用形式（版本号已递增到 v147） */
 import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
@@ -19,6 +20,6 @@ describe("v146 得分表标题改黑字", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v146-2026-10-13";')) throw new Error("BUILD_TAG 未递增到 v146");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

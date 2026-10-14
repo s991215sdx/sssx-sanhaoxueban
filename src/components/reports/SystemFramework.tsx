@@ -62,7 +62,7 @@ const DEEP_TRAITS: { key: "mbti" | "disc" | "anchor" | "holland"; label: string 
 
 /** 状态徽标：done=绿底实线（纯展示）；未完成=灰虚线，给了 onClick 时可点击（去测评/去填）。 */
 function LinkChip({ done, label, onClick }: { done: boolean; label: string; onClick?: () => void }) {
-  const cls = `inline-block rounded-full px-2 py-0.5 text-[10.5px] font-semibold leading-tight ${
+  const cls = `inline-block rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold leading-tight ${
     done
       ? "border border-[#52A965]/60 bg-[#E9F3E6] text-[#1E3530]"
       : "border border-dashed border-[#A9B8B0]/80 text-olive-mute"
@@ -104,20 +104,20 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
   const band = BAND[lv];
   if (!done)
     return (
-      <div className="rounded-xl border border-dashed border-[#A9B8B0]/70 bg-white/60 px-1 py-2 text-center">
-        <div className="text-[12px] font-semibold text-olive-soft">{name}</div>
-        <div className="mono mt-0.5 text-[16px] font-bold text-olive-mute">-</div>
+      <div className="rounded-lg border border-dashed border-[#A9B8B0]/70 bg-white/60 px-0.5 py-1 text-center">
+        <div className="text-[10.5px] font-semibold text-olive-soft">{name}</div>
+        <div className="mono mt-px text-[13px] font-bold text-olive-mute">-</div>
       </div>
     );
   return (
     <div
-      className="rounded-xl border px-1 py-2 text-center shadow-sm"
+      className="rounded-lg border px-0.5 py-1 text-center shadow-sm"
       style={{ borderColor: band.border, background: band.bg }}
     >
-      <div className="text-[12px] font-semibold" style={{ color: band.text }}>
+      <div className="text-[10.5px] font-semibold" style={{ color: band.text }}>
         {name}
       </div>
-      <div className="mono mt-0.5 text-[16px] font-bold" style={{ color: band.text }}>
+      <div className="mono mt-px text-[13px] font-bold" style={{ color: band.text }}>
         {unit?.score ?? "-"}
       </div>
     </div>
@@ -147,9 +147,9 @@ export default function SystemFramework({
   const condLevel = tierLevel(status?.e3?.conditionAvg);
   const aptLevel = tierLevel(status?.e3?.aptitudeAvg);
   return (
-    <div className="rounded-xl border border-border bg-cream/60 p-4 sm:p-5">
+    <div className="rounded-xl border border-border bg-cream/60 p-3 sm:p-4">
       {/* 顶部：学习目标 · 成绩（冰山上） */}
-      <div className="mx-auto w-fit rounded-full bg-brand px-6 py-1.5 text-[13px] font-bold text-cream">
+      <div className="mx-auto w-fit rounded-full bg-brand px-4 py-1 text-[11.5px] font-bold text-cream">
         学习目标 · 成绩
       </div>
       {status?.academics && (
@@ -168,10 +168,10 @@ export default function SystemFramework({
       <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
 
       {/* v121 三档图例（绿=正常 / 黄=待提升 / 红=卡点，与全局口径一致） */}
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11.5px] font-medium text-olive-soft">
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10.5px] font-medium text-olive-soft">
         {(["正常", "待提升", "卡点"] as const).map((lv) => (
           <span key={lv} className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: BAND[lv].border }} />
+            <span className="inline-block h-2 w-2 rounded-full" style={{ background: BAND[lv].border }} />
             {BAND[lv].label}
             <span className="font-normal text-olive-mute">
               {lv === "正常" ? "≥ 3.8" : lv === "待提升" ? "3.0 – 3.7" : "< 3.0"}
@@ -189,14 +189,14 @@ export default function SystemFramework({
           return (
             <div
               key={t.name}
-              className="rounded-xl border px-3 py-3 text-center"
+              className="rounded-xl border px-2.5 py-2 text-center"
               style={{ borderColor: box.borderColor, background: box.background }}
             >
-              <div className="text-[14.5px] font-bold" style={{ color: box.titleColor }}>
+              <div className="text-[13px] font-bold" style={{ color: box.titleColor }}>
                 {i + 1} 阶 · {t.name}
               </div>
-              <div className="mt-0.5 text-[11.5px] text-olive-mute">{t.sub}</div>
-              <div className="mt-2 grid grid-cols-3 gap-1">
+              <div className="mt-0.5 text-[10.5px] text-olive-mute">{t.sub}</div>
+              <div className="mt-1.5 grid grid-cols-3 gap-1">
                 {t.abilities.map((a) => (
                   <UnitBlock key={a} name={a} unit={unitOf(a)} done={e3Done} />
                 ))}
@@ -221,12 +221,12 @@ export default function SystemFramework({
         {BASES.map((b) => {
           const box = levelBoxStyle(b.key === "条件" ? condLevel : aptLevel);
           return (
-            <div key={b.name} className="rounded-xl border px-3 py-3 text-center" style={{ borderColor: box.borderColor, background: box.background }}>
-              <div className="text-[14.5px] font-bold" style={{ color: box.titleColor }}>
+            <div key={b.name} className="rounded-xl border px-2.5 py-2 text-center" style={{ borderColor: box.borderColor, background: box.background }}>
+              <div className="text-[13px] font-bold" style={{ color: box.titleColor }}>
                 {b.name}
               </div>
-              <div className="mt-0.5 text-[11.5px] text-olive-mute">{b.sub}</div>
-              <div className="mt-2 grid grid-cols-3 gap-1">
+              <div className="mt-0.5 text-[10.5px] text-olive-mute">{b.sub}</div>
+              <div className="mt-1.5 grid grid-cols-3 gap-1">
                 {b.abilities.map((a) => (
                   <UnitBlock key={a} name={a} unit={unitOf(a)} done={e3Done} />
                 ))}
@@ -245,7 +245,7 @@ export default function SystemFramework({
                       const band = BAND[(status.mental.tone ?? "ok") === "ok" ? "正常" : (status.mental.tone ?? "ok") === "warn" ? "待提升" : "卡点"];
                       return (
                         <span
-                          className="inline-block rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight"
+                          className="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-tight"
                           style={{ borderColor: band.border, background: band.bg, color: band.text }}
                         >
                           {status.mental.done ? `心理健康 · ${status.mental.note ?? "已测"}` : "心理健康 · 未测"}
@@ -275,7 +275,7 @@ export default function SystemFramework({
               )}
               {/* 多元五项二级维度分（v116：按设计稿改绿色纯文字，不用 chip） */}
               {b.key === "学能" && status?.multi5?.done && (status.multi5.subs?.length ?? 0) > 0 && (
-                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11.5px] font-medium text-[#2F7A41]">
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10.5px] font-medium text-[#2F7A41]">
                   {status.multi5.subs!.map((s) => (
                     <span key={s}>{s}</span>
                   ))}
@@ -290,14 +290,14 @@ export default function SystemFramework({
       {showDeep && (
         <>
           <div className="mx-auto my-1.5 h-3 w-px bg-brand-mute/50" />
-          <div className="rounded-xl border border-[#A9B8B0]/60 bg-[#F0F3EC] px-3.5 py-3">
-            <div className="text-center text-[12.5px] font-bold text-[#707A6C]">深层特质 · 性格与方向的长期底色</div>
+          <div className="rounded-xl border border-[#A9B8B0]/60 bg-[#F0F3EC] px-3 py-2">
+            <div className="text-center text-[11px] font-bold text-[#707A6C]">深层特质 · 性格与方向的长期底色</div>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {DEEP_TRAITS.map((d) => {
                 const st = status?.[d.key];
                 const box = (
                   <>
-                    <div className="text-[11px] font-semibold text-olive">{d.label}</div>
+                    <div className="text-[10px] font-semibold text-olive">{d.label}</div>
                     <div className="mt-1">
                       <LinkChip
                         done={!!st?.done}
@@ -308,7 +308,7 @@ export default function SystemFramework({
                     {st?.done && (st.subs?.length ?? 0) > 0 && (
                       <div className="mt-1 flex flex-wrap justify-center gap-0.5">
                         {st.subs!.map((s) => (
-                          <span key={s} className="rounded bg-cream px-1 py-px text-[9.5px] leading-tight text-olive-mute">
+                          <span key={s} className="rounded bg-cream px-1 py-px text-[9px] leading-tight text-olive-mute">
                             {s}
                           </span>
                         ))}
@@ -317,7 +317,7 @@ export default function SystemFramework({
                   </>
                 );
                 return (
-                  <div key={d.key} className="rounded-lg border border-[#A9B8B0]/50 bg-white/70 px-2 py-1.5 text-center">
+                  <div key={d.key} className="rounded-lg border border-[#A9B8B0]/50 bg-white/70 px-1.5 py-1 text-center">
                     {box}
                   </div>
                 );
@@ -326,11 +326,11 @@ export default function SystemFramework({
           </div>
         </>
       )}
-      <p className="mt-2.5 text-center text-[11px] text-olive-mute">
+      <p className="mt-2.5 text-center text-[10px] text-olive-mute">
         成绩长在三层系统之上，三层系统立在条件与学能的底座上——修学习力，从地基往上修。
       </p>
       {onOpen && (
-        <p className="mt-1 text-center text-[10.5px] text-olive-mute">
+        <p className="mt-1 text-center text-[9.5px] text-olive-mute">
           灰虚线徽章可直接点击开始测评；红 &lt;3.0 卡点 · 黄 3.0–3.7 待提升 · 绿 ≥3.8 正常。
         </p>
       )}
@@ -344,7 +344,7 @@ function ScoreChip({ name, score }: { name: string; score: number }) {
   const band = BAND[lv];
   return (
     <span
-      className="inline-block rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-tight"
+      className="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-tight"
       style={{ borderColor: band.border, background: band.bg, color: band.text }}
     >
       {name} {score} · {band.label}
