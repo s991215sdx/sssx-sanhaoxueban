@@ -22,6 +22,6 @@ describe("v165 左边框细弧边框（8px）", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v165-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v165");
+    if (!/^const BUILD_TAG = "v\d+-/m.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

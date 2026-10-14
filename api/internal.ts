@@ -87,10 +87,20 @@ export async function internalStudentSearch(c: Context) {
   }
   let keyword = "";
   try {
-    const body = JSON.parse(rawBody || "{}") as { keyword?: unknown };
+    /* v166：宽容解析——先去 BOM（部分 HTTP 客户端会写 UTF-8 BOM，会让 JSON.parse 直接抛错），
+       JSON 失败再退 form-encoded（keyword=xxx），两者都不行的 400 里回显请求体片段并记日志，方便联调定位 */
+    const text = rawBody.replace(/^﻿/, "");
+    const body = JSON.parse(text || "{}") as { keyword?: unknown };
     keyword = typeof body.keyword === "string" ? body.keyword.trim().slice(0, 50) : "";
   } catch {
-    return c.json({ error: "bad_json" }, 400);
+    const form = new URLSearchParams(rawBody);
+    const fk = form.get("keyword");
+    if (typeof fk === "string" && fk.trim()) {
+      keyword = fk.trim().slice(0, 50);
+    } else {
+      console.warn(`[internal-sssx] bad_json ip=${ip} body=${JSON.stringify(rawBody.slice(0, 200))}`);
+      return c.json({ error: "bad_json", got: rawBody.slice(0, 200) }, 400);
+    }
   }
   const students = keyword ? await searchStudents(keyword) : [];
   console.log(`[internal-sssx] search ip=${ip} kw="${keyword}" hits=${students.length} ms=${Date.now() - started}`);
