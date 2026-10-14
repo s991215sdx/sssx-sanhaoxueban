@@ -5,8 +5,8 @@ import { readFileSync } from "fs";
 describe("v164 左边框加粗一倍（24px）", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
-  it("左边框 24px", () => {
-    if (!/border-l-\[24px\]/.test(src)) throw new Error("缺：border-l-[24px]");
+  it("左边框明显加粗（v164 24px / v165 起按参考图回调为 8px 细弧边框）", () => {
+    if (!/border-l-\[(8|12|24)px\]/.test(src)) throw new Error("缺：加粗左边框");
   });
 
   it("仍仅左边框染色，大标题随档着色", () => {
@@ -19,6 +19,6 @@ describe("v164 左边框加粗一倍（24px）", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v164-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v164");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });

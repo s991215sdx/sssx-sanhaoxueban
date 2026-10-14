@@ -7,8 +7,8 @@ describe("v163 章节卡左边框加粗变色", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
   it("卡片左边框 12px 加粗，仅左边框染色", () => {
-    // v164 起加粗一倍到 24px，此处兼容 12px 写法
-    if (!/paper-card scroll-mt-20 border-l-\[(12|24)px\] border-lime p-5 pl-[67]/.test(src))
+    // v164 加粗到 24px，v165 起按参考图回调 8px——此处兼容各档写法
+    if (!/paper-card scroll-mt-20 border-l-\[(8|12|24)px\] border-lime p-5 pl-[67]/.test(src))
       throw new Error("缺：加粗左边框");
     if (!/style=\{accent \? \{ borderLeftColor: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined\}/.test(src))
       throw new Error("缺：仅 borderLeftColor 染色");
