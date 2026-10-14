@@ -12,7 +12,7 @@ describe("v153 章节卡左色条随评分", () => {
   });
 
   it("头部左边框随档着色，无档保持 lime", () => {
-    if (!/border-l-\d+ border-lime p-5 pl-6/.test(src)) throw new Error("缺：卡片级默认 lime 左边框");
+    if (!/border-l-(\[?\d+px?\]|\d+) border-lime p-5 pl-6/.test(src)) throw new Error("缺：卡片级默认 lime 左边框");
     // v155 起 inline 色只作用于 borderLeftColor（其余三边保持默认边框色），此处兼容两种写法
     if (!/accent \? \{ border(Left)?Color: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined/.test(src))
       throw new Error("缺：档色边框 inline style");

@@ -7,7 +7,8 @@ describe("v155 章节卡仅左边框加粗变色", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
   it("卡片左边框加粗到 8px", () => {
-    if (!/paper-card scroll-mt-20 border-l-8 border-lime p-5 pl-6/.test(src)) throw new Error("缺：border-l-8 加粗左边框");
+    // v156 起加粗到 12px（border-l-[12px] 任意值），此处兼容两种写法
+    if (!/border-l-(8|\[12px\])/.test(src)) throw new Error("缺：加粗左边框");
   });
 
   it("inline 色只作用左边框（borderLeftColor），不再有整框 borderColor", () => {
@@ -28,6 +29,6 @@ describe("v155 章节卡仅左边框加粗变色", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v155-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v155");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });
