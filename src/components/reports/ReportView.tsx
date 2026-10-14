@@ -236,12 +236,12 @@ function CollapsibleSection({
   const detailItems = hasParas && !section.itemsVisible ? section.items : undefined;
   const detailBullets = !bulletsVisible ? section.bullets : undefined;
   const hasDetail = !!(detailItems?.length || detailBullets?.length || detail || section.detailItems?.length);
-  /* v154：卡片级左侧色条（全高，随评分档红/黄/绿，无档保持 lime） */
+  /* v155：仅卡片左边框加粗着色（全高，随评分档红/黄/绿，无档保持 lime）；其余三边保持默认边框色 */
   return (
     <div
       id={`sec-${index}`}
-      className="paper-card scroll-mt-20 border-l-4 border-lime p-5 pl-6"
-      style={accent ? { borderColor: E3V37_LEVEL_STYLE[accent].bar } : undefined}
+      className="paper-card scroll-mt-20 border-l-8 border-lime p-5 pl-6"
+      style={accent ? { borderLeftColor: E3V37_LEVEL_STYLE[accent].bar } : undefined}
     >
       <div className="flex items-center gap-2.5">
         <span className="mono text-[12px] font-bold text-[#2F7A41]">{String(index + 1).padStart(2, "0")}</span>

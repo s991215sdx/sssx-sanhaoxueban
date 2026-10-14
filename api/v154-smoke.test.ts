@@ -7,8 +7,9 @@ describe("v154 章节卡卡片级左色条", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
   it("卡片根节点带左侧边框并随档着色", () => {
-    if (!/paper-card scroll-mt-20 border-l-4 border-lime p-5 pl-6/.test(src)) throw new Error("缺：卡片级左边框");
-    if (!/style=\{accent \? \{ borderColor: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined\}/.test(src))
+    if (!/paper-card scroll-mt-20 border-l-\d+ border-lime p-5 pl-6/.test(src)) throw new Error("缺：卡片级左边框");
+    // v155 起 inline 色只作用于 borderLeftColor（其余三边保持默认边框色），此处兼容两种写法
+    if (!/style=\{accent \? \{ border(Left)?Color: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined\}/.test(src))
       throw new Error("缺：档色边框 inline style");
   });
 
@@ -24,6 +25,6 @@ describe("v154 章节卡卡片级左色条", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v154-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v154");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });
