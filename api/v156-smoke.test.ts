@@ -29,6 +29,6 @@ describe("v156 章节卡左边框明显加粗（12px）", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v156-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v156");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });

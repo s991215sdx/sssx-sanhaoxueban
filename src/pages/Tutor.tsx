@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { useSearchParams } from "react-router";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
@@ -66,7 +67,25 @@ function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabl
 export default function Tutor() {
   const { user } = useAuth();
   const allowed = user?.role === "tutor" || user?.role === "admin";
-  const [detailId, setDetailId] = useState<number | null>(null);
+  /* v157：详情抽屉与 URL 参数联动（?student=<id>），刷新/转发链接可直达学员详情 */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const studentParam = searchParams.get("student");
+  const detailId = studentParam && /^\d+$/.test(studentParam) ? Number(studentParam) : null;
+  const openDetail = (id: number) =>
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("student", String(id));
+      return next;
+    });
+  const closeDetail = () =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("student");
+        return next;
+      },
+      { replace: true },
+    );
   const [modulesFor, setModulesFor] = useState<number | null>(null);
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
@@ -154,7 +173,7 @@ export default function Tutor() {
               {filtered.map((s) => (
                 <div
                   key={s.userId}
-                  onClick={() => setDetailId(s.userId)}
+                  onClick={() => openDetail(s.userId)}
                   className="paper-card cursor-pointer p-4 transition-shadow hover:shadow-md"
                 >
                   <div className="flex items-center gap-3">
@@ -281,7 +300,7 @@ export default function Tutor() {
         </div>
       )}
 
-      {detailId !== null && <StudentDetailDrawer userId={detailId} source="coach" onClose={() => setDetailId(null)} />}
+      {detailId !== null && <StudentDetailDrawer userId={detailId} source="coach" onClose={closeDetail} />}
     </div>
   );
 }

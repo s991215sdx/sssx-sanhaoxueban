@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
+import { useSearchParams } from "react-router";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import DeleteStudentButton from "@/components/DeleteStudentButton";
@@ -340,7 +341,25 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
 
 /** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注；orgScope=超管分系统筛选。 */
 function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgScope: { orgId: number | null } }) {
-  const [detailId, setDetailId] = useState<number | null>(null);
+  /* v157：详情抽屉与 URL 参数联动（?student=<id>），刷新/转发链接可直达学员详情 */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const studentParam = searchParams.get("student");
+  const detailId = studentParam && /^\d+$/.test(studentParam) ? Number(studentParam) : null;
+  const openDetail = (id: number) =>
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("student", String(id));
+      return next;
+    });
+  const closeDetail = () =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("student");
+        return next;
+      },
+      { replace: true },
+    );
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const { data: students, isLoading } = trpc.admin.students.useQuery(orgScope);
@@ -437,7 +456,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
                 <DeleteStudentButton userId={s.userId} name={s.name} />
                 <button
-                  onClick={() => setDetailId(s.userId)}
+                  onClick={() => openDetail(s.userId)}
                   className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60"
                 >
                   详情
@@ -462,7 +481,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
           )}
         </div>
       )}
-      {detailId !== null && <StudentDetailDrawer userId={detailId} source="admin" onClose={() => setDetailId(null)} />}
+      {detailId !== null && <StudentDetailDrawer userId={detailId} source="admin" onClose={closeDetail} />}
     </div>
   );
 }
