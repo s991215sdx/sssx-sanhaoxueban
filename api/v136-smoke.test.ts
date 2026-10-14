@@ -1,4 +1,5 @@
 import { describe, it } from "vitest";
+/* v148 注：统计格改单行不换行压扁高度，断言随设计更新 */
 import { readFileSync } from "fs";
 
 describe("v136 学员详情头部参照报告设计", () => {
@@ -12,7 +13,7 @@ describe("v136 学员详情头部参照报告设计", () => {
 
   it("统计格为纯白底（v138 断言随设计更新）", () => {
     const src = readFileSync("src/components/StudentDetailDrawer.tsx", "utf-8");
-    if (!/rounded-xl bg-white px-1 py-2\.5/.test(src)) throw new Error("缺：白底统计格");
+    if (!/rounded-xl bg-white px-2 py-1\.5/.test(src)) throw new Error("缺：白底统计格");
   });
 
   it("测评为绿色竖条 + 黑色粗体标题", () => {

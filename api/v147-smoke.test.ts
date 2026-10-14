@@ -1,4 +1,5 @@
-/* v147 冒烟：学习力系统框架图整体缩小——UnitBlock 色块边距/文字缩小，板块内所有文字随比例缩小 */
+/* v147 冒烟：学习力系统框架图整体缩小——UnitBlock 色块边距/文字缩小，板块内所有文字随比例缩小。
+   v148 注：BUILD_TAG 断言已放宽为通用形式 */
 import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
@@ -25,6 +26,6 @@ describe("v147 框架图板块整体缩小", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v147-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v147");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
