@@ -236,13 +236,14 @@ function CollapsibleSection({
   const detailItems = hasParas && !section.itemsVisible ? section.items : undefined;
   const detailBullets = !bulletsVisible ? section.bullets : undefined;
   const hasDetail = !!(detailItems?.length || detailBullets?.length || detail || section.detailItems?.length);
+  /* v154：卡片级左侧色条（全高，随评分档红/黄/绿，无档保持 lime） */
   return (
-    <div id={`sec-${index}`} className="paper-card scroll-mt-20 p-5">
-      {/* v153：左边框色条随该模块评分档（红<3.0 卡点 / 黄 3.0-3.7 待提升 / 绿 ≥3.8 正常） */}
-      <div
-        className="flex items-center gap-2.5 border-l-4 border-lime pl-3"
-        style={accent ? { borderColor: E3V37_LEVEL_STYLE[accent].bar } : undefined}
-      >
+    <div
+      id={`sec-${index}`}
+      className="paper-card scroll-mt-20 border-l-4 border-lime p-5 pl-6"
+      style={accent ? { borderColor: E3V37_LEVEL_STYLE[accent].bar } : undefined}
+    >
+      <div className="flex items-center gap-2.5">
         <span className="mono text-[12px] font-bold text-[#2F7A41]">{String(index + 1).padStart(2, "0")}</span>
         <h3 className="text-[15.5px] font-bold text-olive">
           <RichText text={section.title} />

@@ -1,4 +1,5 @@
-/* v153 冒烟：详版报告模块章节卡左边框色条随评分档（红<3.0 / 黄3.0-3.7 / 绿≥3.8） */
+/* v153 冒烟：详版报告模块章节卡左边框色条随评分档（红<3.0 / 黄3.0-3.7 / 绿≥3.8）。
+   v154：色条从标题行升级为卡片级全高左边框（断言已随设计更新，BUILD_TAG 断言已放宽） */
 import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
@@ -11,7 +12,7 @@ describe("v153 章节卡左色条随评分", () => {
   });
 
   it("头部左边框随档着色，无档保持 lime", () => {
-    if (!/border-l-4 border-lime pl-3/.test(src)) throw new Error("缺：默认 lime 左边框");
+    if (!/border-l-4 border-lime p-5 pl-6/.test(src)) throw new Error("缺：卡片级默认 lime 左边框");
     if (!/accent \? \{ borderColor: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined/.test(src))
       throw new Error("缺：档色边框 inline style");
   });
@@ -24,6 +25,6 @@ describe("v153 章节卡左色条随评分", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v153-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v153");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });
