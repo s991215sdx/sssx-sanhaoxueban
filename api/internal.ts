@@ -8,6 +8,7 @@
  *   X-SSSX-Sign: hex(HMAC_SHA256(密钥, `${X-SSSX-Key}\n${X-SSSX-Timestamp}\n${原始请求体}`))，小写
  */
 import type { Context } from "hono";
+import { getConnInfo } from "@hono/node-server/conninfo";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, inArray, isNull, like, or } from "drizzle-orm";
 import { setCookie } from "hono/cookie";
@@ -45,8 +46,15 @@ function rateLimited(ip: string, max = 30, windowMs = 60_000): boolean {
   return limited;
 }
 
+/** v162：直连（无反代）时 X-Forwarded-For 为空，回退取 TCP 对端 IP，否则限流会把所有调用方挤在一个桶里。 */
 function clientIp(c: Context): string {
-  return (c.req.header("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  const fwd = (c.req.header("x-forwarded-for") ?? "").split(",")[0].trim();
+  if (fwd) return fwd;
+  try {
+    return getConnInfo(c).remote.address ?? "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 /** 手机号打码：只留后 4 位，其余用 *（最多 7 个，保持长度可读）。 */
