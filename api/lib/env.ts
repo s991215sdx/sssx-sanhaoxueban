@@ -16,4 +16,7 @@ export const env = {
   kimiAuthUrl: required("KIMI_AUTH_URL"),
   kimiOpenUrl: required("KIMI_OPEN_URL"),
   ownerUnionId: process.env.OWNER_UNION_ID ?? "",
+  /** v158：一体通对接（均可选；未配置时对应内部接口返回「未开通」提示，不影响主站）。 */
+  sssxInternalKey: process.env.SSSX_INTERNAL_KEY ?? "",
+  yititongTicketUrl: process.env.YITITONG_TICKET_URL ?? "",
 };

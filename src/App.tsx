@@ -13,6 +13,7 @@ import Papers from "./pages/Papers";
 import Treehole from "./pages/Treehole";
 import Login from "./pages/Login";
 import InviteRegister from "./pages/InviteRegister";
+import SsoStudentView from "./pages/SsoStudentView";
 import Admin from "./pages/Admin";
 import Tutor from "./pages/Tutor";
 import RecycleBin from "./pages/RecycleBin";
@@ -131,6 +132,8 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       {/* 邀请注册落地页：公开（扫码直达，无需登录） */}
       <Route path="/invite/:code" element={<InviteRegister />} />
+      {/* v158：一体通 SSO 免登只读视图：公开路由（ticket 兑换 10 分钟短会话，仅可读对应学员） */}
+      <Route path="/sso/view/:studentId" element={<SsoStudentView />} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}
       <Route
         path="/welcome"

@@ -7,11 +7,15 @@ import { createContext } from "./context";
 import { env } from "./lib/env";
 import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
+import { internalStudentSearch, ssoTicketEntry } from "./internal";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 app.get(Paths.oauthCallback, createOAuthCallbackHandler());
+/* v158：一体通对接——内部档案搜索（HMAC 鉴权 + 限流）与 SSO ticket 兑换（免登短会话） */
+app.post("/api/internal/sssx/student-search", internalStudentSearch);
+app.get("/sso/sssx", ssoTicketEntry);
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",

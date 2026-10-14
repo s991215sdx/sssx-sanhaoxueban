@@ -8,6 +8,12 @@ export const ErrorMessages = {
   insufficientRole: "Insufficient permissions",
 } as const;
 
+/** v158：一体通 SSO 短会话——ticket 兑换，10 分钟有效，仅可读绑定的那个学员详情（最小权限，非登录态）。 */
+export const SsoSession = {
+  cookieName: "sssx_sso",
+  maxAgeMs: 10 * 60 * 1000,
+} as const;
+
 export const Paths = {
   login: "/login",
   oauthCallback: "/api/oauth/callback",

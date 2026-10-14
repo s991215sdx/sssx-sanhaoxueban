@@ -18,9 +18,10 @@ import { inviteRouter } from "./inviteRouter";
 import { coachRouter } from "./coachRouter";
 import { analyzeRouter } from "./analyzeRouter";
 import { orgRouter } from "./orgRouter";
+import { ssoRouter } from "./ssoRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v157-2026-10-14";
+const BUILD_TAG = "v158-2026-10-14";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),
@@ -213,6 +214,8 @@ export const appRouter = createRouter({
   invite: inviteRouter,
   coach: coachRouter,
   org: orgRouter,
+  /** v158：一体通 SSO 免登只读接口（ticket 短会话，最小权限） */
+  sso: ssoRouter,
   analyze: analyzeRouter,
   graph: graphRouter,
   preview: previewRouter,
