@@ -6,14 +6,13 @@ import { readFileSync } from "fs";
 describe("v155 章节卡仅左边框加粗变色", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
-  it("卡片左边框加粗到 8px", () => {
-    // v156 起加粗到 12px（border-l-[12px] 任意值），此处兼容两种写法
-    if (!/border-l-(8|\[12px\])/.test(src)) throw new Error("缺：加粗左边框");
+  it("卡片左边框加粗（或 v159 胶囊色条）", () => {
+    // v159 起为内嵌胶囊色条（w-[16px] rounded-full），兼容历史 border-l-8/12px 写法
+    if (!/(border-l-(8|\[12px\])|w-\[16px\] rounded-full)/.test(src)) throw new Error("缺：加粗左边框/胶囊色条");
   });
 
-  it("inline 色只作用左边框（borderLeftColor），不再有整框 borderColor", () => {
-    if (!/style=\{accent \? \{ borderLeftColor: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined\}/.test(src))
-      throw new Error("缺：borderLeftColor 只染左边框");
+  it("档色只作用于左侧标识，不再有整框 borderColor", () => {
+    if (!/E3V37_LEVEL_STYLE\[accent\]\.bar/.test(src)) throw new Error("缺：档色引用");
     if (/\{ borderColor: E3V37_LEVEL_STYLE\[accent\]\.bar \}/.test(src)) throw new Error("残留：整框 borderColor 染色");
   });
 

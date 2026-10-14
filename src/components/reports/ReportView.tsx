@@ -236,16 +236,21 @@ function CollapsibleSection({
   const detailItems = hasParas && !section.itemsVisible ? section.items : undefined;
   const detailBullets = !bulletsVisible ? section.bullets : undefined;
   const hasDetail = !!(detailItems?.length || detailBullets?.length || detail || section.detailItems?.length);
-  /* v156：仅卡片左边框明显加粗着色（12px，随评分档红/黄/绿，无档保持 lime）；其余三边保持默认边框色 */
+  /* v159：左侧内嵌胶囊色条（粗圆头、上下两端圆弧过渡变细，参考一体通样式图），
+     随评分档红/黄/绿，无档保持 lime；章节大标题同步随档着色 */
   return (
-    <div
-      id={`sec-${index}`}
-      className="paper-card scroll-mt-20 border-l-[12px] border-lime p-5 pl-6"
-      style={accent ? { borderLeftColor: E3V37_LEVEL_STYLE[accent].bar } : undefined}
-    >
+    <div id={`sec-${index}`} className="paper-card relative scroll-mt-20 overflow-hidden p-5 pl-9">
+      <span
+        aria-hidden
+        className="absolute bottom-3 left-2 top-3 w-[16px] rounded-full"
+        style={{ background: accent ? E3V37_LEVEL_STYLE[accent].bar : "#52A965" }}
+      />
       <div className="flex items-center gap-2.5">
         <span className="mono text-[12px] font-bold text-[#2F7A41]">{String(index + 1).padStart(2, "0")}</span>
-        <h3 className="text-[15.5px] font-bold text-olive">
+        <h3
+          className="text-[15.5px] font-bold text-olive"
+          style={accent ? { color: E3V37_LEVEL_STYLE[accent].bar } : undefined}
+        >
           <RichText text={section.title} />
         </h3>
       </div>

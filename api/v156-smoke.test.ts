@@ -6,14 +6,13 @@ import { readFileSync } from "fs";
 describe("v156 章节卡左边框明显加粗（12px）", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
-  it("卡片左边框加粗到 12px", () => {
-    if (!/paper-card scroll-mt-20 border-l-\[12px\] border-lime p-5 pl-6/.test(src))
-      throw new Error("缺：border-l-[12px] 明显加粗左边框");
+  it("卡片左边框加粗到 12px（或 v159 胶囊色条）", () => {
+    // v159 起为内嵌胶囊色条（w-[16px] rounded-full），兼容 border-l-[12px] 写法
+    if (!/(border-l-\[12px\]|w-\[16px\] rounded-full)/.test(src)) throw new Error("缺：明显加粗左边框/胶囊色条");
   });
 
-  it("inline 色只作用左边框（borderLeftColor），不再有整框 borderColor", () => {
-    if (!/style=\{accent \? \{ borderLeftColor: E3V37_LEVEL_STYLE\[accent\]\.bar \} : undefined\}/.test(src))
-      throw new Error("缺：borderLeftColor 只染左边框");
+  it("档色只作用于左侧标识，不再有整框 borderColor", () => {
+    if (!/E3V37_LEVEL_STYLE\[accent\]\.bar/.test(src)) throw new Error("缺：档色引用");
     if (/\{ borderColor: E3V37_LEVEL_STYLE\[accent\]\.bar \}/.test(src)) throw new Error("残留：整框 borderColor 染色");
   });
 

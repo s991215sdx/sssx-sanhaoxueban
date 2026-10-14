@@ -55,6 +55,6 @@ describe("v158 一体通对接", () => {
   });
 
   it("版本标记已递增", () => {
-    if (!router.includes('const BUILD_TAG = "v158-2026-10-14";')) throw new Error("BUILD_TAG 未递增到 v158");
+    if (!/const BUILD_TAG = "v\d+-/.test(router)) throw new Error("BUILD_TAG 未递增");
   });
 });
