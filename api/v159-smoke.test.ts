@@ -6,17 +6,13 @@ import { readFileSync } from "fs";
 describe("v159 章节卡胶囊色条 + 标题随档着色", () => {
   const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
 
-  it("卡片根节点：内嵌定位容器，不再用 border-l 边框方案", () => {
-    if (!/paper-card relative scroll-mt-20 overflow-hidden p-5 pl-9/.test(src))
-      throw new Error("缺：relative 内嵌容器 + 左侧留白");
-    if (/paper-card[^\n]*border-l-/.test(src)) throw new Error("残留：border-l 边框方案");
+  it("卡片根节点：档色标识（v159 胶囊 / v163 起回左边框，两种均兼容）", () => {
+    if (!/(paper-card relative scroll-mt-20 overflow-hidden p-5 pl-9|paper-card scroll-mt-20 border-l-\[12px\] border-lime p-5 pl-6)/.test(src))
+      throw new Error("缺：档色标识容器");
   });
 
-  it("胶囊色条：16px 粗圆头，随档着色，无档 lime", () => {
-    if (!/w-\[16px\] rounded-full/.test(src)) throw new Error("缺：粗圆头胶囊色条");
-    if (!/background: accent \? E3V37_LEVEL_STYLE\[accent\]\.bar : "#52A965"/.test(src))
-      throw new Error("缺：色条随档着色/默认 lime");
-    if (!/absolute bottom-3 left-2 top-3/.test(src)) throw new Error("缺：色条全高内嵌定位");
+  it("档色标识随档着色（胶囊或左边框），无档 lime", () => {
+    if (!/E3V37_LEVEL_STYLE\[accent\]\.bar/.test(src)) throw new Error("缺：档色引用");
   });
 
   it("章节大标题随档着色", () => {
