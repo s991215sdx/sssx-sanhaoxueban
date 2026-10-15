@@ -22,7 +22,7 @@ import { ssoRouter } from "./ssoRouter";
 import { libraryRouter } from "./libraryRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v172-2026-10-16";
+const BUILD_TAG = "v173-2026-10-16";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),

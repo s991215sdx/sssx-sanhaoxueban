@@ -60,14 +60,46 @@ export const libraryRouter = createRouter({
       .groupBy(majorLib.menlei, majorLib.cat)
       .orderBy(asc(majorLib.menlei), asc(majorLib.cat));
     const menleis = await db
-      .select({ menlei: majorLib.menlei })
+      .select({ menlei: majorLib.menlei, n: count() })
       .from(majorLib)
       .groupBy(majorLib.menlei)
       .orderBy(asc(majorLib.menlei));
     return {
-      menleis: menleis.map((r) => r.menlei).filter(Boolean),
+      menleis: menleis.filter((r) => r.menlei).map((r) => ({ menlei: r.menlei, n: r.n })),
       cats: cats.filter((r) => r.menlei && r.cat),
     };
+  }),
+
+  /** 某门类下全部专业按专业类分组（查专业左侧导航展开用，无分页）。 */
+  majorsByMenlei: tutorQuery
+    .input(z.object({ menlei: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const rows = await db
+        .select({
+          id: majorLib.id,
+          code: majorLib.code,
+          name: majorLib.name,
+          cat: majorLib.cat,
+          oneLiner: majorLib.oneLiner,
+        })
+        .from(majorLib)
+        .where(eq(majorLib.menlei, input.menlei))
+        .orderBy(asc(majorLib.catCode), asc(majorLib.code));
+      const cats = new Map<string, { cat: string; majors: { id: number; code: string; name: string; oneLiner: string | null }[] }>();
+      for (const r of rows) {
+        if (!cats.has(r.cat)) cats.set(r.cat, { cat: r.cat, majors: [] });
+        cats.get(r.cat)!.majors.push({ id: r.id, code: r.code, name: r.name, oneLiner: r.oneLiner });
+      }
+      return { menlei: input.menlei, total: rows.length, cats: [...cats.values()] };
+    }),
+
+  /** 专业详情（按 id，查专业点开专业卡片用）。 */
+  major: tutorQuery.input(z.object({ id: z.number().int() })).query(async ({ input }) => {
+    const db = getDb();
+    const row = await db.query.majorLib.findFirst({ where: eq(majorLib.id, input.id) });
+    if (!row) throw new Error("专业不存在");
+    return row;
   }),
 
   /** 专业库分块导入（后台上传 JSON，每块 ≤2000 行，按 code upsert）。 */
@@ -189,6 +221,8 @@ export const libraryRouter = createRouter({
         menlei: z.string().optional(),
         minRank: z.number().int().optional(),
         maxRank: z.number().int().optional(),
+        /** 排序：2026预估位次(默认) / 2025最低分 / 2025最低位次 / 2024最低分 / 2023最低分，均从低到高 */
+        sort: z.enum(["est26", "y1Min", "y1Rank", "y2Min", "y3Min"]).default("est26"),
       }),
     )
     .query(async ({ input }) => {
@@ -200,12 +234,23 @@ export const libraryRouter = createRouter({
       if (input.minRank != null) conds.push(sql`${gdScores.estRank26} >= ${input.minRank}`);
       if (input.maxRank != null) conds.push(sql`${gdScores.estRank26} <= ${input.maxRank}`);
       const where = conds.length ? and(...conds) : undefined;
+      const sortCol =
+        input.sort === "y1Min" ? gdScores.y1Min
+        : input.sort === "y1Rank" ? gdScores.y1Rank
+        : input.sort === "y2Min" ? gdScores.y2Min
+        : input.sort === "y3Min" ? gdScores.y3Min
+        : gdScores.estRank26;
       const [{ total }] = await db.select({ total: count() }).from(gdScores).where(where);
       const rows = await db
         .select()
         .from(gdScores)
         .where(where)
-        .orderBy(asc(gdScores.school), asc(gdScores.majorCode))
+        .orderBy(
+          sql`CASE WHEN ${sortCol} IS NULL THEN 1 ELSE 0 END`,
+          asc(sortCol),
+          asc(gdScores.school),
+          asc(gdScores.majorCode),
+        )
         .limit(input.pageSize)
         .offset((input.page - 1) * input.pageSize);
       return { rows, total };
@@ -246,12 +291,26 @@ export const libraryRouter = createRouter({
           fee: str(r.fee),
           menlei: str(r.menlei),
           cat: str(r.cat),
+          gCount: num(r.g_count),
+          gMin: num(r.g_min),
+          gRank: num(r.g_rank),
+          y1Count: num(r.y1_count),
           y1Min: num(r.y1_min),
           y1Rank: num(r.y1_rank),
+          y1Batch: str(r.y1_batch),
+          y1Plan: num(r.y1_plan),
+          y2Count: num(r.y2_count),
           y2Min: num(r.y2_min),
           y2Rank: num(r.y2_rank),
+          y2Batch: str(r.y2_batch),
+          y2Plan: num(r.y2_plan),
+          y3Count: num(r.y3_count),
           y3Min: num(r.y3_min),
           y3Rank: num(r.y3_rank),
+          y3Max: num(r.y3_max),
+          y3MaxRank: num(r.y3_max_rank),
+          y3Batch: str(r.y3_batch),
+          y3Plan: num(r.y3_plan),
           estRank26: num(r.est_rank26),
           city: str(r.city),
           tier: str(r.tier),
@@ -396,6 +455,7 @@ export const libraryRouter = createRouter({
             like(universityLib.alias, kw),
             like(universityLib.formerNames, kw),
             like(universityLib.city, kw),
+            like(universityLib.province, kw),
           ),
         );
       }

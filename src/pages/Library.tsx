@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import Pager from "@/components/Pager";
@@ -118,15 +119,43 @@ function ImportButton({
 
 /* ---------------------------------- 专业库 ---------------------------------- */
 
-function MajorsTab({ isAdmin }: { isAdmin: boolean }) {
-  const [page, setPage] = useState(1);
-  const [menlei, setMenlei] = useState("");
+/** 12 门类一句话定位（查专业/门类图共用）。 */
+const MENLEI_INTRO: Record<string, string> = {
+  哲学: "以思辨探究世界本质与价值判断的根基，深造导向明显，是人文素养的塔尖。",
+  经济学: "研究资源配置与宏观经济运行，财经商贸与宏观分析的核心学科。",
+  法学: "研习规则、社会治理与公共安全，职业资格考试路径清晰的务实学科。",
+  教育学: "研究育人方法与学习科学，连接学校、家庭与培训机构的教育行业根基。",
+  文学: "语言表达与内容传播的母体，覆盖中外语言、新闻传播与文化创意。",
+  历史学: "史料研究与文化传承，训练严谨考证与长时段视野，深造友好。",
+  理学: "基础科学的沃土，数学、物理、化学等学科是读研深造与交叉创新的源头。",
+  工学: "应用技术主力，就业面最宽，覆盖机械、电子、计算机、土木等 30 余个专业类。",
+  农学: "现代农业与生态文明，从分子育种到智慧农业，政策扶持力度持续加大。",
+  医学: "周期长、门槛高、社会刚需，临床、口腔、护理等方向职业确定性最强。",
+  管理学: "组织运营与商业决策，就业面宽、实践性强，适合沟通与统筹能力突出的学生。",
+  艺术学: "创作表达的主阵地，艺考主要方向，数字媒体与游戏美术等新兴方向增长快。",
+};
+
+/** 掌上高考式查专业：左侧门类导航（按三大领域分组）+ 右侧专业类卡片流；搜索时切回表格。 */
+function MajorsTab({ isAdmin, initialMenlei }: { isAdmin: boolean; initialMenlei?: string }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [menlei, setMenlei] = useState(initialMenlei ?? searchParams.get("subjectCategory") ?? "");
   const [cat, setCat] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [detail, setDetail] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const { data: nav } = trpc.library.majorNav.useQuery();
+  const grouped = trpc.library.majorsByMenlei.useQuery(
+    { menlei },
+    { enabled: !!menlei && !keyword.trim() },
+  );
+  const searching = !!keyword.trim();
   const query = trpc.library.majors.useQuery(
-    { page, pageSize: 20, menlei: menlei || undefined, cat: cat || undefined, keyword: keyword || undefined },
+    { page, pageSize: 20, menlei: menlei || undefined, cat: cat || undefined, keyword: searching ? keyword.trim() : undefined },
+    { enabled: !menlei || searching },
+  );
+  const detail = trpc.library.major.useQuery(
+    { id: detailId ?? 0 },
+    { enabled: detailId != null },
   );
   const importMut = trpc.library.majorsImport.useMutation();
   const utils = trpc.useUtils();
@@ -134,141 +163,180 @@ function MajorsTab({ isAdmin }: { isAdmin: boolean }) {
     const r = await importMut.mutateAsync({ rows });
     await utils.library.majors.invalidate();
     await utils.library.majorNav.invalidate();
+    await utils.library.majorsByMenlei.invalidate();
     return r;
   });
 
-  const cats = useMemo(
-    () => (nav?.cats ?? []).filter((c) => !menlei || c.menlei === menlei),
-    [nav, menlei],
-  );
+  const pickMenlei = (m: string) => {
+    setMenlei(m);
+    setCat("");
+    setPage(1);
+    setSearchParams(m ? { subjectCategory: m } : {}, { replace: true });
+  };
   const totalPages = Math.max(1, Math.ceil((query.data?.total ?? 0) / 20));
-  const detailRow = query.data?.rows.find((r) => r.id === detail) ?? null;
+  const navCount = (m: string) => nav?.menleis.find((x) => x.menlei === m)?.n ?? 0;
+  const d = detail.data;
+  const catsInMenlei = grouped.data?.cats ?? [];
+  const filteredCats = cat ? catsInMenlei.filter((c) => c.cat === cat) : catsInMenlei;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={menlei}
-          onChange={(e) => { setMenlei(e.target.value); setCat(""); setPage(1); }}
-          className="rounded-lg border border-border bg-cream px-2.5 py-2 text-[12.5px] text-olive outline-none focus:border-lime"
-        >
-          <option value="">全部门类</option>
-          {(nav?.menleis ?? []).map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
-        <select
-          value={cat}
-          onChange={(e) => { setCat(e.target.value); setPage(1); }}
-          className="rounded-lg border border-border bg-cream px-2.5 py-2 text-[12.5px] text-olive outline-none focus:border-lime"
-        >
-          <option value="">全部专业类</option>
-          {cats.map((c) => (
-            <option key={`${c.menlei}-${c.cat}`} value={c.cat}>{c.cat}</option>
-          ))}
-        </select>
-        <input
-          value={keyword}
-          onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
-          placeholder="搜索专业名称 / 代码 / 介绍"
-          className="w-60 rounded-lg border border-border bg-cream px-3 py-2 text-[12.5px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
-        />
-        <span className="text-[12px] text-olive-mute">{query.data?.total ?? 0} 个专业</span>
-        {isAdmin && (
-          <span className="ml-auto">
-            <ImportButton label="导入专业库 JSON" busy={imp.busy} onFile={(f) => imp.run(f, false)} />
-          </span>
-        )}
-      </div>
-      {/* 三大领域快捷筛选：自然 / 社会 / 人文（参考掌上高考） */}
-      <div className="flex flex-wrap gap-1.5">
-        {FIELD_GROUPS.map((g) => {
-          const active = g.menleis.includes(menlei);
-          return (
-            <button
-              key={g.label}
-              type="button"
-              onClick={() => { setMenlei(active ? "" : g.menleis[0]); setCat(""); setPage(1); }}
-              className={`rounded-full border px-3 py-1 text-[11.5px] font-semibold transition-colors ${
-                active ? "border-transparent bg-brand text-white" : "border-border bg-cream-card text-olive hover:bg-mint-pale/60"
-              }`}
-              title={g.sub}
-            >
-              {g.label}
-            </button>
-          );
-        })}
-        {menlei && (
-          <button type="button" onClick={() => { setMenlei(""); setCat(""); setPage(1); }}
-            className="rounded-full border border-border bg-cream-card px-3 py-1 text-[11.5px] text-olive-mute hover:bg-mint-pale/60">
-            清除筛选 ✕
-          </button>
-        )}
-      </div>
-      {imp.progress && <p className="text-[12px] text-olive-mute">{imp.progress}</p>}
-
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
-        <table className="w-full text-left text-[12.5px]">
-          <thead>
-            <tr className="border-b border-border bg-cream/60 text-[11.5px] text-olive-mute">
-              <th className="px-3 py-2 font-semibold">代码</th>
-              <th className="px-3 py-2 font-semibold">专业名称</th>
-              <th className="px-3 py-2 font-semibold">门类</th>
-              <th className="px-3 py-2 font-semibold">专业类</th>
-              <th className="px-3 py-2 font-semibold">一句话介绍</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(query.data?.rows ?? []).map((r) => (
-              <tr
-                key={r.id}
-                onClick={() => setDetail(r.id)}
-                className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-mint-pale/40"
-              >
-                <td className="px-3 py-2 font-mono text-[11.5px] text-olive-mute">{r.code}</td>
-                <td className="px-3 py-2 font-semibold text-olive">{r.name}</td>
-                <td className="px-3 py-2 text-olive-mute">{r.menlei}</td>
-                <td className="px-3 py-2 text-olive-mute">{r.cat}</td>
-                <td className="max-w-[360px] truncate px-3 py-2 text-olive-mute">{r.oneLiner ?? "—"}</td>
-              </tr>
-            ))}
-            {query.isLoading && (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-olive-mute">加载中…</td></tr>
-            )}
-            {!query.isLoading && (query.data?.rows.length ?? 0) === 0 && (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-olive-mute">
-                {isAdmin ? "库里还没有数据，点右上角「导入专业库 JSON」上传" : "库里还没有数据，请联系管理员导入"}
-              </td></tr>
-            )}
-          </tbody>
-        </table>
-        <Pager page={page} totalPages={totalPages} total={query.data?.total ?? 0} onChange={setPage} />
-      </div>
-
-      {detailRow && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4" onClick={() => setDetail(null)}>
-          <div
-            className="paper-card my-6 w-full max-w-3xl space-y-4 p-6"
-            onClick={(e) => e.stopPropagation()}
+    <div className="flex flex-col gap-4 lg:flex-row">
+      {/* 左侧：门类导航（掌上高考式） */}
+      <aside className="w-full shrink-0 lg:w-52">
+        <div className="paper-card sticky top-4 max-h-[70vh] overflow-y-auto p-3">
+          <button
+            type="button"
+            onClick={() => pickMenlei("")}
+            className={`mb-2 w-full rounded-lg px-3 py-2 text-left text-[13px] font-semibold transition ${
+              !menlei ? "bg-brand text-cream" : "text-olive hover:bg-mint-pale/60"
+            }`}
           >
+            全部专业
+            <span className="ml-1 text-[11px] opacity-70">{nav?.menleis.reduce((a, b) => a + b.n, 0) ?? 0}</span>
+          </button>
+          {FIELD_GROUPS.map((g) => (
+            <div key={g.label} className="mb-2">
+              <div className="px-2 py-1 text-[11px] font-bold text-olive-mute">{g.label}</div>
+              {g.menleis.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => pickMenlei(m)}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[12.5px] transition ${
+                    menlei === m ? "bg-brand font-semibold text-cream" : "text-olive hover:bg-mint-pale/60"
+                  }`}
+                >
+                  <span>{m}</span>
+                  <span className="text-[11px] opacity-70">{navCount(m)}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      {/* 右侧：门类浏览 或 搜索表格 */}
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={keyword}
+            onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+            placeholder="搜索专业名称 / 代码 / 介绍"
+            className="w-64 rounded-lg border border-border bg-cream px-3 py-2 text-[12.5px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
+          />
+          {isAdmin && (
+            <span className="ml-auto">
+              <ImportButton label="导入专业库 JSON" busy={imp.busy} onFile={(f) => imp.run(f, false)} />
+            </span>
+          )}
+        </div>
+        {imp.progress && <p className="text-[12px] text-olive-mute">{imp.progress}</p>}
+
+        {searching ? (
+          <>
+            <p className="text-[12.5px] text-olive-mute">
+              搜索「{keyword.trim()}」共 {query.data?.total ?? 0} 个专业
+            </p>
+            <MajorTable rows={query.data?.rows ?? []} loading={query.isLoading} empty={!query.isLoading && (query.data?.rows.length ?? 0) === 0} onOpen={setDetailId} />
+            <Pager page={page} totalPages={totalPages} total={query.data?.total ?? 0} onChange={setPage} />
+          </>
+        ) : menlei ? (
+          <>
+            {/* 门类介绍横幅（不跳转，就地展开） */}
+            <div className="paper-card p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-[18px] font-bold text-olive">{menlei}</h3>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-olive-mute">{MENLEI_INTRO[menlei] ?? ""}</p>
+                </div>
+                <div className="text-right text-[12px] text-olive-mute">
+                  <div><span className="text-[16px] font-bold text-olive">{grouped.data?.total ?? "…"}</span> 个专业</div>
+                  <div><span className="text-[16px] font-bold text-olive">{catsInMenlei.length}</span> 个专业类</div>
+                </div>
+              </div>
+              {catsInMenlei.length > 1 && (
+                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setCat("")}
+                    className={`rounded-full border px-3 py-1 text-[11.5px] font-semibold transition ${!cat ? "border-transparent bg-brand text-white" : "border-border bg-cream-card text-olive hover:bg-mint-pale/60"}`}
+                  >
+                    全部专业类
+                  </button>
+                  {catsInMenlei.map((c) => (
+                    <button
+                      key={c.cat}
+                      type="button"
+                      onClick={() => setCat(c.cat === cat ? "" : c.cat)}
+                      className={`rounded-full border px-3 py-1 text-[11.5px] font-semibold transition ${cat === c.cat ? "border-transparent bg-brand text-white" : "border-border bg-cream-card text-olive hover:bg-mint-pale/60"}`}
+                    >
+                      {c.cat}<span className="ml-1 text-[10px] opacity-70">{c.majors.length}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* 专业类 → 专业卡片 */}
+            {grouped.isLoading ? (
+              <div className="flex justify-center py-10">
+                <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
+              </div>
+            ) : (
+              filteredCats.map((c) => (
+                <div key={c.cat} className="paper-card p-4">
+                  <div className="mb-2 flex items-baseline justify-between">
+                    <h4 className="text-[14px] font-bold text-olive">{c.cat}</h4>
+                    <span className="text-[11px] text-olive-mute">{c.majors.length} 个专业</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.majors.map((mj) => (
+                      <button
+                        key={mj.id}
+                        type="button"
+                        title={mj.oneLiner ?? mj.code}
+                        onClick={() => setDetailId(mj.id)}
+                        className="rounded-lg border border-border bg-cream px-2.5 py-1.5 text-left text-[12px] text-olive transition hover:border-lime hover:bg-mint-pale/50"
+                      >
+                        <span className="font-semibold">{mj.name}</span>
+                        <span className="ml-1 font-mono text-[10.5px] text-olive-mute">{mj.code}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-[12.5px] text-olive-mute">从左侧选择一个学科门类开始浏览，或直接搜索专业名称。</p>
+            <MajorTable rows={query.data?.rows ?? []} loading={query.isLoading} empty={!query.isLoading && (query.data?.rows.length ?? 0) === 0} onOpen={setDetailId} />
+            <Pager page={page} totalPages={totalPages} total={query.data?.total ?? 0} onChange={setPage} />
+          </>
+        )}
+      </div>
+
+      {/* 专业详情弹窗 */}
+      {detailId != null && d && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4" onClick={() => setDetailId(null)}>
+          <div className="paper-card my-6 w-full max-w-3xl space-y-4 p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-[18px] font-bold text-olive">
-                  {detailRow.name}
-                  <span className="ml-2 font-mono text-[12px] font-normal text-olive-mute">{detailRow.code}</span>
+                  {d.name}
+                  <span className="ml-2 font-mono text-[12px] font-normal text-olive-mute">{d.code}</span>
                 </h3>
                 <p className="mt-1 text-[12.5px] text-olive-mute">
-                  {detailRow.menlei} · {detailRow.cat} · {detailRow.level}
-                  {detailRow.addedYear ? ` · ${detailRow.addedYear} 年增设` : ""}
+                  {d.menlei} · {d.cat} · {d.level}
+                  {d.addedYear ? ` · ${d.addedYear} 年增设` : ""}
                 </p>
               </div>
-              <button onClick={() => setDetail(null)} className="rounded-lg p-1.5 text-olive-mute hover:bg-cream" aria-label="关闭">
+              <button onClick={() => setDetailId(null)} className="rounded-lg p-1.5 text-olive-mute hover:bg-cream" aria-label="关闭">
                 <X size={18} />
               </button>
             </div>
             <div className="space-y-3">
               {MAJOR_FIELD_LABELS.map(([key, label]) => {
-                const v = (detailRow as unknown as Record<string, string | null>)[key];
+                const v = (d as unknown as Record<string, string | null>)[key];
                 if (!v) return null;
                 return (
                   <div key={key}>
@@ -285,22 +353,76 @@ function MajorsTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
+/** 搜索/全量模式的专业表格。 */
+function MajorTable({
+  rows,
+  loading,
+  empty,
+  onOpen,
+}: {
+  rows: { id: number; code: string; name: string; menlei: string; cat: string; oneLiner: string | null }[];
+  loading: boolean;
+  empty: boolean;
+  onOpen: (id: number) => void;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <table className="w-full text-left text-[12.5px]">
+        <thead>
+          <tr className="border-b border-border bg-cream/60 text-[11.5px] text-olive-mute">
+            <th className="px-3 py-2 font-semibold">代码</th>
+            <th className="px-3 py-2 font-semibold">专业名称</th>
+            <th className="px-3 py-2 font-semibold">门类</th>
+            <th className="px-3 py-2 font-semibold">专业类</th>
+            <th className="px-3 py-2 font-semibold">一句话介绍</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id} onClick={() => onOpen(r.id)} className="cursor-pointer border-b border-border/60 last:border-0 hover:bg-mint-pale/40">
+              <td className="px-3 py-2 font-mono text-[11.5px] text-olive-mute">{r.code}</td>
+              <td className="px-3 py-2 font-semibold text-olive">{r.name}</td>
+              <td className="px-3 py-2 text-olive-mute">{r.menlei}</td>
+              <td className="px-3 py-2 text-olive-mute">{r.cat}</td>
+              <td className="max-w-[360px] truncate px-3 py-2 text-olive-mute">{r.oneLiner ?? "—"}</td>
+            </tr>
+          ))}
+          {loading && <tr><td colSpan={5} className="px-3 py-8 text-center text-olive-mute">加载中…</td></tr>}
+          {empty && <tr><td colSpan={5} className="px-3 py-8 text-center text-olive-mute">没有找到匹配的专业</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /* ---------------------------------- 职业库 ---------------------------------- */
 
 function CareersTab({ isAdmin }: { isAdmin: boolean }) {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState("");
+  const [group, setGroup] = useState("");
+  // 拉一大页推导一级分类列表（职业总量 < 200，一次拿全）
+  const all = trpc.library.careers.useQuery({ page: 1, pageSize: 200 });
+  const groups = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of all.data?.rows ?? []) {
+      const g = c.category.split("·")[0]?.trim();
+      if (g) set.add(g);
+    }
+    return [...set];
+  }, [all.data]);
   const query = trpc.library.careers.useQuery(
     { page, pageSize: 12, keyword: keyword || undefined },
   );
+  const rowsRaw = query.data?.rows ?? [];
+  const rows = group ? rowsRaw.filter((c) => c.category.startsWith(group)) : rowsRaw;
   const utils = trpc.useUtils();
   const upsert = trpc.library.careersUpsert.useMutation({
     onSuccess: () => utils.library.careers.invalidate(),
   });
   const [editing, setEditing] = useState<Record<string, unknown> | "new" | null>(null);
 
-  const totalPages = Math.max(1, Math.ceil((query.data?.total ?? 0) / 12));
-  const rows = query.data?.rows ?? [];
+  const totalPages = group ? 1 : Math.max(1, Math.ceil((query.data?.total ?? 0) / 12));
 
   return (
     <div className="space-y-3">
@@ -321,6 +443,26 @@ function CareersTab({ isAdmin }: { isAdmin: boolean }) {
             + 新增职业
           </button>
         )}
+      </div>
+      {/* 学职平台式一级分类（参考 xz.chsi.com.cn/occupation） */}
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => setGroup("")}
+          className={`rounded-full border px-3 py-1 text-[11.5px] font-semibold transition ${!group ? "border-transparent bg-brand text-white" : "border-border bg-cream-card text-olive hover:bg-mint-pale/60"}`}
+        >
+          全部
+        </button>
+        {groups.map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => setGroup(g === group ? "" : g)}
+            className={`rounded-full border px-3 py-1 text-[11.5px] font-semibold transition ${group === g ? "border-transparent bg-brand text-white" : "border-border bg-cream-card text-olive hover:bg-mint-pale/60"}`}
+          >
+            {g}
+          </button>
+        ))}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -350,7 +492,7 @@ function CareersTab({ isAdmin }: { isAdmin: boolean }) {
           {isAdmin ? "还没有职业数据，点右上角新增" : "还没有职业数据"}
         </p>
       )}
-      <Pager page={page} totalPages={totalPages} total={query.data?.total ?? 0} onChange={setPage} />
+      {!group && <Pager page={page} totalPages={totalPages} total={query.data?.total ?? 0} onChange={setPage} />}
 
       {editing && (
         <CareerEditModal
@@ -473,6 +615,7 @@ function ScoresTab({ isAdmin }: { isAdmin: boolean }) {
   const [major, setMajor] = useState("");
   const [minRank, setMinRank] = useState("");
   const [maxRank, setMaxRank] = useState("");
+  const [sort, setSort] = useState<"est26" | "y1Min" | "y1Rank" | "y2Min" | "y3Min">("est26");
   const query = trpc.library.gdScores.useQuery(
     {
       page, pageSize: 20,
@@ -480,6 +623,7 @@ function ScoresTab({ isAdmin }: { isAdmin: boolean }) {
       major: major || undefined,
       minRank: minRank ? Number(minRank) : undefined,
       maxRank: maxRank ? Number(maxRank) : undefined,
+      sort,
     },
   );
   const importMut = trpc.library.gdScoresImport.useMutation();
@@ -507,6 +651,18 @@ function ScoresTab({ isAdmin }: { isAdmin: boolean }) {
         <span className="text-[12px] text-olive-mute">—</span>
         <input value={maxRank} onChange={(e) => { setMaxRank(e.target.value); setPage(1); }} placeholder="≤"
           className="w-24 rounded-lg border border-border bg-cream px-2.5 py-2 text-[12.5px] text-olive outline-none focus:border-lime" />
+        <select
+          value={sort}
+          onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }}
+          title="按所选年份的分数/位次从低到高排序"
+          className="rounded-lg border border-border bg-cream px-2.5 py-2 text-[12.5px] text-olive outline-none focus:border-lime"
+        >
+          <option value="est26">2026 预估位次 低→高</option>
+          <option value="y1Min">2025 最低分 低→高</option>
+          <option value="y1Rank">2025 最低位次 低→高</option>
+          <option value="y2Min">2024 最低分 低→高</option>
+          <option value="y3Min">2023 最低分 低→高</option>
+        </select>
         <span className="text-[12px] text-olive-mute">{query.data?.total ?? 0} 条</span>
         {isAdmin && (
           <span className="ml-auto flex items-center gap-2">
@@ -535,32 +691,43 @@ function ScoresTab({ isAdmin }: { isAdmin: boolean }) {
         <table className="w-full text-left text-[12.5px]">
           <thead>
             <tr className="border-b border-border bg-cream/60 text-[11.5px] text-olive-mute">
-              <th className="px-3 py-2 font-semibold">院校</th>
-              <th className="px-3 py-2 font-semibold">专业</th>
-              <th className="px-3 py-2 font-semibold">门类</th>
-              <th className="px-3 py-2 font-semibold">选科要求</th>
-              <th className="px-3 py-2 font-semibold">24 分/位</th>
-              <th className="px-3 py-2 font-semibold">25 分/位</th>
-              <th className="px-3 py-2 font-semibold">26 分/位</th>
-              <th className="px-3 py-2 font-semibold">26 预估位次</th>
+              <th className="px-3 py-2 font-semibold" rowSpan={2}>院校（专业组）</th>
+              <th className="px-3 py-2 font-semibold" rowSpan={2}>2026 招生专业（学制/计划/学费）</th>
+              <th className="px-3 py-2 font-semibold" rowSpan={2}>门类</th>
+              <th className="px-3 py-2 font-semibold" rowSpan={2}>选科要求</th>
+              <th className="px-3 py-2 font-semibold text-center" colSpan={5}>2025 年专业录取数据</th>
+              <th className="px-3 py-2 font-semibold text-center" colSpan={5}>2024 年专业录取数据</th>
+              <th className="px-3 py-2 font-semibold text-center" colSpan={5}>2023 年专业录取数据</th>
+              <th className="px-3 py-2 font-semibold text-center" rowSpan={2}>26 预估位次</th>
+            </tr>
+            <tr className="border-b border-border bg-cream/60 text-[10.5px] text-olive-mute">
+              {["2025", "2024", "2023"].map((y) => (
+                <Fragment key={y}>
+                  <th className="px-1.5 py-1.5 text-right font-semibold">人数</th>
+                  <th className="px-1.5 py-1.5 text-right font-semibold">最低分</th>
+                  <th className="px-1.5 py-1.5 text-right font-semibold">最低位次</th>
+                  <th className="px-1.5 py-1.5 font-semibold">批次</th>
+                  <th className="px-1.5 py-1.5 text-right font-semibold">计划</th>
+                </Fragment>
+              ))}
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-mint-pale/40">
-                <td className="px-3 py-2 font-semibold text-olive">{r.school}<div className="text-[11px] font-normal text-olive-mute">{r.groupName}</div></td>
-                <td className="px-3 py-2 text-olive">{r.majorFull || r.major}<div className="text-[11px] text-olive-mute">{r.years} · 计划 {r.plan ?? "—"} · {r.fee || "学费—"}</div></td>
-                <td className="px-3 py-2 text-olive-mute">{r.menlei}</td>
-                <td className="px-3 py-2 text-olive-mute">{r.req || "不限"}</td>
-                <td className="px-3 py-2 text-olive-mute">{r.y1Min ?? "—"} / {r.y1Rank ?? "—"}</td>
-                <td className="px-3 py-2 text-olive-mute">{r.y2Min ?? "—"} / {r.y2Rank ?? "—"}</td>
-                <td className="px-3 py-2 text-olive-mute">{r.y3Min ?? "—"} / {r.y3Rank ?? "—"}</td>
-                <td className="px-3 py-2 font-semibold text-olive">{r.estRank26 ?? "—"}</td>
+                <td className="px-3 py-2 font-semibold whitespace-nowrap text-olive">{r.school}<div className="text-[11px] font-normal text-olive-mute">{r.groupName}</div></td>
+                <td className="max-w-[280px] px-3 py-2 text-olive">{r.majorFull || r.major}<div className="text-[11px] whitespace-nowrap text-olive-mute">{r.years}年制 · 计划{r.plan ?? "—"} · {r.fee || "学费—"}</div></td>
+                <td className="px-3 py-2 whitespace-nowrap text-olive-mute">{r.menlei}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-olive-mute">{r.req || "不限"}</td>
+                <YearCells y={{ count: r.y1Count, min: r.y1Min, rank: r.y1Rank, batch: r.y1Batch, plan: r.y1Plan }} hl={sort === "y1Min" || sort === "y1Rank"} />
+                <YearCells y={{ count: r.y2Count, min: r.y2Min, rank: r.y2Rank, batch: r.y2Batch, plan: r.y2Plan }} hl={sort === "y2Min"} />
+                <YearCells y={{ count: r.y3Count, min: r.y3Min, rank: r.y3Rank, batch: r.y3Batch, plan: r.y3Plan }} hl={sort === "y3Min"} />
+                <td className={`px-3 py-2 text-right font-semibold whitespace-nowrap ${sort === "est26" ? "text-brand" : "text-olive"}`}>{r.estRank26 ?? "—"}</td>
               </tr>
             ))}
-            {query.isLoading && <tr><td colSpan={8} className="px-3 py-8 text-center text-olive-mute">加载中…</td></tr>}
+            {query.isLoading && <tr><td colSpan={21} className="px-3 py-8 text-center text-olive-mute">加载中…</td></tr>}
             {!query.isLoading && rows.length === 0 && (
-              <tr><td colSpan={8} className="px-3 py-8 text-center text-olive-mute">
+              <tr><td colSpan={21} className="px-3 py-8 text-center text-olive-mute">
                 {isAdmin ? "库里还没有数据，点右上角导入分数 JSON" : "库里还没有数据，请联系管理员导入"}
               </td></tr>
             )}
@@ -569,6 +736,20 @@ function ScoresTab({ isAdmin }: { isAdmin: boolean }) {
         <Pager page={page} totalPages={totalPages} total={query.data?.total ?? 0} onChange={setPage} />
       </div>
     </div>
+  );
+}
+
+/** 分数库三年明细单元格（每年：人数/最低分/位次/批次/计划）。 */
+function YearCells({ y, hl }: { y: { count: number | null; min: number | null; rank: number | null; batch: string; plan: number | null }; hl: boolean }) {
+  const cell = `px-1.5 py-2 text-right text-[11.5px] whitespace-nowrap ${hl ? "font-semibold text-brand" : "text-olive-mute"}`;
+  return (
+    <>
+      <td className={cell}>{y.count ?? "—"}</td>
+      <td className={cell}>{y.min ?? "—"}</td>
+      <td className={cell}>{y.rank ?? "—"}</td>
+      <td className="px-1.5 py-2 text-[11px] whitespace-nowrap text-olive-mute">{y.batch || "—"}</td>
+      <td className={cell}>{y.plan ?? "—"}</td>
+    </>
   );
 }
 
@@ -812,12 +993,68 @@ function UniversitiesTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
+/* -------------------------------- 12 学科门类（就地展开介绍） -------------------------------- */
+
+/** 门类图 + 门类介绍就地展开：点大类看介绍，不跳转。 */
+function DisciplinesPanel({ onBrowse }: { onBrowse: (menlei: string) => void }) {
+  const [open, setOpen] = useState<string[]>([]);
+  const toggle = (m: string) => setOpen((o) => (o.includes(m) ? o.filter((x) => x !== m) : [...o, m]));
+  return (
+    <div className="space-y-4">
+      <div className="paper-card p-5">
+        <DisciplineTreeChart />
+      </div>
+      <div className="paper-card p-5">
+        <h3 className="text-[15px] font-bold text-olive">12 大学科门类详细介绍</h3>
+        <p className="mt-0.5 text-[12px] text-olive-mute">点门类名就地展开介绍（不跳转），也可直接查看该门类下的全部专业。</p>
+        <div className="mt-3 space-y-3">
+          {FIELD_GROUPS.map((g) => (
+            <div key={g.label}>
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-brand px-2 py-0.5 text-[11.5px] font-bold text-cream">{g.label}</span>
+                <span className="text-[11px] text-olive-mute">{g.sub}</span>
+                <div className="h-px flex-1 bg-brand/10" />
+              </div>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {g.menleis.map((m) => {
+                  const opened = open.includes(m);
+                  return (
+                    <div key={m} className="rounded-xl border border-olive/12 bg-cream/60 p-3">
+                      <button type="button" onClick={() => toggle(m)} className="flex w-full items-center justify-between text-left">
+                        <span className="text-[13.5px] font-bold text-olive">{m}</span>
+                        <span className="text-[11px] font-semibold text-brand">{opened ? "收起 ∧" : "展开介绍 ∨"}</span>
+                      </button>
+                      {opened && (
+                        <div className="mt-2 border-t border-border pt-2">
+                          <p className="text-[12px] leading-relaxed text-olive-mute">{MENLEI_INTRO[m]}</p>
+                          <button
+                            type="button"
+                            onClick={() => onBrowse(m)}
+                            className="mt-2 rounded-lg bg-brand px-2.5 py-1 text-[11.5px] font-semibold text-cream hover:bg-lime"
+                          >
+                            查看{m}全部专业 →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------- 页面主体 ---------------------------------- */
 
 export default function Library() {
   const { user } = useAuth();
   const allowed = user?.role === "tutor" || user?.role === "admin";
   const [tab, setTab] = useState<TabKey>("majors");
+  const [menleiFromTree, setMenleiFromTree] = useState("");
   const isAdmin = user?.role === "admin";
 
   if (!allowed) {
@@ -855,15 +1092,11 @@ export default function Library() {
           ))}
         </div>
       </header>
-      {tab === "majors" && <MajorsTab isAdmin={isAdmin} />}
+      {tab === "majors" && <MajorsTab isAdmin={isAdmin} initialMenlei={menleiFromTree} />}
       {tab === "universities" && <UniversitiesTab isAdmin={isAdmin} />}
       {tab === "careers" && <CareersTab isAdmin={isAdmin} />}
       {tab === "scores" && <ScoresTab isAdmin={isAdmin} />}
-      {tab === "disciplines" && (
-        <div className="paper-card p-5">
-          <DisciplineTreeChart />
-        </div>
-      )}
+      {tab === "disciplines" && <DisciplinesPanel onBrowse={(m) => { setTab("majors"); setMenleiFromTree(m); }} />}
     </div>
   );
 }
