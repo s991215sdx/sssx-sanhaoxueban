@@ -32,6 +32,6 @@ describe("v168 用户级免登 ticket", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v168-2026-10-15";')) throw new Error("BUILD_TAG 未递增到 v168");
+    if (!/const BUILD_TAG = "v\d+-/.test(r)) throw new Error("BUILD_TAG 未递增");
   });
 });

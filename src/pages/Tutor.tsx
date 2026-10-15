@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { useSearchParams } from "react-router";
+import { useSearchParams, useNavigate } from "react-router";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import TrainingPlanLibrary from "@/components/TrainingPlanLibrary";
@@ -12,7 +12,7 @@ import DeleteStudentButton from "@/components/DeleteStudentButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import { STUDENT_MODULES } from "@contracts/studentModules";
-import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList } from "lucide-react";
+import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
 
@@ -68,6 +68,7 @@ function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabl
 /** 伴学工作台（/tutor）：伴学师查看名下学员，admin 可看全部。 */
 export default function Tutor() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const allowed = user?.role === "tutor" || user?.role === "admin";
   /* v157：详情抽屉与 URL 参数联动（?student=<id>），刷新/转发链接可直达学员详情 */
   const [searchParams, setSearchParams] = useSearchParams();
@@ -126,6 +127,13 @@ export default function Tutor() {
               名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate("/library")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60"
+          >
+            <LibraryIcon size={14} /> 资料库
+          </button>
         </div>
         {/* V57：两大专栏切换 */}
         {/* v127：与后台统一——tab 条白底，选中=草绿色卡+白字 */}

@@ -465,3 +465,177 @@ export const studentPrescriptions = mysqlTable("student_prescriptions", {
 
 export type StudentPrescription = typeof studentPrescriptions.$inferSelect;
 export type InsertStudentPrescription = typeof studentPrescriptions.$inferInsert;
+
+/* ------------------------------ 智慧生涯规划 · 数据底座 ------------------------------ */
+
+/** 专业底层库（天生智慧 1152+ 专业 × 27 字段），后台上传 JSON 导入。 */
+export const majorLib = mysqlTable("major_lib", {
+  id: serial("id").primaryKey(),
+  menleiCode: varchar("menlei_code", { length: 8 }).notNull().default(""),
+  menlei: varchar("menlei", { length: 16 }).notNull().default(""),
+  catCode: varchar("cat_code", { length: 16 }).notNull().default(""),
+  cat: varchar("cat", { length: 32 }).notNull().default(""),
+  code: varchar("code", { length: 16 }).notNull().unique(),
+  name: varchar("name", { length: 128 }).notNull(),
+  level: varchar("level", { length: 16 }).notNull().default("本科"),
+  addedYear: varchar("added_year", { length: 8 }).notNull().default(""),
+  oneLiner: text("one_liner"),
+  jobs: text("jobs"),
+  intro: text("intro"),
+  goal: text("goal"),
+  require: text("require"),
+  knowledge: text("knowledge"),
+  kaoyan: text("kaoyan"),
+  courses: text("courses"),
+  famous: text("famous"),
+  employment: text("employment"),
+  malePct: varchar("male_pct", { length: 16 }),
+  femalePct: varchar("female_pct", { length: 16 }),
+  degree: varchar("degree", { length: 64 }),
+  regions: text("regions"),
+  industries: text("industries"),
+  occupations: text("occupations"),
+  salary: text("salary"),
+  schools: text("schools"),
+  internship: text("internship"),
+  certs: text("certs"),
+});
+
+export type MajorLibRow = typeof majorLib.$inferSelect;
+
+/** 职业库：工作内容/职业技能/发展前景等，20 条种子随 0029 迁移插入，后台可扩充。 */
+export const careerLib = mysqlTable("career_lib", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 128 }).notNull().unique(),
+  category: varchar("category", { length: 64 }).notNull().default(""),
+  duties: json("duties").$type<string[]>(),
+  content: text("content"),
+  skillsPro: json("skills_pro").$type<string[]>(),
+  skillsGen: json("skills_gen").$type<string[]>(),
+  prospect: text("prospect"),
+  path: text("path"),
+  trend: text("trend"),
+});
+
+export type CareerLibRow = typeof careerLib.$inferSelect;
+
+/** 广东院校专业分数库（3 年专业最低分/位次 + 26 预估位次），后台上传 JSON 导入。 */
+export const gdScores = mysqlTable("gd_scores", {
+  id: serial("id").primaryKey(),
+  year: int("year").notNull().default(2025),
+  kelei: varchar("kelei", { length: 16 }).notNull().default(""),
+  batch: varchar("batch", { length: 32 }).notNull().default(""),
+  schoolCode: varchar("school_code", { length: 16 }).notNull().default(""),
+  school: varchar("school", { length: 128 }).notNull().default(""),
+  groupCode: varchar("group_code", { length: 32 }).notNull().default(""),
+  groupName: varchar("group_name", { length: 255 }).notNull().default(""),
+  majorCode: varchar("major_code", { length: 16 }).notNull().default(""),
+  majorFull: varchar("major_full", { length: 255 }).notNull().default(""),
+  major: varchar("major", { length: 128 }).notNull().default(""),
+  req: varchar("req", { length: 64 }).notNull().default(""),
+  plan: int("plan"),
+  years: varchar("years", { length: 16 }).notNull().default(""),
+  fee: varchar("fee", { length: 32 }).notNull().default(""),
+  menlei: varchar("menlei", { length: 16 }).notNull().default(""),
+  cat: varchar("cat", { length: 64 }).notNull().default(""),
+  y1Min: int("y1_min"),
+  y1Rank: int("y1_rank"),
+  y2Min: int("y2_min"),
+  y2Rank: int("y2_rank"),
+  y3Min: int("y3_min"),
+  y3Rank: int("y3_rank"),
+  estRank26: int("est_rank26"),
+  city: varchar("city", { length: 32 }).notNull().default(""),
+  tier: varchar("tier", { length: 16 }).notNull().default(""),
+  tags: varchar("tags", { length: 255 }).notNull().default(""),
+});
+
+export type GdScoreRow = typeof gdScores.$inferSelect;
+
+/** 分年级条件准备规划模板：分数段 × 年级 × 升学路径。 */
+export const gradePlans = mysqlTable("grade_plans", {
+  id: serial("id").primaryKey(),
+  /** 分数段标签，如 "特控线以上"、"本科线-特控线" */
+  band: varchar("band", { length: 32 }).notNull().default(""),
+  grade: varchar("grade", { length: 8 }).notNull().default(""),
+  path: varchar("path", { length: 32 }).notNull().default(""),
+  title: varchar("title", { length: 128 }).notNull().default(""),
+  content: text("content"),
+  sort: int("sort").notNull().default(0),
+});
+
+export type GradePlanRow = typeof gradePlans.$inferSelect;
+
+/** 学员未来期望：允许留空；伴学师后台可编辑；系统可兜底建议。 */
+export const studentAspirations = mysqlTable("student_aspirations", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().unique(),
+  /** 标准化后的目标院校/专业/职业（取自三库标准名） */
+  school: varchar("school", { length: 128 }),
+  schoolRaw: varchar("school_raw", { length: 128 }),
+  major: varchar("major", { length: 128 }),
+  majorRaw: varchar("major_raw", { length: 128 }),
+  career: varchar("career", { length: 128 }),
+  careerRaw: varchar("career_raw", { length: 128 }),
+  source: mysqlEnum("source", ["student", "tutor", "system"]).notNull().default("student"),
+  updatedBy: bigint("updated_by", { mode: "number", unsigned: true }),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StudentAspirationRow = typeof studentAspirations.$inferSelect;
+
+/** 院校库（掌上高考院校基础信息总表 2991 所 × 49 字段），后台上传 JSON 导入，按省份归类。 */
+export const universityLib = mysqlTable("university_lib", {
+  id: serial("id").primaryKey(),
+  zsId: varchar("zs_id", { length: 16 }).notNull().default(""),
+  name: varchar("name", { length: 128 }).notNull().unique(),
+  province: varchar("province", { length: 16 }).notNull().default(""),
+  city: varchar("city", { length: 32 }).notNull().default(""),
+  district: varchar("district", { length: 32 }).notNull().default(""),
+  schoolType: varchar("school_type", { length: 32 }).notNull().default(""),
+  level: varchar("level", { length: 16 }).notNull().default(""),
+  nature: varchar("nature", { length: 16 }).notNull().default(""),
+  tags: varchar("tags", { length: 255 }).notNull().default(""),
+  pageTags: varchar("page_tags", { length: 255 }).notNull().default(""),
+  foundYear: varchar("found_year", { length: 16 }).notNull().default(""),
+  area: varchar("area", { length: 32 }).notNull().default(""),
+  supervisor: varchar("supervisor", { length: 64 }).notNull().default(""),
+  zsWebsite: varchar("zs_website", { length: 255 }).notNull().default(""),
+  zsPhone: varchar("zs_phone", { length: 64 }).notNull().default(""),
+  website: varchar("website", { length: 255 }).notNull().default(""),
+  motto: varchar("motto", { length: 255 }).notNull().default(""),
+  alias: varchar("alias", { length: 128 }).notNull().default(""),
+  formerNames: varchar("former_names", { length: 255 }).notNull().default(""),
+  intro: text("intro"),
+  introShort: text("intro_short"),
+  doctor: varchar("doctor", { length: 64 }).notNull().default(""),
+  doctorDetail: text("doctor_detail"),
+  master: varchar("master", { length: 64 }).notNull().default(""),
+  masterDetail: text("master_detail"),
+  keyDisciplines: varchar("key_disciplines", { length: 128 }).notNull().default(""),
+  dfc: text("dfc"),
+  departments: text("departments"),
+  campus: text("campus"),
+  canteen: text("canteen"),
+  dorm: text("dorm"),
+  scholarship: text("scholarship"),
+  aid: text("aid"),
+  malePct: varchar("male_pct", { length: 16 }).notNull().default(""),
+  femalePct: varchar("female_pct", { length: 16 }).notNull().default(""),
+  logoUrl: varchar("logo_url", { length: 512 }).notNull().default(""),
+  campusPhotos: text("campus_photos"),
+  dormPhotos: text("dorm_photos"),
+  history: text("history"),
+  ranking: varchar("ranking", { length: 255 }).notNull().default(""),
+  subjectEval: varchar("subject_eval", { length: 128 }).notNull().default(""),
+  academicians: varchar("academicians", { length: 64 }).notNull().default(""),
+  libraryBooks: varchar("library_books", { length: 64 }).notNull().default(""),
+  labs: varchar("labs", { length: 64 }).notNull().default(""),
+  baoyan: varchar("baoyan", { length: 64 }).notNull().default(""),
+  videoUrl: varchar("video_url", { length: 512 }).notNull().default(""),
+  address: varchar("address", { length: 255 }).notNull().default(""),
+  zsCode: varchar("zs_code", { length: 16 }).notNull().default(""),
+  detailUrl: varchar("detail_url", { length: 512 }).notNull().default(""),
+});
+
+export type UniversityLibRow = typeof universityLib.$inferSelect;

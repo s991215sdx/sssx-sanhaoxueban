@@ -16,6 +16,7 @@ import InviteRegister from "./pages/InviteRegister";
 import SsoStudentView from "./pages/SsoStudentView";
 import Admin from "./pages/Admin";
 import Tutor from "./pages/Tutor";
+import Library from "./pages/Library";
 import RecycleBin from "./pages/RecycleBin";
 import { trpc } from "./providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -168,6 +169,7 @@ export default function App() {
                     <Route path="/report-detail" element={<ReportDetail />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/tutor" element={<Tutor />} />
+      <Route path="/library" element={<Library />} />
                     <Route path="/recycle-bin" element={<RecycleBin />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

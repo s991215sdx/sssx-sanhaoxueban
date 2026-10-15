@@ -205,6 +205,20 @@
       "when": 1790611200000,
       "tag": "0028_user_deleted_by",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1790697600000,
+      "tag": "0029_zhihui_libs",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1790784000000,
+      "tag": "0030_university_lib",
+      "breakpoints": true
     }
   ]
 }

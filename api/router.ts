@@ -19,9 +19,10 @@ import { coachRouter } from "./coachRouter";
 import { analyzeRouter } from "./analyzeRouter";
 import { orgRouter } from "./orgRouter";
 import { ssoRouter } from "./ssoRouter";
+import { libraryRouter } from "./libraryRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v168-2026-10-15";
+const BUILD_TAG = "v172-2026-10-16";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),
@@ -216,6 +217,8 @@ export const appRouter = createRouter({
   org: orgRouter,
   /** v158：一体通 SSO 免登只读接口（ticket 短会话，最小权限） */
   sso: ssoRouter,
+  /** v171：智慧生涯数据底座三库（专业/职业/广东分数）+ 分年级规划模板 + 未来期望 */
+  library: libraryRouter,
   analyze: analyzeRouter,
   graph: graphRouter,
   preview: previewRouter,

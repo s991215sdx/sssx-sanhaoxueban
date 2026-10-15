@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { useSearchParams } from "react-router";
+import { useSearchParams, useNavigate } from "react-router";
 import StudentDetailDrawer from "@/components/StudentDetailDrawer";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import DeleteStudentButton from "@/components/DeleteStudentButton";
@@ -10,7 +10,7 @@ import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
-import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown } from "lucide-react";
+import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
 
@@ -79,6 +79,7 @@ const ADMIN_TABS: { key: AdminTab; label: string }[] = [
 ];
 
 function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; onRefresh: () => void; platform?: boolean }) {
+  const navigate = useNavigate();
   const refresh = onRefresh;
   const [tab, setTab] = useState<AdminTab>(platform ? "dash" : "overview");
   const tabs = platform
@@ -129,7 +130,16 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight text-[#1E3530]">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-[22px] font-bold tracking-tight text-[#1E3530]">{platform ? "总系统 · 后台管理" : "后台管理"}</h1>
+          <button
+            type="button"
+            onClick={() => navigate("/library")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60"
+          >
+            <LibraryIcon size={14} /> 资料库
+          </button>
+        </div>
         <p className="mt-1 text-[13px] text-olive-mute">
           {platform
             ? "平台超管：可查看所有机构的数据，并可给任意账号开通管理员。树洞内容属于隐私，只看得到心情曲线。"
