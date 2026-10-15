@@ -187,12 +187,15 @@ export const zhihuiRouter = createRouter({
       const pickedCats = catRanked.slice(0, 5);
       const majorCats = [];
       for (const c of pickedCats) {
-        const [rep] = await db
+        const reps = await db
           .select()
           .from(majorLib)
           .where(and(eq(majorLib.cat, c.cat), eq(majorLib.menlei, c.menlei)))
           .orderBy(asc(majorLib.code))
-          .limit(1);
+          .limit(8);
+        // 代表专业优先取介绍完整的行（intro/courses/jobs 非空），报告内容更充实
+        const rep =
+          reps.find((r) => r.intro && r.courses && r.jobs) ?? reps.find((r) => r.intro) ?? reps[0];
         if (rep) majorCats.push(rep);
       }
 
