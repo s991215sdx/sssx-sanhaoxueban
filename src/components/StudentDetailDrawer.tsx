@@ -30,6 +30,14 @@ export default function StudentDetailDrawer({
   const coachQ = trpc.coach.studentDetail.useQuery({ userId }, { enabled: source === "coach" });
   const q = source === "admin" ? adminQ : coachQ;
   const data = q.data;
+  /* v169：伴学师无报告权限时——后端只下发测评清单，前端报告区整体换成「测评记录 + 无权限提示」 */
+  const reportLimited = !!(data && (data as { reportAccess?: { allowed: boolean } | null }).reportAccess && !(data as { reportAccess: { allowed: boolean } }).reportAccess.allowed);
+  const KIND_LABELS: Record<string, string> = {
+    mbti: "MBTI 性格测评", disc: "DISC 行为风格", e3: "学习力诊断", multi: "多元智能",
+    multi5: "多元智能五项", anchor: "职业锚", holland: "霍兰德职业兴趣",
+    mental: "心理健康·通用版", mentalsdq: "心理健康·学生版A(SDQ)", mentalpa: "心理健康·学生版B(PHQ-A)",
+    scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", e3parent: "家长卷", discparent: "家长版 DISC",
+  };
   /** 宽屏模式：电脑上默认右半屏抽屉，可一键放大到全屏阅读报告。 */
   const [wide, setWide] = useState(false);
   /** 测评报告：默认收起为一行摘要，展开渲染与学生端一致的 ReportView。 */
@@ -121,6 +129,33 @@ export default function StudentDetailDrawer({
               </div>
             </div>
 
+            {/* v169：无报告权限 → 只展示测评记录（名称+时间）；有权限 → 完整报告区（与学生端一致） */}
+            {reportLimited ? (
+              <div className="paper-card p-4">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block h-3.5 w-1 rounded-full bg-[#0C7064]" />
+                  <span className="text-[14px] font-bold text-[#1E3530]">测评记录</span>
+                </div>
+                <p className="mt-2 rounded-lg bg-butter-pale/60 px-3 py-2 text-[12px] leading-relaxed text-olive-soft">
+                  🔒 你暂无本学员的测评报告查看权限（只能看到做了哪些测评）。如需开通，请联系管理员分配报告。
+                </p>
+                {((data as NonNullable<typeof data>).assessments.raw ?? []).length === 0 ? (
+                  <p className="mt-2 text-[12.5px] text-olive-mute">还没有测评记录。</p>
+                ) : (
+                  <div className="mt-2 space-y-1">
+                    {(data as NonNullable<typeof data>).assessments.raw.map((r: { kind: string; createdAt: Date }, i: number) => (
+                      <div key={i} className="flex items-center gap-2 rounded-lg bg-cream/60 px-3 py-1.5 text-[12.5px]">
+                        <span className="font-medium text-olive">{KIND_LABELS[r.kind] ?? r.kind}</span>
+                        <span className="mono ml-auto text-[11px] text-olive-mute">
+                          {new Date(r.createdAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+            <>
             {/* 测评报告：默认一行摘要，展开渲染与学生端完全一致的 ReportView */}
             <div className="paper-card p-4">
               <div className="flex items-center justify-between gap-2">
@@ -239,6 +274,8 @@ export default function StudentDetailDrawer({
                 multi={data.assessments.multi ?? null}
                 academics={(data.academics as AcademicsData | null) ?? null}
               />
+            )}
+            </>
             )}
 
             {/* 成绩与目标 · 可代填（伴学师/管理员代学员填写） */}

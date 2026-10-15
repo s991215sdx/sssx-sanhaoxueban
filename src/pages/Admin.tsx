@@ -10,6 +10,7 @@ import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
+import ReportGrantButton from "@/components/ReportGrantButton";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
@@ -433,8 +434,15 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                     <span className="text-[11px] text-olive-mute">未分配</span>
                   ) : (
                     s.tutors.map((t) => (
-                      <span key={t.id} className="rounded-full bg-butter-pale px-1.5 py-px text-[10.5px] font-semibold text-brand">
+                      <span
+                        key={t.id}
+                        title={t.reportAccess === false ? "该伴学师无报告查看权限" : "该伴学师可查看测评报告"}
+                        className={`rounded-full px-1.5 py-px text-[10.5px] font-semibold ${
+                          t.reportAccess === false ? "bg-cream-card text-olive-mute ring-1 ring-border" : "bg-butter-pale text-brand"
+                        }`}
+                      >
                         {t.name}
+                        {t.reportAccess === false ? "🔒" : ""}
                       </span>
                     ))
                   )}
@@ -450,6 +458,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
               <div className="flex items-center gap-2">
                 {/* V56：多对多分配伴学师 */}
                 <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
+                {/* v169：分配报告（开通伴学师报告查看权限，可设有效期） */}
+                <ReportGrantButton studentUserId={s.userId} studentName={s.name} tutors={tutors ?? []} assigned={s.tutors} />
                 {/* V54：报告推送开关 */}
                 <ReportAccessButton userId={s.userId} released={s.reportReleased} />
                 {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
@@ -509,6 +519,11 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
   const { data: tutors, isLoading } = trpc.admin.tutors.useQuery(orgScope);
   const { data: students } = trpc.admin.students.useQuery(orgScope);
   const assignedOf = (userId: number) => students?.find((s) => s.userId === userId)?.tutors ?? [];
+  const utils = trpc.useUtils();
+  /* v170：邀请学员默认可看报告开关 */
+  const setInviteDefault = trpc.admin.setTutorInviteReportDefault.useMutation({
+    onSuccess: () => utils.admin.tutors.invalidate(),
+  });
   /* v161：每位伴学师名下学员默认折叠，点「展开」看全部；伴学师列表分页（每页 10 个） */
   const [expandedTutors, setExpandedTutors] = useState<number[]>([]);
   const toggleTutor = (id: number) =>
@@ -538,6 +553,18 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
                       {new Date(t.lastSignInAt).toLocaleDateString("zh-CN")}
                     </div>
                   </div>
+                  {/* v170：邀请学员默认可看报告——开启后扫他的码注册的新学员自动带报告权限 */}
+                  <button
+                    type="button"
+                    title="开启后，扫这位伴学师二维码注册的新学员默认可查看测评报告"
+                    onClick={() => setInviteDefault.mutate({ tutorUserId: t.id, value: !t.inviteReportDefault })}
+                    disabled={setInviteDefault.isPending}
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                      t.inviteReportDefault ? "bg-brand text-white" : "bg-cream-card text-olive-mute ring-1 ring-border hover:text-olive"
+                    }`}
+                  >
+                    {t.inviteReportDefault ? "邀请学员默认可看报告 ✓" : "邀请学员默认无报告"}
+                  </button>
                 </div>
                 <button
                   onClick={() => toggleTutor(t.id)}

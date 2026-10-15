@@ -1,4 +1,4 @@
-/* v171 冒烟：智慧生涯 · 数据底座三库（0029_zhihui_libs）——
+/* v171 冒烟：智慧生涯 · 数据底座三库（0031_zhihui_libs）——
    伴学师/管理员可查询专业底层库、职业库、广东院校专业分数库与 12 学科门类；
    管理员可分块导入专业库/分数库 JSON、编辑职业库、维护分年级规划模板；
    学员未来期望允许留空、伴学师后台代编（source=tutor）。
@@ -8,7 +8,7 @@ import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
 describe("v171 智慧生涯数据底座三库", () => {
-  const mig = readFileSync("db/migrations/0029_zhihui_libs.sql", "utf-8");
+  const mig = readFileSync("db/migrations/0031_zhihui_libs.sql", "utf-8");
   const schema = readFileSync("db/schema.ts", "utf-8");
   const router = readFileSync("api/libraryRouter.ts", "utf-8");
   const app = readFileSync("api/router.ts", "utf-8");
@@ -26,8 +26,8 @@ describe("v171 智慧生涯数据底座三库", () => {
   });
 
   it("迁移三处同步（journal / embedded / schema）", () => {
-    if (!journal.includes("0029_zhihui_libs")) throw new Error("journal 未登记 0029");
-    if (!embedded.includes("0029_zhihui_libs")) throw new Error("embedded 未登记 0029");
+    if (!journal.includes("0031_zhihui_libs")) throw new Error("journal 未登记 0029");
+    if (!embedded.includes("0031_zhihui_libs")) throw new Error("embedded 未登记 0029");
     for (const t of ["majorLib", "careerLib", "gdScores", "gradePlans", "studentAspirations"]) {
       if (!schema.includes(`export const ${t} =`)) throw new Error(`schema 缺：${t}`);
     }

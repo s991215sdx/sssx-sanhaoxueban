@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { desc, eq, or, sql } from "drizzle-orm";
 import { INVITE_CHANNEL_KINDS, normalizeInviteCode, normalizeReportKinds, normalizeAssessKinds } from "@contracts/invite";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
-import { inviteChannels, inviteRegistrations, studentProfile, users } from "@db/schema";
+import { inviteChannels, inviteRegistrations, studentProfile, studentTutor, users } from "@db/schema";
 import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { hashPassword, setSessionCookie } from "./auth-router";
@@ -275,6 +275,27 @@ export const inviteRouter = createRouter({
         });
       } catch {
         /* 档案建失败不阻断注册，welcome 引导会兜底补齐 */
+      }
+      /* v170：伴学师渠道的注册学员同步写多对多分配表，报告权限随该伴学师的「邀请学员默认可看报告」配置。
+         之后管理员仍可在分配/分配报告里对该学员单独覆盖。失败不阻断注册（容错：迁移未就绪时跳过）。 */
+      if (ch.tutorId != null) {
+        try {
+          const tutor = (
+            await db
+              .select({ inviteReportDefault: users.inviteReportDefault })
+              .from(users)
+              .where(eq(users.id, ch.tutorId))
+              .limit(1)
+          )[0];
+          await db.insert(studentTutor).values({
+            studentUserId: userId,
+            tutorUserId: ch.tutorId,
+            reportAccess: tutor?.inviteReportDefault ?? false,
+            reportAccessExpiresAt: null,
+          });
+        } catch {
+          /* 已有分配记录或迁移未就绪：保持现状 */
+        }
       }
       await db
         .insert(inviteRegistrations)

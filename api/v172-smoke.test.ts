@@ -1,4 +1,4 @@
-/* v172 冒烟：院校库（0030_university_lib，掌上高考院校基础信息总表 2991 所）——
+/* v172 冒烟：院校库（0032_university_lib，掌上高考院校基础信息总表 2991 所）——
    查大学按省份归类 + 层次/性质/特色标签过滤，供测评报告「目标院校规划」与伴学师演示调用；
    查专业页签按自然科学(理工农医)/社会科学(经管法教)/人文科学(文哲史艺)三大领域分组。
    要求：迁移三处同步、查询走 tutorQuery、导入走 adminQuery 且分块 ≤300 行。 */
@@ -6,7 +6,7 @@ import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
 describe("v172 院校库 + 查大学/查专业分组", () => {
-  const mig = readFileSync("db/migrations/0030_university_lib.sql", "utf-8");
+  const mig = readFileSync("db/migrations/0032_university_lib.sql", "utf-8");
   const schema = readFileSync("db/schema.ts", "utf-8");
   const router = readFileSync("api/libraryRouter.ts", "utf-8");
   const embedded = readFileSync("api/migrationsEmbedded.ts", "utf-8");
@@ -17,8 +17,8 @@ describe("v172 院校库 + 查大学/查专业分组", () => {
     if (!mig.includes("CREATE TABLE `university_lib`")) throw new Error("缺表：university_lib");
     if (!mig.includes("university_lib_name_unique")) throw new Error("缺：院校名唯一键");
     if (!mig.includes("university_lib_province_idx")) throw new Error("缺：省份索引");
-    if (!journal.includes("0030_university_lib")) throw new Error("journal 未登记 0030");
-    if (!embedded.includes("0030_university_lib")) throw new Error("embedded 未登记 0030");
+    if (!journal.includes("0032_university_lib")) throw new Error("journal 未登记 0030");
+    if (!embedded.includes("0032_university_lib")) throw new Error("embedded 未登记 0030");
     if (!schema.includes("export const universityLib")) throw new Error("schema 缺 universityLib");
   });
 

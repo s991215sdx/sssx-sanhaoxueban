@@ -208,11 +208,15 @@ export const academicRecords = mysqlTable("academic_records", {
 export type AcademicRecord = typeof academicRecords.$inferSelect;
 
 /** V56：学员-伴学师多对多分配。一个学员可挂多位伴学师（管理员在后台分配）；
- *  student_profile.tutor_id 保留为主管伴学师（= 本表第一条，向后兼容旧逻辑）。 */
+ *  student_profile.tutor_id 保留为主管伴学师（= 本表第一条，向后兼容旧逻辑）。
+ *  v169：reportAccess=该伴学师是否可查看本学员的测评报告/解析/陪练对话（B 端付费控制，
+ *  默认 true 兼容存量）；reportAccessExpiresAt=权限到期时间（null=永久，到期自动收回）。 */
 export const studentTutor = mysqlTable("student_tutor", {
   id: serial("id").primaryKey(),
   studentUserId: bigint("student_user_id", { mode: "number", unsigned: true }).notNull(),
   tutorUserId: bigint("tutor_user_id", { mode: "number", unsigned: true }).notNull(),
+  reportAccess: boolean("report_access").notNull().default(true),
+  reportAccessExpiresAt: timestamp("report_access_expires_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -369,6 +373,9 @@ export const users = mysqlTable("users", {
   deletedAt: timestamp("deleted_at"),
   /** v99：执行软删的操作者（users.id）——回收站按"谁删的"做伴学师可见性判定。 */
   deletedBy: bigint("deleted_by", { mode: "number", unsigned: true }),
+  /** v170：伴学师属性——其邀请二维码注册的新学员默认可查看测评报告（B 端付费老师一次配置，
+   *  后续扫码学员自动带报告权限；个别学员仍可由管理员在分配/分配报告里单独覆盖）。 */
+  inviteReportDefault: boolean("invite_report_default").notNull().default(false),
 });
 
 /* ---------------------------------- SaaS 机构（租户） --------------------------------- */
