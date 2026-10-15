@@ -13,7 +13,7 @@ function need(src: string, needle: string, label: string) {
 
 describe("v99 回收站跳转修复", () => {
   it("RoleGate 员工路径白名单含 /recycle-bin", () => {
-    need(read("src/App.tsx"), 'staffPaths = ["/tutor", "/admin", "/recycle-bin"]', "员工路径白名单");
+    need(read("src/App.tsx"), 'staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library"]', "员工路径白名单");
   });
 });
 
