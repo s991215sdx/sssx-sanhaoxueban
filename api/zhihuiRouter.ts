@@ -199,6 +199,12 @@ export const zhihuiRouter = createRouter({
         if (rep) majorCats.push(rep);
       }
 
+      // 期望专业类优先：与「未来期望」一致的专业排在推荐首位（学员认知闭环）
+      if (targetMajor && !majorCats.some((m) => m.cat === targetMajor.cat)) {
+        majorCats.unshift(targetMajor);
+        majorCats.pop();
+      }
+
       // 推荐职业 Top5
       const careerPicks = careers
         .map((c) => {

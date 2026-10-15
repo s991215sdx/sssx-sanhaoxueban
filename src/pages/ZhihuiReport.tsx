@@ -27,6 +27,18 @@ const C = {
 };
 const DIM_KEYS = ["兴趣", "能力倾向", "观念", "效能感"] as const;
 
+/** 资料库多值字段统一清洗：数组/JSON/中英文逗号分隔 → 顿号串联，去重去空。 */
+function cleanList(s: unknown, sep = "、" ): string {
+  let t = String(s ?? "");
+  for (const ch of "[]{}\"'") t = t.split(ch).join(sep);
+  for (const ch of ",，;；") t = t.split(ch).join(sep);
+  const seen = new Set<string>();
+  return t.split(sep).map((x) => x.trim()).filter((x) => {
+    if (!x || seen.has(x)) return false;
+    seen.add(x); return true;
+  }).join(sep);
+}
+
 /* ---------- 静态内容（升学路径 / 分数段矩阵 / 分年级规划，按讲座口径；后台模板表下版接入） ---------- */
 const PATHWAYS: { tag: string; name: string; main?: boolean; cond: string; plan: string }[] = [
   { tag: "主力路径", name: "普通高考 · 院校专业组", main: true,
@@ -511,12 +523,12 @@ export default function ZhihuiReport() {
         {majorCats.slice(0, 2).map((m, i) => (
           <div key={m.code} style={{ marginBottom: 26 }}>
             <div className="major-head"><span className="tab">你适合学习的</span><span style={{ fontSize: 18, fontWeight: 700, color: C.brandDeep }}>专业</span><span className="idx">{i + 1}　{m.cat}</span></div>
-            <div className="card"><p style={{ fontSize: 13, lineHeight: 2.1 }}>{m.intro || m.oneLiner || `${m.cat}是${m.menlei}门类下的专业大类。`}</p></div>
+            <div className="card"><p style={{ fontSize: 13, lineHeight: 2.1 }}>{(m.intro || m.oneLiner || `${m.cat}是${m.menlei}门类下的专业大类。`).replace(/\\n/g, " ")}</p></div>
             {m.courses && (<><div style={{ margin: "18px 0 12px", textAlign: "center", fontSize: 15, fontWeight: 700, color: C.brandDeep }}>· 专业大类课程 ·</div>
-              <div className="card" style={{ background: "#fff" }}><p style={{ fontSize: 13, lineHeight: 2.2 }}>{String(m.courses).replace(/[[\]"']/g, "").split(/[,，;；]/).filter(Boolean).slice(0, 10).join("　·　")}</p></div></>)}
+              <div className="card" style={{ background: "#fff" }}><p style={{ fontSize: 13, lineHeight: 2.2 }}>{cleanList(m.courses).split("、").slice(0, 10).join("　·　")}</p></div></>)}
             <div className="grid2" style={{ marginTop: 14 }}>
-              {m.industries && <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>专业应用领域</div><p style={{ fontSize: 13, lineHeight: 2 }}>{String(m.industries).replace(/[[\]"']/g, "")}</p></div>}
-              {m.jobs && <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>就业方向</div><p style={{ fontSize: 13, lineHeight: 2 }}>{String(m.jobs).replace(/[[\]"']/g, "")}</p></div>}
+              {m.industries && <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>专业应用领域</div><p style={{ fontSize: 13, lineHeight: 2 }}>{cleanList(m.industries, "　·　")}</p></div>}
+              {m.jobs && <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>就业方向</div><p style={{ fontSize: 13, lineHeight: 2 }}>{cleanList(m.jobs)}</p></div>}
             </div>
           </div>
         ))}
@@ -527,11 +539,11 @@ export default function ZhihuiReport() {
             <div className="card">
               <p style={{ fontSize: 13, lineHeight: 2.1 }}><b>职业描述：</b>{c.content}</p>
               <div className="divider" />
-              <p style={{ fontSize: 13, lineHeight: 2.1 }}><b>职业内容：</b>{String(c.duties ?? "").replace(/[[\]"']/g, "、").replace(/、+/g, "、").replace(/^、|、$/g, "")}</p>
+              <p style={{ fontSize: 13, lineHeight: 2.1 }}><b>职业内容：</b>{cleanList(c.duties)}</p>
             </div>
             <div className="grid2" style={{ marginTop: 14 }}>
-              <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>职业技能 · 专业</div><p style={{ fontSize: 13, lineHeight: 2 }}>{String(c.skillsPro ?? "").replace(/[[\]"']/g, "")}</p></div>
-              <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>职业技能 · 通用</div><p style={{ fontSize: 13, lineHeight: 2 }}>{String(c.skillsGen ?? "").replace(/[[\]"']/g, "")}</p></div>
+              <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>职业技能 · 专业</div><p style={{ fontSize: 13, lineHeight: 2 }}>{cleanList(c.skillsPro)}</p></div>
+              <div className="card"><div className="klabel" style={{ marginBottom: 8 }}>职业技能 · 通用</div><p style={{ fontSize: 13, lineHeight: 2 }}>{cleanList(c.skillsGen)}</p></div>
             </div>
             <div className="card" style={{ marginTop: 14 }}><div className="klabel" style={{ marginBottom: 8 }}>发展前景</div><p style={{ fontSize: 13, lineHeight: 2 }}>{c.prospect}</p></div>
           </div>
