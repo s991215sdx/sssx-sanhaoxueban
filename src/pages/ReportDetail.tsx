@@ -44,7 +44,7 @@ export default function ReportDetail() {
   );
 }
 
-/** 测评报告区入口：智慧生涯规划报告（v175）。完成学科四维测评后可查看完整规划报告。 */
+/** 测评报告区入口：三好生涯规划报告（v175）。完成学科四维测评后可查看完整规划报告。 */
 function ZhihuiReportCard() {
   return (
     <a
@@ -55,7 +55,7 @@ function ZhihuiReportCard() {
       <span className="text-3xl">🧭</span>
       <span className="flex-1">
         <span className="block text-base font-bold" style={{ color: "#4c5a28" }}>
-          智慧生涯规划报告
+          三好生涯规划报告
         </span>
         <span className="block text-sm" style={{ color: "#8a8f78" }}>
           选科 · 专业 · 职业 · 升学路径一站式规划，基于学科四维测评与霍兰德测评

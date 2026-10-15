@@ -326,7 +326,7 @@ export default function ZhihuiReport() {
     <div className="zh-root">
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex items-center gap-3 no-print">
-        <h1 className="text-[20px] font-bold text-olive">智慧生涯规划报告</h1>
+        <h1 className="text-[20px] font-bold text-olive">三好生涯规划报告</h1>
         <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade} · 报告编号 {reportNo}</span>
         <button type="button" onClick={() => window.print()} className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime">
           下载 / 打印
@@ -336,8 +336,8 @@ export default function ZhihuiReport() {
       {/* 1 封面 */}
       <Page no={1}>
         <div className="flex flex-1 flex-col items-start justify-center">
-          <div className="klabel" style={{ marginBottom: 18 }}>EVALUATION REPORT · 智慧生涯测评</div>
-          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>智慧生涯规划<br />测评报告</h1>
+          <div className="klabel" style={{ marginBottom: 18 }}>EVALUATION REPORT · 三好生涯测评</div>
+          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>三好生涯规划<br />测评报告</h1>
           <div style={{ marginTop: 26, width: 64, height: 4, background: C.brand, borderRadius: 2 }} />
           <p style={{ marginTop: 26, color: C.oliveSoft, fontSize: 15, lineHeight: 2.2 }}>认识自我 · 认识世界 · 树立目标 · 制定计划</p>
         </div>
@@ -705,7 +705,19 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
 @media print {
   .no-print { display: none !important; }
   .zh-root { background: #fff; padding: 0; }
-  .zh-page { box-shadow: none; margin: 0 auto; border-radius: 0; page-break-after: always; max-width: none; }
+  /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪 */
+  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; max-width: none; min-height: 281mm !important; height: auto; padding: 14px 22px 40px; }
   .zh-page:last-child { page-break-after: auto; }
+  .pfoot { bottom: 8px; left: 22px; right: 22px; }
+  .zh-page .card { padding: 9px 14px; }
+  .sec-title { margin: 12px 0 8px; }
+  .zh-page h2 { font-size: 20px; }
+  .zh-page p { margin: 2px 0; line-height: 1.85; }
+  .muted { line-height: 1.8; }
+  .divider { margin: 12px 0; }
+  th { padding: 7px 6px; }
+  td { padding: 6px; }
+  .zh-page svg { max-height: 250px; }
+  .part-tag { margin-bottom: 8px; }
 }
 `;

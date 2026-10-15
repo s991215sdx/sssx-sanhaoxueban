@@ -124,12 +124,41 @@ export const zhihuiRouter = createRouter({
       let targetSchool: { school: string; rows: (typeof gdScores.$inferSelect)[] } | null = null;
       if (exp?.school) {
         const kw = exp.school.replace(/[（(].*$/, "").slice(0, 12);
+        // 期望专业类 → 该类专业名关键词，直接并入 SQL 条件（先筛后取，避免截断漏行）
+        const conds = [like(gdScores.school, `%${kw}%`)];
+        let majorKws: string[] = [];
+        if (exp?.majorCat) {
+          const mkw = exp.majorCat.replace(/类$/, "");
+          const majorsInCat = await db
+            .select({ name: majorLib.name })
+            .from(majorLib)
+            .where(like(majorLib.cat, `%${mkw}%`))
+            .limit(15);
+          majorKws = [...new Set(majorsInCat.map((m) => m.name).filter((n) => n.length >= 2))];
+          if (majorKws.length) {
+            conds.push(
+              or(
+                ...majorKws.map((k) =>
+                  or(like(gdScores.majorFull, `%${k}%`), like(gdScores.major, `%${k}%`)),
+                ),
+              )!,
+            );
+          }
+        }
         gdResults = await db
           .select()
           .from(gdScores)
-          .where(like(gdScores.school, `%${kw}%`))
+          .where(and(...conds))
           .orderBy(asc(sql`CASE WHEN ${gdScores.y1Min} IS NULL THEN 1 ELSE 0 END`), asc(gdScores.y1Min))
           .limit(60);
+        // 双学位等交叉专业（如「金融学+计算机」）不算该类专业，按精确专业名再过滤一次
+        if (majorKws.length && gdResults.length) {
+          const matched = gdResults.filter((r) => {
+            const t = `${r.majorFull ?? ""}${r.major ?? ""}`;
+            return majorKws.some((k) => t.includes(k));
+          });
+          if (matched.length >= 2) gdResults = matched;
+        }
         if (gdResults.length) {
           targetSchool = { school: gdResults[0]!.school, rows: gdResults };
         }
