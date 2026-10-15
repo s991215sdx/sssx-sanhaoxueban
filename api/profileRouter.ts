@@ -78,8 +78,17 @@ import {
   scoreSubjectAssessment,
   type SubjectAssessmentResult,
 } from "@contracts/subjectAssessment";
+import {
+  SUBJECT4D_BANK,
+  SUBJECT4D_DIM_LABEL,
+  SUBJECT4D_DIMS,
+  SUBJECT4D_OPTIONS,
+  SUBJECT4D_SUBJECTS,
+  scoreSubject4d,
+  type Subject4dResult,
+} from "@contracts/subject4d";
 
-const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject"]);
+const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d"]);
 
 /** questions 接口返回：V3.7 学生卷题包。 */
 type E3V37QuestionSet = {
@@ -161,6 +170,7 @@ type AssessmentQuestions =
   | { kind: "anchor"; ratings: typeof ANCHOR_RATINGS }
   | { kind: "holland"; ratings: typeof HOLLAND_RATINGS }
   | { kind: "subject"; bank: typeof SUBJECT_BANK }
+  | { kind: "subject4d"; subjects: typeof SUBJECT4D_SUBJECTS; dims: typeof SUBJECT4D_DIMS; dimLabel: typeof SUBJECT4D_DIM_LABEL; options: typeof SUBJECT4D_OPTIONS; bank: typeof SUBJECT4D_BANK }
   | MentalQuestionSet
   | MentalPaQuestionSet
   | MentalSdqQuestionSet
@@ -178,6 +188,7 @@ type AssessmentSubmitOutcome =
   | { kind: "anchor"; result: AnchorResult }
   | { kind: "holland"; result: HollandResult }
   | { kind: "subject"; result: SubjectAssessmentResult }
+  | { kind: "subject4d"; result: Subject4dResult }
   | { kind: "mental"; result: MentalV2Result }
   | { kind: "mentalsdq"; result: MentalSdqResult }
   | { kind: "mentalpa"; result: MentalPaResult }
@@ -387,6 +398,16 @@ export const assessmentRouter = createRouter({
         case "subject":
           // 学科能力测评：9 科自评题库（学生端自选科目作答）
           return { kind: "subject", bank: SUBJECT_BANK };
+        case "subject4d":
+          // V175 学科四维测评：9 科 × 4 维 × 3 题李克特量表（智慧生涯报告数据源）
+          return {
+            kind: "subject4d",
+            subjects: SUBJECT4D_SUBJECTS,
+            dims: SUBJECT4D_DIMS,
+            dimLabel: SUBJECT4D_DIM_LABEL,
+            options: SUBJECT4D_OPTIONS,
+            bank: SUBJECT4D_BANK,
+          };
         case "mental":
           // 通用版：PHQ-9 + GAD-7 两段式量表（国际通用筛查工具）
           return { kind: "mental", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_V2_SECTIONS };
@@ -524,6 +545,17 @@ export const assessmentRouter = createRouter({
               return n != null && vals.length === n;
             }), { message: "学科或答案数量与题库不符" }),
         }),
+        z.object({
+          kind: z.literal("subject4d"),
+          // V175 学科四维测评：key=科目名，value=12 个选项索引（0-4，与题库顺序一致），须 9 科全答
+          answers: z
+            .record(z.string(), z.array(z.number().int().min(0).max(4)))
+            .refine((r) => Object.keys(r).length === 9, { message: "需完成全部 9 个学科" })
+            .refine((r) => Object.entries(r).every(([name, vals]) => {
+              const n = (SUBJECT4D_BANK as Record<string, unknown[]>)[name];
+              return n != null && vals.length === n.length;
+            }), { message: "学科或答案数量与题库不符" }),
+        }),
       ]),
     )
     .mutation(
@@ -603,6 +635,10 @@ export const assessmentRouter = createRouter({
         mergedSubjectAnswers = merged;
         const result: SubjectAssessmentResult = scoreSubjectAssessment(merged);
         outcome = { kind: "subject", result };
+      } else if (input.kind === "subject4d") {
+        // V175 学科四维测评：四维计分 + 学科潜力指数
+        const result: Subject4dResult = scoreSubject4d(input.answers);
+        outcome = { kind: "subject4d", result };
       } else {
         const result: E3V37Result = scoreE3V37(input.answers);
         outcome = { kind: "e3", result };
@@ -637,7 +673,8 @@ export const assessmentRouter = createRouter({
           outcome.kind === "mentalpa" ||
           outcome.kind === "scl90" ||
           outcome.kind === "discparent" ||
-          outcome.kind === "subject"
+          outcome.kind === "subject" ||
+          outcome.kind === "subject4d"
         ) {
           // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（四套）、家长版 DISC 均为选做，不同步档案字段、不影响 onboarding
         } else {
@@ -691,6 +728,8 @@ export const assessmentRouter = createRouter({
       mentalScl90?: Scl90Result;
       /** 最新一条学科能力测评结果（9 科听懂/记住/运用自评）。 */
       subject?: SubjectAssessmentResult;
+      /** 最新一条学科四维测评结果（V175 智慧生涯数据源）。 */
+      subject4d?: Subject4dResult;
       raw: { kind: string; answers: unknown; createdAt: Date }[];
     } = { raw: [], discParents: [] };
     for (const row of rows) {
@@ -705,8 +744,8 @@ export const assessmentRouter = createRouter({
         latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
         continue;
       }
-      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa" | "scl90" | "subject";
-      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : key === "scl90" ? latest.mentalScl90 : key === "subject" ? latest.subject : latest[key]) continue;
+      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa" | "scl90" | "subject" | "subject4d";
+      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : key === "scl90" ? latest.mentalScl90 : key === "subject" ? latest.subject : key === "subject4d" ? latest.subject4d : latest[key]) continue;
       if (key === "e3parent") latest.e3parent = row.result as unknown as E3V37ParentResult | E3V27ParentResult;
       else if (key === "mbti") latest.mbti = row.result as unknown as MbtiResult;
       else if (key === "disc") latest.disc = row.result as unknown as DiscResult;
@@ -719,6 +758,7 @@ export const assessmentRouter = createRouter({
       else if (key === "mentalpa") latest.mentalPa = row.result as unknown as MentalPaResult;
       else if (key === "scl90") latest.mentalScl90 = row.result as unknown as Scl90Result;
       else if (key === "subject") latest.subject = row.result as unknown as SubjectAssessmentResult;
+      else if (key === "subject4d") latest.subject4d = row.result as unknown as Subject4dResult;
       else latest.multi = row.result as unknown as MultiResult;
       latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
       if (latest.mbti && latest.disc && latest.e3 && latest.multi && latest.multi5 && latest.anchor && latest.holland && latest.mental) break;

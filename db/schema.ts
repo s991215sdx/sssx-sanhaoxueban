@@ -225,7 +225,7 @@ export type StudentTutor = typeof studentTutor.$inferSelect;
 export const assessmentResults = mysqlTable("assessment_results", {
   id: serial("id").primaryKey(),
     userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
-  kind: mysqlEnum("kind", ["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject"]).notNull(),
+  kind: mysqlEnum("kind", ["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d"]).notNull(),
   result: json("result").$type<Record<string, unknown>>().notNull(),
   /** 原始作答（题目选项/评分），供伴学师查看答题明细。 */
   answers: json("answers").$type<Record<string, unknown> | number[]>(),
@@ -662,3 +662,17 @@ export const universityLib = mysqlTable("university_lib", {
 });
 
 export type UniversityLibRow = typeof universityLib.$inferSelect;
+
+/** V175 学生未来期望（智慧生涯报告「未来期望」卡；允许留空，source 标记学员/伴学师/系统建议）。 */
+export const studentExpectations = mysqlTable("student_expectations", {
+  id: int("id").autoincrement().primaryKey(),
+  studentId: int("student_id").notNull(),
+  school: varchar("school", { length: 128 }).notNull().default(""),
+  majorCat: varchar("major_cat", { length: 64 }).notNull().default(""),
+  careers: varchar("careers", { length: 255 }).notNull().default(""),
+  source: mysqlEnum("source", ["student", "tutor", "system"]).notNull().default("student"),
+  note: varchar("note", { length: 500 }).notNull().default(""),
+  updatedBy: int("updated_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});

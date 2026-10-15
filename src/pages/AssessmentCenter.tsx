@@ -15,13 +15,14 @@ import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
 import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import SubjectQuiz from "@/components/companion/SubjectQuiz";
+import Subject4dQuiz from "@/components/companion/Subject4dQuiz";
 import CombinedSuite from "@/components/assessment/CombinedSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
 import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
-type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject";
+type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d";
 
 type TestDef = {
   kind: TestKind;
@@ -124,6 +125,14 @@ const TESTS: TestDef[] = [
     summary: (l) => (l.subject ? `综合 ${l.subject.totalAvg}/5（${l.subject.subjects.length} 科）` : null),
   },
   {
+    kind: "subject4d",
+    name: "学科四维测评（智慧生涯）",
+    desc: "9 科 × 兴趣/能力倾向/观念/效能感 4 维 × 3 题共 108 题 · 约 15 分钟 · 智慧生涯规划报告核心数据源 · 选做",
+    required: false,
+    tab: "zhihui",
+    summary: (l) => (l.subject4d ? "已生成九科四维画像" : null),
+  },
+  {
     kind: "mental",
     name: "心理健康筛查（四套量表 · 选一套做）",
     desc: "学生版 A（SDQ 长处与困难，4—17 岁）/ 学生版 B（PHQ-A + GAD-7，11 岁以上）/ 通用版（PHQ-9 + GAD-7）/ 深度评估（SCL-90，16 岁以上 90 题）· 均为选做，可分开多次做 · 选做",
@@ -180,6 +189,7 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   if (kind === "anchor") return <AnchorQuiz onDone={onDone} />;
   if (kind === "holland") return <HollandQuiz onDone={onDone} />;
   if (kind === "subject") return <SubjectQuiz onDone={onDone} />;
+  if (kind === "subject4d") return <Subject4dQuiz onDone={onDone} />;
   if (kind === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
   if (kind === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
   return <MentalChooser onDone={onDone} />;

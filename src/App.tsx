@@ -24,6 +24,7 @@ import ProfileStage from "@/components/welcome/ProfileStage";
 
 const Report = lazy(() => import("./pages/Report"));
 const ReportDetail = lazy(() => import("./pages/ReportDetail"));
+const ZhihuiReport = lazy(() => import("./pages/ZhihuiReport"));
 const LearnFlow = lazy(() => import("./pages/LearnFlow"));
 const AssessmentCenter = lazy(() => import("./pages/AssessmentCenter"));
 
@@ -118,7 +119,7 @@ function RoleGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const isStaff = user?.role === "admin" || user?.role === "tutor";
-  const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library"];
+  const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report"];
   const onStaffPath = staffPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`));
   if (isStaff && !onStaffPath) {
     return <Navigate to="/tutor" replace />;
@@ -167,6 +168,7 @@ export default function App() {
                     <Route path="/companion" element={<Companion />} />
                     <Route path="/report" element={<Report />} />
                     <Route path="/report-detail" element={<ReportDetail />} />
+                    <Route path="/zhihui-report" element={<ZhihuiReport />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/tutor" element={<Tutor />} />
       <Route path="/library" element={<Library />} />

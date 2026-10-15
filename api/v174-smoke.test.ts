@@ -44,7 +44,7 @@ describe("v174 资料库第三轮", () => {
     if (!vite.includes('serveStatic({ root: "./data-files"')) throw new Error("缺 /files 静态目录");
   });
 
-  it("BUILD_TAG 已递增到 v174", () => {
-    if (!app.includes('const BUILD_TAG = "v174-2026-10-15";')) throw new Error("BUILD_TAG 未递增到 v174");
+  it("BUILD_TAG 已递增到 v175", () => {
+    if (!app.includes('const BUILD_TAG = "v175-2026-10-15";')) throw new Error("BUILD_TAG 未递增到 v175");
   });
 });
