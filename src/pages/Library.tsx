@@ -4,7 +4,7 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import Pager from "@/components/Pager";
 import DisciplineTreeChart from "@/components/reports/DisciplineTreeChart";
-import { BookOpen, Briefcase, Building2, ClipboardList, Network, School, Upload, X } from "lucide-react";
+import { BookOpen, Briefcase, Building2, ClipboardList, FileSpreadsheet, Info, Network, School, Upload, X } from "lucide-react";
 
 /**
  * v171 智慧生涯 · 资料库（/library）：伴学师/管理员查询三库 + 12 学科门类图。
@@ -412,17 +412,16 @@ function CareersTab({ isAdmin }: { isAdmin: boolean }) {
     return [...set];
   }, [all.data]);
   const query = trpc.library.careers.useQuery(
-    { page, pageSize: 12, keyword: keyword || undefined },
+    { page, pageSize: 12, keyword: keyword || undefined, category: group || undefined },
   );
-  const rowsRaw = query.data?.rows ?? [];
-  const rows = group ? rowsRaw.filter((c) => c.category.startsWith(group)) : rowsRaw;
+  const rows = query.data?.rows ?? [];
   const utils = trpc.useUtils();
   const upsert = trpc.library.careersUpsert.useMutation({
     onSuccess: () => utils.library.careers.invalidate(),
   });
   const [editing, setEditing] = useState<Record<string, unknown> | "new" | null>(null);
 
-  const totalPages = group ? 1 : Math.max(1, Math.ceil((query.data?.total ?? 0) / 12));
+  const totalPages = Math.max(1, Math.ceil((query.data?.total ?? 0) / 12));
 
   return (
     <div className="space-y-3">
@@ -640,7 +639,7 @@ function ScoresTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="sticky top-[52px] z-20 -mx-1 flex flex-wrap items-center gap-2 bg-cream/95 px-1 py-2 backdrop-blur">
         <input value={school} onChange={(e) => { setSchool(e.target.value); setPage(1); }} placeholder="院校名称"
           className="w-44 rounded-lg border border-border bg-cream px-3 py-2 text-[12.5px] text-olive outline-none focus:border-lime" />
         <input value={major} onChange={(e) => { setMajor(e.target.value); setPage(1); }} placeholder="专业名称"
@@ -664,6 +663,15 @@ function ScoresTab({ isAdmin }: { isAdmin: boolean }) {
           <option value="y3Min">2023 最低分 低→高</option>
         </select>
         <span className="text-[12px] text-olive-mute">{query.data?.total ?? 0} 条</span>
+        <a
+          href="/files/gd-2026-expert.xlsx"
+          target="_blank"
+          rel="noreferrer"
+          title="在线打开广东-2026专家版数据 Excel 原件，可自由筛选查询"
+          className="inline-flex items-center gap-1 rounded-lg border border-border bg-cream-card px-2.5 py-2 text-[12px] font-semibold text-olive hover:bg-mint-pale/60"
+        >
+          <FileSpreadsheet size={13} /> 数据原件（在线 Excel）
+        </a>
         {isAdmin && (
           <span className="ml-auto flex items-center gap-2">
             {confirmClear ? (
@@ -906,11 +914,14 @@ function UniversitiesTab({ isAdmin }: { isAdmin: boolean }) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rows.map((u) => (
-          <button
+          <div
             key={u.id}
-            type="button"
-            onClick={() => setDetailId(u.id)}
-            className="paper-card flex items-start gap-3 p-4 text-left transition-shadow hover:shadow-md"
+            role="button"
+            tabIndex={0}
+            onClick={() => u.detailUrl && window.open(u.detailUrl, "_blank", "noopener")}
+            onKeyDown={(e) => { if (e.key === "Enter" && u.detailUrl) window.open(u.detailUrl, "_blank", "noopener"); }}
+            title={u.detailUrl ? "打开掌上高考院校详情页" : undefined}
+            className="paper-card relative flex cursor-pointer items-start gap-3 p-4 text-left transition-shadow hover:shadow-md"
           >
             {u.logoUrl ? (
               <img src={u.logoUrl} alt="" className="mt-0.5 h-11 w-11 rounded-lg border border-border object-contain" loading="lazy" />
@@ -932,7 +943,15 @@ function UniversitiesTab({ isAdmin }: { isAdmin: boolean }) {
                 </span>
               )}
             </span>
-          </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setDetailId(u.id); }}
+              title="查看库内详情（测评调用数据）"
+              className="absolute right-2.5 top-2.5 rounded-md p-1 text-olive-mute/60 transition hover:bg-mint-pale/60 hover:text-olive"
+            >
+              <Info size={14} />
+            </button>
+          </div>
         ))}
       </div>
       {rows.length === 0 && !query.isLoading && (
@@ -1078,18 +1097,20 @@ export default function Library() {
         <p className="mt-1 text-[13px] text-olive-mute">
           专业底层库（天生智慧 1152+ 专业）、职业库、广东院校专业分数库与 12 学科门类图，供咨询与报告生成时查询调用。
         </p>
-        <div className="mt-3 flex rounded-xl border border-[#1E3530]/10 bg-white p-1">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold transition ${
-                tab === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
-              }`}
-            >
-              <t.icon size={14} /> {t.label}
-            </button>
-          ))}
+        <div className="sticky top-0 z-30 -mx-1 mt-3 bg-cream/95 px-1 py-1.5 backdrop-blur">
+          <div className="flex rounded-xl border border-[#1E3530]/10 bg-white p-1">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold transition ${
+                  tab === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
+                }`}
+              >
+                <t.icon size={14} /> {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
       {tab === "majors" && <MajorsTab isAdmin={isAdmin} initialMenlei={menleiFromTree} />}

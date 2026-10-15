@@ -27,6 +27,9 @@ export function serveStaticFiles(app: App) {
     }
   });
 
+  /* v174：数据原件（广东-2026专家版 Excel 等）持久目录，放在 dist 之外避免被部署覆盖 */
+  app.use("/files/*", serveStatic({ root: "./data-files", rewriteRequestPath: (p) => p.replace(/^\/files/, "") }));
+
   app.use("*", serveStatic({ root: "./dist/public" }));
 
   app.notFound((c) => {

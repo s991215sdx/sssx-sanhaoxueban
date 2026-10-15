@@ -226,6 +226,13 @@
       "when": 1792210800000,
       "tag": "0033_scores_years_careers",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1792297200000,
+      "tag": "0034_careers_unify_expand",
+      "breakpoints": true
     }
   ]
 }

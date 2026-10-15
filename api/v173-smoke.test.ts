@@ -55,7 +55,7 @@ describe("v173 资料库第二轮修复", () => {
     if (!page.includes("全部专业 →")) throw new Error("缺：跳查专业入口");
   });
 
-  it("BUILD_TAG 已递增到 v173", () => {
-    if (!app.includes('const BUILD_TAG = "v173-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v173");
+  it("BUILD_TAG 已递增到 v174", () => {
+    if (!app.includes('const BUILD_TAG = "v174-2026-10-15";')) throw new Error("BUILD_TAG 未递增到 v174");
   });
 });

@@ -156,12 +156,18 @@ export const libraryRouter = createRouter({
 
   /** 职业库分页查询。 */
   careers: tutorQuery
-    .input(pageInput.extend({ keyword: z.string().optional() }))
+    .input(pageInput.extend({ keyword: z.string().optional(), category: z.string().optional() }))
     .query(async ({ input }) => {
       const db = getDb();
-      const where = input.keyword
-        ? or(like(careerLib.name, `%${input.keyword}%`), like(careerLib.category, `%${input.keyword}%`))
-        : undefined;
+      const conds = [];
+      if (input.keyword) {
+        conds.push(or(like(careerLib.name, `%${input.keyword}%`), like(careerLib.category, `%${input.keyword}%`)));
+      }
+      if (input.category) {
+        // 前缀匹配「大类」或「大类 · 细分」，配合前端一级分类 chips
+        conds.push(like(careerLib.category, `${input.category}%`));
+      }
+      const where = conds.length ? and(...conds) : undefined;
       const [{ total }] = await db.select({ total: count() }).from(careerLib).where(where);
       const rows = await db
         .select()
