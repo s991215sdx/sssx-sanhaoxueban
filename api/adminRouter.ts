@@ -138,27 +138,93 @@ export const adminRouter = createRouter({
       return { ok: true };
     }),
 
-  /** V56：给一个学员分配多位伴学师（全量替换）。第一位写入 tutor_id 作为主管（兼容旧逻辑）。V59：双方须同机构。 */
+  /** V56：给一个学员分配多位伴学师（全量替换）。第一位写入 tutor_id 作为主管（兼容旧逻辑）。V59：双方须同机构。
+   *  v169：支持带报告权限分配——tutors 数组（每人 reportAccess + 有效期），旧版 tutorIds 仍兼容（全部默认无权限→实际按库默认 true）。 */
   setStudentTutors: adminQuery
-    .input((v: unknown) => v as { studentUserId: number; tutorIds: number[] })
+    .input(
+      (v: unknown) =>
+        v as {
+          studentUserId: number;
+          tutorIds?: number[];
+          tutors?: { tutorUserId: number; reportAccess?: boolean; expiresAt?: string | null }[];
+        },
+    )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       if (!(await sameOrg(db, ctx.user, input.studentUserId))) throw new Error("该学员不在你的机构内");
-      const ids = [...new Set(input.tutorIds ?? [])];
+      /* 新契约：tutors 数组（带权限）；旧契约：tutorIds（不含权限信息，由列默认值决定） */
+      const withMeta = Array.isArray(input.tutors)
+        ? input.tutors.map((t) => ({
+            tutorUserId: Number(t.tutorUserId),
+            reportAccess: t.reportAccess !== false,
+            expiresAt: typeof t.expiresAt === "string" && t.expiresAt ? new Date(t.expiresAt) : null,
+          }))
+        : (input.tutorIds ?? []).map((tutorUserId) => ({ tutorUserId, reportAccess: true, expiresAt: null }));
+      const seen = new Set<number>();
+      const items = withMeta.filter((t) => {
+        if (seen.has(t.tutorUserId)) return false;
+        seen.add(t.tutorUserId);
+        return true;
+      });
+      const ids = items.map((t) => t.tutorUserId);
       for (const id of ids) {
         if (!(await sameOrg(db, ctx.user, id))) throw new Error(`用户 ${id} 不在你的机构内`);
         const t = await db.query.users.findFirst({ where: eq(users.id, id) });
         if (!t || (t.role !== "tutor" && t.role !== "admin")) throw new Error(`用户 ${id} 不是伴学师`);
       }
       await db.delete(studentTutor).where(eq(studentTutor.studentUserId, input.studentUserId));
-      if (ids.length > 0) {
-        await db.insert(studentTutor).values(ids.map((tutorUserId) => ({ studentUserId: input.studentUserId, tutorUserId })));
+      if (items.length > 0) {
+        await db.insert(studentTutor).values(
+          items.map((t) => ({
+            studentUserId: input.studentUserId,
+            tutorUserId: t.tutorUserId,
+            reportAccess: t.reportAccess,
+            reportAccessExpiresAt: t.expiresAt,
+          })),
+        );
       }
       await db
         .update(studentProfile)
         .set({ tutorId: ids[0] ?? null })
         .where(eq(studentProfile.userId, input.studentUserId));
       return { ok: true, tutorIds: ids };
+    }),
+
+  /** v169：「分配报告」——给某伴学师（可未分配，自动建立分配关系）开通某学员的报告查看权限，可设有效期。 */
+  grantReportAccess: adminQuery
+    .input(
+      (v: unknown) =>
+        v as { studentUserId: number; tutorUserId: number; reportAccess?: boolean; expiresAt?: string | null },
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!(await sameOrg(db, ctx.user, input.studentUserId))) throw new Error("该学员不在你的机构内");
+      if (!(await sameOrg(db, ctx.user, input.tutorUserId))) throw new Error("该伴学师不在你的机构内");
+      const t = await db.query.users.findFirst({ where: eq(users.id, input.tutorUserId) });
+      if (!t || (t.role !== "tutor" && t.role !== "admin")) throw new Error("对方不是伴学师");
+      const expiresAt = typeof input.expiresAt === "string" && input.expiresAt ? new Date(input.expiresAt) : null;
+      const existing = (
+        await db
+          .select({ id: studentTutor.id })
+          .from(studentTutor)
+          .where(and(eq(studentTutor.studentUserId, input.studentUserId), eq(studentTutor.tutorUserId, input.tutorUserId)))
+          .limit(1)
+      )[0];
+      const grant = input.reportAccess !== false;
+      if (existing) {
+        await db
+          .update(studentTutor)
+          .set({ reportAccess: grant, reportAccessExpiresAt: expiresAt })
+          .where(eq(studentTutor.id, existing.id));
+      } else {
+        await db.insert(studentTutor).values({
+          studentUserId: input.studentUserId,
+          tutorUserId: input.tutorUserId,
+          reportAccess: grant,
+          reportAccessExpiresAt: expiresAt,
+        });
+      }
+      return { ok: true as const, granted: grant, expiresAt };
     }),
 
   /** 总览：用户数与关键业务量（V59：限本机构；V60：平台超管看全系统合计；V61：超管可传 orgId 按系统查看）。 */

@@ -37,7 +37,7 @@ export const coachRouter = createRouter({
       } else if (!(await sameOrg(db, ctx.user, input.userId))) {
         throw new Error("这位同学不在你的机构内");
       }
-      return getStudentDetail(db, input.userId, ctx.user.orgId);
+      return getStudentDetail(db, input.userId, ctx.user.orgId, { userId: ctx.user.id, role: ctx.user.role });
     }),
 
   /** 伴学师代学员填写成绩与目标（校验规则与学生端 profileRouter.saveAcademics 一致）。 */

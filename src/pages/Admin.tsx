@@ -10,6 +10,7 @@ import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
+import ReportGrantButton from "@/components/ReportGrantButton";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
@@ -423,8 +424,15 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                     <span className="text-[11px] text-olive-mute">未分配</span>
                   ) : (
                     s.tutors.map((t) => (
-                      <span key={t.id} className="rounded-full bg-butter-pale px-1.5 py-px text-[10.5px] font-semibold text-brand">
+                      <span
+                        key={t.id}
+                        title={t.reportAccess === false ? "该伴学师无报告查看权限" : "该伴学师可查看测评报告"}
+                        className={`rounded-full px-1.5 py-px text-[10.5px] font-semibold ${
+                          t.reportAccess === false ? "bg-cream-card text-olive-mute ring-1 ring-border" : "bg-butter-pale text-brand"
+                        }`}
+                      >
                         {t.name}
+                        {t.reportAccess === false ? "🔒" : ""}
                       </span>
                     ))
                   )}
@@ -440,6 +448,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
               <div className="flex items-center gap-2">
                 {/* V56：多对多分配伴学师 */}
                 <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
+                {/* v169：分配报告（开通伴学师报告查看权限，可设有效期） */}
+                <ReportGrantButton studentUserId={s.userId} studentName={s.name} tutors={tutors ?? []} assigned={s.tutors} />
                 {/* V54：报告推送开关 */}
                 <ReportAccessButton userId={s.userId} released={s.reportReleased} />
                 {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}

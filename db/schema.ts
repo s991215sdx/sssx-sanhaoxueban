@@ -208,11 +208,15 @@ export const academicRecords = mysqlTable("academic_records", {
 export type AcademicRecord = typeof academicRecords.$inferSelect;
 
 /** V56：学员-伴学师多对多分配。一个学员可挂多位伴学师（管理员在后台分配）；
- *  student_profile.tutor_id 保留为主管伴学师（= 本表第一条，向后兼容旧逻辑）。 */
+ *  student_profile.tutor_id 保留为主管伴学师（= 本表第一条，向后兼容旧逻辑）。
+ *  v169：reportAccess=该伴学师是否可查看本学员的测评报告/解析/陪练对话（B 端付费控制，
+ *  默认 true 兼容存量）；reportAccessExpiresAt=权限到期时间（null=永久，到期自动收回）。 */
 export const studentTutor = mysqlTable("student_tutor", {
   id: serial("id").primaryKey(),
   studentUserId: bigint("student_user_id", { mode: "number", unsigned: true }).notNull(),
   tutorUserId: bigint("tutor_user_id", { mode: "number", unsigned: true }).notNull(),
+  reportAccess: boolean("report_access").notNull().default(true),
+  reportAccessExpiresAt: timestamp("report_access_expires_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -34,8 +34,8 @@ export type StudentListItem = {
   /** 主管伴学师（student_profile.tutor_id，兼容旧逻辑；= tutors[0]） */
   tutorId: number | null;
   tutorName: string | null;
-  /** V56：名下全部伴学师（多对多，含主管） */
-  tutors: { id: number; name: string }[];
+  /** V56：名下全部伴学师（多对多，含主管）；v169：附带报告权限与有效期（无权限信息=存量默认放行） */
+  tutors: { id: number; name: string; reportAccess: boolean; reportAccessExpiresAt: Date | null }[];
   tutorIds: number[];
   /** 学员端功能开关（null=全功能） */
   enabledModules: string[] | null;
@@ -112,8 +112,13 @@ export async function listStudents(db: Db, orgId?: number | null): Promise<Stude
     return Array.isArray(raw) ? raw : [];
   };
   // V56：学员-伴学师多对多分配（容错：表未就绪时退化为空）
-  const { listStudentTutorLinks } = await import("./tutorAccess");
-  const links = await listStudentTutorLinks(db);
+  const { listTutorLinksWithAccess } = await import("./tutorAccess");
+  const links = await listTutorLinksWithAccess(db);
+  const accessOf = (studentUserId: number, tutorId: number) => {
+    const l = links.find((x) => x.studentUserId === studentUserId && x.tutorUserId === tutorId);
+    /* 无权限信息（迁移前存量/容错）→ 默认放行，兼容历史行为 */
+    return { reportAccess: l?.reportAccess ?? true, reportAccessExpiresAt: l?.reportAccessExpiresAt ?? null };
+  };
   const tutorsOf = (studentUserId: number, primaryTutorId: number | null) => {
     const ids: number[] = [];
     if (primaryTutorId != null) ids.push(primaryTutorId);
@@ -140,7 +145,7 @@ export async function listStudents(db: Db, orgId?: number | null): Promise<Stude
         onboarded: p.onboarded,
         tutorId: p.tutorId ?? null,
         tutorName: p.tutorId != null ? (tutorNameMap.get(p.tutorId) ?? null) : null,
-        tutors: tutorIds.map((id) => ({ id, name: tutorNameMap.get(id) ?? `伴学师${id}` })),
+        tutors: tutorIds.map((id) => ({ id, name: tutorNameMap.get(id) ?? `伴学师${id}`, ...accessOf(p.userId, id) })),
         tutorIds,
         enabledModules: p.enabledModules ?? null,
         reportReleased: p.reportReleased,
@@ -197,14 +202,23 @@ export type StudentDetail = {
     attemptCount: number;
     planCount: number;
   };
+  /** v169：报告查看权限（null=管理员/学生本人/未启用视角，不限制）；
+   *  allowed=false 时 assessments 只含测评清单（名称+时间），报告内容不下发。 */
+  reportAccess: { allowed: boolean; expiresAt: Date | null } | null;
 };
 
 /** 单个学员详情：档案 + 学业目标 + 全部测评（含原始作答）+ 学习数据。
  *  V59：传 orgId（number）时校验目标学员属于该机构（跨机构访问直接抛错）；
  *  V60：传 null/undefined 不校验（平台超管可查任意学员）。
  *  v93：目标学员 org_id 为 NULL（未归属的平台直客，历史账号/超管发码注册）对机构管理员/伴学师同样放行——
- *  否则这部分真实客户对机构完全隐身，列表看不到、详情打不开。 */
-export async function getStudentDetail(db: Db, userId: number, orgId?: number | null): Promise<StudentDetail> {
+ *  否则这部分真实客户对机构完全隐身，列表看不到、详情打不开。
+ *  v169：viewer 为伴学师（role=tutor）时校验其报告权限——无权限则 assessments 只下发测评清单（名称+时间）。 */
+export async function getStudentDetail(
+  db: Db,
+  userId: number,
+  orgId?: number | null,
+  viewer?: { userId: number; role: string },
+): Promise<StudentDetail> {
   if (orgId != null) {
     const target = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, userId)).limit(1))[0];
     if (!target || (target.orgId !== orgId && target.orgId != null)) {
@@ -217,6 +231,14 @@ export async function getStudentDetail(db: Db, userId: number, orgId?: number | 
   if (u.deletedAt) throw new Error("该学员已被删除，如需查看请先在回收站恢复");
   const profile = (await db.select().from(studentProfile).where(eq(studentProfile.userId, userId)).limit(1))[0] ?? null;
 
+  /* v169：伴学师视角的报告权限（管理员/学生本人/SSO 短会话不限制） */
+  let reportAccess: StudentDetail["reportAccess"] = null;
+  if (viewer?.role === "tutor") {
+    const { getTutorReportAccess } = await import("./tutorAccess");
+    const access = await getTutorReportAccess(db, viewer.userId, userId);
+    reportAccess = access;
+  }
+
   // 测评：每种取最新一条（含原始作答）
   const rows = await db
     .select()
@@ -224,6 +246,10 @@ export async function getStudentDetail(db: Db, userId: number, orgId?: number | 
     .where(eq(assessmentResults.userId, userId))
     .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
   const assessments: StudentDetail["assessments"] = { raw: [], discParents: [] };
+  if (reportAccess && !reportAccess.allowed) {
+    /* 无报告权限：只下发「做了哪些测评」清单（名称+时间），结果/作答一律不带 */
+    assessments.raw = rows.map((r) => ({ kind: r.kind, answers: null, createdAt: r.createdAt }));
+  } else {
   // 选做测评（multi5/职业锚/霍兰德/心理健康三套）也一并带出，供伴学师查看完整报告与综合分析
   const OPTIONAL_KINDS = ["multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "subject"] as const;
   for (const row of rows) {
@@ -260,6 +286,7 @@ export async function getStudentDetail(db: Db, userId: number, orgId?: number | 
       continue;
     }
     assessments.raw.push({ kind, answers: row.answers ?? null, createdAt: row.createdAt });
+  }
   }
 
   const [recentAttempts, moodRecent, previews, errC, attC, planC] = await Promise.all([
@@ -309,5 +336,6 @@ export async function getStudentDetail(db: Db, userId: number, orgId?: number | 
       attemptCount: Number((attC[0] as { c: number })?.c ?? 0),
       planCount: Number((planC[0] as { c: number })?.c ?? 0),
     },
+    reportAccess,
   };
 }

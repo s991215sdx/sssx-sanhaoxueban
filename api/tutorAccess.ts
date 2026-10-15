@@ -19,6 +19,61 @@ export async function listStudentTutorLinks(db: Db): Promise<{ studentUserId: nu
   }
 }
 
+/** v169：分配记录 + 报告权限（容错：迁移未跑完时退化为「有记录但无权限信息」= 默认放行，兼容存量）。 */
+export type TutorLink = {
+  studentUserId: number;
+  tutorUserId: number;
+  reportAccess: boolean | null;
+  reportAccessExpiresAt: Date | null;
+};
+
+export async function listTutorLinksWithAccess(db: Db): Promise<TutorLink[]> {
+  try {
+    return await db
+      .select({
+        studentUserId: studentTutor.studentUserId,
+        tutorUserId: studentTutor.tutorUserId,
+        reportAccess: studentTutor.reportAccess,
+        reportAccessExpiresAt: studentTutor.reportAccessExpiresAt,
+      })
+      .from(studentTutor);
+  } catch {
+    const links = await listStudentTutorLinks(db);
+    return links.map((l) => ({ ...l, reportAccess: null, reportAccessExpiresAt: null }));
+  }
+}
+
+/**
+ * v169：某伴学师对某学员的测评报告查看权限。
+ * report_access=true 且（未设有效期或尚未到期）→ allowed。
+ * 查不到分配记录 → 不允许（但 isMyStudent 可能因主管/渠道关系放行进门，进门后仍无报告）。
+ */
+export async function getTutorReportAccess(
+  db: Db,
+  tutorUserId: number,
+  studentUserId: number,
+): Promise<{ allowed: boolean; expiresAt: Date | null }> {
+  try {
+    const row = (
+      await db
+        .select({
+          reportAccess: studentTutor.reportAccess,
+          reportAccessExpiresAt: studentTutor.reportAccessExpiresAt,
+        })
+        .from(studentTutor)
+        .where(and(eq(studentTutor.studentUserId, studentUserId), eq(studentTutor.tutorUserId, tutorUserId)))
+        .limit(1)
+    )[0];
+    if (!row || !row.reportAccess) return { allowed: false, expiresAt: row?.reportAccessExpiresAt ?? null };
+    const exp = row.reportAccessExpiresAt;
+    if (exp && exp.getTime() <= Date.now()) return { allowed: false, expiresAt: exp };
+    return { allowed: true, expiresAt: exp ?? null };
+  } catch {
+    /* 迁移未就绪：放行（兼容存量），迁好后自动收紧 */
+    return { allowed: true, expiresAt: null };
+  }
+}
+
 /**
  * v99：扫某伴学师自己的注册二维码注册的学员 userId 集合
  * （invite_channels.tutor_id = 该伴学师 → 经此渠道注册的 invite_registrations.user_id）。
