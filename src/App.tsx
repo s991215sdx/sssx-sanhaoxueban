@@ -118,7 +118,7 @@ function RoleGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const isStaff = user?.role === "admin" || user?.role === "tutor";
-  const staffPaths = ["/tutor", "/admin", "/recycle-bin"];
+  const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library"];
   const onStaffPath = staffPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`));
   if (isStaff && !onStaffPath) {
     return <Navigate to="/tutor" replace />;
