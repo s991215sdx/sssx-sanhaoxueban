@@ -17,7 +17,7 @@ CREATE TABLE `university_lib` (
 	`area` varchar(32) NOT NULL DEFAULT '',
 	`supervisor` varchar(64) NOT NULL DEFAULT '',
 	`zs_website` varchar(255) NOT NULL DEFAULT '',
-	`zs_phone` varchar(64) NOT NULL DEFAULT '',
+	`zs_phone` varchar(255) NOT NULL DEFAULT '',
 	`website` varchar(255) NOT NULL DEFAULT '',
 	`motto` varchar(255) NOT NULL DEFAULT '',
 	`alias` varchar(128) NOT NULL DEFAULT '',

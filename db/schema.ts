@@ -608,7 +608,7 @@ export const universityLib = mysqlTable("university_lib", {
   area: varchar("area", { length: 32 }).notNull().default(""),
   supervisor: varchar("supervisor", { length: 64 }).notNull().default(""),
   zsWebsite: varchar("zs_website", { length: 255 }).notNull().default(""),
-  zsPhone: varchar("zs_phone", { length: 64 }).notNull().default(""),
+  zsPhone: varchar("zs_phone", { length: 255 }).notNull().default(""),
   website: varchar("website", { length: 255 }).notNull().default(""),
   motto: varchar("motto", { length: 255 }).notNull().default(""),
   alias: varchar("alias", { length: 128 }).notNull().default(""),
