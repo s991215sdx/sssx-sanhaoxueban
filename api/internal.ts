@@ -1,7 +1,9 @@
 /**
  * v158：一体通（CRM）对接内部接口——仅服务对服务调用，HMAC 签名鉴权 + 频率限制。
  * ① POST /api/internal/sssx/student-search：学生档案搜索（姓名/手机号片段，最多 20 条，手机号打码只留后 4 位）
- * ② GET  /sso/sssx?ticket=xxx：ticket 兑换 SSO 短会话（调一体通校验接口），种 10 分钟 cookie 后 302 到学员详情
+ * ② GET  /sso/sssx?ticket=xxx：ticket 兑换 SSO 短会话（调一体通校验接口）
+ *    - 学生级 ticket：种 10 分钟 cookie 后 302 到学员详情（v158，逻辑不变）
+ *    - 用户级 ticket（v168，mode=user）：按手机号匹配员工账号（伴学师/管理员），种 8 小时登录态后 302 到三好首页
  * 鉴权头约定（与一体通对齐）：
  *   X-SSSX-Key: <共享密钥>（= .env 的 SSSX_INTERNAL_KEY，私发不落库）
  *   X-SSSX-Timestamp: Unix 秒（与服务器偏差 >300s 拒绝）
@@ -16,8 +18,9 @@ import { assessmentResults, studentProfile, users } from "@db/schema";
 import { getDb } from "./queries/connection";
 import { env } from "./lib/env";
 import { getSessionCookieOptions } from "./lib/cookies";
-import { SsoSession } from "@contracts/constants";
+import { SsoSession, Session } from "@contracts/constants";
 import { createSsoSession } from "./ssoSessions";
+import { signSessionToken } from "./kimi/session";
 
 /* ------------------------------- 鉴权与限流 ------------------------------- */
 
@@ -158,23 +161,23 @@ async function searchStudents(keyword: string) {
 
 /* ------------------------------- ② ticket 兑换 ------------------------------- */
 
-const failPage = (reason: string) => `<!doctype html>
+const failPage = (reason: string, hint = "请从一体通重新进入。") => `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>链接已失效 · 三好学伴</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#FAF6EF;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
 .card{max-width:340px;padding:32px 28px;background:#fff;border-radius:16px;box-shadow:0 8px 30px -12px rgba(12,80,72,.25);text-align:center}
 h1{margin:0 0 10px;font-size:17px;color:#1E3530}p{margin:0;font-size:13.5px;color:#5C6B63;line-height:1.7}</style></head>
-<body><div class="card"><h1>链接已失效</h1><p>${reason}</p><p style="margin-top:14px">请从一体通重新进入。</p></div></body></html>`;
+<body><div class="card"><h1>链接已失效</h1><p>${reason}</p><p style="margin-top:14px">${hint}</p></div></body></html>`;
 
 export async function ssoTicketEntry(c: Context) {
   const ticket = (c.req.query("ticket") ?? "").trim();
-  const fail = (reason: string) => c.html(failPage(reason), 403);
+  const fail = (reason: string, hint?: string) => c.html(failPage(reason, hint), 403);
   if (!env.yititongTicketUrl) {
     console.error("[sso] YITITONG_TICKET_URL 未配置，拒绝兑换");
     return fail("系统未开通一体通对接");
   }
   if (!ticket || ticket.length > 128) return fail("ticket 缺失或非法");
-  let data: { valid?: unknown; student_id?: unknown; name?: unknown };
+  let data: { valid?: unknown; mode?: unknown; student_id?: unknown; phone?: unknown; name?: unknown };
   try {
     const resp = await fetch(env.yititongTicketUrl, {
       method: "POST",
@@ -192,6 +195,31 @@ export async function ssoTicketEntry(c: Context) {
     return fail("ticket 校验失败");
   }
   if (data.valid !== true) return fail("ticket 无效、已过期或已被使用");
+
+  /* v168：用户级 ticket（mode=user，无 student_id）——一体通工作台免登进三好后台。
+     按手机号匹配员工账号（伴学师/管理员，软删排除），种 8 小时登录态后 302 首页。 */
+  if (data.mode === "user") {
+    const phone = typeof data.phone === "string" ? data.phone.trim() : "";
+    if (!/^1[3-9]\d{9}$/.test(phone)) return fail("ticket 内容非法");
+    const db = getDb();
+    const found = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.phone, phone), inArray(users.role, ["tutor", "admin"] as const), isNull(users.deletedAt)))
+      .limit(1);
+    const staff = found[0];
+    if (!staff) {
+      console.warn(`[sso] 用户级 ticket 未匹配到员工账号 phone=${phone} ip=${clientIp(c)}`);
+      return fail("一体通账号未开通三好学伴权限", "如需开通，请联系三好学伴管理员。");
+    }
+    const token = await signSessionToken({ unionId: staff.unionId, clientId: env.appId });
+    await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, staff.id));
+    setCookie(c, Session.cookieName, token, { ...getSessionCookieOptions(c.req.raw), maxAge: 8 * 60 * 60 });
+    console.log(`[sso] 用户级 ticket 兑换成功 staff=${staff.id}(${staff.role}) ip=${clientIp(c)}`);
+    return c.redirect("/");
+  }
+
+  /* 学生级 ticket（v158 逻辑不变）：种 10 分钟 SSO 短会话后 302 到学员详情 */
   const studentId = Number(data.student_id);
   if (!Number.isInteger(studentId) || studentId <= 0) return fail("ticket 内容非法");
   const token = createSsoSession(studentId, typeof data.name === "string" ? data.name : "");
