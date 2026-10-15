@@ -509,6 +509,11 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
   const { data: tutors, isLoading } = trpc.admin.tutors.useQuery(orgScope);
   const { data: students } = trpc.admin.students.useQuery(orgScope);
   const assignedOf = (userId: number) => students?.find((s) => s.userId === userId)?.tutors ?? [];
+  const utils = trpc.useUtils();
+  /* v170：邀请学员默认可看报告开关 */
+  const setInviteDefault = trpc.admin.setTutorInviteReportDefault.useMutation({
+    onSuccess: () => utils.admin.tutors.invalidate(),
+  });
   /* v161：每位伴学师名下学员默认折叠，点「展开」看全部；伴学师列表分页（每页 10 个） */
   const [expandedTutors, setExpandedTutors] = useState<number[]>([]);
   const toggleTutor = (id: number) =>
@@ -538,6 +543,18 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
                       {new Date(t.lastSignInAt).toLocaleDateString("zh-CN")}
                     </div>
                   </div>
+                  {/* v170：邀请学员默认可看报告——开启后扫他的码注册的新学员自动带报告权限 */}
+                  <button
+                    type="button"
+                    title="开启后，扫这位伴学师二维码注册的新学员默认可查看测评报告"
+                    onClick={() => setInviteDefault.mutate({ tutorUserId: t.id, value: !t.inviteReportDefault })}
+                    disabled={setInviteDefault.isPending}
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                      t.inviteReportDefault ? "bg-brand text-white" : "bg-cream-card text-olive-mute ring-1 ring-border hover:text-olive"
+                    }`}
+                  >
+                    {t.inviteReportDefault ? "邀请学员默认可看报告 ✓" : "邀请学员默认无报告"}
+                  </button>
                 </div>
                 <button
                   onClick={() => toggleTutor(t.id)}

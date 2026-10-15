@@ -46,7 +46,8 @@ export async function listTutorLinksWithAccess(db: Db): Promise<TutorLink[]> {
 /**
  * v169：某伴学师对某学员的测评报告查看权限。
  * report_access=true 且（未设有效期或尚未到期）→ allowed。
- * 查不到分配记录 → 不允许（但 isMyStudent 可能因主管/渠道关系放行进门，进门后仍无报告）。
+ * v170 修正：查不到分配记录 → 放行（存量主管/渠道关系早于 v169，无显式记录不收紧），
+ * 新关系（注册/分配时写入的显式记录）一律按记录执行——未付费老师的新学员因此默认无报告权限。
  */
 export async function getTutorReportAccess(
   db: Db,
@@ -64,7 +65,8 @@ export async function getTutorReportAccess(
         .where(and(eq(studentTutor.studentUserId, studentUserId), eq(studentTutor.tutorUserId, tutorUserId)))
         .limit(1)
     )[0];
-    if (!row || !row.reportAccess) return { allowed: false, expiresAt: row?.reportAccessExpiresAt ?? null };
+    if (!row) return { allowed: true, expiresAt: null }; // 存量关系：无显式记录不收紧
+    if (!row.reportAccess) return { allowed: false, expiresAt: row.reportAccessExpiresAt ?? null };
     const exp = row.reportAccessExpiresAt;
     if (exp && exp.getTime() <= Date.now()) return { allowed: false, expiresAt: exp };
     return { allowed: true, expiresAt: exp ?? null };

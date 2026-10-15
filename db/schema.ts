@@ -373,6 +373,9 @@ export const users = mysqlTable("users", {
   deletedAt: timestamp("deleted_at"),
   /** v99：执行软删的操作者（users.id）——回收站按"谁删的"做伴学师可见性判定。 */
   deletedBy: bigint("deleted_by", { mode: "number", unsigned: true }),
+  /** v170：伴学师属性——其邀请二维码注册的新学员默认可查看测评报告（B 端付费老师一次配置，
+   *  后续扫码学员自动带报告权限；个别学员仍可由管理员在分配/分配报告里单独覆盖）。 */
+  inviteReportDefault: boolean("invite_report_default").notNull().default(false),
 });
 
 /* ---------------------------------- SaaS 机构（租户） --------------------------------- */

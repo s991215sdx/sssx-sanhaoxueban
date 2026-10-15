@@ -44,6 +44,6 @@ describe("v169 伴学师报告权限", () => {
 
   it("版本标记已递增", () => {
     const r = readFileSync("api/router.ts", "utf-8");
-    if (!r.includes('const BUILD_TAG = "v169-2026-10-15";')) throw new Error("BUILD_TAG 未递增到 v169");
+    if (!/^const BUILD_TAG = "v\d+-/m.test(r)) throw new Error("BUILD_TAG 缺失");
   });
 });

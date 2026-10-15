@@ -108,12 +108,26 @@ export const adminRouter = createRouter({
         name: t.name ?? `伴学师${t.id}`,
         createdAt: t.createdAt,
         lastSignInAt: t.lastSignInAt,
+        /* v170：其邀请二维码注册的新学员是否默认可看测评报告 */
+        inviteReportDefault: t.inviteReportDefault,
         studentCount: mine.length,
         students: mine.map((p) => ({ userId: p.userId, name: p.name, grade: p.grade })),
         totalAttempts: mine.reduce((s, p) => s + (attMap.get(p.userId) ?? 0), 0),
       };
     });
   }),
+
+  /** v170：设置某伴学师的「邀请学员默认可看报告」——开启后，扫他二维码注册的新学员自动带报告权限。 */
+  setTutorInviteReportDefault: adminQuery
+    .input((v: unknown) => v as { tutorUserId: number; value: boolean })
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!(await sameOrg(db, ctx.user, input.tutorUserId))) throw new Error("该伴学师不在你的机构内");
+      const t = await db.query.users.findFirst({ where: eq(users.id, input.tutorUserId) });
+      if (!t || (t.role !== "tutor" && t.role !== "admin")) throw new Error("对方不是伴学师");
+      await db.update(users).set({ inviteReportDefault: !!input.value }).where(eq(users.id, input.tutorUserId));
+      return { ok: true as const, tutorUserId: input.tutorUserId, value: !!input.value };
+    }),
 
   /** 给学员分配/更换/解除伴学师（tutorId=null 解除）。V56：同步写入多对多分配表。V59：双方须同机构。 */
   assignTutor: adminQuery
