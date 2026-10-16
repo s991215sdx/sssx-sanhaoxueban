@@ -89,9 +89,9 @@ deploy_one "$CHANNEL_HOST" "渠道版"
 log "双通道探活…"
 sleep 3
 V_INTERNAL=$(curl -sf "$INTERNAL_URL/api/trpc/ping" | grep -oE '"v":"[^"]+"' | cut -d'"' -f4)
-V_CHANNEL=$(curl -sf -H "Host: 3hao.vip" "http://$CHANNEL_IP/api/trpc/ping" | grep -oE '"v":"[^"]+"' | cut -d'"' -f4)
+V_CHANNEL=$(curl -sf "https://3hao.vip/api/trpc/ping" | grep -oE '"v":"[^"]+"' | cut -d'"' -f4)
 [ -n "$V_INTERNAL" ] || fail "内部版探活无响应 ($INTERNAL_URL)"
-[ -n "$V_CHANNEL" ]  || fail "渠道版探活无响应 ($CHANNEL_IP)"
+[ -n "$V_CHANNEL" ]  || fail "渠道版探活无响应 (https://3hao.vip)"
 
 echo ""
 echo "=============================================="
