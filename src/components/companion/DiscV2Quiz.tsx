@@ -147,11 +147,14 @@ export default function DiscV2Quiz({
   subtitle = "24 组描述词：每组选 1 个「最像我」+ 1 个「最不像我」，找到最适合你的带动方式",
   onNext,
   onSkip,
+  suite = false,
 }: {
   title?: string;
   subtitle?: string;
   onNext: () => void;
   onSkip?: () => void;
+  /** v184：组合向导内作答——提交成功直接进下一步，不单独展示结果卡 */
+  suite?: boolean;
 }) {
   const { user, isFetching: authRefreshing } = useAuth();
   const utils = trpc.useUtils();
@@ -174,6 +177,7 @@ export default function DiscV2Quiz({
     onSuccess: () => {
       clearQuizDraft(user?.id, DRAFT);
       void utils.assessment.latest.invalidate();
+      if (suite) onNext(); // 组合向导内：不展示结果卡，直接进下一项
     },
   });
 
@@ -251,7 +255,7 @@ export default function DiscV2Quiz({
   };
 
   /* ------- 结果卡 ------- */
-  if (submit.isSuccess && (submit.data as { kind?: string }).kind === "disc") {
+  if (!suite && submit.isSuccess && (submit.data as { kind?: string }).kind === "disc") {
     const result = (submit.data as { result?: { primary?: string } }).result;
     return (
       <div className="mx-auto max-w-3xl">

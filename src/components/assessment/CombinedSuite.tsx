@@ -185,9 +185,10 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
           subtitle={`第 2 步 · 28 道二选一，看看你的性格能量从哪里来`}
           onNext={next}
           onSkip={next}
+          suite
         />
       )}
-      {cur.key === "disc" && <DiscV2Quiz key="suite-disc" onNext={next} onSkip={next} />}
+      {cur.key === "disc" && <DiscV2Quiz key="suite-disc" onNext={next} onSkip={next} suite />}
       {cur.key === "e3" && (
         <E3Stage
           onSkip={next}
@@ -206,11 +207,13 @@ export default function CombinedSuite({ onExit }: { onExit: () => void }) {
         <MentalSdqQuiz
           key="suite-mentalsdq"
           onDone={next}
+          suite
         />
       )}
       {cur.key === "multi5" && (
         <Multi5Quiz
           key="suite-multi5"
+          suite
           onDone={() => {
             utils.assessment.latest.invalidate();
             setFinished(true);

@@ -10,7 +10,7 @@ import { ChevronLeft, Map } from "lucide-react";
 const OPTIONS = ["完全不喜欢", "不太喜欢", "一般", "比较喜欢", "非常喜欢"] as const;
 
 /** 霍兰德职业兴趣测评（选做）：36 道 Likert 五级题逐题作答。 */
-export default function HollandQuiz({ onDone }: { onDone: () => void }) {
+export default function HollandQuiz({ onDone, suite = false }: { onDone: () => void; suite?: boolean }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -31,6 +31,7 @@ export default function HollandQuiz({ onDone }: { onDone: () => void }) {
     onSuccess: () => {
       clearQuizDraft(user?.id, "holland"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
+      if (suite) onDone(); // 组合向导内：不展示结果卡，直接进下一项
     },
   });
 
@@ -51,7 +52,7 @@ export default function HollandQuiz({ onDone }: { onDone: () => void }) {
 
   /* ------- 结果卡 ------- */
   const qRef = useScrollToQuestion(idx);
-  if (submit.isSuccess && submit.data?.kind === "holland") {
+  if (!suite && submit.isSuccess && submit.data?.kind === "holland") {
     const result = submit.data.result as HollandResult;
     return (
       <div className="paper-card p-6 text-center">

@@ -414,7 +414,9 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[14px] font-bold text-white">
                 {(s.name || "学")[0]}
               </span>
-              <div className="min-w-0 flex-1">
+              {/* v184：min-w-[240px] 保证中等宽度（边栏收起）时信息栏不被按钮组挤没，
+                  空间不够时外层 flex-wrap 会把按钮组整组折到下一行 */}
+              <div className="min-w-[240px] flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="truncate text-[14.5px] font-semibold text-[#1E3530]">{s.name}</span>
                   {s.grade && <span className="text-[11.5px] text-olive-mute">{s.grade}</span>}

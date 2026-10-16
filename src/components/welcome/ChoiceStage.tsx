@@ -26,12 +26,15 @@ export default function ChoiceStage({
   subtitle,
   onNext,
   onSkip,
+  suite = false,
 }: {
   kind: ChoiceKind;
   title: string;
   subtitle: string;
   onNext: () => void;
   onSkip: () => void;
+  /** v184：组合向导内作答——提交成功直接进下一步，不单独展示结果卡 */
+  suite?: boolean;
 }) {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -55,6 +58,7 @@ export default function ChoiceStage({
       clearQuizDraft(user?.id, kind);
       utils.assessment.latest.invalidate();
       utils.profile.get.invalidate();
+      if (suite) onNext(); // 组合向导内：不展示结果卡，直接进下一步
     },
   });
 
@@ -75,7 +79,7 @@ export default function ChoiceStage({
   };
 
   /* ------- 结果卡 ------- */
-  if (submit.isSuccess && (submit.data.kind === "mbti" || submit.data.kind === "disc")) {
+  if (!suite && submit.isSuccess && (submit.data.kind === "mbti" || submit.data.kind === "disc")) {
     const outcome = submit.data;
     const result = outcome.result;
     const big = outcome.kind === "mbti" ? outcome.result.type : `${outcome.result.primary} 主导`;

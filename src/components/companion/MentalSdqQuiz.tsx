@@ -36,7 +36,7 @@ const BAND_STYLE: Record<SdqBand, string> = {
 
 const SDQ_DIMS: SdqDim[] = ["emotion", "conduct", "hyper", "peer", "prosocial"];
 
-export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
+export default function MentalSdqQuiz({ onDone, suite = false }: { onDone: () => void; suite?: boolean }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -77,6 +77,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
     onSuccess: () => {
       clearQuizDraft(user?.id, "mentalsdq");
       utils.assessment.latest.invalidate();
+      if (suite) onDone(); // 组合向导内：不展示结果卡，直接进下一项
     },
   });
 
@@ -105,7 +106,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
 
   /* ------- 结果卡 ------- */
   const qRef = useScrollToQuestion(idx);
-  if (submit.isSuccess && submit.data?.kind === "mentalsdq") {
+  if (!suite && submit.isSuccess && submit.data?.kind === "mentalsdq") {
     const result = submit.data.result as MentalSdqResult;
     return (
       <div className="paper-card p-6 text-center">

@@ -5,10 +5,7 @@ import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@
 import { useAuth } from "@/hooks/useAuth";
 import {
   E3V37_QUESTIONS,
-  E3V37_SCAN_SUBJECTS,
   E3V37_LIFE_EVENTS,
-  E3V37_LOSS_REASONS,
-  E3V37_SCORE_TRENDS,
   E3V37_OPEN_QUESTIONS,
   E3V37_MOTIVATION_OPTIONS,
   E3V37_RATING_COUNT,
@@ -27,37 +24,6 @@ const EVENT_HINTS = ["没发生", "轻度", "中度", "重度"];
 
 /** 九能红黄绿（与报告一致）：卡点红 / 待提升黄 / 正常绿。 */
 const LEVEL_COLOR: Record<string, string> = { 卡点: "#DD3534", 待提升: "#E3B53A", 正常: "#2F7A41" };
-
-/** 学科快扫一行（V3.7）：喜欢/掌握/发挥 0-5（0=未开设）+ 最近大考成绩 + 排名 + 最薄弱环节。 */
-type SubjectRow = {
-  name: string;
-  liking: number;
-  mastery: number;
-  exam: number;
-  lastScore: number | null;
-  fullScore: number | null;
-  rank: string;
-  weakest: string;
-};
-
-const emptySubject = (name: string): SubjectRow => ({
-  name,
-  liking: 0,
-  mastery: 0,
-  exam: 0,
-  lastScore: null,
-  fullScore: null,
-  rank: "",
-  weakest: "",
-});
-
-/** 高中选科：首选（物理/历史，圈一个）与再选（化学/生物/政治/地理，最多两科）。 */
-const SENIOR_FIRST_OPTIONS = ["物理", "历史"] as const;
-const SENIOR_SECOND_OPTIONS = ["化学", "生物", "政治", "地理"] as const;
-const SENIOR_SECOND_MAX = 2;
-
-/** 高中 scanSubjects 中的占位行文案（非真实科目，仅提示选科）。 */
-const isSeniorPlaceholder = (name: string) => name.includes("首选科目") || name.includes("再选科目");
 
 /** 各系统分段（与 V3.7 试卷一致）：题号范围 + 预计用时 + 补充说明 + 完成后的鼓励语。 */
 const PARTS: { min: number; max: number; title: string; short: string; minutes: string; note?: string; praise: string }[] = [
@@ -88,13 +54,12 @@ const PARTS: { min: number; max: number; title: string; short: string; minutes: 
   },
 ];
 
-/** 答题流程的阶段：部分开场 → 逐题作答 → 部分完成鼓励 → 状态单选 → 学科快扫 → 生活事件 → 开放题。 */
+/** 答题流程的阶段：部分开场 → 逐题作答 → 部分完成鼓励 → 状态单选 → 生活事件 → 开放题。（v184 起移除学科快扫页） */
 type Phase =
   | { kind: "intro"; part: number }
   | { kind: "quiz"; part: number; qi: number }
   | { kind: "done"; part: number }
   | { kind: "motivation" }
-  | { kind: "subjects" }
   | { kind: "life" }
   | { kind: "open" };
 
@@ -187,20 +152,11 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
   /* 全部作答状态挂草稿：每答一题实时保存，误退出/刷新后自动恢复到上次进度 */
   const [ratings, setRatings] = useDraftState<(number | null)[]>(E3_DRAFT, "ratings", () => Array(E3V37_RATING_COUNT).fill(null));
   const [motivation, setMotivation] = useDraftState<E3V37MotivationKey | null>(E3_DRAFT, "motivation", null);
-  const [subjects, setSubjects] = useDraftState<SubjectRow[]>(E3_DRAFT, "subjects", []);
-  /** 高中选科：首选科目（"" = 未选）与再选科目（最多两科）；选中后在 subjects 里生成对应科目行。 */
-  const [seniorFirst, setSeniorFirst] = useDraftState<string>(E3_DRAFT, "seniorFirst", "");
-  const [seniorSecond, setSeniorSecond] = useDraftState<string[]>(E3_DRAFT, "seniorSecond", []);
-  const [lossReasons, setLossReasons] = useDraftState<string[]>(E3_DRAFT, "lossReasons", []);
-  const [scoreTrend, setScoreTrend] = useDraftState<string>(E3_DRAFT, "scoreTrend", "");
   const [lifeEvents, setLifeEvents] = useDraftState<number[]>(E3_DRAFT, "lifeEvents", () => Array(8).fill(0));
   const [openAnswers, setOpenAnswers] = useDraftState<string[]>(E3_DRAFT, "openAnswers", ["", "", ""]);
-  const [subjectsInit, setSubjectsInit] = useDraftState<boolean>(
-    E3_DRAFT,
-    "subjectsInit",
-    () => ((loadQuizDraft(user?.id, E3_DRAFT)?.subjects as unknown[] | undefined)?.length ?? 0) > 0,
-  );
   const [phase, setPhase] = useDraftState<Phase>(E3_DRAFT, "phase", { kind: "intro", part: 0 });
+  // v184：旧草稿可能停在已删除的学科快扫页阶段，归一到「生活事件快扫」
+  if ((phase as unknown as { kind: string }).kind === "subjects") setPhase({ kind: "life" });
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /* 是否从草稿恢复（有实质进度）：用于显示「已恢复进度」提示条 */
   // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
@@ -212,12 +168,8 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
     clearQuizDraft(user?.id, E3_DRAFT);
     setRatings(Array(E3V37_RATING_COUNT).fill(null));
     setMotivation(null);
-    setSubjects([]);
-    setLossReasons([]);
-    setScoreTrend("");
     setLifeEvents(Array(8).fill(0));
     setOpenAnswers(["", "", ""]);
-    setSubjectsInit(false);
     setPhase({ kind: "intro", part: 0 });
     setResumed(false);
   };
@@ -301,9 +253,6 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
     stageLabel?: string;
     ratings?: E3V37Question[];
     motivationOptions?: typeof E3V37_MOTIVATION_OPTIONS;
-    scanSubjects?: string[];
-    lossReasons?: readonly string[];
-    scoreTrends?: readonly string[];
     lifeEvents?: { no: number; kp: string; text: string }[];
     openQuestions?: string[];
   };
@@ -311,56 +260,8 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
   const stageLabel = q.stageLabel ?? (stage === "primary" ? "小学版" : stage === "senior" ? "高中版" : "初中版");
   const ratingQuestions = Array.isArray(q.ratings) && q.ratings.length > 0 ? q.ratings : E3V37_QUESTIONS[stage];
   const motivationOptions = q.motivationOptions ?? E3V37_MOTIVATION_OPTIONS;
-  const scanSubjects = q.scanSubjects ?? E3V37_SCAN_SUBJECTS[stage];
-  const lossReasonOptions = q.lossReasons ?? E3V37_LOSS_REASONS;
-  const scoreTrendOptions = q.scoreTrends ?? E3V37_SCORE_TRENDS;
   const lifeEventItems = q.lifeEvents ?? E3V37_LIFE_EVENTS[stage];
   const openQuestions = q.openQuestions ?? E3V37_OPEN_QUESTIONS;
-
-  // 按学段初始化学科快扫行（高中不生成「首选/再选」占位行，选科通过点选 chips 完成）
-  if (!subjectsInit) {
-    setSubjectsInit(true);
-    setSubjects(
-      scanSubjects.filter((name) => !(stage === "senior" && isSeniorPlaceholder(name))).map((name) => emptySubject(name)),
-    );
-  }
-
-  // 高中：清掉旧草稿遗留的「首选/再选」占位行（旧版为自由文本输入，已改为点选选科）
-  if (stage === "senior" && subjects.some((s) => isSeniorPlaceholder(s.name))) {
-    setSubjects(subjects.filter((s) => !isSeniorPlaceholder(s.name)));
-  }
-
-  const setSubject = (i: number, patch: Partial<SubjectRow>) =>
-    setSubjects((arr) => arr.map((x, j) => (j === i ? { ...x, ...patch } : x)));
-
-  /** 高中：由选科 chips 托管的科目名（首选/再选），不作为普通固定行渲染。 */
-  const seniorManaged = (name: string) =>
-    stage === "senior" &&
-    ((SENIOR_FIRST_OPTIONS as readonly string[]).includes(name) ||
-      (SENIOR_SECOND_OPTIONS as readonly string[]).includes(name));
-
-  /** 高中首选科目单选：选中后生成该科目行（插在固定科目之后）；换选则替换旧行。 */
-  const pickSeniorFirst = (name: string) => {
-    if (name === seniorFirst) return;
-    setSeniorFirst(name);
-    setSubjects((arr) => {
-      const without = arr.filter((s) => !(SENIOR_FIRST_OPTIONS as readonly string[]).includes(s.name));
-      const fixedCount = scanSubjects.filter((n) => !isSeniorPlaceholder(n)).length;
-      return [...without.slice(0, fixedCount), emptySubject(name), ...without.slice(fixedCount)];
-    });
-  };
-
-  /** 高中再选科目（最多 2 科）：选中生成独立科目行；取消选中直接移除对应行。 */
-  const toggleSeniorSecond = (name: string) => {
-    if (seniorSecond.includes(name)) {
-      setSeniorSecond(seniorSecond.filter((x) => x !== name));
-      setSubjects((arr) => arr.filter((s) => s.name !== name));
-      return;
-    }
-    if (seniorSecond.length >= SENIOR_SECOND_MAX) return;
-    setSeniorSecond([...seniorSecond, name]);
-    setSubjects((arr) => (arr.some((s) => s.name === name) ? arr : [...arr, emptySubject(name)]));
-  };
 
   /** 当前题（quiz 阶段）：题号 = 部分起始 + 题内序号。 */
   const currentNo = phase.kind === "quiz" ? PARTS[phase.part].min + phase.qi : null;
@@ -575,258 +476,10 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
           </div>
           <button
             disabled={!motivation}
-            onClick={() => setPhase({ kind: "subjects" })}
+            onClick={() => setPhase({ kind: "life" })}
             className="mt-4 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
           >
-            继续 →（学科快扫，约 3 分钟）
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ---------- 六、学科快速扫描 ---------- */
-  if (phase.kind === "subjects") {
-    const numInputCls =
-      "w-full rounded-lg border border-input bg-cream px-2.5 py-1.5 text-[13px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime";
-    const chipCls = (active: boolean, disabled = false) =>
-      `rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors ${
-        active
-          ? "border-olive bg-brand text-cream"
-          : disabled
-            ? "border-border bg-cream text-olive-mute/50"
-            : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60"
-      }`;
-
-    /** 单个科目行。fixedName=true 时科目名只读（高中选科生成的行）。 */
-    const renderSubjectRow = (s: SubjectRow, i: number, fixedName = false) => {
-      const closed = s.liking === 0 && s.mastery === 0 && s.exam === 0;
-      // 学生自行添加的行（无对应固定科目名）允许自填科目名
-      const srcName = scanSubjects[i];
-      const editable = !fixedName && (srcName == null || srcName.includes("其他"));
-      return (
-        <div key={`sub-${i}`} className="rounded-2xl border border-border bg-cream/50 p-3.5 sm:p-4">
-          <div className="flex items-center justify-between gap-2">
-            {editable ? (
-              <input
-                value={s.name}
-                onChange={(e) => setSubject(i, { name: e.target.value })}
-                placeholder="填写科目名"
-                maxLength={32}
-                className="w-44 rounded-lg border border-input bg-cream px-3 py-1.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
-              />
-            ) : (
-              <span className="text-[14.5px] font-semibold text-olive">{s.name}</span>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                setSubject(
-                  i,
-                  closed
-                    ? { liking: 3, mastery: 3, exam: 3 }
-                    : { liking: 0, mastery: 0, exam: 0, weakest: "" },
-                )
-              }
-              className={`rounded-full border px-3 py-1 text-[12px] transition-colors ${
-                closed ? "border-terra/50 bg-[#FAF2E4] text-[#DD3534]" : "border-border bg-cream text-olive-mute hover:border-[#E3B53A]/60"
-              }`}
-            >
-              {closed ? "未开设 · 点击恢复" : "未开设"}
-            </button>
-          </div>
-          {!closed && (
-            <>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                {(
-                  [
-                    ["liking", "喜欢程度"],
-                    ["mastery", "掌握程度"],
-                    ["exam", "考试发挥"],
-                  ] as const
-                ).map(([field, label]) => (
-                  <div key={field} className="flex items-center justify-between gap-2">
-                    <span className="text-[12.5px] text-olive-soft">{label}</span>
-                    <div className="flex gap-1.5">
-                      {[1, 2, 3, 4, 5].map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => setSubject(i, { [field]: v })}
-                          className={`h-6 w-6 rounded-full border-2 text-[11px] transition-colors ${
-                            s[field] === v ? "border-olive bg-brand text-cream" : "border-border bg-cream text-olive-mute hover:border-lime"
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <input
-                  value={s.rank}
-                  onChange={(e) => setSubject(i, { rank: e.target.value })}
-                  placeholder="排名（可空）：年级人数/排名，如 480/120"
-                  maxLength={32}
-                  className={numInputCls}
-                />
-                <input
-                  value={s.weakest}
-                  onChange={(e) => setSubject(i, { weakest: e.target.value })}
-                  placeholder="最薄弱环节（章节、题型或原因），可留空"
-                  maxLength={200}
-                  className={numInputCls}
-                />
-              </div>
-            </>
-          )}
-        </div>
-      );
-    };
-
-    // 高中：选科托管行（首选/再选）不在普通列表里渲染，由下方选科块负责
-    const seniorMode = stage === "senior";
-    const plainRows = subjects
-      .map((s, i) => ({ s, i }))
-      .filter(({ s }) => !seniorManaged(s.name) && !isSeniorPlaceholder(s.name));
-    const firstIdx = seniorFirst ? subjects.findIndex((s) => s.name === seniorFirst) : -1;
-
-    return (
-      <div className="mx-auto max-w-3xl space-y-4">
-        {header}
-        <div className="paper-card p-4 sm:p-5">
-          <div className="mono text-[11px] tracking-wider text-olive-mute">六、学科快速扫描 · 约 3 分钟</div>
-          <p className="mt-1 text-[12.5px] text-olive-mute">
-            1=很差，3=一般，5=很好；没有开设的科目点「未开设」，排名记不清可以留空。
-          </p>
-          <p className="mt-1 text-[12px] text-olive-mute/90">
-            小提示：各科成绩与目标在「个人中心 · 成绩与目标」里填写，这里不用重复填。
-          </p>
-          <div className="mt-3 space-y-4">
-            {plainRows.map(({ s, i }) => renderSubjectRow(s, i))}
-
-            {seniorMode && (
-              <>
-                {/* 首选科目：物理/历史 圈一个，圈完再对这一科打分 */}
-                <div className="rounded-2xl border border-border bg-cream/50 p-3.5 sm:p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[14.5px] font-semibold text-olive">
-                      首选科目{seniorFirst ? `：${seniorFirst}` : ""}
-                    </span>
-                    <div className="flex gap-2">
-                      {SENIOR_FIRST_OPTIONS.map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => pickSeniorFirst(name)}
-                          className={chipCls(seniorFirst === name)}
-                        >
-                          {name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {!seniorFirst && (
-                    <p className="mt-2 text-[12.5px] text-olive-mute">先圈一个首选科目（物理/历史），再对这一科打分。</p>
-                  )}
-                </div>
-                {seniorFirst && firstIdx >= 0 && renderSubjectRow(subjects[firstIdx], firstIdx, true)}
-
-                {/* 再选科目：化学/生物/政治/地理 最多选两科，每科一行独立打分 */}
-                <div className="rounded-2xl border border-border bg-cream/50 p-3.5 sm:p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[14.5px] font-semibold text-olive">
-                      再选科目{seniorSecond.length > 0 ? `：${seniorSecond.join("、")}` : ""}
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {SENIOR_SECOND_OPTIONS.map((name) => {
-                        const active = seniorSecond.includes(name);
-                        const disabled = !active && seniorSecond.length >= SENIOR_SECOND_MAX;
-                        return (
-                          <button
-                            key={name}
-                            type="button"
-                            disabled={disabled}
-                            onClick={() => toggleSeniorSecond(name)}
-                            className={chipCls(active, disabled)}
-                          >
-                            {name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <p className="mt-2 text-[12.5px] text-olive-mute">
-                    {seniorSecond.length === 0
-                      ? "最多选 2 科；每选一科会生成一个独立科目行，分别打分。"
-                      : seniorSecond.length < SENIOR_SECOND_MAX
-                        ? "还可以再选 1 科；再点已选科目可取消（该科的打分会一并移除）。"
-                        : "已选满 2 科；再点已选科目可取消（该科的打分会一并移除）。"}
-                  </p>
-                </div>
-                {seniorSecond.map((name) => {
-                  const i = subjects.findIndex((s) => s.name === name);
-                  return i >= 0 ? renderSubjectRow(subjects[i], i, true) : null;
-                })}
-              </>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setSubjects((arr) => [...arr, { ...emptySubject(""), liking: 3, mastery: 3, exam: 3 }])}
-              className="text-[13px] text-olive-mute underline hover:text-olive"
-            >
-              + 添加其他科目
-            </button>
-          </div>
-
-          <div className="mt-4">
-            <h4 className="text-[14px] font-bold text-olive">考试失分主因（可多选）</h4>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {lossReasonOptions.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() =>
-                    setLossReasons((arr) => (arr.includes(r) ? arr.filter((x) => x !== r) : [...arr, r]))
-                  }
-                  className={`rounded-full border px-3 py-1.5 text-[12.5px] transition-colors ${
-                    lossReasons.includes(r)
-                      ? "border-lime bg-lime-pale font-medium text-olive"
-                      : "border-border bg-cream text-olive-mute hover:border-[#E3B53A]/60"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="mt-4">
-            <h4 className="text-[14px] font-bold text-olive">成绩趋势</h4>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {scoreTrendOptions.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setScoreTrend(t)}
-                  className={`rounded-full border px-3 py-1.5 text-[12.5px] transition-colors ${
-                    scoreTrend === t
-                      ? "border-lime bg-lime-pale font-medium text-olive"
-                      : "border-border bg-cream text-olive-mute hover:border-[#E3B53A]/60"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            onClick={() => setPhase({ kind: "life" })}
-            className="mt-5 w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
-          >
-            继续 →（生活事件，约 1 分钟）
+            继续 →（生活事件快扫，约 1 分钟）
           </button>
         </div>
       </div>
@@ -839,7 +492,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
       <div className="mx-auto max-w-3xl space-y-4">
         {header}
         <div className="paper-card p-4 sm:p-5">
-          <div className="mono text-[11px] tracking-wider text-olive-mute">七、生活事件快扫（过去 3 个月）· 约 1 分钟</div>
+          <div className="mono text-[11px] tracking-wider text-olive-mute">六、生活事件快扫（过去 3 个月）· 约 1 分钟</div>
           <div className="mt-3 divide-y divide-border">
             {lifeEventItems.map((e, i) => (
               <div key={e.no} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
@@ -881,7 +534,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
     <div className="mx-auto max-w-3xl space-y-4">
       {header}
       <div className="paper-card p-4 sm:p-5">
-        <div className="mono text-[11px] tracking-wider text-olive-mute">八、最后，想和我说点什么？· 约 2 分钟，可留空</div>
+        <div className="mono text-[11px] tracking-wider text-olive-mute">七、最后，想和我说点什么？· 约 2 分钟，可留空</div>
         <div className="mt-3 space-y-4">
           {openQuestions.map((qq, i) => (
             <div key={qq}>
@@ -909,20 +562,9 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
                 stage,
                 ratings: ratings.map((r) => r ?? 3),
                 motivation: motivation ?? "C",
-                subjects: subjects
-                  .filter((s) => s.name.trim())
-                  .map((s) => ({
-                    name: s.name.trim(),
-                    liking: s.liking,
-                    mastery: s.mastery,
-                    exam: s.exam,
-                    lastScore: null,
-                    fullScore: null,
-                    rank: s.rank.trim(),
-                    weakest: s.weakest.trim(),
-                  })),
-                lossReasons,
-                scoreTrend,
+                subjects: [],
+                lossReasons: [],
+                scoreTrend: "",
                 lifeEvents,
                 openAnswers,
               },

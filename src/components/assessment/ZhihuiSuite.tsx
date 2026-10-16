@@ -123,10 +123,11 @@ export default function ZhihuiSuite({ onExit }: { onExit: () => void }) {
       </div>
 
       {/* 当前步骤 */}
-      {cur.key === "subject4d" && <Subject4dQuiz onDone={next} />}
-      {cur.key === "holland" && <HollandQuiz onDone={next} />}
+      {cur.key === "subject4d" && <Subject4dQuiz onDone={next} suite />}
+      {cur.key === "holland" && <HollandQuiz onDone={next} suite />}
       {cur.key === "anchor" && (
         <AnchorQuiz
+          suite
           onDone={() => {
             utils.assessment.latest.invalidate();
             setFinished(true);

@@ -16,7 +16,7 @@ import { Compass, ChevronLeft, Sparkles } from "lucide-react";
  * V175 学科四维测评：9 科 × 4 维 × 3 题 = 108 题李克特量表。
  * 逐题作答、断点续答（quizDraft）、完成后出结果摘要并写入智慧生涯报告数据源。
  */
-export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
+export default function Subject4dQuiz({ onDone, suite = false }: { onDone: () => void; suite?: boolean }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -29,6 +29,7 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
       clearQuizDraft(user?.id, "subject4d");
       utils.assessment.latest.invalidate();
       utils.zhihui.reportData.invalidate();
+      if (suite) onDone(); // 组合向导内：不展示结果卡，直接进下一项
     },
   });
 
@@ -73,7 +74,7 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
 
   /* ------- 结果卡 ------- */
   const qRef = useScrollToQuestion(`${curSubject ?? ""}:${curIdx}`);
-  if (submit.isSuccess && submit.data?.kind === "subject4d") {
+  if (!suite && submit.isSuccess && submit.data?.kind === "subject4d") {
     const result = submit.data.result as Subject4dResult;
     const ranked = SUBJECT4D_SUBJECTS.map((s) => ({ s, v: result.subjects[s]?.潜力指数 ?? 0 })).sort((a, b) => b.v - a.v);
     const top = ranked.slice(0, 3);

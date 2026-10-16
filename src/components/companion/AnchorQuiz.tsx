@@ -10,7 +10,7 @@ import { ChevronLeft, Compass } from "lucide-react";
 const OPTIONS = ["完全不符合", "不太符合", "一般", "比较符合", "非常符合"] as const;
 
 /** 职业锚测评（选做）：40 道 Likert 五级题逐题作答。 */
-export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
+export default function AnchorQuiz({ onDone, suite = false }: { onDone: () => void; suite?: boolean }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -31,6 +31,7 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
     onSuccess: () => {
       clearQuizDraft(user?.id, "anchor"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
+      if (suite) onDone(); // 组合向导内：不展示结果卡，直接进下一项
     },
   });
 
@@ -51,7 +52,7 @@ export default function AnchorQuiz({ onDone }: { onDone: () => void }) {
 
   /* ------- 结果卡 ------- */
   const qRef = useScrollToQuestion(idx);
-  if (submit.isSuccess && submit.data?.kind === "anchor") {
+  if (!suite && submit.isSuccess && submit.data?.kind === "anchor") {
     const result = submit.data.result as AnchorResult;
     return (
       <div className="paper-card p-6 text-center">

@@ -3791,6 +3791,7 @@ function AnswerBlocksView({ blocks }: { blocks: AnswerBlock[] }) {
         <details
           key={b.key}
           id={`ansblk-${b.key}`}
+          open
           className="scroll-mt-24 rounded-xl border border-border bg-cream/60 px-4 py-2.5"
         >
           <summary className="cursor-pointer text-[13.5px] font-semibold text-olive">{b.title}</summary>

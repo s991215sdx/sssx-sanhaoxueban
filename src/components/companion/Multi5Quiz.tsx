@@ -10,7 +10,7 @@ import { ChevronLeft, Sparkles } from "lucide-react";
 const OPTION_LETTER = ["A", "B", "C", "D"] as const;
 
 /** 多元智能五项客观题测评（选做）：40 道单选题逐题作答，有唯一正确答案。 */
-export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
+export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => void; suite?: boolean }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -31,6 +31,7 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
     onSuccess: () => {
       clearQuizDraft(user?.id, "multi5"); // 提交成功，清除草稿
       utils.assessment.latest.invalidate();
+      if (suite) onDone(); // 组合向导内：不展示结果卡，直接进下一步
     },
   });
 
@@ -52,7 +53,7 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
 
   /* ------- 结果卡 ------- */
   const qRef = useScrollToQuestion(idx);
-  if (submit.isSuccess && submit.data?.kind === "multi5") {
+  if (!suite && submit.isSuccess && submit.data?.kind === "multi5") {
     const result = submit.data.result as Multi5Result;
     const topKey = [...MULTI5_DIM_ORDER].sort(
       (a, b) => result.dims[b] - result.dims[a] || MULTI5_DIM_ORDER.indexOf(a) - MULTI5_DIM_ORDER.indexOf(b),
