@@ -41,9 +41,9 @@ describe("v179 机构数据严格隔离 + 报告排版", () => {
     if (!/该学员不在你的机构内/.test(zhihuiRouter)) throw new Error("缺：跨机构拒绝提示");
   });
 
-  it("HollandHexMap 重排为 RIASEC 两排等宽卡片", () => {
-    if (!/\["R", "I", "A"\]/.test(hex) || !/\["S", "E", "C"\]/.test(hex))
-      throw new Error("缺：RIASEC 两排布局");
+  it("HollandHexMap 两排等宽卡片（v180 起顺序改为 常规/现实/研究 + 艺术/社会/企业）", () => {
+    if (!/\["C", "R", "I"\]/.test(hex) || !/\["A", "S", "E"\]/.test(hex))
+      throw new Error("缺：两排布局（v180 顺序）");
     if (/蜂窝/.test(hex)) throw new Error("残留：蜂窝字样");
   });
 
@@ -54,6 +54,6 @@ describe("v179 机构数据严格隔离 + 报告排版", () => {
   });
 
   it("BUILD_TAG 已递增", () => {
-    if (!router.includes('const BUILD_TAG = "v178-2026-10-16"')) throw new Error("BUILD_TAG 未递增");
+    if (!router.includes('const BUILD_TAG = "v179-2026-10-16"')) throw new Error("BUILD_TAG 未递增");
   });
 });

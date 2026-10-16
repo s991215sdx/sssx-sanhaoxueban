@@ -1,10 +1,10 @@
-import { HOLLAND_LABEL, HOLLAND_ORDER } from "@contracts/holland";
+import { HOLLAND_LABEL, HOLLAND_ORDER, hollandTopWithTies } from "@contracts/holland";
 import { HOLLAND_FIELD_MAP } from "@contracts/riasecMap";
 
 /**
- * v179 霍兰德六型学科地图（升学/生涯/霍兰德报告共用）：
- * RIASEC 经典顺时针序两排陈列（R I A / S E C），每型一张等宽卡片——
- * 类型徽章 + 得分条 + 对应学科专业大类 + 核心能力；学生 Top 类型高亮为「优势方向」。
+ * v180 霍兰德六型学科地图（升学/生涯/霍兰德报告共用）：
+ * 两排陈列：常规型·现实型·研究型 / 艺术型·社会型·企业型（霍兰德六边形相邻序）；
+ * 得分统一百分制（与雷达图一致），分值最高的前三型（含并列）高亮为「优势方向」。
  * 无得分数据时全部平显（占位态）。
  */
 export default function HollandHexMap({
@@ -13,18 +13,20 @@ export default function HollandHexMap({
 }: {
   /** RIASEC 各型得分（1-5），可空。 */
   dims?: Record<string, number> | null;
-  /** 学生的优势类型代码（如 ["I","A","S"]），可空。 */
+  /** 学生的优势类型代码（如 ["I","A","S"]），可空；有 dims 时以「前三含并列」现算为准。 */
   top3?: string[] | null;
 }) {
-  const hot = new Set(top3 ?? []);
+  /* v180：有得分时按「前三含并列」现算高亮（与雷达图同一标准），并列一并突出 */
+  const computed = dims ? hollandTopWithTies(dims, 3) : [];
+  const hot = new Set(computed.length ? computed : (top3 ?? []));
   const score = (k: string) => {
     const v = dims?.[k];
     return typeof v === "number" ? v : null;
   };
-  /* 经典六边形顺时针序：上排 R→I→A，下排 S←E←C（阅读序 R I A / S E C） */
+  /* 两排：常规型·现实型·研究型 / 艺术型·社会型·企业型 */
   const layout: string[][] = [
-    ["R", "I", "A"],
-    ["S", "E", "C"],
+    ["C", "R", "I"],
+    ["A", "S", "E"],
   ];
   const cell = (k: string) => {
     const info = HOLLAND_FIELD_MAP[k]!;
@@ -56,7 +58,7 @@ export default function HollandHexMap({
             </div>
             <div className="mt-0.5 text-[11px] text-olive-mute">
               {info.trackName}
-              {sc != null && <b className="ml-1 text-brand-deep">{sc} 分</b>}
+              {sc != null && <b className="ml-1 text-brand-deep">{Math.round(sc * 20)} 分</b>}
             </div>
           </div>
         </div>

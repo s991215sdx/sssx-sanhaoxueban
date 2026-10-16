@@ -44,6 +44,17 @@ export type HollandRating = {
   key: HollandKey;
 };
 
+/** v180：取得分最高的前 n 型，并列一并纳入（如 100/80/80/… 则前三全亮）。
+ *  用于雷达图优势标注与六型学科地图高亮，保证两处标准一致。 */
+export function hollandTopWithTies(dims: Record<string, number> | null | undefined, n = 3): string[] {
+  if (!dims) return [];
+  const entries = HOLLAND_ORDER.map((k) => [k, Number(dims[k] ?? 0)] as const).filter(([, v]) => Number.isFinite(v));
+  if (!entries.length) return [];
+  const sorted = [...entries].sort((a, b) => b[1] - a[1]);
+  const cutoff = sorted[Math.min(n, sorted.length) - 1]![1];
+  return sorted.filter(([, v]) => v >= cutoff && v > 0).map(([k]) => k);
+}
+
 export type HollandResult = {
   /** 每型均分，保留 1 位小数，范围 1-5。 */
   dims: Record<HollandKey, number>;

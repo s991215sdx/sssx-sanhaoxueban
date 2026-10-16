@@ -17,7 +17,7 @@ import {
   subject4dBandLabel,
   type Subject4dResult,
 } from "@contracts/subject4d";
-import { HOLLAND_LABEL } from "@contracts/holland";
+import { HOLLAND_LABEL, hollandTopWithTies } from "@contracts/holland";
 import HollandHexMap from "@/components/reports/HollandHexMap";
 
 /* ---------- 设计令牌（与 mockup-v4 一致） ---------- */
@@ -435,7 +435,8 @@ export default function ZhihuiReport() {
           <div className="grid2">
             <div className="card" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}><Radar items={holItems} /></div>
             <div style={{ fontSize: 13, lineHeight: 2.1 }}>
-              {(holland.top3 ?? []).map((t, i) => (<p key={t} style={{ marginTop: i ? 8 : 0 }}><span className="tag t-hi">{t} 型 {Math.round(((holland.dims?.[t] ?? 0) / 5) * 100)}</span></p>))}
+              {/* v180：优势标注与六型地图同一标准——前三含并列，全部突出 */}
+              {hollandTopWithTies(holland.dims, 3).map((t, i) => (<p key={t} style={{ marginTop: i ? 8 : 0 }}><span className="tag t-hi">{t} 型 {Math.round(((holland.dims?.[t] ?? 0) / 5) * 100)}</span></p>))}
               <div className="card" style={{ marginTop: 14, padding: "14px 20px" }}>
                 <div className="klabel" style={{ marginBottom: 8 }}>个人侧写</div>
                 <p style={{ fontSize: 13, lineHeight: 2 }}>{holland.summary ?? ""}</p>
