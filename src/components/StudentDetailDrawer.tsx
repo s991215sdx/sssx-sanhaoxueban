@@ -36,7 +36,7 @@ export default function StudentDetailDrawer({
     mbti: "MBTI 性格测评", disc: "DISC 行为风格", e3: "学习力诊断", multi: "多元智能",
     multi5: "多元智能五项", anchor: "职业锚", holland: "霍兰德职业兴趣",
     mental: "心理健康·通用版", mentalsdq: "心理健康·学生版A(SDQ)", mentalpa: "心理健康·学生版B(PHQ-A)",
-    scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", subject4d: "学科四维测评（智慧生涯）", e3parent: "家长卷", discparent: "家长版 DISC",
+    scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", subject4d: "学科四维测评（三好生涯）", e3parent: "家长卷", discparent: "家长版 DISC",
   };
   /** 宽屏模式：电脑上默认右半屏抽屉，可一键放大到全屏阅读报告。 */
   const [wide, setWide] = useState(false);
@@ -164,9 +164,12 @@ export default function StudentDetailDrawer({
                   <span className="text-[14px] font-bold text-[#1E3530]">测评报告</span>
                 </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                {/* v176c：主按钮——展开抽屉内的完整报告视图（所有测评报告栏目页，与学生端一致） */}
+                {/* v176c：主按钮——展开抽屉内的完整报告视图（所有测评报告栏目页，与学生端一致）；展开时自动全屏，收起时还原半屏 */}
                 <button
-                  onClick={() => setReportOpen((v) => !v)}
+                  onClick={() => {
+                    if (reportOpen) { setReportOpen(false); setWide(false); }
+                    else { setReportOpen(true); setWide(true); }
+                  }}
                   className="flex items-center gap-1 rounded-lg bg-[#0C7064] px-3 py-1.5 text-[12.5px] font-bold text-white shadow-[0_2px_8px_-2px_rgba(12,112,100,0.5)] transition hover:bg-[#0a5c52] active:scale-95"
                 >
                   <FileText size={14} />
@@ -198,7 +201,7 @@ export default function StudentDetailDrawer({
                   if (a.optional?.mentalpa) names.push("心理健康·学生版B(PHQ-A)");
                   if (a.optional?.scl90) names.push("心理健康·深度评估(SCL-90)");
                   if (a.optional?.subject) names.push("学科能力评估");
-                  if (a.optional?.subject4d) names.push("学科四维测评（智慧生涯）");
+                  if (a.optional?.subject4d) names.push("学科四维测评（三好生涯）");
                   if (a.e3parent) names.push("家长卷");
                   return names.length > 0 ? `已测 ${names.length} 项：${names.join("、")}` : "还没有测评结果。";
                 })()}

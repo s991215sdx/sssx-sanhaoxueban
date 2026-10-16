@@ -126,8 +126,8 @@ const TESTS: TestDef[] = [
   },
   {
     kind: "subject4d",
-    name: "学科四维测评（智慧生涯）",
-    desc: "9 科 × 兴趣/能力倾向/观念/效能感 4 维 × 3 题共 108 题 · 约 15 分钟 · 智慧生涯规划报告核心数据源 · 选做",
+    name: "学科四维测评（三好生涯）",
+    desc: "9 科 × 兴趣/能力倾向/观念/效能感 4 维 × 3 题共 108 题 · 约 15 分钟 · 三好生涯规划报告核心数据源 · 选做",
     required: false,
     tab: "zhihui",
     summary: (l) => (l.subject4d ? "已生成九科四维画像" : null),

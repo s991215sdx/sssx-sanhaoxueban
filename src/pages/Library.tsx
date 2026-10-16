@@ -1081,7 +1081,7 @@ export default function Library() {
       <div className="mx-auto mt-16 max-w-md">
         <div className="paper-card p-8 text-center">
           <BookOpen className="mx-auto text-olive" size={34} />
-          <h1 className="mt-3 text-[19px] font-bold text-olive">智慧生涯 · 资料库</h1>
+          <h1 className="mt-3 text-[19px] font-bold text-olive">三好生涯 · 资料库</h1>
           <p className="mt-2 text-[13.5px] leading-relaxed text-olive-mute">
             专业底层库、职业库、院校专业分数库仅供伴学师与管理员查询，需要相应权限。
           </p>
@@ -1093,7 +1093,7 @@ export default function Library() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-[22px] font-bold tracking-tight text-olive">智慧生涯 · 资料库</h1>
+        <h1 className="text-[22px] font-bold tracking-tight text-olive">三好生涯 · 资料库</h1>
         <p className="mt-1 text-[13px] text-olive-mute">
           专业底层库（天生智慧 1152+ 专业）、职业库、广东院校专业分数库与 12 学科门类图，供咨询与报告生成时查询调用。
         </p>
