@@ -43,6 +43,20 @@ describe("v175 智慧生涯规划", () => {
     if (!schema.includes("studentExpectations")) throw new Error("schema 缺期望表定义");
   });
 
+  it("嵌入迁移表完整：journal 每条都有对应 SQL（0029/0030 回归）", () => {
+    for (const tag of ["0029_tutor_report_access", "0030_invite_report_default"]) {
+      if (!embedded.includes(`"${tag}":`)) throw new Error(`MIGRATION_SQL 缺 ${tag}`);
+    }
+    // 多条语句必须带 statement-breakpoint 分隔（执行器按此切分）
+    const m29 = embedded.match(/"0029_tutor_report_access": "([^"]*)"/);
+    if (!m29 || !m29[1]!.includes("statement-breakpoint")) throw new Error("0029 缺 statement-breakpoint");
+    // 0031+ 迁移须兼容正式服 MySQL 5.7：禁止 8.0 表达式默认值 (now())
+    for (const tag of ["0031_zhihui_libs", "0032_university_lib", "0033_scores_years_careers", "0034_careers_unify_expand", "0035_subject4d_expectations"]) {
+      const mm = embedded.match(new RegExp(`"${tag}": "([^]*)"`, "s"));
+      if (mm && mm[1]!.includes("DEFAULT (now())")) throw new Error(`${tag} 含 MySQL5.7 不兼容的 DEFAULT (now())`);
+    }
+  });
+
   it("profileRouter 支持 subject4d 答题/提交/最新结果", () => {
     if (!profile.includes('"subject4d"')) throw new Error("kindSchema 缺 subject4d");
     if (!profile.includes('input.kind === "subject4d"')) throw new Error("缺提交分支");

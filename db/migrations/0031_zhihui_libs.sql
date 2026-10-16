@@ -119,7 +119,7 @@ CREATE TABLE `student_aspirations` (
 	`career_raw` varchar(128),
 	`source` enum('student','tutor','system') NOT NULL DEFAULT 'student',
 	`updated_by` bigint unsigned,
-	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE now(),
+	`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `student_aspirations_id` PRIMARY KEY(`id`),
 	CONSTRAINT `student_aspirations_user_unique` UNIQUE(`user_id`)
 );
