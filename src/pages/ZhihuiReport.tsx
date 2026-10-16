@@ -323,7 +323,7 @@ export default function ZhihuiReport() {
   const targetRows = (data.targetSchool?.rows ?? []).filter((r) => r.y1Min != null).slice(0, 6);
 
   return (
-    <div className="zh-root">
+    <div className="zh-root" id="report-print-root">
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex items-center gap-3 no-print">
         <h1 className="text-[20px] font-bold text-olive">三好生涯规划报告</h1>
