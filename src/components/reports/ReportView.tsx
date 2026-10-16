@@ -13,6 +13,7 @@ import AcademicsForm from "@/components/companion/AcademicsForm";
 import GuidanceTab from "@/components/reports/GuidanceTab";
 import DiscTendencyChart, { DISC_COLOR } from "@/components/reports/DiscTendencyChart";
 import { SubjectAdviceBlocks } from "@/components/reports/SubjectAdviceBlocks";
+import CombinedV39Report from "@/components/reports/CombinedV39";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
@@ -2323,7 +2324,9 @@ export default function ReportView({
   const e3v37 = isE3V37Result(data?.e3) ? data.e3 : null;
   const e3Legacy = !!data?.e3 && !isE3V37Result(data.e3);
   // 支持 ?view=lite 直达简版（冒烟/深链）
-  const [combinedView, setCombinedView] = useState<"full" | "lite">(params.get("view") === "lite" ? "lite" : "full");
+  const [combinedView, setCombinedView] = useState<"full" | "lite" | "v39">(
+    params.get("view") === "lite" ? "lite" : params.get("view") === "v39" ? "v39" : "full",
+  );
   /* 兜底：用户直接 Ctrl+P / 系统菜单打印时，也自动展开所有折叠块，保证 PDF 完整 */
   useEffect(() => {
     let closed: Element[] = [];
@@ -2578,6 +2581,130 @@ export default function ReportView({
         : { done: false },
     };
   }, [academics, e3v37, mental, multi5, mbti, disc, data?.anchor, data?.holland]);
+
+  /* 详版章节渲染（02-10 章）。三阶九能版（v39）复用同一渲染，仅跳过「综合结论与行动方案」章
+     （该章由 CombinedV39Report 按新归类渲染，含封面与冰山图）。 */
+  const renderCombinedSections = (skipRoadmap: boolean): ReactNode => {
+    if (!combined) return null;
+    const hasAcadSec = combined.sections.some((x) => x.title.includes("成绩现状"));
+    return combined.sections.map((s, i) => {
+      if (s.title.includes("综合结论与行动方案")) {
+        if (skipRoadmap) return null;
+        return (
+          <RoadmapSection
+            key={i}
+            section={s}
+            index={i}
+            e3={e3v37 ?? undefined}
+            e3Ratings={e3Ratings}
+            academics={academics}
+            mbti={data?.mbti}
+            disc={data?.disc}
+            multi5={data?.multi5 ?? undefined}
+            mental={mental}
+            mentalSdq={mentalSdq}
+            mentalPa={mentalPa}
+            subject={data?.subject ?? undefined}
+            anchor={data?.anchor ?? undefined}
+            holland={data?.holland ?? undefined}
+            charts={e3v37 ? <E3V37OverviewCard e3={e3v37} /> : undefined}
+            raw={data?.raw}
+            onReveal={reveal}
+          />
+        );
+      }
+      /* 详版折叠：先显示结果数据与结论段，图形与详细文字各自折叠（章节 → 图表映射见 V3.7 判读页规则） */
+      const raw = data?.raw;
+      let chartNode: ReactNode;
+      /* 乐学/会学/善学模块章：该阶三能小雷达 */
+      const modSys = (["乐学", "会学", "善学"] as const).find((k) => s.title.includes(`${k}模块`));
+      if (modSys) {
+        chartNode = e3v37 ? (
+          <NineAbilityRadar
+            e3={e3v37}
+            abilities={e3v37.abilities.filter((a) => a.system === modSys)}
+            title={`${modSys} · 三能小雷达`}
+          />
+        ) : undefined;
+      } else if (s.title.includes("条件模块")) {
+        /* 亲子 DISC 对照图只放在「亲子对照」章（V38 起），条件章不再重复 */
+        chartNode = mentalSdq ? (
+          <MentalSdqBars mental={mentalSdq} />
+        ) : mentalPa ? (
+          <MentalV2Bars mental={mentalPa} variant="pa" />
+        ) : mental ? (
+          isMentalV2(mental) ? (
+            <MentalV2Bars mental={mental} />
+          ) : (
+            <MentalBar mental={mental} />
+          )
+        ) : undefined;
+      } else if (s.title.includes("亲子对照")) {
+        chartNode =
+          disc && discParents.length > 0 ? <DiscParentCompare student={disc} parents={discParents} /> : undefined;
+      } else if (s.title.includes("学能模块")) {
+        chartNode =
+          data?.multi5 || e3v37 ? (
+            <div className="space-y-4">
+              {data?.multi5 && <Multi5Radar multi5={data.multi5} />}
+              {data?.multi5 && (
+                <div className="paper-card p-5">
+                  <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
+                  <Multi5TalentMaps multi5={data.multi5} />
+                </div>
+              )}
+              {e3v37 && (
+                <div className="paper-card p-5">
+                  <h3 className="font-bold text-olive">学能三项（注意力 / 工作记忆 / 加工速度）</h3>
+                  <p className="mt-1 text-[12.5px] text-olive-mute">
+                    反映当前加工效率，单独报告不进总分；{E3V37_LEVEL_CAPTION}。
+                  </p>
+                  <MiniBars
+                    max={5}
+                    rows={e3v37.aptitude.map((a) => ({
+                      label: a.label,
+                      value: a.score,
+                      display: `${a.score} · ${a.level}`,
+                      state: (a.level === "卡点" ? "bad" : a.level === "待提升" ? "trait" : "ok") as "bad" | "trait" | "ok",
+                    }))}
+                  />
+                </div>
+              )}
+            </div>
+          ) : undefined;
+      }
+      /* V72：「兴趣与方向」章节已整体迁入升学指导报告，此处雷达/条形图随之下线。 */
+      /* 附录章只留观察点得分表（detail）；答题明细按模块下沉到各章，经 answers 作为独立折叠上移一级。
+         章节 → kinds 单一事实源在 answerBlocks.answerKindsForSection；
+         学科快扫明细在「成绩现状」章缺省时并入条件章（answerBlocks 内置 hasAcadSec 逻辑）。 */
+      const isAppendix = s.title.includes("附录");
+      const detailNode = isAppendix
+        ? e3v37
+          ? <div className="print:hidden"><AbilityScoreTable e3={e3v37} ratings={e3Ratings} /></div>
+          : undefined
+        : undefined;
+      const answersNode =
+        !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec)
+          ? <div className="print:hidden"><AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} /></div>
+          : undefined;
+      /* v153：章节卡左边框色条 = 该模块评分档（乐学/会学/善学取系统分档；条件/亲子对照取条件均分档；学能取学能均分档） */
+      const secAccent: E3V37Level | undefined = (() => {
+        if (!e3v37) return undefined;
+        if (modSys) return e3v37.systems.core.find((c) => c.key === modSys)?.level;
+        if (s.title.includes("条件模块") || s.title.includes("亲子对照")) {
+          const cells = e3v37.systems.condition.cells;
+          return e3v37Level(cells.reduce((a, c) => a + c.score, 0) / cells.length);
+        }
+        if (s.title.includes("学能模块")) {
+          return e3v37Level(e3v37.aptitude.reduce((a, c) => a + c.score, 0) / e3v37.aptitude.length);
+        }
+        return undefined;
+      })();
+      const secNode = <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} accent={secAccent} />;
+      /* 附录章整章不打印（详版） */
+      return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -3176,6 +3303,7 @@ export default function ReportView({
                 [
                   { key: "full", label: "详版报告" },
                   { key: "lite", label: "简版 · 一页看懂" },
+                  { key: "v39", label: "三阶九能版" },
                 ] as const
               ).map((v) => {
                 const active = combinedView === v.key;
@@ -3252,6 +3380,40 @@ export default function ReportView({
                 </div>
               )}
               </>
+            ) : combinedView === "v39" ? (
+              <>
+                {/* 三阶九能版（V3.9）：封面 + 冰山图 + 01 综合结论与行动方案（新归类），02-10 章复用详版渲染 */}
+                <CombinedV39Report
+                  name={profile?.name ?? ""}
+                  grade={profile?.grade ?? null}
+                  e3={e3v37!}
+                  raw={data?.raw}
+                  academics={academics}
+                  mbti={data?.mbti}
+                  disc={data?.disc}
+                  holland={data?.holland ?? undefined}
+                  anchor={data?.anchor ?? undefined}
+                  multi5={data?.multi5 ?? undefined}
+                  mental={mental}
+                  mentalSdq={mentalSdq}
+                  mentalPa={mentalPa}
+                  mentalScl90={mentalScl90}
+                  subject={data?.subject ?? undefined}
+                  onReveal={reveal}
+                />
+                {renderCombinedSections(true)}
+                <SubjectAdviceBlocks
+                  grade={profile?.grade ?? null}
+                  academics={academics}
+                  multi5={data?.multi5 ?? undefined}
+                  mbtiType={data?.mbti?.type ?? null}
+                  discPrimary={data?.disc?.primary ?? null}
+                  e3MainLabel={e3v37?.mainBlock?.label ?? null}
+                />
+                <p className="text-center text-[12.5px] text-olive-mute">
+                  报告内容聚焦学习相关因子，随学习数据积累持续更新。
+                </p>
+              </>
             ) : (
               <>
             {/* 头部 */}
@@ -3268,125 +3430,7 @@ export default function ReportView({
             </div>
 
             <SectionToc sections={combined.sections} />
-            {(() => {
-              const hasAcadSec = combined.sections.some((x) => x.title.includes("成绩现状"));
-              return combined.sections.map((s, i) => {
-              if (s.title.includes("综合结论与行动方案")) {
-                return (
-                  <RoadmapSection
-                    key={i}
-                    section={s}
-                    index={i}
-                    e3={e3v37 ?? undefined}
-                    e3Ratings={e3Ratings}
-                    academics={academics}
-                    mbti={data?.mbti}
-                    disc={data?.disc}
-                    multi5={data?.multi5 ?? undefined}
-                    mental={mental}
-                    mentalSdq={mentalSdq}
-                    mentalPa={mentalPa}
-                    subject={data?.subject ?? undefined}
-                    anchor={data?.anchor ?? undefined}
-                    holland={data?.holland ?? undefined}
-                    charts={e3v37 ? <E3V37OverviewCard e3={e3v37} /> : undefined}
-                    raw={data?.raw}
-                    onReveal={reveal}
-                  />
-                );
-              }
-              /* 详版折叠：先显示结果数据与结论段，图形与详细文字各自折叠（章节 → 图表映射见 V3.7 判读页规则） */
-              const raw = data?.raw;
-              let chartNode: ReactNode;
-              /* 乐学/会学/善学模块章：该阶三能小雷达 */
-              const modSys = (["乐学", "会学", "善学"] as const).find((k) => s.title.includes(`${k}模块`));
-              if (modSys) {
-                chartNode = e3v37 ? (
-                  <NineAbilityRadar
-                    e3={e3v37}
-                    abilities={e3v37.abilities.filter((a) => a.system === modSys)}
-                    title={`${modSys} · 三能小雷达`}
-                  />
-                ) : undefined;
-              } else if (s.title.includes("条件模块")) {
-                /* 亲子 DISC 对照图只放在「亲子对照」章（V38 起），条件章不再重复 */
-                chartNode = mentalSdq ? (
-                  <MentalSdqBars mental={mentalSdq} />
-                ) : mentalPa ? (
-                  <MentalV2Bars mental={mentalPa} variant="pa" />
-                ) : mental ? (
-                  isMentalV2(mental) ? (
-                    <MentalV2Bars mental={mental} />
-                  ) : (
-                    <MentalBar mental={mental} />
-                  )
-                ) : undefined;
-              } else if (s.title.includes("亲子对照")) {
-                chartNode =
-                  disc && discParents.length > 0 ? <DiscParentCompare student={disc} parents={discParents} /> : undefined;
-              } else if (s.title.includes("学能模块")) {
-                chartNode =
-                  data?.multi5 || e3v37 ? (
-                    <div className="space-y-4">
-                      {data?.multi5 && <Multi5Radar multi5={data.multi5} />}
-                      {data?.multi5 && (
-                        <div className="paper-card p-5">
-                          <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
-                          <Multi5TalentMaps multi5={data.multi5} />
-                        </div>
-                      )}
-                      {e3v37 && (
-                        <div className="paper-card p-5">
-                          <h3 className="font-bold text-olive">学能三项（注意力 / 工作记忆 / 加工速度）</h3>
-                          <p className="mt-1 text-[12.5px] text-olive-mute">
-                            反映当前加工效率，单独报告不进总分；{E3V37_LEVEL_CAPTION}。
-                          </p>
-                          <MiniBars
-                            max={5}
-                            rows={e3v37.aptitude.map((a) => ({
-                              label: a.label,
-                              value: a.score,
-                              display: `${a.score} · ${a.level}`,
-                              state: (a.level === "卡点" ? "bad" : a.level === "待提升" ? "trait" : "ok") as "bad" | "trait" | "ok",
-                            }))}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ) : undefined;
-              }
-              /* V72：「兴趣与方向」章节已整体迁入升学指导报告，此处雷达/条形图随之下线。 */
-              /* 附录章只留观察点得分表（detail）；答题明细按模块下沉到各章，经 answers 作为独立折叠上移一级。
-                 章节 → kinds 单一事实源在 answerBlocks.answerKindsForSection；
-                 学科快扫明细在「成绩现状」章缺省时并入条件章（answerBlocks 内置 hasAcadSec 逻辑）。 */
-              const isAppendix = s.title.includes("附录");
-              const detailNode = isAppendix
-                ? e3v37
-                  ? <div className="print:hidden"><AbilityScoreTable e3={e3v37} ratings={e3Ratings} /></div>
-                  : undefined
-                : undefined;
-              const answersNode =
-                !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec)
-                  ? <div className="print:hidden"><AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} /></div>
-                  : undefined;
-              /* v153：章节卡左边框色条 = 该模块评分档（乐学/会学/善学取系统分档；条件/亲子对照取条件均分档；学能取学能均分档） */
-              const secAccent: E3V37Level | undefined = (() => {
-                if (!e3v37) return undefined;
-                if (modSys) return e3v37.systems.core.find((c) => c.key === modSys)?.level;
-                if (s.title.includes("条件模块") || s.title.includes("亲子对照")) {
-                  const cells = e3v37.systems.condition.cells;
-                  return e3v37Level(cells.reduce((a, c) => a + c.score, 0) / cells.length);
-                }
-                if (s.title.includes("学能模块")) {
-                  return e3v37Level(e3v37.aptitude.reduce((a, c) => a + c.score, 0) / e3v37.aptitude.length);
-                }
-                return undefined;
-              })();
-              const secNode = <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} accent={secAccent} />;
-              /* 附录章整章不打印（详版） */
-              return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
-            });
-            })()}
+            {renderCombinedSections(false)}
             {/* v75/v76：学科学习建议（分学段+测评个性化+差异化扬长补短）与四项平衡规划，均默认折叠按需打开 */}
             <SubjectAdviceBlocks
               grade={profile?.grade ?? null}
