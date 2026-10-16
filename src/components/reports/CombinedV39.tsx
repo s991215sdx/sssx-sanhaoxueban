@@ -159,17 +159,28 @@ function AnswersFold({ raw, kinds, title, onlyNos }: { raw?: RawAnswer[]; kinds:
 
 /* ================= 冰山图 ================= */
 const STAGE_W = 788;
-/** berg 右缘锚点（290x432 渲染坐标，设计稿 v9）。 */
+/** 冰山宽 340（viewBox 430 → 渲染 340，等比 0.7907），自然高 506；拉长留白用「垂直居中」消除，不改变冰山比例。 */
+const BERG_W = 340;
+const GAP = 24;
+const CARD_W = STAGE_W - BERG_W - GAP; // 424（记分卡收窄，把空间留给冰山）
+const BERG_SCALE = BERG_W / 430;
+const BERG_H = Math.round(640 * BERG_SCALE); // 506
+const CARD_LEFT = BERG_W + GAP; // 364
+/** berg 锚点（stage 坐标 = viewBox 坐标 × 0.7907，冰山贴左缘纵向居中后加偏移）。 */
 const RIGHT_ANCHORS: Record<string, [number, number]> = {
-  score: [194, 66],
-  shan: [241, 150],
-  hui: [227, 248],
-  le: [202, 320],
+  score: [227, 77],
+  shan: [283, 176],
+  hui: [266, 291],
+  le: [237, 375],
 };
+/** 冰山尖 / 右下缘锚点（stage 坐标）。 */
+const BERG_TIP: [number, number] = [170, 483];
+const ENV_A: [number, number] = [262, 462];
+const ENV_CORNER_X = 288;
 
 function BergSvg() {
   return (
-    <svg width="290" height="432" viewBox="0 0 430 640" className="absolute inset-0">
+    <svg viewBox="0 0 430 640" className="block h-auto w-full">
       <defs>
         <linearGradient id="v39IceAbove" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#EDF7F1" />
@@ -219,7 +230,7 @@ function KRow({ label, value, note, color }: { label: string; value: number; not
     <div className="flex items-center gap-2 py-[3px]">
       <span className="w-[76px] shrink-0 text-[12.5px] text-olive-soft">{label}</span>
       <span className="w-[40px] shrink-0 text-right text-[13px] font-extrabold" style={{ color }}>{value}</span>
-      <div className="h-2 w-[44%] shrink-0 overflow-hidden rounded-full bg-[#EDF3EF]">
+      <div className="h-2 w-[38%] shrink-0 overflow-hidden rounded-full bg-[#EDF3EF]">
         <div className="h-full rounded-full" style={{ width: `${Math.min(100, value * 20)}%`, background: color }} />
       </div>
       {note && <span className="shrink-0 text-[11px] text-olive-mute">{note}</span>}
@@ -302,62 +313,87 @@ export default function CombinedV39Report({
     mentalSdq || mentalPa || mental ? "心理健康" : null,
   ].filter(Boolean).join(" · ");
 
-  /* ---------- 冰山几何：测量 + 连线 + 宽度适配 ---------- */
+  /* ---------- 冰山几何：测量 + 连线 + 宽度适配（<768px 手机端堆叠，无连线） ---------- */
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
   const [geom, setGeom] = useState<{ H: number; lines: { pts: string; head: string }[] } | null>(null);
   const [scale, setScale] = useState(1);
+  const [panelH, setPanelH] = useState(BERG_H);
+  const [stacked, setStacked] = useState(false);
 
   useLayoutEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
     const measure = () => {
       const stage = stageRef.current;
-      if (!stage) return;
+      const wrap = wrapRef.current;
+      const stackedNow = mq.matches;
+      setStacked((p) => (p === stackedNow ? p : stackedNow));
+      if (!stage || !wrap) return;
+      if (stackedNow) {
+        /* 手机端：静态堆叠，无绝对定位/连线/缩放；清掉桌面端遗留的内联定位 */
+        setGeom((p) => (p === null ? p : null));
+        setScale((p) => (p === 1 ? p : 1));
+        if (wrap.style.height) wrap.style.height = "";
+        if (stage.style.height) stage.style.height = "";
+        stage.querySelectorAll<HTMLElement>("[data-row]").forEach((el) => {
+          if (el.style.top) el.style.top = "";
+        });
+        return;
+      }
       const cardsEl = stage.querySelector<HTMLElement>('[data-col="cards"]');
       const bottomEl = stage.querySelector<HTMLElement>('[data-row="bottom"]');
       const legendEl = stage.querySelector<HTMLElement>('[data-row="legend"]');
-      const cardsH = cardsEl?.offsetHeight ?? 432;
-      const bottomTop = Math.max(432, cardsH) + 14;
+      /* 冰山面板高度 = 内容高（≥506），冰山在其中垂直居中 → 不留空白 */
+      const cardsH = cardsEl?.offsetHeight ?? BERG_H;
+      const ph = Math.max(BERG_H, cardsH);
+      setPanelH((p) => (p === ph ? p : ph));
+      const bergTop = Math.round((ph - BERG_H) / 2);
+      const bottomTop = ph + GAP;
       if (bottomEl) bottomEl.style.top = `${bottomTop}px`;
       const bottomH = bottomEl?.offsetHeight ?? 128;
       if (legendEl) legendEl.style.top = `${bottomTop + bottomH + 24}px`;
       const H = bottomTop + bottomH + 70;
       if (stage.style.height !== `${H}px`) stage.style.height = `${H}px`;
-      /* 连线（设计坐标系 788 宽） */
+      /* 连线（冰山锚点 + 顶部偏移，水平通道至记分卡左缘 364） */
       const lines: { pts: string; head: string }[] = [];
       Object.entries(RIGHT_ANCHORS).forEach(([key, [x, y]]) => {
         const card = cardRefs.current[key];
         if (!card) return;
+        const ay = bergTop + y;
         const cy = card.offsetTop + card.offsetHeight / 2;
-        const ex = Math.min(x + 30, 296);
-        lines.push({ pts: `${x},${y} ${ex},${y} ${ex},${cy} 314,${cy}`, head: `${x},${y}` });
+        const ex = Math.min(x + 44, CARD_LEFT - 16);
+        lines.push({ pts: `${x},${ay} ${ex},${ay} ${ex},${cy} ${CARD_LEFT},${cy}`, head: `${x},${ay}` });
       });
       const selfCard = cardRefs.current.self;
       if (selfCard) {
         const selfTop = bottomTop + selfCard.offsetTop;
-        lines.push({ pts: `145,412 145,${selfTop - 1} 153,${selfTop - 1}`, head: "145,412" });
+        const tipY = bergTop + BERG_TIP[1];
+        lines.push({ pts: `${BERG_TIP[0]},${tipY} ${BERG_TIP[0]},${selfTop - 1} ${BERG_TIP[0] + 8},${selfTop - 1}`, head: `${BERG_TIP[0]},${tipY}` });
       }
       const envCard = cardRefs.current.env;
       if (envCard) {
         const envCy = bottomTop + envCard.offsetTop + envCard.offsetHeight / 2;
-        lines.push({ pts: `223,394 246,394 246,${envCy} 314,${envCy}`, head: "223,394" });
+        const envY = bergTop + ENV_A[1];
+        lines.push({ pts: `${ENV_A[0]},${envY} ${ENV_CORNER_X},${envY} ${ENV_CORNER_X},${envCy} ${CARD_LEFT},${envCy}`, head: `${ENV_A[0]},${envY}` });
       }
       setGeom((prev) => {
         const same = prev && prev.H === H && JSON.stringify(prev.lines) === JSON.stringify(lines);
         return same ? prev : { H, lines };
       });
-      const wrap = wrapRef.current;
-      if (wrap) {
-        /* 一屏看全：宽度和高度双向约束（与定稿样例 v9 一致），并回填缩放后的高度避免留白 */
-        const s = Math.min(1, wrap.clientWidth / STAGE_W, (window.innerHeight - 80) / H);
-        setScale((prev) => (prev === s ? prev : s));
-        const scaledH = Math.round(H * s + 10);
-        if (wrap.style.height !== `${scaledH}px`) wrap.style.height = `${scaledH}px`;
-      }
+      /* 一屏看全：宽度和高度双向约束（与定稿样例 v9 一致），并回填缩放后的高度避免留白 */
+      const s = Math.min(1, wrap.clientWidth / STAGE_W, (window.innerHeight - 80) / H);
+      setScale((prev) => (prev === s ? prev : s));
+      const scaledH = Math.round(H * s + 10);
+      if (wrap.style.height !== `${scaledH}px`) wrap.style.height = `${scaledH}px`;
     };
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    mq.addEventListener("change", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      mq.removeEventListener("change", measure);
+    };
   });
 
   const setCardRef = (key: string) => (el: HTMLElement | null) => {
@@ -411,15 +447,22 @@ export default function CombinedV39Report({
           <div
             ref={stageRef}
             className="relative"
-            style={{ width: STAGE_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
+            style={stacked ? undefined : { width: STAGE_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
           >
-            <div className="flex gap-6">
-              {/* 左：冰山 */}
-              <div className="relative h-[432px] w-[290px] shrink-0 overflow-hidden rounded-2xl border border-[#E3EEE8] bg-gradient-to-b from-[#F0FAF5] to-[#E4F2E9]">
+            <div className={stacked ? "flex flex-col gap-4" : "flex gap-6"}>
+              {/* 左：冰山（桌面端面板高度 = 内容高，冰山垂直居中不留白） */}
+              <div
+                className={
+                  stacked
+                    ? "mx-auto w-[340px] max-w-full overflow-hidden rounded-2xl border border-[#E3EEE8] bg-gradient-to-b from-[#F0FAF5] to-[#E4F2E9]"
+                    : "relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#E3EEE8] bg-gradient-to-b from-[#F0FAF5] to-[#E4F2E9]"
+                }
+                style={stacked ? undefined : { width: BERG_W, height: panelH }}
+              >
                 <BergSvg />
               </div>
-              {/* 右：指标卡 */}
-              <div data-col="cards" className="flex w-[474px] flex-col gap-3">
+              {/* 右：指标卡（桌面端收窄至 424，把空间留给冰山） */}
+              <div data-col="cards" className="flex flex-col gap-3" style={stacked ? undefined : { width: CARD_W }}>
                 <div ref={setCardRef("score")} data-berg="score" className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
                   <h4 className="text-[14.5px] font-extrabold text-olive">学习成绩<span className="ml-2 text-[11px] font-semibold text-olive-mute">看得见的结果 · 各科三项均分</span></h4>
                   <TotalRow label="学科综合均分" value={scoreMean} />
@@ -473,8 +516,12 @@ export default function CombinedV39Report({
             </div>
 
             {/* 底排：自我认知 + 支持系统 + 深层特质 */}
-            <div data-row="bottom" className="absolute left-0 flex gap-3" style={{ width: STAGE_W }}>
-              <div ref={setCardRef("self")} className="min-h-[128px] w-[248px] rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
+            <div
+              data-row="bottom"
+              className={stacked ? "mt-4 grid grid-cols-1 gap-3" : "absolute left-0 flex gap-3"}
+              style={stacked ? undefined : { width: STAGE_W }}
+            >
+              <div ref={setCardRef("self")} className={`${stacked ? "w-full" : "min-h-[128px] w-[244px]"} rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm`}>
                 <h4 className="text-[14.5px] font-extrabold text-olive">自我认知 · 心理状态</h4>
                 {mentalSdq ? (
                   <KRow label="SDQ 困难总分" value={mentalSdq.totalDiff} note={`/40 · ${mentalSdq.totalBand}`} color={mentalSdq.level !== "良好" ? "#E4572E" : "#2F7A41"} />
@@ -492,14 +539,14 @@ export default function CombinedV39Report({
                   <p className="py-1 text-[12px] text-olive-mute">心理状态测评未做（选做）</p>
                 )}
               </div>
-              <div ref={setCardRef("env")} className="min-h-[128px] w-[292px] rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
+              <div ref={setCardRef("env")} className={`${stacked ? "w-full" : "min-h-[128px] w-[288px]"} rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm`}>
                 <h4 className="text-[14.5px] font-extrabold text-olive">支持系统<span className="ml-2 text-[11px] font-semibold text-olive-mute">身心 · 家庭 · 资源</span></h4>
                 <TotalRow label="支持系统 · 系统总分" value={condMean} />
                 {condCells.map((c) => (
                   <KRow key={c.key} label={COND_DISPLAY[c.key] ?? c.label} value={c.score} color={levelColor(c.score)} />
                 ))}
               </div>
-              <div className="min-h-[128px] w-[228px] rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
+              <div className={`${stacked ? "w-full" : "min-h-[128px] w-[232px]"} rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm`}>
                 <h4 className="text-[14.5px] font-extrabold text-olive">深层特质<span className="ml-2 text-[11px] font-semibold text-olive-mute">性格 · 兴趣 · 锚</span></h4>
                 {disc && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">DISC</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{disc.primary}</span><span className="text-[11px] text-olive-mute">{discName ?? ""}</span></div>}
                 {mbti && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">MBTI</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{mbti.type}</span><span className="text-[11px] text-olive-mute">{mbtiName ?? ""}</span></div>}
@@ -515,8 +562,8 @@ export default function CombinedV39Report({
               </div>
             </div>
 
-            {/* 连线 */}
-            {geom && (
+            {/* 连线（仅桌面端） */}
+            {!stacked && geom && (
               <svg width={STAGE_W} height={geom.H} viewBox={`0 0 ${STAGE_W} ${geom.H}`} className="pointer-events-none absolute left-0 top-0" style={{ zIndex: 5 }}>
                 {geom.lines.map((l, i) => {
                   const [hx, hy] = l.head.split(",");
@@ -530,7 +577,15 @@ export default function CombinedV39Report({
               </svg>
             )}
             {/* 图例 */}
-            <div data-row="legend" className="absolute left-0 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute" style={{ width: STAGE_W }}>
+            <div
+              data-row="legend"
+              className={
+                stacked
+                  ? "mt-3 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute"
+                  : "absolute left-0 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute"
+              }
+              style={stacked ? undefined : { width: STAGE_W }}
+            >
               <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#E4572E" }} />红 &lt; 3.0 卡点（优先干预）　
               <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#F0A92E" }} />黄 3.0–3.7 待提升　
               <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#3CC078" }} />绿 ≥ 3.8 正常　|　
