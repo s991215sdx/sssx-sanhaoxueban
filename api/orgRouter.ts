@@ -122,13 +122,14 @@ export const orgRouter = createRouter({
       if (brandName.length < 2 || brandName.length > 128) throw new Error("品牌名（商标）2～128 个字");
       if (!PHONE_RE.test(phone)) throw new Error("管理员手机号格式不对");
       if (password.length < 6 || password.length > 64) throw new Error("管理员密码需要 6～64 个字符");
-      const dup = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
-      if (dup[0]) throw new Error("这个手机号已被占用，换一个");
 
       const [{ id }] = await db.insert(organizations).values({ name, brandName, logoUrl }).$returningId();
       const orgId = Number(id);
+      /* v177：一个手机号可担任多个机构的超级管理员。已存在该手机号的账号时，
+         本机构管理员用带机构后缀的 unionId（users.unionId 全局唯一），登录按手机号+密码匹配。 */
+      const dup = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
       await db.insert(users).values({
-        unionId: `phone:${phone}`,
+        unionId: dup[0] ? `phone:${phone}:org${orgId}` : `phone:${phone}`,
         phone,
         passwordHash: hashPassword(password),
         name: adminName,
