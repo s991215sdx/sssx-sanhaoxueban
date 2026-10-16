@@ -164,27 +164,19 @@ export default function StudentDetailDrawer({
                   <span className="text-[14px] font-bold text-[#1E3530]">测评报告</span>
                 </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                {/* v176：主按钮——新标签页打开学员的「三好生涯规划报告」完整页（伴学师/管理员已白名单该路径） */}
+                {/* v176c：主按钮——展开抽屉内的完整报告视图（所有测评报告栏目页，与学生端一致） */}
                 <button
-                  onClick={() => window.open(`/zhihui-report?studentId=${userId}`, "_blank", "noopener")}
+                  onClick={() => setReportOpen((v) => !v)}
                   className="flex items-center gap-1 rounded-lg bg-[#0C7064] px-3 py-1.5 text-[12.5px] font-bold text-white shadow-[0_2px_8px_-2px_rgba(12,112,100,0.5)] transition hover:bg-[#0a5c52] active:scale-95"
                 >
                   <FileText size={14} />
-                  查看完整报告（与学生端一致）
-                </button>
-                {/* 次要入口：抽屉内展开旧版综合测评报告 */}
-                <button
-                  onClick={() => setReportOpen((v) => !v)}
-                  className="flex items-center gap-0.5 rounded-lg px-2 py-1.5 text-[11.5px] font-medium text-[#1E3530]/70 hover:bg-butter-pale hover:text-[#0C7064]"
-                  title="在抽屉内展开测评报告摘要"
-                >
                   {reportOpen ? (
                     <>
-                      收起摘要 <ChevronUp size={13} />
+                      收起报告 <ChevronUp size={13} />
                     </>
                   ) : (
                     <>
-                      展开摘要 <ChevronDown size={13} />
+                      查看完整报告（与学生端一致） <ChevronDown size={13} />
                     </>
                   )}
                 </button>
@@ -211,38 +203,6 @@ export default function StudentDetailDrawer({
                   return names.length > 0 ? `已测 ${names.length} 项：${names.join("、")}` : "还没有测评结果。";
                 })()}
               </p>
-              {/* v176：学科四维测评（智慧生涯）结果摘要——后端已随详情带出，完整解读进三好生涯规划报告 */}
-              {!!data.assessments.optional?.subject4d &&
-                (() => {
-                  const r = data.assessments.optional.subject4d as {
-                    subjects?: Record<string, { 兴趣: number; 能力倾向: number; 观念: number; 效能感: number; 潜力指数: number }>;
-                  };
-                  const top = Object.entries(r.subjects ?? {})
-                    .sort((a, b) => (b[1]?.潜力指数 ?? 0) - (a[1]?.潜力指数 ?? 0))
-                    .slice(0, 3);
-                  return (
-                    <div className="mt-3 rounded-xl border border-[#0C7064]/25 bg-[#0C7064]/5 p-3.5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-[13px] font-bold text-olive">学科四维测评（智慧生涯）· 已生成九科四维画像</div>
-                        <button
-                          onClick={() => window.open(`/zhihui-report?studentId=${userId}`, "_blank", "noopener")}
-                          className="shrink-0 rounded-lg bg-[#0C7064] px-2.5 py-1 text-[11.5px] font-bold text-white hover:bg-[#0a5c52]"
-                        >
-                          看生涯规划报告 →
-                        </button>
-                      </div>
-                      {top.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {top.map(([n, v]) => (
-                            <span key={n} className="chip !text-[11px]">
-                              潜力 Top：{n} {v.潜力指数?.toFixed?.(1) ?? v.潜力指数}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
               {reportOpen && (
                 <div className="mt-3">
                   {(() => {

@@ -101,7 +101,7 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, ExternalLink, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import MentalDetail from "@/components/reports/MentalDetail";
@@ -2605,12 +2605,23 @@ export default function ReportView({
         </section>
       )}
 
-      {/* Tab 切换（v143：轨道=白色，选中=白底+墨绿字+墨绿框，未选中=白底墨绿灰字） */}
+      {/* Tab 切换（v143：轨道=白色，选中=白底+墨绿字+墨绿框，未选中=白底墨绿灰字；
+          v176c：「三好生涯规划报告」为独立完整页，点击直接新开窗口直达，不切 tab） */}
       <div className="flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key)}
+            onClick={() => {
+              if (t.key === "zhihui") {
+                if (viewer === "tutor" && studentUserId != null) {
+                  window.open(`/zhihui-report?studentId=${studentUserId}`, "_blank", "noopener");
+                } else {
+                  navigate("/zhihui-report");
+                }
+                return;
+              }
+              setTab(t.key);
+            }}
             className={`grow basis-[30%] rounded-lg border px-2 py-2 text-[12.5px] font-semibold transition ${
               tab === t.key
                 ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
@@ -2618,6 +2629,7 @@ export default function ReportView({
             }`}
           >
             {t.label}
+            {t.key === "zhihui" && <ExternalLink size={12} className="ml-1 inline-block align-[-1px]" />}
           </button>
         ))}
       </div>

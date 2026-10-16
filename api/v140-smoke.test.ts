@@ -2,10 +2,12 @@ import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
 describe("v140 收起按钮去底 + 未选中卡简化", () => {
-  it("收起按钮无背景无边框，黑字+图标", () => {
+  it("v176c 更新：查看完整报告为实心墨绿主按钮，点击展开/收起报告视图", () => {
     const src = readFileSync("src/components/StudentDetailDrawer.tsx", "utf-8");
-    if (!/text-\[11\.5px\] font-medium text-\[#1E3530\]\/70[\s\S]{0,50}hover:text-\[#0C7064\]/.test(src)) throw new Error("缺：简版收起按钮");
-    if (/rounded-lg border border-lime\/60 bg-lime-pale px-2\.5 py-1 text-\[11\.5px\] font-semibold text-olive hover:bg-butter\/25"[\s\S]{0,40}收起/.test(src)) throw new Error("残留：带底收起按钮");
+    if (!/bg-\[#0C7064\][\s\S]{0,600}查看完整报告（与学生端一致）/.test(src)) throw new Error("缺：实心主按钮");
+    if (!/收起报告 <ChevronUp/.test(src)) throw new Error("缺：展开态收起文案");
+    // 不再有第二个纯文字展开入口（v176c 起主按钮即开关）
+    if (/text-\[11\.5px\] font-medium text-\[#1E3530\]\/70/.test(src)) throw new Error("残留：v140 简版次要按钮");
   });
 
   it("未选中卡断言随 v143 更新：白底无边框", () => {
