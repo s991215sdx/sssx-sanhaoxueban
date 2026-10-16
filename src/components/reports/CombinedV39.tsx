@@ -166,21 +166,28 @@ const CARD_W = STAGE_W - BERG_W - GAP; // 424（记分卡收窄，把空间留�
 const BERG_SCALE = BERG_W / 430;
 const BERG_H = Math.round(640 * BERG_SCALE); // 506
 const CARD_LEFT = BERG_W + GAP; // 364
-/** berg 锚点（stage 坐标 = viewBox 坐标 × 0.7907，冰山贴左缘纵向居中后加偏移）。 */
-const RIGHT_ANCHORS: Record<string, [number, number]> = {
-  score: [227, 77],
-  shan: [283, 176],
-  hui: [266, 291],
-  le: [237, 375],
+/** 冰山锚点（viewBox 坐标；y<150 为水上不拉伸）。 */
+const ANCHORS_VB: Record<string, [number, number]> = {
+  score: [287, 77],
+  shan: [358, 176],
+  hui: [336, 291],
+  le: [300, 375],
 };
-/** 冰山尖 / 右下缘锚点（stage 坐标）。 */
-const BERG_TIP: [number, number] = [170, 483];
-const ENV_A: [number, number] = [262, 462];
+/** 冰山尖 / 右下缘锚点（viewBox 坐标）。 */
+const TIP_VB: [number, number] = [215, 483];
+const ENV_VB: [number, number] = [331, 462];
 const ENV_CORNER_X = 288;
+/** 水下拉伸上限：1.6 倍，避免过于细长。 */
+const MAX_STRETCH = 1.6;
 
-function BergSvg() {
+function BergSvg({ stretch = 1 }: { stretch?: number }) {
+  const k = stretch;
+  /* 水下纵向拉伸（以水线 y=150 为轴），水上部分保持不动；比例随内容高度自适应。 */
+  const vy = (y: number) => (y < 150 ? y : 150 + (y - 150) * k);
+  const H = 150 + 490 * k;
+  const belowD = `M 60,150 C 38,${vy(212)} 56,${vy(296)} 88,${vy(392)} C 112,${vy(472)} 152,${vy(556)} 215,${vy(616)} C 270,${vy(552)} 310,${vy(470)} 332,${vy(392)} C 358,${vy(296)} 376,${vy(212)} 368,150 L 60,150 Z`;
   return (
-    <svg viewBox="0 0 430 640" className="block h-auto w-full">
+    <svg viewBox={`0 0 430 ${H}`} className="block h-auto w-full">
       <defs>
         <linearGradient id="v39IceAbove" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#EDF7F1" />
@@ -199,27 +206,27 @@ function BergSvg() {
         </filter>
       </defs>
       <rect x="0" y="0" width="430" height="150" fill="url(#v39Sky)" />
-      <rect x="0" y="150" width="430" height="490" fill="url(#v39Water)" />
+      <rect x="0" y="150" width="430" height={490 * k} fill="url(#v39Water)" />
       <path d="M14,144 Q107,137 215,144 T416,144" fill="none" stroke="#C2D8C6" strokeWidth="1.2" opacity=".8" />
       <path d="M14,150 Q107,143 215,150 T416,150" fill="none" stroke="#AECDB4" strokeWidth="1.6" />
-      <ellipse cx="215" cy="200" rx="150" ry="42" fill="#A9CBAF" opacity=".4" />
+      <ellipse cx="215" cy={vy(200)} rx="150" ry="42" fill="#A9CBAF" opacity=".4" />
       <path fill="url(#v39IceAbove)" stroke="#A9C8AE" strokeWidth="1.6" filter="url(#v39Soft)" d="M 60,150 C 70,118 108,100 138,86 C 158,74 172,54 200,40 C 214,48 226,62 250,74 C 284,90 340,110 368,150 L 60,150 Z" />
-      <path fill="url(#v39IceBelow)" stroke="#A9C8AE" strokeWidth="1.6" filter="url(#v39Soft)" d="M 60,150 C 38,212 56,296 88,392 C 112,472 152,556 215,616 C 270,552 310,470 332,392 C 358,296 376,212 368,150 L 60,150 Z" />
+      <path fill="url(#v39IceBelow)" stroke="#A9C8AE" strokeWidth="1.6" filter="url(#v39Soft)" d={belowD} />
       <g stroke="#ffffff" strokeWidth="1.2" opacity=".7" fill="none">
-        <path d="M 138,86 C 160,170 178,290 184,420" />
-        <path d="M 250,74 C 258,170 262,290 254,410" />
+        <path d={`M 138,86 C 160,${vy(170)} 178,${vy(290)} 184,${vy(420)}`} />
+        <path d={`M 250,74 C 258,${vy(170)} 262,${vy(290)} 254,${vy(410)}`} />
         <path d="M 200,40 C 205,78 210,114 214,150" />
       </g>
       <path d="M 60,150 Q 140,144 215,150 T 370,150" fill="none" stroke="#A3C6A9" strokeWidth="2" opacity=".9" />
       <text x="205" y="98" textAnchor="middle" fontSize="14" fontWeight="700" fill="#22453A">学习成绩</text>
-      <text x="215" y="222" textAnchor="middle" fontSize="14" fontWeight="700" fill="#22453A">善学 · 能力系统</text>
-      <text x="215" y="250" textAnchor="middle" fontSize="24" fontWeight="800" fill="#0B8A63" opacity=".9">脑</text>
-      <text x="215" y="368" textAnchor="middle" fontSize="14" fontWeight="700" fill="#22453A">会学 · 行为系统</text>
-      <text x="215" y="396" textAnchor="middle" fontSize="24" fontWeight="800" fill="#0B8A63" opacity=".9">术</text>
-      <text x="212" y="474" textAnchor="middle" fontSize="14" fontWeight="700" fill="#22453A">乐学 · 动力系统</text>
-      <text x="212" y="502" textAnchor="middle" fontSize="24" fontWeight="800" fill="#0B8A63" opacity=".9">心</text>
-      <text x="150" y="586" textAnchor="end" fontSize="13" fontWeight="700" fill="#22453A">自我认知 · 心理状态</text>
-      <text x="262" y="572" fontSize="13" fontWeight="700" fill="#22453A">支持系统</text>
+      <text x="215" y={vy(222)} textAnchor="middle" fontSize="14" fontWeight="700" fill="#22453A">善学 · 能力系统</text>
+      <text x="215" y={vy(250)} textAnchor="middle" fontSize="24" fontWeight="800" fill="#0B8A63" opacity=".9">脑</text>
+      <text x="215" y={vy(368)} textAnchor="middle" fontSize="14" fontWeight="700" fill="#22453A">会学 · 行为系统</text>
+      <text x="215" y={vy(396)} textAnchor="middle" fontSize="24" fontWeight="800" fill="#0B8A63" opacity=".9">术</text>
+      <text x="212" y={vy(474)} textAnchor="middle" fontSize="14" fontWeight="700" fill="#22453A">乐学 · 动力系统</text>
+      <text x="212" y={vy(502)} textAnchor="middle" fontSize="24" fontWeight="800" fill="#0B8A63" opacity=".9">心</text>
+      <text x="150" y={vy(586)} textAnchor="end" fontSize="13" fontWeight="700" fill="#22453A">自我认知 · 心理状态</text>
+      <text x="262" y={vy(572)} fontSize="13" fontWeight="700" fill="#22453A">支持系统</text>
     </svg>
   );
 }
@@ -228,7 +235,7 @@ function BergSvg() {
 function KRow({ label, value, note, color }: { label: string; value: number; note?: string; color: string }) {
   return (
     <div className="flex items-center gap-2 py-[3px]">
-      <span className="w-[76px] shrink-0 text-[12.5px] text-olive-soft">{label}</span>
+      <span className="w-[76px] shrink-0 truncate text-[12.5px] text-olive-soft" title={label}>{label}</span>
       <span className="w-[40px] shrink-0 text-right text-[13px] font-extrabold" style={{ color }}>{value}</span>
       <div className="h-2 w-[38%] shrink-0 overflow-hidden rounded-full bg-[#EDF3EF]">
         <div className="h-full rounded-full" style={{ width: `${Math.min(100, value * 20)}%`, background: color }} />
@@ -269,11 +276,15 @@ export default function CombinedV39Report({
   const aiScore = ability("智学")?.score ?? 0;
 
   /* 学习成绩卡：E3 学科快扫（喜欢/掌握/发挥 三项均分）→ 档案学科自评兜底 */
+  const SUBJ_SHORT: Record<string, string> = {
+    "首选科目（物理/历史，圈一个）": "首选科目",
+    "再选科目（填两科）": "再选科目",
+  };
   const e3raw = raw?.find((r) => r.kind === "e3")?.answers as { subjects?: { name: string; liking: number; mastery: number; exam: number }[] } | null | undefined;
   const scanRows = ((e3raw?.subjects ?? []) as { name: string; liking: number; mastery: number; exam: number }[])
     .map((s) => {
       const vals = [s.liking, s.mastery, s.exam].filter((v) => v > 0);
-      return { name: s.name, score: vals.length ? mean(vals) : 0, n: vals.length };
+      return { name: SUBJ_SHORT[s.name] ?? s.name, score: vals.length ? mean(vals) : 0, n: vals.length };
     })
     .filter((s) => s.n > 0);
   const acadRows = (academics?.subjects ?? [])
@@ -321,6 +332,7 @@ export default function CombinedV39Report({
   const [scale, setScale] = useState(1);
   const [panelH, setPanelH] = useState(BERG_H);
   const [stacked, setStacked] = useState(false);
+  const [stretch, setStretch] = useState(1);
 
   useLayoutEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -334,6 +346,7 @@ export default function CombinedV39Report({
         /* 手机端：静态堆叠，无绝对定位/连线/缩放；清掉桌面端遗留的内联定位 */
         setGeom((p) => (p === null ? p : null));
         setScale((p) => (p === 1 ? p : 1));
+        setStretch((p) => (p === 1 ? p : 1));
         if (wrap.style.height) wrap.style.height = "";
         if (stage.style.height) stage.style.height = "";
         stage.querySelectorAll<HTMLElement>("[data-row]").forEach((el) => {
@@ -344,11 +357,17 @@ export default function CombinedV39Report({
       const cardsEl = stage.querySelector<HTMLElement>('[data-col="cards"]');
       const bottomEl = stage.querySelector<HTMLElement>('[data-row="bottom"]');
       const legendEl = stage.querySelector<HTMLElement>('[data-row="legend"]');
-      /* 冰山面板高度 = 内容高（≥506），冰山在其中垂直居中 → 不留空白 */
+      /* 水下拉伸系数：冰山渲染高度随记分卡列内容高度自适应（1–1.6），消除留白 */
       const cardsH = cardsEl?.offsetHeight ?? BERG_H;
-      const ph = Math.max(BERG_H, cardsH);
+      const k = Math.max(1, Math.min(MAX_STRETCH, cardsH / BERG_H));
+      setStretch((p) => (p === k ? p : k));
+      const bergH = Math.round((150 + 490 * k) * BERG_SCALE);
+      const ph = Math.max(bergH, cardsH);
       setPanelH((p) => (p === ph ? p : ph));
-      const bergTop = Math.round((ph - BERG_H) / 2);
+      const bergTop = Math.round((ph - bergH) / 2);
+      const vy = (y: number) => (y < 150 ? y : 150 + (y - 150) * k);
+      const ax = (x: number) => Math.round(x * BERG_SCALE);
+      const ay = (y: number) => Math.round(bergTop + vy(y) * BERG_SCALE);
       const bottomTop = ph + GAP;
       if (bottomEl) bottomEl.style.top = `${bottomTop}px`;
       const bottomH = bottomEl?.offsetHeight ?? 128;
@@ -357,25 +376,28 @@ export default function CombinedV39Report({
       if (stage.style.height !== `${H}px`) stage.style.height = `${H}px`;
       /* 连线（冰山锚点 + 顶部偏移，水平通道至记分卡左缘 364） */
       const lines: { pts: string; head: string }[] = [];
-      Object.entries(RIGHT_ANCHORS).forEach(([key, [x, y]]) => {
+      Object.entries(ANCHORS_VB).forEach(([key, [x, y]]) => {
         const card = cardRefs.current[key];
         if (!card) return;
-        const ay = bergTop + y;
+        const sx = ax(x);
+        const sy = ay(y);
         const cy = card.offsetTop + card.offsetHeight / 2;
-        const ex = Math.min(x + 44, CARD_LEFT - 16);
-        lines.push({ pts: `${x},${ay} ${ex},${ay} ${ex},${cy} ${CARD_LEFT},${cy}`, head: `${x},${ay}` });
+        const ex = Math.min(sx + 44, CARD_LEFT - 16);
+        lines.push({ pts: `${sx},${sy} ${ex},${sy} ${ex},${cy} ${CARD_LEFT},${cy}`, head: `${sx},${sy}` });
       });
       const selfCard = cardRefs.current.self;
       if (selfCard) {
         const selfTop = bottomTop + selfCard.offsetTop;
-        const tipY = bergTop + BERG_TIP[1];
-        lines.push({ pts: `${BERG_TIP[0]},${tipY} ${BERG_TIP[0]},${selfTop - 1} ${BERG_TIP[0] + 8},${selfTop - 1}`, head: `${BERG_TIP[0]},${tipY}` });
+        const tipX = ax(TIP_VB[0]);
+        const tipY = ay(TIP_VB[1]);
+        lines.push({ pts: `${tipX},${tipY} ${tipX},${selfTop - 1} ${tipX + 8},${selfTop - 1}`, head: `${tipX},${tipY}` });
       }
       const envCard = cardRefs.current.env;
       if (envCard) {
         const envCy = bottomTop + envCard.offsetTop + envCard.offsetHeight / 2;
-        const envY = bergTop + ENV_A[1];
-        lines.push({ pts: `${ENV_A[0]},${envY} ${ENV_CORNER_X},${envY} ${ENV_CORNER_X},${envCy} ${CARD_LEFT},${envCy}`, head: `${ENV_A[0]},${envY}` });
+        const envX = ax(ENV_VB[0]);
+        const envY = ay(ENV_VB[1]);
+        lines.push({ pts: `${envX},${envY} ${ENV_CORNER_X},${envY} ${ENV_CORNER_X},${envCy} ${CARD_LEFT},${envCy}`, head: `${envX},${envY}` });
       }
       setGeom((prev) => {
         const same = prev && prev.H === H && JSON.stringify(prev.lines) === JSON.stringify(lines);
@@ -459,7 +481,7 @@ export default function CombinedV39Report({
                 }
                 style={stacked ? undefined : { width: BERG_W, height: panelH }}
               >
-                <BergSvg />
+                <BergSvg stretch={stacked ? 1 : stretch} />
               </div>
               {/* 右：指标卡（桌面端收窄至 424，把空间留给冰山） */}
               <div data-col="cards" className="flex flex-col gap-3" style={stacked ? undefined : { width: CARD_W }}>
