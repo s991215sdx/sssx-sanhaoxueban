@@ -83,7 +83,7 @@ const TESTS: TestDef[] = [
   {
     kind: "multi5",
     name: "多元智能五项 · 客观测评",
-    desc: "五维客观题 · 40 题约 8 分钟 · 选做",
+    desc: "五维客观题 · 按小学/初中/高中分难度版本 · 40 题约 8 分钟 · 选做",
     required: false,
     tab: "multi5",
     summary: (l) => (l.multi5 ? `综合 ${l.multi5.overall} · 细心指数 ${l.multi5.carefulIndex}%` : null),
@@ -126,8 +126,8 @@ const TESTS: TestDef[] = [
   },
   {
     kind: "subject4d",
-    name: "学科四维测评（智慧生涯）",
-    desc: "9 科 × 兴趣/能力倾向/观念/效能感 4 维 × 3 题共 108 题 · 约 15 分钟 · 智慧生涯规划报告核心数据源 · 选做",
+    name: "学科四维测评（三好生涯）",
+    desc: "9 科 × 兴趣/能力倾向/观念/效能感 4 维 × 3 题共 108 题 · 约 15 分钟 · 三好生涯规划报告核心数据源 · 选做",
     required: false,
     tab: "zhihui",
     summary: (l) => (l.subject4d ? "已生成九科四维画像" : null),
@@ -308,12 +308,23 @@ export default function AssessmentCenter() {
     const q = params.get("queue");
     if (q) {
       const kinds = q.split(",").filter((k) => TESTS.some((t) => t.kind === k)) as TestKind[];
-      if (kinds.length > 0) {
-        setQueue(kinds);
-        setQueueTotal(kinds.length);
-        setTesting(kinds[0]);
+      if (kinds.length === 0) {
+        setParams({}, { replace: true });
+        return;
       }
+      /* v176：等测评结果加载完，把已经测过的项剔出队列（如已做过霍兰德就不再重做），全部已测则不进入连测 */
+      if (data === undefined) return;
       setParams({}, { replace: true });
+      const latestAny: any = data ?? {};
+      const todo = kinds.filter((k) => {
+        const def = TESTS.find((t) => t.kind === k)!;
+        return def.doneOf ? !def.doneOf(latestAny) : !latestAny[k];
+      });
+      if (todo.length > 0) {
+        setQueue(todo);
+        setQueueTotal(todo.length);
+        setTesting(todo[0]);
+      }
       return;
     }
     const start = params.get("start") as TestKind | null;
@@ -321,7 +332,8 @@ export default function AssessmentCenter() {
       setTesting(start);
       setParams({}, { replace: true });
     }
-  }, [params, setParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, data, setParams]);
   // anchor / holland / mental 为并行任务新增字段，接口已约定；类型未就绪故按 any 读取。
   const latest: any = data ?? {};
   const close = () => setTesting(null);

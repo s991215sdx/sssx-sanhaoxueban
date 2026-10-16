@@ -41,7 +41,7 @@ import {
 } from "@contracts/assessments";
 import { stageOfGrade } from "@contracts/constants";
 import { MULTI_RATINGS, scoreMulti, type MultiResult } from "@contracts/multi";
-import { MULTI5_QUESTIONS, scoreMulti5, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
+import { MULTI5_QUESTIONS, multi5QuestionsFor, scoreMulti5For, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
 import { ANCHOR_RATINGS, scoreAnchor, type AnchorResult } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS, scoreHolland, type HollandResult } from "@contracts/holland";
 import {
@@ -166,7 +166,7 @@ type AssessmentQuestions =
   | E3V37ParentQuestionSet
   | DiscParentQuestionSet
   | { kind: "multi"; ratings: typeof MULTI_RATINGS }
-  | { kind: "multi5"; questions: Multi5PublicQuestion[] }
+  | { kind: "multi5"; stage?: string; stageLabel?: string; questions: Multi5PublicQuestion[] }
   | { kind: "anchor"; ratings: typeof ANCHOR_RATINGS }
   | { kind: "holland"; ratings: typeof HOLLAND_RATINGS }
   | { kind: "subject"; bank: typeof SUBJECT_BANK }
@@ -388,9 +388,12 @@ export const assessmentRouter = createRouter({
         }
         case "multi":
           return { kind: "multi", ratings: MULTI_RATINGS };
-        case "multi5":
-          // 客观题下发时剔除答案字段，客户端不可见
-          return { kind: "multi5", questions: MULTI5_QUESTIONS.map(({ answer: _answer, ...q }) => q) };
+        case "multi5": {
+          // v176：按学生学段下发对应难度版本（小学/初中/高中），客观题剔除答案字段，客户端不可见
+          const profile = await getProfile(ctx.user.id);
+          const stage = stageOfGrade(profile?.grade ?? "") ?? "初中";
+          return { kind: "multi5", stage, stageLabel: `${stage}版`, questions: multi5QuestionsFor(stage).map(({ answer: _answer, ...q }) => q) };
+        }
         case "anchor":
           return { kind: "anchor", ratings: ANCHOR_RATINGS };
         case "holland":
@@ -596,8 +599,13 @@ export const assessmentRouter = createRouter({
         const result: MultiResult = scoreMulti(input.answers);
         outcome = { kind: "multi", result };
       } else if (input.kind === "multi5") {
-        const result: Multi5Result = scoreMulti5(input.answers);
+        // v176：按学生当前学段计分（与下发版本同一口径），结果带版本标记；
+        // 原始作答包一层学段存储（e3 的 { stage, ratings } 同款做法），供答题明细/打印还原对应题库
+        const profile = await getProfile(userId);
+        const stage = stageOfGrade(profile?.grade ?? "") ?? "初中";
+        const result: Multi5Result = scoreMulti5For(stage, input.answers);
         outcome = { kind: "multi5", result };
+        input = { ...input, answers: { stage, picks: input.answers } as unknown as number[] };
       } else if (input.kind === "anchor") {
         const result: AnchorResult = scoreAnchor(input.answers);
         outcome = { kind: "anchor", result };

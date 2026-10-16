@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { desc, eq, or, sql } from "drizzle-orm";
-import { INVITE_CHANNEL_KINDS, normalizeInviteCode, normalizeReportKinds, normalizeAssessKinds } from "@contracts/invite";
+import { INVITE_CHANNEL_KINDS, INVITE_ASSESS_KINDS, normalizeInviteCode, normalizeReportKinds, normalizeAssessKinds } from "@contracts/invite";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
 import { inviteChannels, inviteRegistrations, studentProfile, studentTutor, users } from "@db/schema";
 import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
@@ -303,8 +303,13 @@ export const inviteRouter = createRouter({
 
       const token = await signSessionToken({ unionId: `phone:${phone}`, clientId: env.appId });
       setSessionCookie(ctx, token);
-      /* v82：渠道绑定了测评套餐时，随注册响应返回测评队列，客户端注册成功后一站式连做 */
-      const assessQueue = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
+      /* v82：渠道绑定了测评套餐时，随注册响应返回测评队列，客户端注册成功后一站式连做。
+         v176：注册后默认先做学科四维测评（置顶）；多元智能五项改为选做、不进注册队列（伴学师可后台推送）；
+         客户端落地时还会按已测结果过滤（如已做过霍兰德则不再重做）。 */
+      const rawKinds = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
+      const assessQueue = rawKinds.includes("all")
+        ? ["subject4d", ...INVITE_ASSESS_KINDS.map((k) => k.key).filter((k) => k !== "multi5" && k !== "subject4d")]
+        : ["subject4d", ...rawKinds.filter((k) => k !== "multi5" && k !== "subject4d")];
       return { ok: true as const, name: studentName, assessQueue };
     }),
 });
