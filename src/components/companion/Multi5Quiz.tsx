@@ -34,6 +34,7 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
   });
 
   const questions = data?.kind === "multi5" ? data.questions : undefined;
+  const stageLabel = data?.kind === "multi5" ? (data.stage ?? "初中") : "初中";
   const total = questions?.length ?? 0;
 
   const pick = (value: number) => {
@@ -57,7 +58,9 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
     return (
       <div className="paper-card p-6 text-center">
         <Sparkles className="mx-auto text-lime" size={30} />
-        <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">多元智能五项测评 · 结果</p>
+        <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">
+          多元智能五项测评{result.stage ? ` · ${result.stage}版` : ""} · 结果
+        </p>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-cream px-2 py-2.5">
             <div className="text-[11.5px] text-olive-mute">综合水平</div>
@@ -108,7 +111,9 @@ export default function Multi5Quiz({ onDone }: { onDone: () => void }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-olive">多元智能五项测评（选做）</h2>
-          <p className="mt-0.5 text-[13px] text-olive-soft">客观题有标准答案 · 40 题约 8 分钟</p>
+          <p className="mt-0.5 text-[13px] text-olive-soft">
+            客观题有标准答案 · {stageLabel}版 · 40 题约 8 分钟
+          </p>
         </div>
         <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
           先不测了

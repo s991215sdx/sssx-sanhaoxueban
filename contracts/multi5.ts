@@ -45,6 +45,8 @@ export type Multi5Result = {
   carefulIndex: number;
   /** 每维答对数 / 题数明细。 */
   perDim: { key: Multi5Key; correct: number; total: number }[];
+  /** v176：施测学段版本（小学/初中/高中），旧结果无此字段视为初中版。 */
+  stage?: string;
 };
 
 export type Multi5Band = "优秀" | "良好" | "中等" | "待提升";
@@ -71,7 +73,10 @@ export type Multi5Report = {
 
 /* ---------------- 题库（每维 8 题，按维度分组，难度有梯度） ---------------- */
 
-const BANK: Record<Multi5Key, { text: string; options: [string, string, string, string]; answer: 0 | 1 | 2 | 3 }[]> = {
+type Multi5BankItem = { text: string; options: [string, string, string, string]; answer: 0 | 1 | 2 | 3 };
+
+/** 初中学段题库（沿用原有 40 题，历史结果均按此版本计分）。 */
+const BANK_JUNIOR: Record<Multi5Key, Multi5BankItem[]> = {
   reasoning: [
     { text: "找规律填数：2，4，8，16，（ ）", options: ["30", "32", "34", "36"], answer: 1 },
     { text: "找规律填数：1，1，2，3，5，8，（ ）", options: ["11", "12", "13", "14"], answer: 2 },
@@ -124,10 +129,138 @@ const BANK: Record<Multi5Key, { text: string; options: [string, string, string, 
   ],
 };
 
-/** 多元智能五项客观题库：40 道单选题，每维 8 题，按维度分组排列。 */
-export const MULTI5_QUESTIONS: Multi5Question[] = MULTI5_DIM_ORDER.flatMap((dim) =>
-  BANK[dim].map((q) => ({ ...q, dim })),
-).map((q, i) => ({ ...q, no: i + 1 }));
+/**
+ * v176 学段分卷：小学版（更直观、生活化、低抽象度）。
+ * 每维 8 题，与初中/高中版同结构、同计分口径，便于跨年段对比。
+ */
+const BANK_PRIMARY: Record<Multi5Key, Multi5BankItem[]> = {
+  reasoning: [
+    { text: "找规律填数：1，3，5，7，（ ）", options: ["6", "8", "9", "10"], answer: 1 },
+    { text: "找规律填数：5，10，15，20，（ ）", options: ["21", "24", "25", "30"], answer: 2 },
+    { text: "小猫比小兔重，小狗比小猫重。最重的是（ ）", options: ["小猫", "小兔", "小狗", "一样重"], answer: 2 },
+    { text: "「所有的花都会开放，这朵是花」，那么可以知道（ ）", options: ["这朵花会开放", "这朵花不会开放", "所有的花都是这一朵", "无法确定"], answer: 0 },
+    { text: "小明先向前走 3 步，又向后退 1 步，现在他比起点（ ）", options: ["靠前 2 步", "靠后 2 步", "原地不动", "靠前 4 步"], answer: 0 },
+    { text: "找规律填图形：○△○△○，接下来是（ ）", options: ["△", "○", "□", "☆"], answer: 0 },
+    { text: "「鱼」之于「水」，如同「鸟」之于（ ）", options: ["大地", "天空", "森林", "白云"], answer: 1 },
+    { text: "找规律填数：1，2，4，7，11，（ ）", options: ["14", "15", "16", "17"], answer: 2 },
+  ],
+  detail: [
+    { text: "下面哪一组数字与「3562」完全相同？", options: ["3562", "3652", "3526", "3265"], answer: 0 },
+    { text: "下面哪一组数字与「8043」完全相同？", options: ["8403", "8034", "8043", "8430"], answer: 2 },
+    { text: "在数字串「7778777」中，数字 7 出现了（ ）次", options: ["5 次", "6 次", "7 次", "8 次"], answer: 1 },
+    { text: "下列词语中书写正确的一项是（ ）", options: ["蓝球", "工俱", "火车", "以经"], answer: 2 },
+    { text: "「认真___写字」中应填入（ ）", options: ["的", "地", "得", "着"], answer: 1 },
+    { text: "「自___」一词中应填入（ ）", options: ["已", "己", "巳", "以"], answer: 1 },
+    { text: "下列英语单词拼写正确的一项是（ ）", options: ["cta", "tac", "cat", "atc"], answer: 2 },
+    { text: "下列诗句与「床前明月光」完全相同的一项是（ ）", options: ["床前明月光", "床前明月花", "床月明月光", "窗前明月光"], answer: 0 },
+  ],
+  number: [
+    { text: "23 + 45 = （ ）", options: ["66", "67", "68", "69"], answer: 2 },
+    { text: "6 × 7 = （ ）", options: ["40", "42", "44", "48"], answer: 1 },
+    { text: "10 - 4 = （ ）", options: ["4", "5", "6", "7"], answer: 2 },
+    { text: "3 元 5 角等于（ ）角", options: ["30 角", "32 角", "35 角", "53 角"], answer: 2 },
+    { text: "100 里面有（ ）个十", options: ["1 个", "10 个", "100 个", "1000 个"], answer: 1 },
+    { text: "72 ÷ 8 = （ ）", options: ["8", "9", "7", "6"], answer: 1 },
+    { text: "一根绳子长 2 米，剪去 50 厘米，还剩（ ）厘米", options: ["100 厘米", "150 厘米", "180 厘米", "50 厘米"], answer: 1 },
+    { text: "找规律填数：2，4，8，16，（ ）", options: ["24", "30", "32", "36"], answer: 2 },
+  ],
+  verbal: [
+    { text: "「好看」的近义词是（ ）", options: ["美丽", "难看", "寒冷", "高大"], answer: 0 },
+    { text: "「白」的反义词是（ ）", options: ["亮", "灰", "黑", "净"], answer: 2 },
+    { text: "「聚精会神」的意思是（ ）", options: ["精神高度集中", "身体非常疲劳", "心里特别高兴", "动作十分迅速"], answer: 0 },
+    { text: "「清晨」的近义词是（ ）", options: ["夜晚", "早晨", "中午", "傍晚"], answer: 1 },
+    { text: "「一边唱歌一边跳舞」里的「一边…一边…」表示（ ）", options: ["两个动作同时进行", "一个先做一个后做", "只能选一个做", "动作停止了"], answer: 0 },
+    { text: "下列词语中，感情色彩与其他三个不同的是（ ）", options: ["懒惰", "马虎", "骄傲", "勤奋"], answer: 3 },
+    { text: "「守株待兔」这个故事告诉我们（ ）", options: ["兔子很容易捡到", "树桩能招来兔子", "不主动努力只想碰运气，是不会有收获的", "种田是一件很轻松的事"], answer: 2 },
+    { text: "「宽敞」的反义词是（ ）", options: ["明亮", "干净", "狭窄", "高大"], answer: 2 },
+  ],
+  spatial: [
+    { text: "太阳每天从（ ）方升起", options: ["西", "南", "东", "北"], answer: 2 },
+    { text: "一个正方形有（ ）条边", options: ["3 条", "4 条", "5 条", "6 条"], answer: 1 },
+    { text: "你面向南方站立，你的后面是（ ）方", options: ["东", "西", "南", "北"], answer: 3 },
+    { text: "一个三角形有（ ）个角", options: ["2 个", "3 个", "4 个", "5 个"], answer: 1 },
+    { text: "镜子里看到的左右方向，与实际是（ ）", options: ["相同的", "相反的", "没有规律", "有时相同有时相反"], answer: 1 },
+    { text: "把一张圆形纸对折一次再打开，折痕把圆分成（ ）", options: ["两个半圆", "两个正方形", "两个三角形", "两个长方形"], answer: 0 },
+    { text: "一排 5 个小朋友，小红排在第 3 个，她后面有（ ）人", options: ["1 人", "2 人", "3 人", "4 人"], answer: 1 },
+    { text: "地图通常是「上北下南，左西右东」，那么地图的上方表示（ ）方", options: ["南", "北", "东", "西"], answer: 1 },
+  ],
+};
+
+/**
+ * v176 学段分卷：高中版（更抽象：三段论/必要条件/否定后件、高中数学、成语典故与语病、立体几何与解析几何）。
+ */
+const BANK_SENIOR: Record<Multi5Key, Multi5BankItem[]> = {
+  reasoning: [
+    { text: "找规律填数：2，6，12，20，30，（ ）", options: ["36", "40", "42", "48"], answer: 2 },
+    { text: "找规律填数：2，3，5，9，17，（ ）", options: ["31", "32", "33", "34"], answer: 2 },
+    { text: "「所有金属都能导电，铜是金属」，由此可以推出（ ）", options: ["铜能导电", "铜不能导电", "能导电的都是金属", "无法确定"], answer: 0 },
+    { text: "「只有年满 18 周岁，才拥有选举权」。已知小李拥有选举权，那么（ ）", options: ["小李一定年满 18 周岁", "小李不一定满 18 周岁", "小李没有选举权", "无法判断"], answer: 0 },
+    { text: "「如果努力学习，成绩就会进步」。已知小李的成绩没有进步，那么可以推出（ ）", options: ["小李很努力", "小李没有努力学习", "小李的成绩会一直退步", "无法判断"], answer: 1 },
+    { text: "找规律填数：3，5，9，15，23，（ ）", options: ["30", "31", "33", "35"], answer: 2 },
+    { text: "「医生」之于「医院」，如同「教师」之于（ ）", options: ["教室", "学生", "学校", "课本"], answer: 2 },
+    { text: "「有些学生是团员，所有团员都佩戴团徽」，由此可以推出（ ）", options: ["所有学生都佩戴团徽", "有些学生佩戴团徽", "佩戴团徽的都是学生", "没有团员佩戴团徽"], answer: 1 },
+  ],
+  detail: [
+    { text: "下面哪一组数字与「8642093175」完全相同？", options: ["8642093175", "8642903175", "8642093751", "8462093175"], answer: 0 },
+    { text: "在数字串「885888」中，数字 8 出现了（ ）次", options: ["4 次", "5 次", "6 次", "3 次"], answer: 1 },
+    { text: "下列词语中书写正确的一项是（ ）", options: ["一如既往", "一如即往", "一如继往", "一如暨往"], answer: 0 },
+    { text: "「不以为然」中的「然」意思是（ ）", options: ["然后", "对、正确", "然而", "这样"], answer: 1 },
+    { text: "下列词语中书写正确的一项是（ ）", options: ["再接再厉", "再接再励", "再接再历", "再接再砺"], answer: 0 },
+    { text: "下列英语单词拼写正确的一项是（ ）", options: ["necesary", "necessary", "neccessary", "necassary"], answer: 1 },
+    { text: "下列诗句与「无边落木萧萧下，不尽长江滚滚来」完全相同的一项是（ ）", options: ["无边落木萧萧下，不尽长江滚滚来", "无边落木箫箫下，不尽长江滚滚来", "无边落木萧萧下，不尽长江衮衮来", "无边落木潇潇下，不尽长江滚滚来"], answer: 0 },
+    { text: "下列句子中没有语病的一项是（ ）", options: ["通过这次活动，使我明白了合作的重要。", "能否取得好成绩，关键在于平时要努力学习。", "我们要养成爱读书、读好书的习惯。", "他经常回忆过去的往事，感慨良多。"], answer: 2 },
+  ],
+  number: [
+    { text: "lg 100 = （ ）", options: ["1", "2", "10", "100"], answer: 1 },
+    { text: "等差数列首项为 2、公差为 3，第 5 项是（ ）", options: ["12", "13", "14", "15"], answer: 2 },
+    { text: "向量 a = (1, 2)，向量 b = (3, -1)，则 a + b = （ ）", options: ["(4, 1)", "(3, 2)", "(2, 3)", "(4, -3)"], answer: 0 },
+    { text: "掷一枚均匀骰子，掷出偶数点的概率是（ ）", options: ["1/6", "1/3", "1/2", "2/3"], answer: 2 },
+    { text: "已知 f(x) = x²，则 f(3) = （ ）", options: ["3", "6", "9", "27"], answer: 2 },
+    { text: "等比数列 2，6，18，（ ）", options: ["30", "36", "54", "72"], answer: 2 },
+    { text: "sin 30° = （ ）", options: ["1/2", "√2/2", "√3/2", "1"], answer: 0 },
+    { text: "已知 f(x) = x³，则导数 f′(x) = （ ）", options: ["x²", "3x²", "3x", "2x"], answer: 1 },
+  ],
+  verbal: [
+    { text: "「耳濡目染」中「濡」的意思是（ ）", options: ["沾染、受影响", "滋润", "流水", "停滞"], answer: 0 },
+    { text: "下列句子中成语使用恰当的一项是（ ）", options: ["他是莘莘学子中的一员，学习非常刻苦。", "这部小说的结尾差强人意，让人失望透顶。", "面对损害公共利益的行为，我们不能熟视无睹。", "他义愤填膺地表扬了拾金不昧的同学。"], answer: 2 },
+    { text: "「不刊之论」的意思是（ ）", options: ["不能刊登的言论", "不可改动、内容正确的言论", "尚未发表的言论", "篇幅很短的言论"], answer: 1 },
+    { text: "「望其项背」通常用于否定句，意思是（ ）", options: ["看得见对方的后背", "能够赶得上、比得上", "远远地落在后面", "紧随其后"], answer: 1 },
+    { text: "「为了达成共识，双方必须加强___。」中应填入（ ）", options: ["沟通", "勾通", "串同", "连通"], answer: 0 },
+    { text: "「汗牛充栋」形容的是（ ）", options: ["汗水很多", "藏书非常丰富", "房屋高大宽敞", "车马往来众多"], answer: 1 },
+    { text: "「抛砖引玉」属于（ ）", options: ["敬辞", "谦辞", "贬义词", "中性词"], answer: 1 },
+    { text: "下列词语中，感情色彩与其他三个不同的是（ ）", options: ["狡猾", "奸诈", "虚伪", "聪明"], answer: 3 },
+  ],
+  spatial: [
+    { text: "圆柱体的主视图（从正面平视）是（ ）", options: ["圆形", "长方形", "三角形", "梯形"], answer: 1 },
+    { text: "一个正方体一共有（ ）条棱", options: ["6 条", "8 条", "12 条", "16 条"], answer: 2 },
+    { text: "平面向量 (0, -3) 的方向指向（ ）", options: ["上方", "下方", "左方", "右方"], answer: 1 },
+    { text: "直线 y = -x + 1 的图像不经过第（ ）象限", options: ["一", "二", "三", "四"], answer: 2 },
+    { text: "用一个平面去截球体，截面是（ ）", options: ["圆", "椭圆", "三角形", "梯形"], answer: 0 },
+    { text: "一个正四面体一共有（ ）个顶点", options: ["3 个", "4 个", "5 个", "6 个"], answer: 1 },
+    { text: "把抛物线 y = x² 绕 y 轴旋转一周，得到的几何体是（ ）", options: ["球面", "抛物面", "圆柱面", "圆锥面"], answer: 1 },
+    { text: "一支箭头指向右方，先顺时针旋转 90°，再顺时针旋转 90°，最终指向（ ）", options: ["上方", "右方", "下方", "左方"], answer: 3 },
+  ],
+};
+
+/** v176 三套学段题库。 */
+const BANKS: Record<"小学" | "初中" | "高中", Record<Multi5Key, Multi5BankItem[]>> = {
+  小学: BANK_PRIMARY,
+  初中: BANK_JUNIOR,
+  高中: BANK_SENIOR,
+};
+
+/** 多元智能五项施测学段。 */
+export const MULTI5_STAGES = ["小学", "初中", "高中"] as const;
+export type Multi5Stage = (typeof MULTI5_STAGES)[number];
+
+/** 按学段取题库（未知学段默认初中版，与原单卷一致）。 */
+export function multi5QuestionsFor(stage: string | null | undefined): Multi5Question[] {
+  const bank = BANKS[(stage as Multi5Stage) ?? "初中"] ?? BANK_JUNIOR;
+  return MULTI5_DIM_ORDER.flatMap((dim) => bank[dim].map((q) => ({ ...q, dim }))).map((q, i) => ({ ...q, no: i + 1 }));
+}
+
+/** 多元智能五项客观题库（初中版）：40 道单选题，每维 8 题，按维度分组排列。 */
+export const MULTI5_QUESTIONS: Multi5Question[] = multi5QuestionsFor("初中");
 
 /** 每维题数。 */
 export const MULTI5_PER_DIM = 8;
@@ -140,9 +273,10 @@ export const MULTI5_PER_DIM = 8;
  * - 细心指数 = 全卷正确率（取整）；
  * - 综合水平 = 五维均值（取整）。
  */
-export function scoreMulti5(answers: number[]): Multi5Result {
-  if (answers.length !== MULTI5_QUESTIONS.length) {
-    throw new Error(`多元智能五项测评题数应为 ${MULTI5_QUESTIONS.length}，实际 ${answers.length}`);
+export function scoreMulti5For(stage: string | null | undefined, answers: number[]): Multi5Result {
+  const QUESTIONS = multi5QuestionsFor(stage);
+  if (answers.length !== QUESTIONS.length) {
+    throw new Error(`多元智能五项测评题数应为 ${QUESTIONS.length}，实际 ${answers.length}`);
   }
   const correct: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
   const total: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
@@ -150,7 +284,7 @@ export function scoreMulti5(answers: number[]): Multi5Result {
     if (!Number.isInteger(raw) || raw < 0 || raw > 3) {
       throw new Error(`第 ${i + 1} 题的选项应在 0-3 之间，实际 ${raw}`);
     }
-    const q = MULTI5_QUESTIONS[i];
+    const q = QUESTIONS[i];
     total[q.dim] += 1;
     if (raw === q.answer) correct[q.dim] += 1;
   });
@@ -160,10 +294,16 @@ export function scoreMulti5(answers: number[]): Multi5Result {
   }, {} as Record<Multi5Key, number>);
   const overall = Math.round(MULTI5_DIM_ORDER.reduce((s, k) => s + dims[k], 0) / MULTI5_DIM_ORDER.length);
   const carefulIndex = Math.round(
-    (MULTI5_DIM_ORDER.reduce((s, k) => s + correct[k], 0) / MULTI5_QUESTIONS.length) * 100,
+    (MULTI5_DIM_ORDER.reduce((s, k) => s + correct[k], 0) / QUESTIONS.length) * 100,
   );
   const perDim = MULTI5_DIM_ORDER.map((key) => ({ key, correct: correct[key], total: total[key] }));
-  return { dims, overall, carefulIndex, perDim };
+  const stageLabel = (MULTI5_STAGES as readonly string[]).includes(stage ?? "") ? (stage as Multi5Stage) : "初中";
+  return { dims, overall, carefulIndex, perDim, stage: stageLabel };
+}
+
+/** 兼容旧调用：默认初中版计分。 */
+export function scoreMulti5(answers: number[]): Multi5Result {
+  return scoreMulti5For("初中", answers);
 }
 
 /* ---------------- 报告文案 ---------------- */

@@ -79,6 +79,7 @@ export function normalizeReportKinds(raw: unknown): string[] | null {
  * "all" 表示全部测评。未勾选的测评在客户端隐藏，由伴学师后台推送（releasedAssessments）后开放。
  */
 export const INVITE_ASSESS_KINDS = [
+  { key: "subject4d", label: "学科四维测评（智慧生涯）" },
   { key: "mbti", label: "MBTI 性格快测" },
   { key: "disc", label: "DISC 行为风格" },
   { key: "e3", label: "E3 学业诊断" },

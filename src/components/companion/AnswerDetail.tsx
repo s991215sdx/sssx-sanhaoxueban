@@ -19,7 +19,7 @@ import {
   type E3V37Stage,
 } from "@contracts/e3v37";
 import { MULTI_RATINGS } from "@contracts/multi";
-import { MULTI5_QUESTIONS, MULTI5_DIM_LABEL } from "@contracts/multi5";
+import { multi5QuestionsFor, MULTI5_DIM_LABEL } from "@contracts/multi5";
 
 const LIFE_EVENT_LEVEL = ["没发生", "轻度", "中度", "重度"] as const;
 
@@ -348,12 +348,18 @@ function E3V37Detail({ answers }: { answers: E3V37Input }) {
   );
 }
 
-/** 客观题（multi5）逐题明细：显示所选选项与对错。 */
-function Multi5Detail({ answers }: { answers: number[] }) {
+/** 客观题（multi5）逐题明细：显示所选选项与对错。v176：支持 { stage, picks } 学段版作答，旧记录为纯数组（初中版）。 */
+function Multi5Detail({ answers }: { answers: number[] | { stage?: string; picks?: number[] } }) {
+  const stage = Array.isArray(answers) ? undefined : answers?.stage;
+  const picks = Array.isArray(answers) ? answers : (answers?.picks ?? []);
+  const QS = multi5QuestionsFor(stage ?? null);
   return (
     <div className="max-h-96 space-y-1.5 overflow-y-auto pr-1">
-      {MULTI5_QUESTIONS.map((q, i) => {
-        const picked = answers[i];
+      {stage && (
+        <p className="text-[11.5px] text-olive-mute">本卷为{stage}版题目（按作答时的学段下发）。</p>
+      )}
+      {QS.map((q, i) => {
+        const picked = picks[i];
         const ok = picked === q.answer;
         return (
           <div

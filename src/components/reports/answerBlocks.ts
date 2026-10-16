@@ -31,7 +31,7 @@ import {
   E3V37P_MIRROR_QUESTIONS,
   E3V37P_MIRROR_HINTS,
 } from "@contracts/e3v37Parent";
-import { MULTI5_QUESTIONS } from "@contracts/multi5";
+import { multi5QuestionsFor } from "@contracts/multi5";
 import { ANCHOR_RATINGS } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS } from "@contracts/holland";
 import {
@@ -263,13 +263,17 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
         note: "家庭 9 题 + 条件观察 7 行（红色=家长认为较差）+ 认知对照 16 题（0=不了解，红色为 1-2 低分项）。",
         rows,
       });
-    } else if (r.kind === "multi5" && Array.isArray(r.answers)) {
-      const a = r.answers as number[];
+    } else if (r.kind === "multi5" && (Array.isArray(r.answers) || (r.answers && typeof r.answers === "object" && Array.isArray((r.answers as { picks?: unknown }).picks)))) {
+      // v176：新作答存 { stage, picks }（学段版题库），旧记录为纯数组（初中版）
+      const raw = r.answers as number[] | { stage?: string; picks: number[] };
+      const stage = Array.isArray(raw) ? undefined : raw.stage;
+      const a = Array.isArray(raw) ? raw : raw.picks;
+      const QS = multi5QuestionsFor(stage ?? null);
       blocks.push({
         key: "multi5",
-        title: `多元智能五项（客观题）· ${a.length} 题（${date}）`,
+        title: `多元智能五项（客观题${stage ? ` · ${stage}版` : ""}）· ${a.length} 题（${date}）`,
         note: "客观作答；红色为答错的题，括号内为正确选项。",
-        rows: MULTI5_QUESTIONS.map((q, i) => {
+        rows: QS.map((q, i) => {
           const v = a[i];
           const letters = ["A", "B", "C", "D"];
           const ok = v === q.answer;

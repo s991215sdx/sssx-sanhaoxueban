@@ -123,7 +123,7 @@ export type ReportAssessmentData = {
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
-type Tab = "combined" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent";
+type Tab = "combined" | "zhihui" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent";
 
 /** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
 type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
@@ -132,6 +132,7 @@ type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics"
    新增「学科能力评估」独立报告栏目。 */
 const TABS: { key: Tab; label: string }[] = [
   { key: "combined", label: "综合学习力报告" },
+  { key: "zhihui", label: "三好生涯规划报告" },
   { key: "guidance", label: "升学指导报告" },
   { key: "parent", label: "家长认知冲突报告" },
   { key: "e3", label: "学业诊断报告" },
@@ -2290,12 +2291,18 @@ export default function ReportView({
   profile,
   viewer,
   onEditAcademics,
+  subject4d,
+  studentUserId,
 }: {
   data: ReportAssessmentData | undefined;
   profile?: ReportProfileInfo;
   viewer: "student" | "tutor";
   /** tutor 模式且提供时，成绩 tab 显示「帮TA填写/修改」按钮 */
   onEditAcademics?: () => void;
+  /** v176：学科四维测评结果（三好生涯规划报告栏目摘要用；伴学师查看学员时由抽屉传入） */
+  subject4d?: unknown;
+  /** v176：伴学师查看学员时的学员 userId（三好生涯规划报告栏目直达完整页用） */
+  studentUserId?: number;
 }) {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -2404,7 +2411,7 @@ export default function ReportView({
     if (tab === "disc") return !!(data?.disc && DISC_REPORTS[data.disc.primary]);
     if (tab === "multi5") return !!data?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
-    if (tab === "academics" || tab === "guidance") return false; // 成绩/升学指导 tab 不提供下载（升学指导可系统打印）
+    if (tab === "academics" || tab === "guidance" || tab === "zhihui") return false; // 成绩/升学指导/生涯规划 tab 不提供下载（升学指导可系统打印；生涯规划在完整页内下载）
     if (tab === "subject") return !!data?.subject; // window.print 直接可用
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
     if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);
@@ -2428,6 +2435,7 @@ export default function ReportView({
       parent: "家长认知冲突报告（亲子对照与沟通建议）",
       combined: "综合学习力报告",
       guidance: "升学指导综合报告",
+      zhihui: "三好生涯规划报告",
     };
     const title = TAB_TITLE[tab];
     const studentName = profile?.name ?? undefined;
@@ -2628,6 +2636,64 @@ export default function ReportView({
       {/* 打印根：window.print() 时仅显示此区域，保证 PDF 与页面所见完全一致。
           v93：桌面端整体放大 1.15 倍（zoom），字号/图表同比变大，阅读不用眯眼；打印与移动端保持原尺寸 */}
       <div id="report-print-root" className="report-view-zoom space-y-4">
+      {/* v176：三好生涯规划报告栏目——完整报告为独立页面，这里展示摘要与直达入口 */}
+      {tab === "zhihui" &&
+        (() => {
+          const s4d = subject4d as {
+            subjects?: Record<string, { 兴趣: number; 能力倾向: number; 观念: number; 效能感: number; 潜力指数: number }>;
+          } | null | undefined;
+          const top = s4d?.subjects
+            ? Object.entries(s4d.subjects).sort((a, b) => (b[1]?.潜力指数 ?? 0) - (a[1]?.潜力指数 ?? 0)).slice(0, 3)
+            : [];
+          const openFull = () => {
+            if (viewer === "tutor" && studentUserId != null) {
+              window.open(`/zhihui-report?studentId=${studentUserId}`, "_blank", "noopener");
+            } else {
+              navigate("/zhihui-report");
+            }
+          };
+          return (
+            <div className="paper-card accent-l space-y-4 border-[#0C7064]/30 p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0C7064] text-cream">
+                  <Compass size={22} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[16px] font-bold text-olive">三好生涯规划报告</h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                    选科推荐 · 九科四维解读 · 专业职业详解 · 目标院校分差 · 升学路径 · 分年级规划，基于学科四维测评与霍兰德职业兴趣测评自动生成，与学生端完全一致。
+                  </p>
+                </div>
+              </div>
+              {top.length > 0 ? (
+                <div className="rounded-xl bg-cream/70 p-3.5">
+                  <div className="text-[12px] font-semibold text-olive-mute">学科潜力 Top 3（九科四维画像已生成）</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {top.map(([n, v], i) => (
+                      <span key={n} className="chip !text-[11.5px]">
+                        {i + 1}. {n} · 潜力 {v.潜力指数?.toFixed?.(1) ?? v.潜力指数}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-xl bg-butter-pale/60 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-olive-soft">
+                  {viewer === "tutor"
+                    ? "学员还未完成学科四维测评，完成本栏目后自动汇总生涯规划报告。"
+                    : "你还未完成学科四维测评（9 科 × 4 维，约 15 分钟），做完即可生成完整的三好生涯规划报告。"}
+                </p>
+              )}
+              <button
+                onClick={openFull}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0C7064] py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#0a5c52]"
+              >
+                {top.length > 0 ? "查看完整三好生涯规划报告 →" : "去完成学科四维测评，生成报告 →"}
+              </button>
+              <p className="text-center text-[11.5px] text-olive-mute">报告页内可下载 / 打印 PDF，方便交给家长。</p>
+            </div>
+          );
+        })()}
+
       {tab === "guidance" && (
         <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
       )}

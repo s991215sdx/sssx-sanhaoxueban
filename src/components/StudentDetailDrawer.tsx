@@ -36,7 +36,7 @@ export default function StudentDetailDrawer({
     mbti: "MBTI 性格测评", disc: "DISC 行为风格", e3: "学习力诊断", multi: "多元智能",
     multi5: "多元智能五项", anchor: "职业锚", holland: "霍兰德职业兴趣",
     mental: "心理健康·通用版", mentalsdq: "心理健康·学生版A(SDQ)", mentalpa: "心理健康·学生版B(PHQ-A)",
-    scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", e3parent: "家长卷", discparent: "家长版 DISC",
+    scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", subject4d: "学科四维测评（智慧生涯）", e3parent: "家长卷", discparent: "家长版 DISC",
   };
   /** 宽屏模式：电脑上默认右半屏抽屉，可一键放大到全屏阅读报告。 */
   const [wide, setWide] = useState(false);
@@ -206,10 +206,43 @@ export default function StudentDetailDrawer({
                   if (a.optional?.mentalpa) names.push("心理健康·学生版B(PHQ-A)");
                   if (a.optional?.scl90) names.push("心理健康·深度评估(SCL-90)");
                   if (a.optional?.subject) names.push("学科能力评估");
+                  if (a.optional?.subject4d) names.push("学科四维测评（智慧生涯）");
                   if (a.e3parent) names.push("家长卷");
                   return names.length > 0 ? `已测 ${names.length} 项：${names.join("、")}` : "还没有测评结果。";
                 })()}
               </p>
+              {/* v176：学科四维测评（智慧生涯）结果摘要——后端已随详情带出，完整解读进三好生涯规划报告 */}
+              {!!data.assessments.optional?.subject4d &&
+                (() => {
+                  const r = data.assessments.optional.subject4d as {
+                    subjects?: Record<string, { 兴趣: number; 能力倾向: number; 观念: number; 效能感: number; 潜力指数: number }>;
+                  };
+                  const top = Object.entries(r.subjects ?? {})
+                    .sort((a, b) => (b[1]?.潜力指数 ?? 0) - (a[1]?.潜力指数 ?? 0))
+                    .slice(0, 3);
+                  return (
+                    <div className="mt-3 rounded-xl border border-[#0C7064]/25 bg-[#0C7064]/5 p-3.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-[13px] font-bold text-olive">学科四维测评（智慧生涯）· 已生成九科四维画像</div>
+                        <button
+                          onClick={() => window.open(`/zhihui-report?studentId=${userId}`, "_blank", "noopener")}
+                          className="shrink-0 rounded-lg bg-[#0C7064] px-2.5 py-1 text-[11.5px] font-bold text-white hover:bg-[#0a5c52]"
+                        >
+                          看生涯规划报告 →
+                        </button>
+                      </div>
+                      {top.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {top.map(([n, v]) => (
+                            <span key={n} className="chip !text-[11px]">
+                              潜力 Top：{n} {v.潜力指数?.toFixed?.(1) ?? v.潜力指数}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               {reportOpen && (
                 <div className="mt-3">
                   {(() => {
@@ -227,6 +260,8 @@ export default function StudentDetailDrawer({
                         }}
                         profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as any }}
                         viewer="tutor"
+                        subject4d={data.assessments.optional?.subject4d ?? null}
+                        studentUserId={userId}
                         onEditAcademics={() => {
                           setEditAcad(true);
                           document.getElementById("drawer-academics-editor")?.scrollIntoView({ behavior: "smooth" });
