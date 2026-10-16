@@ -319,7 +319,7 @@ export default function CombinedV39Report({
       const bottomH = bottomEl?.offsetHeight ?? 128;
       if (legendEl) legendEl.style.top = `${bottomTop + bottomH + 24}px`;
       const H = bottomTop + bottomH + 70;
-      stage.style.height = `${H}px`;
+      if (stage.style.height !== `${H}px`) stage.style.height = `${H}px`;
       /* 连线（设计坐标系 788 宽） */
       const lines: { pts: string; head: string }[] = [];
       Object.entries(RIGHT_ANCHORS).forEach(([key, [x, y]]) => {
@@ -339,9 +339,15 @@ export default function CombinedV39Report({
         const envCy = bottomTop + envCard.offsetTop + envCard.offsetHeight / 2;
         lines.push({ pts: `223,394 246,394 246,${envCy} 314,${envCy}`, head: "223,394" });
       }
-      setGeom({ H, lines });
+      setGeom((prev) => {
+        const same = prev && prev.H === H && JSON.stringify(prev.lines) === JSON.stringify(lines);
+        return same ? prev : { H, lines };
+      });
       const wrap = wrapRef.current;
-      if (wrap) setScale(Math.min(1, wrap.clientWidth / STAGE_W));
+      if (wrap) {
+        const s = Math.min(1, wrap.clientWidth / STAGE_W);
+        setScale((prev) => (prev === s ? prev : s));
+      }
     };
     measure();
     window.addEventListener("resize", measure);
