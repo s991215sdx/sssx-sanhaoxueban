@@ -375,10 +375,12 @@ export default function AssessmentCenter() {
     return <ZhihuiSuite onExit={() => setZhihuiOpen(false)} />;
   }
 
-  /* v181d：两个推荐入口受渠道套餐全量权限控制——
+  /* v181e：两个推荐入口受渠道套餐全量权限控制——
      套餐完整包含该向导全部测评时才对注册学员显示；否则页面只展示套餐内的测评列表。
-     老用户/后台建号不限制（fail-open）。 */
-  const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "mentalsdq", "multi5"].every((k) => visibleSet.has(k));
+     老用户/后台建号不限制（fail-open）。
+     学习力测评的套件口径 = 渠道可勾选的四种核心测评（MBTI/DISC/E3/智能五项）；
+     心理健康A版在向导内可跳过、且不是渠道可单独勾选的种类，不计入门槛。 */
+  const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
   const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland", "anchor"].every((k) => visibleSet.has(k));
 
   return (

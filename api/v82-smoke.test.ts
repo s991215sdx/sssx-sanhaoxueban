@@ -83,10 +83,10 @@ describe("v82 前端接线", () => {
     need(src, "queueDone", "完成一项自动下一个");
     need(src, "hiddenCount", "隐藏测评提示");
   });
-  it("注册落地页：注册成功带队列跳测评中心", () => {
+  it("注册落地页：注册成功落到测评中心自选（v181e 起不再自动连测）", () => {
     const src = read("src/pages/InviteRegister.tsx");
-    need(src, "assessQueue", "注册响应取队列");
-    need(src, "/assessments?queue=", "队列跳转");
+    need(src, 'navigate("/assessments", { replace: true })', "注册后跳测评中心");
+    if (src.includes("assessQueue")) throw new Error("v181e：注册不应再自动进入连测队列（assessQueue 已移除）");
   });
   it("建码页：测评套餐编辑器 + 编辑入口", () => {
     const src = read("src/components/admin/InviteChannelsTab.tsx");

@@ -86,7 +86,9 @@ function BasicsGate({ children }: { children: React.ReactNode }) {
           </p>
         </div>
         <div className="mt-4">
-          <ProfileStage onNext={() => window.location.reload()} />
+          {/* v181e：基本信息完成后落到测评中心（不带 queue 参数），由学员自己选要做的测评组合；
+             用整页跳转而非 reload，避免重新触发注册套餐的连测队列。 */}
+          <ProfileStage onNext={() => window.location.replace("/assessments")} />
         </div>
       </div>
     );
@@ -104,7 +106,9 @@ function ModuleGate({ children }: { children: React.ReactNode }) {
   const mods = profile?.enabledModules;
   if (mods != null) {
     const key = moduleForPath(location.pathname);
-    if (key === "home" || (key != null && key !== "assessments" && !mods.includes(key))) {
+    /* v181e：报告模块不再受模块开关限制——注册学员做完测评后应能进入报告中心，
+       报告内容本身仍由页内发布状态（reportReleased / 渠道放行）控制，不会泄漏。 */
+    if (key === "home" || (key != null && key !== "assessments" && key !== "report" && !mods.includes(key))) {
       return <Navigate to="/assessments" replace />;
     }
   }

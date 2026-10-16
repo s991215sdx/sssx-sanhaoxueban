@@ -40,15 +40,28 @@ describe("v181 双轨测评中心", () => {
 
   it("v181d：两个推荐入口受渠道套餐全量权限控制", () => {
     const src = read("src/pages/AssessmentCenter.tsx");
-    // 学习力测评：套餐须含 MBTI/DISC/E3/心理健康A版/智能五项 全套
-    expect(src).toMatch(/\["mbti", "disc", "e3", "mentalsdq", "multi5"\]\.every/);
+    // 学习力测评：渠道可勾选的核心四种须全套（MBTI/DISC/E3/智能五项；心理健康A版可跳过、非渠道可勾种类）
+    expect(src).toMatch(/\["mbti", "disc", "e3", "multi5"\]\.every/);
     // 选科及升学规划测评：套餐须含 学科四维/霍兰德/职业锚 全套
     expect(src).toMatch(/\["subject4d", "holland", "anchor"\]\.every/);
     expect(src).toContain("更多测评");
     expect(src).toContain("assessment-list");
   });
 
-  it("v181d：九能档色只按分值（红<3.0/黄3.0-3.7/绿≥3.8），强制卡点不改色", () => {
+  it("v181e：注册/基本信息后落到测评中心自选（不再自动连测）", () => {
+    const ir = read("src/pages/InviteRegister.tsx");
+    expect(ir).toContain('navigate("/assessments", { replace: true })');
+    expect(ir).not.toContain("queue=");
+    const app = read("src/App.tsx");
+    expect(app).toContain('window.location.replace("/assessments")');
+  });
+
+  it("v181e：报告模块不受模块开关限制（学员做完测评可进报告中心）", () => {
+    const app = read("src/App.tsx");
+    expect(app).toMatch(/key !== "assessments" && key !== "report"/);
+  });
+
+  it("v181e：九能档色只按分值（红<3.0/黄3.0-3.7/绿≥3.8），强制卡点不改色", () => {
     const fw = read("src/components/reports/SystemFramework.tsx");
     // UnitBlock 必须按分数判定档位，而不是直接用 unit.level
     expect(fw).toMatch(/frameworkScoreLevel\(unit\.score\)/);
@@ -119,8 +132,12 @@ describe("v181 双轨测评中心", () => {
       const lines = read(p).split("\n");
       const hookAt = lines.findIndex((l) => l.includes("useScrollToQuestion("));
       expect(hookAt, `${p} 缺少 useScrollToQuestion`).toBeGreaterThanOrEqual(0);
-      const earlyReturn = lines.slice(0, hookAt).findIndex((l) => l.startsWith("  return "));
-      expect(earlyReturn, `${p} 的 useScrollToQuestion 位于提前 return 之后，会导致换分支时 hook 数量变化白屏`).toBe(-1);
+      // 结果卡提前 return（含嵌套在 if 块内、4 空格缩进的 return）是 hook 顺序问题的根源，
+      // 断言 hook 位于文件里第一个「if (submit.isSuccess」之前。
+      const resultCardAt = lines.findIndex((l) => l.includes("if (submit.isSuccess"));
+      if (resultCardAt >= 0) {
+        expect(hookAt, `${p} 的 useScrollToQuestion 位于结果卡提前 return 之后，做完测评会白屏`).toBeLessThan(resultCardAt);
+      }
     }
   });
 });

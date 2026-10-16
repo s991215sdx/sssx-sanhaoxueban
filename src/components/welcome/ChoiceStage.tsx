@@ -39,6 +39,8 @@ export default function ChoiceStage({
   // 作答进度挂草稿：误退出后回来接着答，不用重测
   const [idx, setIdx] = useDraftState<number>(kind, "idx", 0);
   const [answers, setAnswers] = useDraftState<(0 | 1)[]>(kind, "answers", []);
+  /* v181：换题自动定位到题目+选项区域。必须位于结果卡提前 return 之前，防止 hook 数量变化白屏 */
+  const qRef = useScrollToQuestion(idx);
   // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
   const [resumed, setResumed] = useDraftResumed(user?.id, kind, "answers");
   const resetAll = () => {
@@ -102,8 +104,6 @@ export default function ChoiceStage({
 
   /* ------- 作答中 ------- */
   const q = questions?.[Math.min(idx, total - 1)];
-  /* v181：换题自动定位到题目+选项区域 */
-  const qRef = useScrollToQuestion(idx);
   return (
     <div className="paper-card p-6">
       <div className="flex items-center justify-between">

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import { QrCode } from "lucide-react";
 import { trpc } from "@/providers/trpc";
-import { INVITE_ASSESS_KINDS } from "@contracts/invite";
 
 /**
  * 邀请注册落地页（公开，扫码直达）：/invite/{渠道码}
@@ -22,14 +21,10 @@ export default function InviteRegister() {
   const register = trpc.invite.registerWithInvite.useMutation({
     onSuccess: async (res) => {
       await utils.invalidate();
-      /* v82：渠道绑定了测评套餐 → 注册成功直接进一站式连测（"all" 展开为全部测评，按渠道勾选的顺序） */
-      const raw = res.assessQueue ?? [];
-      const queue = raw.includes("all") ? INVITE_ASSESS_KINDS.map((k) => k.key) : raw;
-      if (queue.length > 0) {
-        navigate(`/assessments?queue=${queue.join(",")}`, { replace: true });
-      } else {
-        navigate("/assessments", { replace: true });
-      }
+      /* v181e：注册成功统一落到测评中心，由学员自己选「学习力测评 / 选科及升学规划测评 / 更多测评」；
+         不再自动进入渠道套餐连测队列（queue 深链仍保留给伴学师推送等场景手动使用）。 */
+      void res;
+      navigate("/assessments", { replace: true });
     },
     onError: (err) => setError(err.message || "注册失败，请重试"),
   });
