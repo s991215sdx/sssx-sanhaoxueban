@@ -372,7 +372,7 @@ export default function ZhihuiReport() {
   return (
     <div className="zh-root" id="report-print-root">
       <style>{ZH_CSS}</style>
-      <div className="mb-4 flex items-center gap-3 no-print">
+      <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
         <h1 className="text-[20px] font-bold text-olive">选科及升学规划报告</h1>
         <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade} · 报告编号 {reportNo}</span>
         <button type="button" onClick={() => window.print()} className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime">
@@ -388,7 +388,7 @@ export default function ZhihuiReport() {
           <div style={{ marginTop: 26, width: 64, height: 4, background: C.brand, borderRadius: 2 }} />
           <p style={{ marginTop: 26, color: C.oliveSoft, fontSize: 15, lineHeight: 2.2 }}>认识自我 · 认识世界 · 树立目标 · 制定计划</p>
         </div>
-        <div className="card" style={{ width: 340 }}>
+        <div className="card cover-card" style={{ width: 340 }}>
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "10px 22px", fontSize: 14 }}>
             <span className="muted">姓　　名</span><span style={{ fontWeight: 600 }}>{data.student.name}</span>
             <span className="muted">年　　级</span><span style={{ fontWeight: 600 }}>{grade}</span>
@@ -406,9 +406,9 @@ export default function ZhihuiReport() {
           亲爱的{data.student.name}同学，你好！这份报告基于你完成的<b>学科四维测评</b>{holland ? "与<b>职业兴趣测评</b>" : ""}，从学科表现、专业方向、职业倾向三个层面，帮助你认识自己、了解世界、树立目标。测评结果没有好坏之分，它只是一面镜子，为你接下来的选科与升学规划提供参考。
         </p>
         <SecTitle n={1} title="学科表现金字塔模型" sub="学科表现 = 兴趣 + 能力倾向 + 观念 + 效能感" />
-        <div className="card" style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
+        <div className="card flexrow" style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
           <PyramidChart />
-          <div style={{ width: 330, fontSize: 13, lineHeight: 2.1 }}>
+          <div className="side-col" style={{ width: 330, fontSize: 13, lineHeight: 2.1 }}>
             <p><b style={{ color: "#E4572E" }}>学科兴趣 · 船舵</b>——决定你在学科学习中的发展方向。</p>
             <p><b style={{ color: "#C77F0E" }}>学科能力倾向 · 动力系统</b>——学好该学科的能力、策略与方法。</p>
             <p><b style={{ color: "#8E6BC0" }}>学科观念 · 指南针</b>——是否理解为什么学、能否学以致用。</p>
@@ -422,10 +422,12 @@ export default function ZhihuiReport() {
           {DIM_KEYS.map((d, i) => (<span key={d}><i style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: DIMC[i], marginRight: 5 }} />{SUBJECT4D_DIM_LABEL[d]}</span>))}
         </div>
         <SecTitle n={3} title="现在的成绩" sub="最近一次校内考试（档案录入）" />
+        <div className="tw">
         <table>
           <thead><tr><th>学科</th>{academics.map((a) => <th key={a.name}>{a.name}</th>)}</tr></thead>
           <tbody><tr><td><b>分数</b></td>{academics.map((a) => <td key={a.name}>{a.lastScore ?? "—"}</td>)}</tr></tbody>
         </table>
+        </div>
       </Page>
 
       {/* 3 霍兰德 + SOU */}
@@ -468,12 +470,12 @@ export default function ZhihuiReport() {
         <SecTitle n={8} title="推荐选科组合" sub="3+1+2 模式 · 依据学科潜力指数与 SOU 筛选" />
         {combos ? (
           <>
-            <div className="card" style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
+            <div className="card flexrow" style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
               <div style={{ textAlign: "center" }}>
                 <span style={{ display: "inline-block", background: C.brand, color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 14px", borderRadius: 99, marginBottom: 10 }}>第一推荐</span>
                 <Donut combo={combos.c1} />
               </div>
-              <div style={{ width: 400, fontSize: 14, lineHeight: 2.2 }}>
+              <div className="side-col" style={{ width: 400, fontSize: 14, lineHeight: 2.2 }}>
                 {combos.c1.map(([sub, tag], i) => (<div key={sub}><i style={{ display: "inline-block", width: 12, height: 12, borderRadius: 3, background: DIMC[i === 0 ? 0 : i], marginRight: 8 }} />{tag} · <b>{sub}</b></div>))}
                 <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>首选{combos.c1[0]![0]}覆盖最广的专业面；再选按学科潜力指数排序（物理首选时化学加权优先，满足绝大多数理工类「物理+化学」选考要求）。</p>
               </div>
@@ -487,10 +489,12 @@ export default function ZhihuiReport() {
         <SecTitle n={9} title="距离目标还有多远" sub={exp?.school ? `目标：${exp.school}${exp.majorCat ? ` · ${exp.majorCat}` : ""}` : "填写未来期望后生成分差表"} />
         {exp?.school && targetRows.length ? (
           <>
+            <div className="tw">
             <table>
               <thead><tr><th>院校专业组</th><th>专业</th><th>2025 最低分</th><th>2025 最低位次</th><th>2026 预估位次</th></tr></thead>
               <tbody>{targetRows.map((r) => (<tr key={r.id}><td style={{ textAlign: "left", paddingLeft: 14 }}>{r.school}（{r.groupName}）</td><td style={{ textAlign: "left", paddingLeft: 14 }}>{r.major}</td><td>{r.y1Min ?? "—"}</td><td>{r.y1Rank ?? "—"}</td><td>{r.estRank26 ?? "—"}</td></tr>))}</tbody>
             </table>
+            </div>
             <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>数据来源：广东院校专业分数库 · 近三年录取明细与 2026 预估位次，每年随录取数据更新。</p>
           </>
         ) : <p className="muted">{exp?.school ? "目标院校近三年录取数据匹配中，可联系伴学师在资料库核对。" : "在「未来期望」填写目标院校后，这里会生成真实分差对照表。"}</p>}
@@ -518,7 +522,7 @@ export default function ZhihuiReport() {
                   })}
                 </div>
                 {r.潜力指数 >= 3.8 && (<div className="card" style={{ marginTop: 14 }}><div className="klabel" style={{ marginBottom: 6 }}>优势表现</div><p style={{ fontSize: 13, lineHeight: 2 }}>{SUBJECT4D_OVERALL[name]}</p></div>)}
-                <div className="card" style={{ marginTop: 14, display: "flex", gap: 60, fontSize: 15 }}>
+                <div className="card flexrow" style={{ marginTop: 14, display: "flex", gap: 60, fontSize: 15 }}>
                   <span>当前分数<b style={{ color: C.brandDeep, fontSize: 22, marginLeft: 10 }}>{academics.find((a) => a.name === name)?.lastScore ?? "—"}</b></span>
                   <span>希望达到<b style={{ color: C.brandDeep, fontSize: 22, marginLeft: 10 }}>{academics.find((a) => a.name === name)?.targetScore ?? "—"}</b></span>
                   <span className="muted" style={{ marginLeft: "auto", alignSelf: "center", fontSize: 12 }}>—— 课堂效率 + 错题复盘 + 每周专题训练，一学期后可见明显提升</span>
@@ -541,7 +545,7 @@ export default function ZhihuiReport() {
                 <span style={{ background: C.brand, color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 12px", borderRadius: 99 }}>{g.label}</span>
                 <span style={{ fontSize: 12, color: C.oliveMute }}>{g.sub}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="menlei-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {g.items.map((it) => {
                   const rec = menleiRec[it.n];
                   const open = openMenlei === it.n;
@@ -629,10 +633,12 @@ export default function ZhihuiReport() {
         <SecTitle n={1} title="目标院校规划" sub={exp?.school ? `目标：${exp.school}${exp.majorCat ? ` · ${exp.majorCat}` : ""}` : "填写未来期望后生成冲稳保对照"} />
         {targetRows.length ? (
           <>
+            <div className="tw">
             <table>
               <thead><tr><th>院校（专业组）</th><th>2026 招生专业</th><th>2025 最低分</th><th>2026 预估位次</th></tr></thead>
               <tbody>{targetRows.slice(0, 8).map((r) => (<tr key={r.id}><td style={{ textAlign: "left", paddingLeft: 14 }}>{r.school}<div style={{ fontSize: 11, fontWeight: 400, color: C.oliveMute }}>{r.groupName}</div></td><td style={{ textAlign: "left", paddingLeft: 14 }}>{r.majorFull || r.major}</td><td>{r.y1Min ?? "—"}</td><td>{r.estRank26 ?? "—"}</td></tr>))}</tbody>
             </table>
+            </div>
             <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>冲 / 稳 / 保 按你的当前总分 {totalScore || "—"} 与录取位次对照生成；院校专业分数库每年随广东录取数据更新。</p>
           </>
         ) : <p className="muted">{exp?.school ? "未匹配到该院校近三年录取数据，可联系伴学师在资料库核对院校名称（支持简称）。" : "在「未来期望」填写目标院校后生成。"}</p>}
@@ -707,6 +713,7 @@ export default function ZhihuiReport() {
           return (
             <div key={name} style={{ marginTop: 14 }}>
               <div className="ribbon alt">{name}</div>
+              <div className="tw">
               <table style={{ marginTop: 8 }}>
                 <thead><tr><th style={{ width: 40 }}>题</th><th style={{ textAlign: "left" }}>题目</th><th style={{ width: 100 }}>作答</th></tr></thead>
                 <tbody>
@@ -717,6 +724,7 @@ export default function ZhihuiReport() {
                   </tr>))}
                 </tbody>
               </table>
+              </div>
             </div>
           );
         }) : <p className="muted" style={{ marginTop: 12 }}>完成学科四维测评后，这里展示 108 题逐题作答。</p>}
@@ -775,6 +783,33 @@ const ZH_CSS = `
 table { border-collapse: collapse; width: 100%; }
 th { background: ${C.brandPale}; color: ${C.brandDeep}; font-size: 13px; padding: 10px 8px; border: 1px solid #CDEBDD; }
 td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: center; }
+/* ---------- 移动端阅读优化（≤768px）：满屏书页、栅格堆叠、表格横滑、整体放大 ---------- */
+@media (max-width: 768px) {
+  .zh-root { background: #fff; padding: 0 0 24px; }
+  .zh-page { margin: 0 auto 14px; padding: 26px 16px 36px; max-width: 100%; min-height: auto !important; border-radius: 0; box-shadow: none; border-bottom: 1px solid ${C.line}; zoom: 1.12; }
+  .zh-page svg { max-width: 100%; height: auto; }
+  .pfoot { position: static; margin-top: 26px; padding-top: 10px; border-top: 1px dashed ${C.line}; }
+  .zh-page h2 { font-size: 19px; }
+  .card { padding: 16px 18px; }
+  .muted { font-size: 14px; line-height: 1.95; }
+  .grid2 { grid-template-columns: 1fr; }
+  .menlei-grid { grid-template-columns: 1fr !important; }
+  .flexrow { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+  .side-col, .cover-card { width: auto !important; max-width: 100%; }
+  .sec-title { flex-wrap: wrap; margin: 24px 0 14px; gap: 8px; }
+  .sec-title .sub { margin-left: 0; width: 100%; }
+  .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tw table { min-width: 460px; }
+  th { font-size: 12px; padding: 9px 6px; }
+  td { font-size: 12.5px; padding: 9px 6px; }
+  .pairrow { grid-template-columns: 1fr 20px 1fr; gap: 4px; }
+  .pairrow .a, .pairrow .b { padding: 8px 8px; font-size: 12.5px; }
+  .major-head { flex-wrap: wrap; gap: 8px; }
+  .major-head .tab { font-size: 13px; padding: 6px 14px; }
+  .major-head .idx { font-size: 14px; padding: 6px 14px; }
+  .part-tag { letter-spacing: 2px; }
+  .klabel { letter-spacing: 2px; }
+}
 @media print {
   .no-print { display: none !important; }
   .zh-root { background: #fff; padding: 0; }
