@@ -183,14 +183,17 @@ function BergSvg() {
         <linearGradient id="v39Sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#F7FBF8" /><stop offset="1" stopColor="#E2EFE4" />
         </linearGradient>
+        <filter id="v39Soft" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="#5E8271" floodOpacity=".18" />
+        </filter>
       </defs>
       <rect x="0" y="0" width="430" height="150" fill="url(#v39Sky)" />
       <rect x="0" y="150" width="430" height="490" fill="url(#v39Water)" />
       <path d="M14,144 Q107,137 215,144 T416,144" fill="none" stroke="#C2D8C6" strokeWidth="1.2" opacity=".8" />
       <path d="M14,150 Q107,143 215,150 T416,150" fill="none" stroke="#AECDB4" strokeWidth="1.6" />
       <ellipse cx="215" cy="200" rx="150" ry="42" fill="#A9CBAF" opacity=".4" />
-      <path fill="url(#v39IceAbove)" stroke="#A9C8AE" strokeWidth="1.6" d="M 60,150 C 70,118 108,100 138,86 C 158,74 172,54 200,40 C 214,48 226,62 250,74 C 284,90 340,110 368,150 L 60,150 Z" />
-      <path fill="url(#v39IceBelow)" stroke="#A9C8AE" strokeWidth="1.6" d="M 60,150 C 38,212 56,296 88,392 C 112,472 152,556 215,616 C 270,552 310,470 332,392 C 358,296 376,212 368,150 L 60,150 Z" />
+      <path fill="url(#v39IceAbove)" stroke="#A9C8AE" strokeWidth="1.6" filter="url(#v39Soft)" d="M 60,150 C 70,118 108,100 138,86 C 158,74 172,54 200,40 C 214,48 226,62 250,74 C 284,90 340,110 368,150 L 60,150 Z" />
+      <path fill="url(#v39IceBelow)" stroke="#A9C8AE" strokeWidth="1.6" filter="url(#v39Soft)" d="M 60,150 C 38,212 56,296 88,392 C 112,472 152,556 215,616 C 270,552 310,470 332,392 C 358,296 376,212 368,150 L 60,150 Z" />
       <g stroke="#ffffff" strokeWidth="1.2" opacity=".7" fill="none">
         <path d="M 138,86 C 160,170 178,290 184,420" />
         <path d="M 250,74 C 258,170 262,290 254,410" />
@@ -345,8 +348,11 @@ export default function CombinedV39Report({
       });
       const wrap = wrapRef.current;
       if (wrap) {
-        const s = Math.min(1, wrap.clientWidth / STAGE_W);
+        /* 一屏看全：宽度和高度双向约束（与定稿样例 v9 一致），并回填缩放后的高度避免留白 */
+        const s = Math.min(1, wrap.clientWidth / STAGE_W, (window.innerHeight - 80) / H);
         setScale((prev) => (prev === s ? prev : s));
+        const scaledH = Math.round(H * s + 10);
+        if (wrap.style.height !== `${scaledH}px`) wrap.style.height = `${scaledH}px`;
       }
     };
     measure();
