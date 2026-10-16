@@ -54,7 +54,7 @@ describe("v171 智慧生涯数据底座三库", () => {
 
   it("路由挂载 library 且 BUILD_TAG 递增", () => {
     if (!app.includes("library: libraryRouter")) throw new Error("主路由未挂载 library");
-    if (!app.includes('const BUILD_TAG = "v177-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v175");
+    if (!app.includes('const BUILD_TAG = "v178-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v175");
   });
 
   it("前端四标签页 + 导入仅管理员可见", () => {

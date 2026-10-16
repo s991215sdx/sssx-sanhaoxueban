@@ -28,10 +28,10 @@ export function isPlatformAdmin(user: Pick<User, "role" | "orgId">): boolean {
  * - 平台超管（orgId=null）可管理任意账号（全系统 god mode）；
  * - 机构管理员/伴学师只能管理本机构账号。
  * 用于学员详情、AI 问诊带学员、分配校验、角色设置等跨用户访问点。
+ * v179：不再对 org_id 为 NULL 的账号放行——新机构管理员绝不可见其他机构/平台直客数据。
  */
 export async function sameOrg(db: ReturnType<typeof getDb>, me: Pick<User, "orgId">, targetUserId: number): Promise<boolean> {
   if (me.orgId == null) return true;
   const t = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, targetUserId)).limit(1))[0];
-  /* v93：目标账号 org_id 为 NULL（平台直客/历史账号）对所有机构放行，不再隐身 */
-  return !!t && (t.orgId === me.orgId || t.orgId == null);
+  return !!t && t.orgId === me.orgId;
 }
