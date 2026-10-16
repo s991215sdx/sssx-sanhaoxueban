@@ -11,7 +11,7 @@ import { defaultFullScore } from "@contracts/academics";
 import { isE3V27Result } from "@contracts/assessments";
 import { isE3V37Result } from "@contracts/e3v37";
 import { isE3V37ParentResult } from "@contracts/e3v37Parent";
-import { X, Maximize2, Minimize2, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Maximize2, Minimize2, ChevronDown, ChevronUp, FileText } from "lucide-react";
 
 /**
  * 学员完整详情抽屉：档案 + 学业目标 + 测评摘要（含答题明细）+ 学习数据。
@@ -163,20 +163,32 @@ export default function StudentDetailDrawer({
                   <span className="inline-block h-3.5 w-1 rounded-full bg-[#0C7064]" />
                   <span className="text-[14px] font-bold text-[#1E3530]">测评报告</span>
                 </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {/* v176：主按钮——新标签页打开学员的「三好生涯规划报告」完整页（伴学师/管理员已白名单该路径） */}
+                <button
+                  onClick={() => window.open(`/zhihui-report?studentId=${userId}`, "_blank", "noopener")}
+                  className="flex items-center gap-1 rounded-lg bg-[#0C7064] px-3 py-1.5 text-[12.5px] font-bold text-white shadow-[0_2px_8px_-2px_rgba(12,112,100,0.5)] transition hover:bg-[#0a5c52] active:scale-95"
+                >
+                  <FileText size={14} />
+                  查看完整报告（与学生端一致）
+                </button>
+                {/* 次要入口：抽屉内展开旧版综合测评报告 */}
                 <button
                   onClick={() => setReportOpen((v) => !v)}
-                  className="flex shrink-0 items-center gap-0.5 px-1 py-1 text-[12px] font-medium text-[#1E3530] hover:text-[#0C7064]"
+                  className="flex items-center gap-0.5 rounded-lg px-2 py-1.5 text-[11.5px] font-medium text-[#1E3530]/70 hover:bg-butter-pale hover:text-[#0C7064]"
+                  title="在抽屉内展开测评报告摘要"
                 >
                   {reportOpen ? (
                     <>
-                      收起 <ChevronUp size={13} />
+                      收起摘要 <ChevronUp size={13} />
                     </>
                   ) : (
                     <>
-                      查看完整报告（与学生端一致） <ChevronDown size={13} />
+                      展开摘要 <ChevronDown size={13} />
                     </>
                   )}
                 </button>
+              </div>
               </div>
               <p className="mt-2 text-[12.5px] text-olive-soft">
                 {(() => {

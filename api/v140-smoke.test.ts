@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 describe("v140 收起按钮去底 + 未选中卡简化", () => {
   it("收起按钮无背景无边框，黑字+图标", () => {
     const src = readFileSync("src/components/StudentDetailDrawer.tsx", "utf-8");
-    if (!/text-\[12px\] font-medium text-\[#1E3530\] hover:text-\[#0C7064\]/.test(src)) throw new Error("缺：简版收起按钮");
+    if (!/text-\[11\.5px\] font-medium text-\[#1E3530\]\/70[\s\S]{0,50}hover:text-\[#0C7064\]/.test(src)) throw new Error("缺：简版收起按钮");
     if (/rounded-lg border border-lime\/60 bg-lime-pale px-2\.5 py-1 text-\[11\.5px\] font-semibold text-olive hover:bg-butter\/25"[\s\S]{0,40}收起/.test(src)) throw new Error("残留：带底收起按钮");
   });
 

@@ -2361,7 +2361,16 @@ export default function ReportView({
     return raw.ratings;
   }, [data]);
 
-  const setTab = (t: Tab) => setParams({ tab: t }, { replace: true });
+  /* 保留 URL 上已有参数（如伴学工作台抽屉的 ?student=<id>），避免切 tab 把外层页面参数冲掉 */
+  const setTab = (t: Tab) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", t);
+        return next;
+      },
+      { replace: true },
+    );
   const goCombined = () => setTab("combined");
 
   /**
