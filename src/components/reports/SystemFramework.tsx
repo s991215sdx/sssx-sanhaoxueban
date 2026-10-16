@@ -98,9 +98,11 @@ export function frameworkScoreLevel(score: number): E3V37Level {
   return "正常";
 }
 
-/** 一级单元块（v135）：小项底色按档着色（浅底+同色系边+同色字），白大卡上的色块。 */
+/** 一级单元块（v181d）：底色只按分数档着色（红 <3.0 / 黄 3.0–3.7 / 绿 ≥3.8，与图例严格一致）；
+ *  「任一关注点 ≤2.0 强制卡点」的数据规则不再改色，而是以红色「!」角标提示（title 说明），避免 3.7 分红字的歧义。 */
 function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; done: boolean }) {
-  const lv: E3V37Level = unit?.level ?? (done ? "正常" : "待提升");
+  const forced = !!unit && unit.level === "卡点" && unit.score != null && unit.score >= 3.0;
+  const lv: E3V37Level = unit?.score != null ? frameworkScoreLevel(unit.score) : done ? "正常" : "待提升";
   const band = BAND[lv];
   if (!done)
     return (
@@ -111,9 +113,17 @@ function UnitBlock({ name, unit, done }: { name: string; unit?: FrameworkUnit; d
     );
   return (
     <div
-      className="rounded-lg border px-0.5 py-1 text-center shadow-sm"
+      className="relative rounded-lg border px-0.5 py-1 text-center shadow-sm"
       style={{ borderColor: band.border, background: band.bg }}
     >
+      {forced && (
+        <span
+          title="有关注点均分 ≤2.0，需优先关注（详见答题明细）"
+          className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#DD3534] text-[9px] font-bold leading-none text-white"
+        >
+          !
+        </span>
+      )}
       <div className="text-[10.5px] font-semibold" style={{ color: band.text }}>
         {name}
       </div>

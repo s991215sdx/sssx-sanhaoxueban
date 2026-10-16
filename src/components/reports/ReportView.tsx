@@ -389,7 +389,8 @@ function RoadmapSection({
         score = sys?.score ?? 0;
         subs = e3.abilities
           .filter((a) => a.system === l)
-          .map((a) => ({ label: a.label, score: a.score, level: a.level }));
+          /* v181d：档色只按分值，「关注点≤2.0 强制卡点」不改色 */
+          .map((a) => ({ label: a.label, score: a.score, level: e3v37Level(a.score) }));
       }
     }
     return { layer: l, score, level: e3v37Level(score), dims: subs };
@@ -401,9 +402,10 @@ function RoadmapSection({
   const focusOfAbility = (abilityLabel: string): RoadmapFocus[] =>
     itemScores.filter((it) => it.ability === abilityLabel).map((it) => ({ kp: it.kp, score: it.score, level: it.level }));
   const layerUnits: Record<string, (RoadmapLayerSub & { focuses: RoadmapFocus[] })[]> = {
-    乐学: (e3?.abilities ?? []).filter((a) => a.system === "乐学").map((a) => ({ ...a, focuses: a.focuses })).reverse(),
-    会学: (e3?.abilities ?? []).filter((a) => a.system === "会学").map((a) => ({ ...a, focuses: a.focuses })).reverse(),
-    善学: (e3?.abilities ?? []).filter((a) => a.system === "善学").map((a) => ({ ...a, focuses: a.focuses })).reverse(),
+    /* v181d：九能档色只按分值（红<3.0/黄3.0-3.7/绿≥3.8），避免「强制卡点」把 ≥3.0 标红 */
+    乐学: (e3?.abilities ?? []).filter((a) => a.system === "乐学").map((a) => ({ ...a, level: e3v37Level(a.score), focuses: a.focuses })).reverse(),
+    会学: (e3?.abilities ?? []).filter((a) => a.system === "会学").map((a) => ({ ...a, level: e3v37Level(a.score), focuses: a.focuses })).reverse(),
+    善学: (e3?.abilities ?? []).filter((a) => a.system === "善学").map((a) => ({ ...a, level: e3v37Level(a.score), focuses: a.focuses })).reverse(),
     条件: (e3?.systems.condition.cells ?? []).map((c) => ({ ...c, focuses: focusOfAbility(c.label) })).reverse(),
     学能: (e3?.aptitude ?? []).map((a) => ({
       ...a,

@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import { ChevronRight, ChevronDown, TreePine } from "lucide-react";
-import { scoreE3V37Items, E3V37_RATING_COUNT } from "@contracts/e3v37";
+import { scoreE3V37Items, E3V37_RATING_COUNT, e3v37Level } from "@contracts/e3v37";
 import type { E3V37Result, E3V37Level, E3V37ItemScore, E3V37System } from "@contracts/e3v37";
 import { e3v37LevelTextClass, e3v37LevelBarColor, E3V37_SYSTEM_COLOR, E3V37_LEVEL_CAPTION } from "./e3v37Theme";
 
@@ -202,9 +202,10 @@ export default function AbilityScoreTable({
         {items.length === 0 && "（本次记录未保存逐题作答，仅显示能级小计；重新完成一次诊断即可看到逐题明细。）"}
       </p>
       <div className="mt-3">
-        {group("乐学", e3.abilities.filter((a) => a.system === "乐学").map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level })))}
-        {group("会学", e3.abilities.filter((a) => a.system === "会学").map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level })))}
-        {group("善学", e3.abilities.filter((a) => a.system === "善学").map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level })))}
+        {/* v181d：能力行档色只按分值（红<3.0/黄3.0-3.7/绿≥3.8），「关注点≤2.0 强制卡点」由关注点行自身呈现 */}
+        {group("乐学", e3.abilities.filter((a) => a.system === "乐学").map((a) => ({ key: a.key, label: a.label, score: a.score, level: e3v37Level(a.score) })))}
+        {group("会学", e3.abilities.filter((a) => a.system === "会学").map((a) => ({ key: a.key, label: a.label, score: a.score, level: e3v37Level(a.score) })))}
+        {group("善学", e3.abilities.filter((a) => a.system === "善学").map((a) => ({ key: a.key, label: a.label, score: a.score, level: e3v37Level(a.score) })))}
         {group("条件", e3.systems.condition.cells.map((c) => ({ key: c.key, label: c.label, score: c.score, level: c.level })), "单独报告不进总分")}
         {group("学能", e3.aptitude.map((a) => ({ key: a.key, label: a.label, score: a.score, level: a.level, note: "单独报告不进总分" })), "单独报告不进总分")}
       </div>

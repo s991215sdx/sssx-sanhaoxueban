@@ -38,12 +38,26 @@ describe("v181 双轨测评中心", () => {
     expect(src).toContain("学习力测评");
   });
 
-  it("v181b：三入口常驻可点（不受渠道套餐隐藏）", () => {
+  it("v181d：两个推荐入口受渠道套餐全量权限控制", () => {
     const src = read("src/pages/AssessmentCenter.tsx");
+    // 学习力测评：套餐须含 MBTI/DISC/E3/心理健康A版/智能五项 全套
+    expect(src).toMatch(/\["mbti", "disc", "e3", "mentalsdq", "multi5"\]\.every/);
+    // 选科及升学规划测评：套餐须含 学科四维/霍兰德/职业锚 全套
+    expect(src).toMatch(/\["subject4d", "holland", "anchor"\]\.every/);
     expect(src).toContain("更多测评");
     expect(src).toContain("assessment-list");
-    expect(src).not.toContain("suiteVisible");
-    expect(src).not.toContain("zhihuiSuiteVisible");
+  });
+
+  it("v181d：九能档色只按分值（红<3.0/黄3.0-3.7/绿≥3.8），强制卡点不改色", () => {
+    const fw = read("src/components/reports/SystemFramework.tsx");
+    // UnitBlock 必须按分数判定档位，而不是直接用 unit.level
+    expect(fw).toMatch(/frameworkScoreLevel\(unit\.score\)/);
+    const radar = read("src/components/reports/NineAbilityRadar.tsx");
+    expect(radar).toMatch(/e3v37Level\(d\.得分\)/);
+    const ov = read("src/components/reports/E3V37OverviewCard.tsx");
+    expect(ov).toMatch(/e3v37Level\(a\.score\)/);
+    const rv = read("src/components/reports/ReportView.tsx");
+    expect(rv).toMatch(/level: e3v37Level\(a\.score\)/);
   });
 
   it("报告更名：选科及升学规划报告", () => {

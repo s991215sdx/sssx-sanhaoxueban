@@ -375,9 +375,11 @@ export default function AssessmentCenter() {
     return <ZhihuiSuite onExit={() => setZhihuiOpen(false)} />;
   }
 
-  /* v181b：三个入口常驻可点——学习力测评 / 选科及升学规划测评 / 更多测评。
-     渠道套餐（assessment_kinds）只限制「更多测评」列表里展示哪些项，
-     不再隐藏两个推荐入口（后端 submit 不做渠道拦截，入口放出来可正常做完）。 */
+  /* v181d：两个推荐入口受渠道套餐全量权限控制——
+     套餐完整包含该向导全部测评时才对注册学员显示；否则页面只展示套餐内的测评列表。
+     老用户/后台建号不限制（fail-open）。 */
+  const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "mentalsdq", "multi5"].every((k) => visibleSet.has(k));
+  const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland", "anchor"].every((k) => visibleSet.has(k));
 
   return (
     <div className="space-y-4">
@@ -401,50 +403,56 @@ export default function AssessmentCenter() {
       {/* v181b：三入口常驻可点——学习力测评 / 选科及升学规划测评 / 更多测评 */}
       {!testing && (
         <div className="space-y-3">
-          <div className="grid gap-3 lg:grid-cols-2">
-            <button
-              onClick={() => setSuiteOpen(true)}
-              className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
-            >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-cream">
-                <Rocket size={24} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-[17px] font-bold text-olive">学习力测评</h3>
-                  <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
-                  {allRequired && <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[10.5px] font-semibold text-[#2F7A41]">核心项已完成 ✓</span>}
-                </span>
-                <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-                  {requiredDone > 0 ? `已完成 ${requiredDone}/3 项核心测评，点这里继续：` : "第一次来？点这里一次走完："}{" "}
-                  MBTI → DISC 学生版 → 学习力诊断 → 学业目标 → 心理健康 A 版 → 智能五项；做完会提醒家长完成「家长 DISC、家长认知」两份问卷，即可生成综合学习力报告。
-                </p>
-              </span>
-              <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream">
-                {requiredDone > 0 ? "继续 →" : "开始 →"}
-              </span>
-            </button>
-            <button
-              onClick={() => setZhihuiOpen(true)}
-              className="paper-card accent-l flex w-full items-center gap-4 border-lime/60 bg-gradient-to-r from-mint-pale/70 to-cream p-5 text-left shadow-sm hover:from-mint-pale"
-            >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime text-cream">
-                <GraduationCap size={24} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-[17px] font-bold text-olive">选科及升学规划测评</h3>
-                  <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
-                </span>
-                <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-                  学科四维测评 → 霍兰德职业兴趣测评 → 职业锚测评，三项做完自动生成选科及升学规划报告：推荐选科组合、适合的专业与职业、升学路径规划。多元智能五项折叠在职业兴趣后，仅作参考。
-                </p>
-              </span>
-              <span className="shrink-0 rounded-xl bg-lime px-4 py-2.5 text-[13.5px] font-semibold text-cream">
-                开始 →
-              </span>
-            </button>
-          </div>
+          {(suiteVisible || zhihuiSuiteVisible) && (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {suiteVisible && (
+                <button
+                  onClick={() => setSuiteOpen(true)}
+                  className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
+                >
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-cream">
+                    <Rocket size={24} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-[17px] font-bold text-olive">学习力测评</h3>
+                      <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
+                      {allRequired && <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[10.5px] font-semibold text-[#2F7A41]">核心项已完成 ✓</span>}
+                    </span>
+                    <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                      {requiredDone > 0 ? `已完成 ${requiredDone}/3 项核心测评，点这里继续：` : "第一次来？点这里一次走完："}{" "}
+                      MBTI → DISC 学生版 → 学习力诊断 → 学业目标 → 心理健康 A 版 → 智能五项；做完会提醒家长完成「家长 DISC、家长认知」两份问卷，即可生成综合学习力报告。
+                    </p>
+                  </span>
+                  <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+                    {requiredDone > 0 ? "继续 →" : "开始 →"}
+                  </span>
+                </button>
+              )}
+              {zhihuiSuiteVisible && (
+                <button
+                  onClick={() => setZhihuiOpen(true)}
+                  className="paper-card accent-l flex w-full items-center gap-4 border-lime/60 bg-gradient-to-r from-mint-pale/70 to-cream p-5 text-left shadow-sm hover:from-mint-pale"
+                >
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime text-cream">
+                    <GraduationCap size={24} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-[17px] font-bold text-olive">选科及升学规划测评</h3>
+                      <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
+                    </span>
+                    <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                      学科四维测评 → 霍兰德职业兴趣测评 → 职业锚测评，三项做完自动生成选科及升学规划报告：推荐选科组合、适合的专业与职业、升学路径规划。多元智能五项折叠在职业兴趣后，仅作参考。
+                    </p>
+                  </span>
+                  <span className="shrink-0 rounded-xl bg-lime px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+                    开始 →
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
           {/* 更多测评：点击平滑滚动到下方测评列表 */}
           <button
             onClick={() => document.getElementById("assessment-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -473,8 +481,9 @@ export default function AssessmentCenter() {
           <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
-          下面三个入口都可以点：「学习力测评」一条龙做完生成综合学习力报告；「选科及升学规划测评」做完生成选科及升学规划报告；
-          「更多测评」展开学科能力、家长卷、心理健康等全部测评列表，按需要挑着做。
+          {suiteVisible || zhihuiSuiteVisible
+            ? "推荐先完成上面两项测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；更多测评在下方列表里，按需要挑着做。"
+            : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」两项推荐入口。"}
         </p>
       </div>
 
