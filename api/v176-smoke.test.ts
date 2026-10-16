@@ -33,6 +33,6 @@ describe("v176 伴学师查看完整报告直达学员报告页", () => {
 
   it("BUILD_TAG 已递增到 v176", () => {
     const router = readFileSync("api/router.ts", "utf-8");
-    if (!router.includes('const BUILD_TAG = "v176-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v176");
+    if (!router.includes('const BUILD_TAG = "v177-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v176");
   });
 });

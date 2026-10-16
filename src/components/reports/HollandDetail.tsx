@@ -1,6 +1,7 @@
 import { RichText } from "@/components/RichText";
 import { HOLLAND_ORDER, HOLLAND_LABEL, buildHollandReport } from "@contracts/holland";
 import type { HollandResult } from "@contracts/holland";
+import HollandHexMap from "@/components/reports/HollandHexMap";
 import { Map, BookOpen, Briefcase, GraduationCap, Star } from "lucide-react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 
@@ -26,6 +27,17 @@ export default function HollandDetail({ result }: { result: HollandResult }) {
               <Radar dataKey="得分" stroke="#FA872A" fill="#FA872A" fillOpacity={0.3} strokeWidth={2.5} />
             </RadarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* v178：六型 → 学科专业大类与核心能力地图 */}
+      <div className="paper-card p-5">
+        <h3 className="text-[14.5px] font-bold text-olive">六型学科地图 · 兴趣对应的学科群</h3>
+        <p className="mt-1 text-[12.5px] text-olive-mute">
+          每个兴趣类型对应一组大学科群与所需核心能力，你的优势类型已高亮。
+        </p>
+        <div className="mt-3">
+          <HollandHexMap dims={result.dims} top3={result.top3} />
         </div>
       </div>
 
