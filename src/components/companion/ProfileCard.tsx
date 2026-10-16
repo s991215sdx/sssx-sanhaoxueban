@@ -172,7 +172,8 @@ export default function ProfileCard() {
         <span className="chip">E3 诊断 · {profile.diagnosis ? "已完成" : "未测"}</span>
       </div>
 
-      {/* 每日时长 */}
+      {/* 每日时长：基本信息编辑展开时先收起，避免填写时干扰 */}
+      {!editOpen && (
       <div className="mt-5 rounded-xl border border-border bg-cream p-4">
         <div className="mono text-[11px] tracking-wider text-olive-mute">每天给自己留的学习时间</div>
         <div className="mt-2 flex items-center gap-4">
@@ -208,6 +209,7 @@ export default function ProfileCard() {
         )}
         {!dirty && update.isSuccess && <p className="mt-2 text-center text-[12.5px] text-lime">已保存，明天开始按新节奏安排。</p>}
       </div>
+      )}
 
       {/* V53：修改登录密码（忘记密码可联系伴学师/管理员重置为 123456） */}
       <div className="mt-4 rounded-xl border border-border bg-cream p-4">

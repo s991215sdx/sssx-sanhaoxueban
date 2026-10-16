@@ -411,7 +411,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
         <div className="divide-y divide-border">
           {studentsPager.pageItems.map((s) => (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0C7064] text-[14px] font-bold text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[14px] font-bold text-white">
                 {(s.name || "学")[0]}
               </span>
               <div className="min-w-0 flex-1">
@@ -455,7 +455,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                   答题 {s.attempts} · 错题 {s.errors} · 计划 {s.plans} · 预习 {s.previewsDone}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {/* V56：多对多分配伴学师 */}
                 <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
                 {/* v169：分配报告（开通伴学师报告查看权限，可设有效期） */}
