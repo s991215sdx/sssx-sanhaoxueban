@@ -8,15 +8,24 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
+import { sameOrg } from "./tenant";
 import { assessmentResults, studentExpectations, studentProfile, users } from "../db/schema";
 import { gdScores, majorLib, universityLib, careerLib } from "../db/schema";
 import { like, or, asc, sql } from "drizzle-orm";
 
-/** 查看/代编他人数据须为伴学师或管理员。 */
-function assertStaffIfOther(ctx: { user: { id: number; role: string } }, studentId: number | undefined) {
+/** 查看/代编他人数据须为伴学师或管理员；v179：且目标学员须在本机构内
+ *  （平台超管 orgId=null 放行；机构管理员/伴学师跨机构一律拒绝）。 */
+async function assertStaffIfOther(
+  ctx: { user: { id: number; role: string; orgId: number | null } },
+  studentId: number | undefined,
+) {
   if (studentId != null && studentId !== ctx.user.id) {
     if (ctx.user.role !== "tutor" && ctx.user.role !== "admin") {
       throw new TRPCError({ code: "FORBIDDEN", message: "无权查看其他学员的数据" });
+    }
+    const db = getDb();
+    if (!(await sameOrg(db, ctx.user, studentId))) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "该学员不在你的机构内" });
     }
   }
 }
@@ -27,7 +36,7 @@ export const zhihuiRouter = createRouter({
     .input(z.object({ studentId: z.number().int().optional() }))
     .query(async ({ ctx, input }) => {
       const db = getDb();
-      assertStaffIfOther(ctx, input.studentId);
+      await assertStaffIfOther(ctx, input.studentId);
       const sid = input.studentId ?? ctx.user.id;
       const [row] = await db
         .select()
@@ -50,7 +59,7 @@ export const zhihuiRouter = createRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      assertStaffIfOther(ctx, input.studentId);
+      await assertStaffIfOther(ctx, input.studentId);
       const sid = input.studentId ?? ctx.user.id;
       const isStaff = ctx.user.role === "tutor" || ctx.user.role === "admin";
       const source = isStaff ? "tutor" : "student";
@@ -91,7 +100,7 @@ export const zhihuiRouter = createRouter({
     .input(z.object({ studentId: z.number().int().optional() }))
     .query(async ({ ctx, input }) => {
       const db = getDb();
-      assertStaffIfOther(ctx, input.studentId);
+      await assertStaffIfOther(ctx, input.studentId);
       const sid = input.studentId ?? ctx.user.id;
 
       const [user] = await db.select({ name: users.name, phone: users.phone }).from(users).where(eq(users.id, sid)).limit(1);
