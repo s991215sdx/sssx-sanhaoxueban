@@ -91,18 +91,25 @@ export const authRouter = createRouter({
       checkThrottle(phone);
 
       const db = getDb();
-      const found = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
-      const user = found[0];
+      /* v177：一个手机号可对应多个机构账号（多机构超管）。登录时取出该手机号下
+         全部候选账号，按密码匹配定位账号；多个账号同密码时登录最近使用的一个。 */
+      const candidates = await db.select().from(users).where(eq(users.phone, phone));
 
-      if (!user) {
+      if (!candidates.length) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "这个手机号还没有注册——三好学伴采用邀请制，请扫描管理员发放的注册二维码完成注册后再登录",
         });
       }
-      if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
+      const matched = candidates.filter((u) => u.passwordHash && verifyPassword(password, u.passwordHash));
+      const alive = matched.filter((u) => !u.deletedAt);
+      const pool = alive.length ? alive : matched;
+      if (!pool.length) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "密码不对，再想想～" });
       }
+      const user = pool.sort(
+        (a, b) => (b.lastSignInAt?.getTime() ?? 0) - (a.lastSignInAt?.getTime() ?? 0) || b.id - a.id,
+      )[0]!;
       /* v96：已删除（软删）的学员账号禁止登录——伴学师/管理员可在回收站恢复 */
       if (user.deletedAt) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "该账号已被删除，如需恢复请联系你的伴学师" });
@@ -112,6 +119,56 @@ export const authRouter = createRouter({
       const token = await signSessionToken({ unionId: user.unionId, clientId: env.appId });
       setSessionCookie(ctx, token);
       return { ok: true, isNewUser: false, name: user.name };
+    }),
+
+  /* v177：多机构超管——列出同手机号下的全部账号（含当前），供机构切换器使用。 */
+  accountsList: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const me = (await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1))[0];
+    if (!me?.phone) return [];
+    const rows = await db.select().from(users).where(eq(users.phone, me.phone));
+    const out = [];
+    for (const u of rows) {
+      const org = u.orgId
+        ? (await db.select().from(organizations).where(eq(organizations.id, u.orgId)).limit(1))[0]
+        : undefined;
+      out.push({
+        userId: u.id,
+        name: u.name ?? "",
+        role: u.role,
+        orgId: u.orgId ?? null,
+        orgName: org?.name ?? null,
+        brandName: org?.brandName ?? null,
+        deleted: !!u.deletedAt,
+        current: u.id === ctx.user.id,
+      });
+    }
+    /* 当前账号排最前，其余按机构名排序，已删除账号置底 */
+    return out.sort(
+      (a, b) =>
+        Number(b.current) - Number(a.current) ||
+        Number(a.deleted) - Number(b.deleted) ||
+        (a.orgName ?? "").localeCompare(b.orgName ?? "", "zh"),
+    );
+  }),
+
+  /* v177：切换到同手机号下的另一个机构账号（免密，本质是重新签发会话）。 */
+  accountsSwitch: authedQuery
+    .input((v: unknown) => v as { userId: number })
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const me = (await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1))[0];
+      const target = (await db.select().from(users).where(eq(users.id, input.userId)).limit(1))[0];
+      if (!me?.phone || !target || target.phone !== me.phone) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "只能切换到本手机号名下的账号" });
+      }
+      if (target.deletedAt) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "该账号已被删除" });
+      }
+      await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, target.id));
+      const token = await signSessionToken({ unionId: target.unionId, clientId: env.appId });
+      setSessionCookie(ctx, token);
+      return { ok: true as const };
     }),
 
   // 注意：logout 用公开过程——即使会话过期也要能清掉 cookie，否则前端会出现「退不出」。

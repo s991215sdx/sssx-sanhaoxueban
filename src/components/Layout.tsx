@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2 } from "lucide-react";
+import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -58,6 +58,60 @@ function Avatar({ name }: { name: string }) {
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
       {(name || "学")[0]}
     </span>
+  );
+}
+
+/**
+ * v177 多机构超管：同手机号名下有多个机构账号时，给出机构切换入口。
+ * 切换 = 后端校验同手机号后重新签发会话，成功后整页刷新重置缓存。
+ */
+function OrgSwitcher() {
+  const { data: accounts } = trpc.auth.accountsList.useQuery();
+  const switchMut = trpc.auth.accountsSwitch.useMutation();
+  const [open, setOpen] = useState(false);
+  const list = (accounts ?? []).filter((a) => !a.deleted);
+  if (list.length < 2) return null;
+  const label = (a: (typeof list)[number]) =>
+    a.brandName ?? a.orgName ?? (a.orgId == null ? "三好学伴平台" : "机构账号");
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        title={`切换机构（共 ${list.length} 个身份）`}
+        className="rounded-lg p-1.5 text-olive-mute transition-colors hover:bg-butter-pale hover:text-brand"
+      >
+        <Building2 size={16} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
+          <div className="absolute bottom-9 right-0 z-50 w-60 rounded-xl border border-border bg-white p-1.5 shadow-[0_8px_30px_-6px_rgba(11,61,46,.25)]">
+            <div className="px-2.5 py-1.5 text-[11px] text-olive-mute">切换机构身份</div>
+            {list.map((a) => (
+              <button
+                key={a.userId}
+                type="button"
+                disabled={a.current || switchMut.isPending}
+                onClick={() =>
+                  switchMut.mutate(
+                    { userId: a.userId },
+                    { onSuccess: () => window.location.reload() },
+                  )
+                }
+                className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
+                  a.current ? "bg-mint-pale/60 font-semibold text-olive" : "text-olive-soft hover:bg-butter-pale"
+                }`}
+              >
+                <span className="truncate">{label(a)}</span>
+                {a.current && <span className="ml-auto text-[10px] text-brand">当前</span>}
+                {!a.current && a.role === "admin" && <span className="ml-auto text-[10px] text-olive-mute">超管</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -196,6 +250,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <span title={displayName}>
               <Avatar name={displayName} />
             </span>
+            <OrgSwitcher />
             <button
               onClick={logout}
               title="退出登录"
@@ -225,6 +280,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   {isPlatformAdmin ? "平台超管" : isAdmin ? "管理员" : "好好学习的账号"}
                 </div>
               </div>
+              <OrgSwitcher />
               <button
                 onClick={logout}
                 title="退出登录"
@@ -254,6 +310,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <span className="flex items-center gap-1.5">
             <Avatar name={displayName} />
           </span>
+          <OrgSwitcher />
           <button onClick={logout} title="退出登录" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand">
             <LogOut size={17} />
           </button>
