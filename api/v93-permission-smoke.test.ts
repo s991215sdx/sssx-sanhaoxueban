@@ -1,4 +1,6 @@
-/* v93 权限冒烟：org_id 为 NULL 的平台直客学员对机构管理员/伴学师可见（不再隐身） */
+/* v93 权限冒烟：org_id 为 NULL 的平台直客学员可见性。
+   v179 修订：可见性改由「数据归位」保证——存量直客账号迁移到原机构后按本机构可见；
+   代码层面机构范围严格限定本机构，不再对 NULL 放行（防新机构越权看其他机构数据）。 */
 import { describe, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -11,21 +13,25 @@ function need(src: string, needle: string, label: string) {
   if (!src.includes(needle)) throw new Error(`缺 ${label}：${needle}`);
 }
 
-describe("v93 平台直客（org_id NULL）可见性修复", () => {
-  it("listStudents：机构范围查询包含 org_id IS NULL 的用户", () => {
+describe("v93 平台直客（org_id NULL）可见性", () => {
+  it("v179：listStudents 严格本机构过滤（直客经数据归位后由本机构可见）", () => {
     const src = read("api/studentDetail.ts");
-    need(src, "isNull(users.orgId)", "机构范围包含未归属用户");
-    need(src, "or(eq(users.orgId, orgId), isNull(users.orgId))", "or 组合条件");
+    if (src.includes("or(eq(users.orgId, orgId), isNull(users.orgId))"))
+      throw new Error("残留 v93 放行：listStudents 对 org_id IS NULL 放行");
+    need(src, "where(eq(users.orgId, orgId))", "严格 eq(orgId) 过滤");
   });
 
-  it("getStudentDetail：目标学员 org_id 为 NULL 时放行", () => {
+  it("v179：getStudentDetail 目标学员必须属于本机构", () => {
     const src = read("api/studentDetail.ts");
-    need(src, "(target.orgId !== orgId && target.orgId != null)", "NULL 目标放行判断");
+    if (src.includes("(target.orgId !== orgId && target.orgId != null)"))
+      throw new Error("残留 v93 放行：getStudentDetail 对 NULL 机构学员放行");
   });
 
-  it("sameOrg：目标账号 org_id 为 NULL 时放行", () => {
+  it("v179：sameOrg 目标账号必须同机构", () => {
     const src = read("api/tenant.ts");
-    need(src, "(t.orgId === me.orgId || t.orgId == null)", "sameOrg NULL 放行");
+    if (src.includes("(t.orgId === me.orgId || t.orgId == null)"))
+      throw new Error("残留 v93 放行：sameOrg 对 NULL 机构账号放行");
+    need(src, "t.orgId === me.orgId", "严格同机构判定");
   });
 
   it("isMyStudent：一方 org 为 NULL 时跳过机构一致性，双方异机构仍隔离", () => {

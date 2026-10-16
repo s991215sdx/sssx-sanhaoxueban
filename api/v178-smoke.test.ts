@@ -30,12 +30,10 @@ describe("v178 报告图表：霍兰德类型轴 + 六型学科地图 + 多元�
     }
   });
 
-  it("三好生涯报告：雷达类型轴 + 两个新页 + 页码重编", () => {
+  it("三好生涯报告：雷达类型轴 + 六型学科地图页（v179 起地图并入雷达页、多元页移除，见 v179 测试）", () => {
     if (!/HOLLAND_LABEL/.test(zhihui)) throw new Error("缺：雷达轴类型名（HOLLAND_LABEL）");
-    if (!/HollandHexMap/.test(zhihui)) throw new Error("缺：六型学科地图页");
-    if (!/Multi5TalentMaps/.test(zhihui)) throw new Error("缺：多元智能参考页");
-    if (!/data\?\.multi5\?\.result/.test(zhihui)) throw new Error("缺：multi5 数据接入");
-    if (!/\{7 \+ idx\}/.test(zhihui)) throw new Error("缺：学科循环页码重编为 7+idx");
+    if (!/HollandHexMap/.test(zhihui)) throw new Error("缺：六型学科地图");
+    if (!/\{5 \+ idx\}/.test(zhihui)) throw new Error("缺：学科循环页码重编为 5+idx（v179）");
   });
 
   it("zhihuiRouter.reportData 返回最近一次 multi5", () => {
@@ -54,6 +52,6 @@ describe("v178 报告图表：霍兰德类型轴 + 六型学科地图 + 多元�
   });
 
   it("BUILD_TAG 已递增", () => {
-    if (!router.includes('const BUILD_TAG = "v177-2026-10-16"')) throw new Error("BUILD_TAG 未递增");
+    if (!router.includes('const BUILD_TAG = "v178-2026-10-16"')) throw new Error("BUILD_TAG 未递增");
   });
 });
