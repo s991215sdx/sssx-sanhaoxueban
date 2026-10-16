@@ -17,6 +17,10 @@ import {
   subject4dBandLabel,
   type Subject4dResult,
 } from "@contracts/subject4d";
+import { HOLLAND_LABEL } from "@contracts/holland";
+import type { Multi5Result } from "@contracts/multi5";
+import HollandHexMap from "@/components/reports/HollandHexMap";
+import Multi5TalentMaps from "@/components/reports/Multi5TalentMaps";
 
 /* ---------- 设计令牌（与 mockup-v4 一致） ---------- */
 const C = {
@@ -176,12 +180,11 @@ function StackBar({ subjects }: { subjects: { n: string; v: number[] }[] }) {
 const DIMC = [C_heat(), "#F0A92E", "#8E6BC0", "#3E7CB1"];
 function C_heat() { return "#E4572E"; }
 
-function Radar({ vals }: { vals: number[] }) {
+function Radar({ items }: { items: { label: string; value: number }[] }) {
   const cx = 165, cy = 145, R = 105, N = 6;
-  const axes = ["R", "I", "A", "S", "E", "C"];
   let pts = "";
   for (let i = 0; i <= N; i++) {
-    const j = i % N, a = -Math.PI / 2 + (j * 2 * Math.PI) / N, r = (R * vals[j]!) / 100;
+    const j = i % N, a = -Math.PI / 2 + (j * 2 * Math.PI) / N, r = (R * items[j]!.value) / 100;
     pts += `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)} `;
   }
   return (
@@ -191,14 +194,15 @@ function Radar({ vals }: { vals: number[] }) {
         for (let i = 0; i <= N; i++) { const a = -Math.PI / 2 + (i * 2 * Math.PI) / N; p += `${cx + (R * ring) / 5 * Math.cos(a)},${cy + (R * ring) / 5 * Math.sin(a)} `; }
         return <polygon key={ring} points={p} fill="none" stroke="#E8F1EC" />;
       })}
-      {axes.map((t, i) => {
+      {items.map((t, i) => {
         const a = -Math.PI / 2 + (i * 2 * Math.PI) / N;
-        return (<g key={t}><line x1={cx} y1={cy} x2={cx + R * Math.cos(a)} y2={cy + R * Math.sin(a)} stroke="#E8F1EC" />
-          <text x={cx + (R + 16) * Math.cos(a)} y={cy + (R + 16) * Math.sin(a) + 4} textAnchor="middle" fontSize={12} fontWeight={700} fill={C.oliveSoft}>{t}</text></g>);
+        return (<g key={t.label}><line x1={cx} y1={cy} x2={cx + R * Math.cos(a)} y2={cy + R * Math.sin(a)} stroke="#E8F1EC" />
+          <text x={cx + (R + 30) * Math.cos(a)} y={cy + (R + 30) * Math.sin(a) - 2} textAnchor="middle" fontSize={12} fontWeight={700} fill={C.oliveSoft}>{t.label}</text>
+          <text x={cx + (R + 30) * Math.cos(a)} y={cy + (R + 30) * Math.sin(a) + 13} textAnchor="middle" fontSize={11} fontWeight={700} fill={C.brandDeep}>{t.value}</text></g>);
       })}
       <polygon points={pts} fill={C.brand} opacity={0.25} stroke={C.brand} strokeWidth={2} />
-      {vals.map((v, i) => {
-        const a = -Math.PI / 2 + (i * 2 * Math.PI) / N, r = (R * v) / 100;
+      {items.map((t, i) => {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / N, r = (R * t.value) / 100;
         return <circle key={i} cx={cx + r * Math.cos(a)} cy={cy + r * Math.sin(a)} r={4} fill={C.brand} />;
       })}
     </svg>
@@ -288,6 +292,7 @@ export default function ZhihuiReport() {
 
   const s4d = data?.subject4d?.result as Subject4dResult | null | undefined;
   const holland = data?.holland?.result as { dims?: Record<string, number>; top3?: string[]; code?: string; summary?: string } | null | undefined;
+  const m5 = data?.multi5?.result as Multi5Result | null | undefined;
   const academics = data?.academics?.subjects ?? [];
   const exp = data?.expectations;
   const grade = data?.student.grade === "junior" ? "初三" : data?.student.grade === "senior" ? "高三" : data?.student.grade === "高二" ? "高二" : "高一";
@@ -314,9 +319,12 @@ export default function ZhihuiReport() {
     });
   }, [s4d]);
 
-  const holVals = useMemo(() => {
+  const holItems = useMemo(() => {
     const d = holland?.dims ?? {};
-    return ["R", "I", "A", "S", "E", "C"].map((k) => Math.round(((d[k] ?? 3) / 5) * 100));
+    return ["R", "I", "A", "S", "E", "C"].map((k) => ({
+      label: `${k}·${HOLLAND_LABEL[k as keyof typeof HOLLAND_LABEL] ?? k}`,
+      value: Math.round(((d[k] ?? 3) / 5) * 100),
+    }));
   }, [holland]);
 
   const totalScore = useMemo(() => academics.reduce((s, a) => s + (a.lastScore ?? 0), 0), [academics]);
@@ -428,7 +436,7 @@ export default function ZhihuiReport() {
         <SecTitle n={4} title="霍兰德职业兴趣分析" sub={holland?.code ? `你的类型：${holland.code}` : "尚未完成霍兰德测评"} />
         {holland ? (
           <div className="grid2">
-            <div className="card" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}><Radar vals={holVals} /></div>
+            <div className="card" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}><Radar items={holItems} /></div>
             <div style={{ fontSize: 13, lineHeight: 2.1 }}>
               {(holland.top3 ?? []).map((t, i) => (<p key={t} style={{ marginTop: i ? 8 : 0 }}><span className="tag t-hi">{t} 型 {Math.round(((holland.dims?.[t] ?? 0) / 5) * 100)}</span></p>))}
               <div className="card" style={{ marginTop: 14, padding: "14px 20px" }}>
@@ -487,11 +495,28 @@ export default function ZhihuiReport() {
         ) : <p className="muted">{exp?.school ? "目标院校近三年录取数据匹配中，可联系伴学师在资料库核对。" : "在「未来期望」填写目标院校后，这里会生成真实分差对照表。"}</p>}
       </Page>
 
-      {/* 5-13 Part2 学科详情 ×9 */}
+      {/* 5 霍兰德六型学科地图（v178：六型 → 学科专业大类与能力） */}
+      <Page no={5}>
+        <SecTitle n={10} title="霍兰德六型 · 学科专业地图" sub={holland?.code ? `你的类型：${holland.code} · 优势方向已高亮` : "完成霍兰德测评后高亮你的优势方向"} />
+        <HollandHexMap dims={holland?.dims ?? null} top3={holland?.top3 ?? null} />
+        <p className="muted" style={{ marginTop: 14, fontSize: 12.5 }}>把六型兴趣翻译成了看得见的学科世界：每个类型对应一组大学科群和所需核心能力。兴趣得分高的方向，通常意味着你在对应学科的学习动力与潜在表现都更好——选科与选专业时，这张图可以和前面的「12 大学科门类」对照着看。</p>
+      </Page>
+
+      {/* 6 多元智能五项参考（v178：学科/职业/提升项目映射） */}
+      <Page no={6}>
+        <SecTitle n={11} title="多元智能五项 · 学科与职业参考" sub={m5 ? `综合水平 ${m5.overall} · 细心指数 ${m5.carefulIndex}%` : "选做测评 · 完成后生成参考图"} />
+        {m5 ? (
+          <Multi5TalentMaps multi5={m5} />
+        ) : (
+          <div className="card"><p className="muted">完成「多元智能五项」测评（约 10 分钟客观题）后，这里会生成你的五维智能环形图，并给出对应的优势学科、优势职业方向与可培训提升项目参考。</p></div>
+        )}
+      </Page>
+
+      {/* 7-15 Part2 学科详情 ×9 */}
       {SUBJECT4D_SUBJECTS.map((name, idx) => {
         const r = s4d?.subjects[name];
         return (
-          <Page key={name} no={5 + idx}>
+          <Page key={name} no={7 + idx}>
             {idx === 0 && (<><div className="part-tag">PART 2</div><h2>学科表现分析</h2></>)}
             <SecTitle n={idx + 1} title={`学科表现分析 · ${name}`} sub={r ? `潜力指数 ${r.潜力指数.toFixed(2)}` : "尚未测评"} />
             {r ? (
@@ -521,7 +546,7 @@ export default function ZhihuiReport() {
       })}
 
       {/* Part3 门类图 */}
-      <Page no={14}>
+      <Page no={16}>
         <div className="part-tag">PART 3</div>
         <h2>认识世界 · 本科 12 大学科门类</h2>
         <p className="muted" style={{ marginTop: 12 }}>按自然科学 / 社会科学 / 人文科学三排归纳，绿色徽标为结合你测评结果的推荐门类，点开门类可查看下设专业类。</p>
@@ -566,7 +591,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* Part3 适合专业&职业 */}
-      <Page no={15}>
+      <Page no={17}>
         <SecTitle n={1} title="适合的专业 & 职业" sub={holland?.code ? `你的霍兰德代码为 ${holland.code}` : "完成霍兰德测评后按兴趣代码推荐"} />
         <div className="ribbon">专业</div>
         <div className="colhead" style={{ marginTop: 14 }}><span>学科门类</span><span /><span>专业类</span></div>
@@ -582,7 +607,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* Part3 专业详情 + 职业详情 */}
-      <Page no={16}>
+      <Page no={18}>
         <SecTitle n={2} title="适合学习的专业详情" sub="专业底层库共 1100+ 专业，以下为你的 Top 推荐" />
         {majorCats.slice(0, 2).map((m, i) => (
           <div key={m.code} style={{ marginBottom: 26 }}>
@@ -615,7 +640,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* Part4 目标院校规划 */}
-      <Page no={17}>
+      <Page no={19}>
         <div className="part-tag">PART 4</div>
         <SecTitle n={1} title="目标院校规划" sub={exp?.school ? `目标：${exp.school}${exp.majorCat ? ` · ${exp.majorCat}` : ""}` : "填写未来期望后生成冲稳保对照"} />
         {targetRows.length ? (
@@ -630,7 +655,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* Part4 升学路径 */}
-      <Page no={18}>
+      <Page no={20}>
         <div className="part-tag">PART 4 · 续</div>
         <h2>升学路径规划</h2>
         <p className="muted" style={{ marginTop: 12 }}>同样的分数，通过多元升学可以录取到更多、更好、更合适的大学与专业。以下每条路径都附报考条件，请你与家长、伴学师对照自身情况，确定主路与备路。</p>
@@ -651,7 +676,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* Part4 分数段矩阵 */}
-      <Page no={19}>
+      <Page no={21}>
         <SecTitle n={2} title="你的分数能走哪些路" sub="物理类 · 按分数段查看可报路径与院校" />
         <div id="matrix">
           {MATRIX.map((b) => (
@@ -670,7 +695,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* Part4 分年级规划 */}
-      <Page no={20}>
+      <Page no={22}>
         <SecTitle n={3} title="分年级条件准备规划" sub={`你现在${grade} · 各阶段该做什么一目了然`} />
         <div style={{ display: "grid", gap: 16, marginTop: 16 }}>
           {GRADE_PLANS.map((g) => (
@@ -689,7 +714,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* 测评明细 */}
-      <Page no={21}>
+      <Page no={23}>
         <div className="part-tag">APPENDIX</div>
         <h2>测评明细</h2>
         <p className="muted" style={{ marginTop: 12 }}>本页为原始作答明细，供伴学师咨询解读与家长存档，可随报告一并打印。</p>
@@ -714,7 +739,7 @@ export default function ZhihuiReport() {
       </Page>
 
       {/* 免责 */}
-      <Page no={22} tall={false}>
+      <Page no={24} tall={false}>
         <div className="part-tag">声明</div>
         <h2>免责声明</h2>
         <div style={{ display: "grid", gap: 16, marginTop: 28 }}>

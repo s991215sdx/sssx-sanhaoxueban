@@ -45,6 +45,6 @@ describe("v174 资料库第三轮", () => {
   });
 
   it("BUILD_TAG 已递增到 v175", () => {
-    if (!app.includes('const BUILD_TAG = "v176-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v175");
+    if (!app.includes('const BUILD_TAG = "v177-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v175");
   });
 });

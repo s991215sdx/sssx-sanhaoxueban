@@ -10,6 +10,7 @@ import FullPathwayMap from "@/components/reports/FullPathwayMap";
 import DisciplineTreeChart from "@/components/reports/DisciplineTreeChart";
 import ScorePathMatrix from "@/components/reports/ScorePathMatrix";
 import { AnchorBars, HollandRadar, MbtiBars, Multi5Radar } from "@/components/reports/AssessCharts";
+import HollandHexMap from "@/components/reports/HollandHexMap";
 import DiscTendencyChart from "@/components/reports/DiscTendencyChart";
 import { stageOfGrade } from "@contracts/constants";
 import { MULTI5_DIM_LABEL } from "@contracts/multi5";
@@ -463,6 +464,13 @@ export default function GuidanceTab({
             {data?.holland && (
               <div className="mt-2 rounded-xl border border-olive/10 bg-cream/40 p-2">
                 <HollandRadar result={data.holland} />
+              </div>
+            )}
+            {/* v178：六型 → 学科专业大类与核心能力地图 */}
+            {data?.holland && (
+              <div className="mt-2 rounded-xl border border-olive/10 bg-white p-3">
+                <p className="mb-2 text-[12.5px] font-bold text-olive">六型学科地图 · 兴趣对应的学科群</p>
+                <HollandHexMap dims={data.holland.dims} top3={data.holland.top3} />
               </div>
             )}
             {g.hollandDeep && (

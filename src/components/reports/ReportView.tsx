@@ -104,6 +104,7 @@ import {
 import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, ExternalLink, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
+import Multi5TalentMaps from "@/components/reports/Multi5TalentMaps";
 import MentalDetail from "@/components/reports/MentalDetail";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
@@ -1661,6 +1662,12 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
             </RadarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* V178：学科 / 职业 / 提升项目参考（图4/5/6 式样） */}
+      <div className="paper-card p-5">
+        <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
+        <Multi5TalentMaps multi5={result} />
       </div>
 
       {/* 五维卡片 */}
@@ -3320,6 +3327,12 @@ export default function ReportView({
                   data?.multi5 || e3v37 ? (
                     <div className="space-y-4">
                       {data?.multi5 && <Multi5Radar multi5={data.multi5} />}
+                      {data?.multi5 && (
+                        <div className="paper-card p-5">
+                          <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
+                          <Multi5TalentMaps multi5={data.multi5} />
+                        </div>
+                      )}
                       {e3v37 && (
                         <div className="paper-card p-5">
                           <h3 className="font-bold text-olive">学能三项（注意力 / 工作记忆 / 加工速度）</h3>
@@ -3544,6 +3557,14 @@ function AssessmentChartsLite({
             <b>对学习力：</b>{m5sorted[m5sorted.length - 1]?.studyAdvice?.[0] ?? "用最弱项的针对性练习把底子补齐，成绩天花板才会抬高。"}
             {multi5.carefulIndex < 50 ? "另外细心指数偏低，粗心丢分值得先抓。" : ""}
           </p>
+        </div>
+      )}
+
+      {/* V178：详版同样附学科 / 职业 / 提升参考 */}
+      {multi5 && (
+        <div className="paper-card p-5">
+          <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
+          <Multi5TalentMaps multi5={multi5} />
         </div>
       )}
 

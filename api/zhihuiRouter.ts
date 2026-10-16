@@ -113,6 +113,14 @@ export const zhihuiRouter = createRouter({
         .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
         .limit(1);
 
+      // 最近一次多元智能五项（v178：生涯报告参考图数据源）
+      const [m5] = await db
+        .select()
+        .from(assessmentResults)
+        .where(and(eq(assessmentResults.userId, sid), eq(assessmentResults.kind, "multi5")))
+        .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
+        .limit(1);
+
       // 未来期望
       const [exp] = await db.select().from(studentExpectations).where(eq(studentExpectations.studentId, sid)).limit(1);
 
@@ -271,6 +279,7 @@ export const zhihuiRouter = createRouter({
         student: { id: sid, name: user?.name ?? "", grade: (profile?.grade as string | null) ?? null },
         subject4d: s4d ? { result: s4d.result, answers: s4d.answers, createdAt: s4d.createdAt } : null,
         holland: hol ? { result: hol.result, createdAt: hol.createdAt } : null,
+        multi5: m5 ? { result: m5.result, createdAt: m5.createdAt } : null,
         academics,
         expectations: exp ?? null,
         targetSchool,
