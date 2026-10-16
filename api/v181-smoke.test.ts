@@ -38,6 +38,14 @@ describe("v181 双轨测评中心", () => {
     expect(src).toContain("学习力测评");
   });
 
+  it("v181b：三入口常驻可点（不受渠道套餐隐藏）", () => {
+    const src = read("src/pages/AssessmentCenter.tsx");
+    expect(src).toContain("更多测评");
+    expect(src).toContain("assessment-list");
+    expect(src).not.toContain("suiteVisible");
+    expect(src).not.toContain("zhihuiSuiteVisible");
+  });
+
   it("报告更名：选科及升学规划报告", () => {
     for (const p of [
       "src/pages/ZhihuiReport.tsx",

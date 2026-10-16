@@ -20,7 +20,7 @@ import CombinedSuite from "@/components/assessment/CombinedSuite";
 import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap } from "lucide-react";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
 type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d";
@@ -375,9 +375,9 @@ export default function AssessmentCenter() {
     return <ZhihuiSuite onExit={() => setZhihuiOpen(false)} />;
   }
 
-  /* v82：渠道套餐未完整包含测评组成部分时，隐藏对应向导入口（避免引导去做被隐藏的测评） */
-  const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
-  const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland", "anchor"].every((k) => visibleSet.has(k));
+  /* v181b：三个入口常驻可点——学习力测评 / 选科及升学规划测评 / 更多测评。
+     渠道套餐（assessment_kinds）只限制「更多测评」列表里展示哪些项，
+     不再隐藏两个推荐入口（后端 submit 不做渠道拦截，入口放出来可正常做完）。 */
 
   return (
     <div className="space-y-4">
@@ -398,10 +398,10 @@ export default function AssessmentCenter() {
           </button>
         </div>
       )}
-      {/* v181：双推荐轨道——学习力测评 / 选科及升学规划测评 */}
-      {!testing && (suiteVisible || zhihuiSuiteVisible) && (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {suiteVisible && (
+      {/* v181b：三入口常驻可点——学习力测评 / 选科及升学规划测评 / 更多测评 */}
+      {!testing && (
+        <div className="space-y-3">
+          <div className="grid gap-3 lg:grid-cols-2">
             <button
               onClick={() => setSuiteOpen(true)}
               className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
@@ -424,8 +424,6 @@ export default function AssessmentCenter() {
                 {requiredDone > 0 ? "继续 →" : "开始 →"}
               </span>
             </button>
-          )}
-          {zhihuiSuiteVisible && (
             <button
               onClick={() => setZhihuiOpen(true)}
               className="paper-card accent-l flex w-full items-center gap-4 border-lime/60 bg-gradient-to-r from-mint-pale/70 to-cream p-5 text-left shadow-sm hover:from-mint-pale"
@@ -446,7 +444,25 @@ export default function AssessmentCenter() {
                 开始 →
               </span>
             </button>
-          )}
+          </div>
+          {/* 更多测评：点击平滑滚动到下方测评列表 */}
+          <button
+            onClick={() => document.getElementById("assessment-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="paper-card accent-l flex w-full items-center gap-4 border-border bg-cream-card/60 p-4 text-left shadow-sm hover:bg-butter-pale/40"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cream-deep text-olive">
+              <LayoutGrid size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <h3 className="text-[15.5px] font-bold text-olive">更多测评</h3>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-olive-mute">
+                学科能力、家长卷（家长 DISC / 家长认知）、心理健康系列、多元智能五项等，按需要挑着做 {hiddenCount > 0 ? `· 本渠道已开放 ${visibleTests.length} 项` : ""}
+              </p>
+            </span>
+            <span className="shrink-0 rounded-xl border border-border bg-cream px-3.5 py-2 text-[13px] font-semibold text-olive">
+              展开 ↓
+            </span>
+          </button>
         </div>
       )}
 
@@ -457,8 +473,8 @@ export default function AssessmentCenter() {
           <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
-          推荐先完成上面两项测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；
-          更多测评（学科能力、家长卷、心理健康、职业锚等）在下方列表里，按需要挑着做。
+          下面三个入口都可以点：「学习力测评」一条龙做完生成综合学习力报告；「选科及升学规划测评」做完生成选科及升学规划报告；
+          「更多测评」展开学科能力、家长卷、心理健康等全部测评列表，按需要挑着做。
         </p>
       </div>
 
@@ -511,7 +527,7 @@ export default function AssessmentCenter() {
       {testing ? (
         <QuizStage kind={testing} onDone={queue.length > 0 ? queueDone : close} />
       ) : (
-        <div className="space-y-3">
+        <div id="assessment-list" className="scroll-mt-4 space-y-3">
           <div className="mono px-1 text-[11px] tracking-wider text-olive-mute">我的测评</div>
           {visibleTests.map((t) => {
             const done = hasResult(t.kind);
