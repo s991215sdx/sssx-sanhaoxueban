@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { DISC_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
+import { useScrollToQuestion } from "@/lib/quizScroll";
 import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft, Compass } from "lucide-react";
 
@@ -42,9 +43,11 @@ export function DiscV2GroupsUI({
 }) {
   const total = groups.length;
   const g = groups[Math.min(idx, total - 1)];
+  /* v181：换组自动定位到题目+选项区域 */
+  const qRef = useScrollToQuestion(idx);
   if (!g) return null;
   return (
-    <>
+    <div ref={qRef} className="scroll-mt-24">
       <div className="mt-5 flex items-center gap-3">
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
           <div className="h-full rounded-full bg-lime transition-all" style={{ width: `${((idx + 1) / total) * 100}%` }} />
@@ -112,7 +115,7 @@ export function DiscV2GroupsUI({
         </button>
       )}
       {submitHint && <p className="mt-2 text-center text-[13px] text-terra">{submitHint}</p>}
-    </>
+    </div>
   );
 }
 

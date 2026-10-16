@@ -1,0 +1,82 @@
+/**
+ * v181 冒烟测试：测评中心双轨入口 + 报告更名 + 答题题目自动定位。
+ * 1. 学习力测评（CombinedSuite）：7 步含心理健康A版(SD Q)，完成页含家长提醒卡（家长DISC/家长认知）。
+ * 2. 选科及升学规划测评（ZhihuiSuite）：学科四维→霍兰德→职业锚，多元智能折叠且不影响推荐。
+ * 3. 「三好生涯规划报告」全局更名「选科及升学规划报告」（zhihui 相关文件）。
+ * 4. quizScroll.ts 存在且被至少 6 个组件引用。
+ * 5. Subject4dQuiz 不再渲染维度标签 chip。
+ */
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const ROOT = `${__dirname}/..`;
+const read = (p: string) => readFileSync(`${ROOT}/${p}`, "utf8");
+
+describe("v181 双轨测评中心", () => {
+  it("ZhihuiSuite：三步 + 折叠参考项", () => {
+    const src = read("src/components/assessment/ZhihuiSuite.tsx");
+    expect(src).toContain("subject4d");
+    expect(src).toContain("holland");
+    expect(src).toContain("anchor");
+    expect(src).toContain("暂不影响选科与专业推荐");
+    expect(src).toContain("zhihui-report");
+  });
+
+  it("CombinedSuite：心理健康A版 + 家长提醒", () => {
+    const src = read("src/components/assessment/CombinedSuite.tsx");
+    expect(src).toContain("mentalsdq");
+    expect(src).toContain("家长");
+    expect(src).toContain("discparent");
+    expect(src).toContain("e3parent");
+    expect(src).toContain("学习力测评");
+  });
+
+  it("AssessmentCenter：双轨入口", () => {
+    const src = read("src/pages/AssessmentCenter.tsx");
+    expect(src).toContain("ZhihuiSuite");
+    expect(src).toContain("选科及升学规划测评");
+    expect(src).toContain("学习力测评");
+  });
+
+  it("报告更名：选科及升学规划报告", () => {
+    for (const p of [
+      "src/pages/ZhihuiReport.tsx",
+      "src/pages/AssessmentCenter.tsx",
+      "src/pages/ReportDetail.tsx",
+      "src/components/reports/ReportView.tsx",
+      "src/components/assessment/ZhihuiSuite.tsx",
+    ]) {
+      const src = read(p);
+      expect(src).toContain("选科及升学规划报告");
+      expect(src).not.toContain("三好生涯规划报告");
+    }
+  });
+
+  it("题目自动定位：quizScroll 被 ≥6 个组件引用", () => {
+    const files = [
+      "src/components/companion/HollandQuiz.tsx",
+      "src/components/companion/AnchorQuiz.tsx",
+      "src/components/companion/Multi5Quiz.tsx",
+      "src/components/companion/MentalSdqQuiz.tsx",
+      "src/components/companion/MentalPaQuiz.tsx",
+      "src/components/companion/MentalQuiz.tsx",
+      "src/components/companion/MentalScl90Quiz.tsx",
+      "src/components/companion/SubjectQuiz.tsx",
+      "src/components/companion/Subject4dQuiz.tsx",
+      "src/components/companion/DiscV2Quiz.tsx",
+      "src/components/welcome/ChoiceStage.tsx",
+    ];
+    let used = 0;
+    for (const p of files) {
+      if (read(p).includes("useScrollToQuestion")) used += 1;
+    }
+    expect(used).toBeGreaterThanOrEqual(6);
+    expect(read("src/lib/quizScroll.ts")).toContain("scrollIntoView");
+  });
+
+  it("Subject4dQuiz：不再渲染维度标签 chip", () => {
+    const src = read("src/components/companion/Subject4dQuiz.tsx");
+    expect(src).not.toContain("SUBJECT4D_DIM_LABEL");
+    expect(src).toContain("scroll-mt-24");
+  });
+});

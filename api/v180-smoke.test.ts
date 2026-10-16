@@ -31,6 +31,6 @@ describe("v180 霍兰德图表标准统一", () => {
   });
 
   it("BUILD_TAG 已递增", () => {
-    if (!router.includes('const BUILD_TAG = "v179-2026-10-16"')) throw new Error("BUILD_TAG 未递增");
+    if (!router.includes('const BUILD_TAG = "v180-2026-10-16"')) throw new Error("BUILD_TAG 未递增");
   });
 });

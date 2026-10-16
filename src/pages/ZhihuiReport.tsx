@@ -373,7 +373,7 @@ export default function ZhihuiReport() {
     <div className="zh-root" id="report-print-root">
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex items-center gap-3 no-print">
-        <h1 className="text-[20px] font-bold text-olive">三好生涯规划报告</h1>
+        <h1 className="text-[20px] font-bold text-olive">选科及升学规划报告</h1>
         <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade} · 报告编号 {reportNo}</span>
         <button type="button" onClick={() => window.print()} className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime">
           下载 / 打印
@@ -384,7 +384,7 @@ export default function ZhihuiReport() {
       <Page no={1}>
         <div className="flex flex-1 flex-col items-start justify-center">
           <div className="klabel" style={{ marginBottom: 18 }}>EVALUATION REPORT · 三好生涯测评</div>
-          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>三好生涯规划<br />测评报告</h1>
+          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>选科及升学规划<br />测评报告</h1>
           <div style={{ marginTop: 26, width: 64, height: 4, background: C.brand, borderRadius: 2 }} />
           <p style={{ marginTop: 26, color: C.oliveSoft, fontSize: 15, lineHeight: 2.2 }}>认识自我 · 认识世界 · 树立目标 · 制定计划</p>
         </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useScrollToQuestion } from "@/lib/quizScroll";
 import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
@@ -158,6 +159,8 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
 
   /* ------- 作答中 ------- */
   const q = items[Math.min(idx, total - 1)];
+  /* v181：换题自动定位到题目+选项区域 */
+  const qRef = useScrollToQuestion(idx);
   const isFirstOfSection = q && q.section.questions[0]?.no === q.no;
   const isLast = idx === total - 1;
   return (
@@ -186,7 +189,7 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
           <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
         </div>
       ) : (
-        <>
+        <div ref={qRef} className="scroll-mt-24">
           <div className="mt-5 flex items-center gap-3">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
               <div className="h-full rounded-full bg-lime transition-all" style={{ width: `${((idx + 1) / total) * 100}%` }} />
@@ -253,7 +256,7 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
 
           {submit.isPending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在生成你的结果…</p>}
           {submit.isError && <p className="mt-3 text-center text-[13px] text-terra">提交没成功，请再选一次最后一题。</p>}
-        </>
+        </div>
       )}
     </div>
   );

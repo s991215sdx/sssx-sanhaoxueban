@@ -1,4 +1,5 @@
 import { trpc } from "@/providers/trpc";
+import { useScrollToQuestion } from "@/lib/quizScroll";
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { ChevronLeft, Sparkles } from "lucide-react";
@@ -101,6 +102,8 @@ export default function ChoiceStage({
 
   /* ------- 作答中 ------- */
   const q = questions?.[Math.min(idx, total - 1)];
+  /* v181：换题自动定位到题目+选项区域 */
+  const qRef = useScrollToQuestion(idx);
   return (
     <div className="paper-card p-6">
       <div className="flex items-center justify-between">
@@ -127,7 +130,7 @@ export default function ChoiceStage({
           <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
         </div>
       ) : (
-        <>
+        <div ref={qRef} className="scroll-mt-24">
           <div className="mt-5 flex items-center gap-3">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
               <div className="h-full rounded-full bg-lime transition-all" style={{ width: `${((idx + 1) / total) * 100}%` }} />
@@ -171,7 +174,7 @@ export default function ChoiceStage({
 
           {submit.isPending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在生成你的结果…</p>}
           {submit.isError && <p className="mt-3 text-center text-[13px] text-terra">提交没成功，请再选一次最后一题。</p>}
-        </>
+        </div>
       )}
     </div>
   );

@@ -7,6 +7,7 @@
  */
 import { useState } from "react";
 import { clearQuizDraft, loadQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
+import { useScrollToQuestion } from "@/lib/quizScroll";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
@@ -73,6 +74,7 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
     const p = firstUnanswered === -1 ? 0 : Math.floor(firstUnanswered / PAGE_SIZE);
     return draftValid ? Math.min(p, PAGE_COUNT - 1) : 0;
   });
+  const qRef = useScrollToQuestion(page);
 
   const submit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
@@ -233,7 +235,7 @@ export default function MentalScl90Quiz({ onDone }: { onDone: () => void }) {
             </div>
           )}
 
-          <div className="mt-4 space-y-3">
+          <div ref={qRef} className="scroll-mt-24 mt-4 space-y-3">
             {pageItems.map((q) => (
               <div key={q.no} className={`rounded-xl border px-3.5 py-3 ${q.safety ? "border-terra/50 bg-terra/5" : "border-border bg-cream/50"}`}>
                 <div className="flex items-start justify-between gap-2">

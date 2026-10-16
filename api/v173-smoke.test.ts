@@ -56,6 +56,6 @@ describe("v173 资料库第二轮修复", () => {
   });
 
   it("BUILD_TAG 已递增到 v175", () => {
-    if (!app.includes('const BUILD_TAG = "v179-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v175");
+    if (!app.includes('const BUILD_TAG = "v180-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v175");
   });
 });

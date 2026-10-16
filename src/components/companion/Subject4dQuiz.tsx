@@ -1,12 +1,11 @@
 import { useMemo } from "react";
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
+import { useScrollToQuestion } from "@/lib/quizScroll";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
   SUBJECT4D_BANK,
-  SUBJECT4D_DIM_COLOR,
-  SUBJECT4D_DIM_LABEL,
   SUBJECT4D_OPTIONS,
   SUBJECT4D_SUBJECTS,
   type Subject4dResult,
@@ -100,7 +99,7 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
             onClick={() => navigate("/zhihui-report")}
             className="rounded-lg bg-brand px-5 py-2.5 text-[14px] font-semibold text-cream hover:bg-lime"
           >
-            查看三好生涯规划报告
+            查看选科及升学规划报告
           </button>
           <button type="button" onClick={onDone} className="rounded-lg border border-border px-5 py-2.5 text-[14px] text-olive">
             返回测评中心
@@ -117,8 +116,8 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
   /* ------- 答题页 ------- */
   const item = curSubject ? bank[curSubject][curIdx] : null;
   const subjectIdx = curSubject ? SUBJECT4D_SUBJECTS.indexOf(curSubject) : 0;
-  const dimLabel = item ? SUBJECT4D_DIM_LABEL[item.dim] : "";
-  const dimColor = item ? SUBJECT4D_DIM_COLOR[item.dim] : "#0EA875";
+  /* v181：换题/换科自动定位到题目+选项区域 */
+  const qRef = useScrollToQuestion(`${curSubject ?? ""}:${curIdx}`);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -139,17 +138,12 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
         )}
 
         {curSubject && item ? (
-          <>
-            <div className="mt-6 flex items-center gap-2">
-              <span className="rounded-lg bg-brand px-3 py-1 text-[13px] font-bold text-cream">{curSubject}</span>
-              <span className="text-[12.5px] text-olive-mute">
-                第 {subjectIdx + 1} 科 / 9 · 本科第 {curIdx + 1} 题 / {bank[curSubject].length}
-              </span>
-              <span
-                className="ml-auto rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
-                style={{ background: dimColor }}
-              >
-                {dimLabel}
+          <div ref={qRef} className="scroll-mt-24">
+            {/* v181：头部一行排开——学科徽章 + 进度说明（含本科题量），不再显示维度标签 */}
+            <div className="mt-6 flex items-center gap-2.5">
+              <span className="shrink-0 rounded-lg bg-brand px-3 py-1 text-[13px] font-bold text-cream">{curSubject}</span>
+              <span className="text-[12.5px] leading-snug text-olive-mute">
+                第 {subjectIdx + 1} 科 / 9 · 共 {bank[curSubject]!.length} 题 · 第 {curIdx + 1} 题
               </span>
             </div>
             <p className="mt-5 min-h-[72px] text-[16.5px] font-medium leading-relaxed text-olive">{item.text}</p>
@@ -189,7 +183,7 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
                 重新开始
               </button>
             </div>
-          </>
+          </div>
         ) : (
           <p className="py-8 text-center text-[13px] text-olive-mute">提交中…</p>
         )}

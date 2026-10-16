@@ -17,9 +17,10 @@ import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import SubjectQuiz from "@/components/companion/SubjectQuiz";
 import Subject4dQuiz from "@/components/companion/Subject4dQuiz";
 import CombinedSuite from "@/components/assessment/CombinedSuite";
+import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw } from "lucide-react";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
 type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d";
@@ -127,7 +128,7 @@ const TESTS: TestDef[] = [
   {
     kind: "subject4d",
     name: "学科四维测评（三好生涯）",
-    desc: "9 科 × 兴趣/能力倾向/观念/效能感 4 维 × 3 题共 108 题 · 约 15 分钟 · 三好生涯规划报告核心数据源 · 选做",
+    desc: "9 科 × 兴趣/能力倾向/观念/效能感 4 维 × 3 题共 108 题 · 约 15 分钟 · 选科及升学规划报告核心数据源 · 选做",
     required: false,
     tab: "zhihui",
     summary: (l) => (l.subject4d ? "已生成九科四维画像" : null),
@@ -294,8 +295,10 @@ export default function AssessmentCenter() {
   const navigate = useNavigate();
   const { data, isLoading } = trpc.assessment.latest.useQuery();
   const [testing, setTesting] = useState<TestKind | null>(null);
-  // V56：综合学习力系统测评（一条龙向导）
+  // V56/v181：学习力测评（一条龙向导）
   const [suiteOpen, setSuiteOpen] = useState(false);
+  // v181：选科及升学规划测评（一条龙向导）
+  const [zhihuiOpen, setZhihuiOpen] = useState(false);
   // v82：注册二维码「测评套餐」——渠道绑定的测评种类 + 伴学师额外推送的种类
   const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
   const { data: profile } = trpc.profile.get.useQuery();
@@ -364,13 +367,17 @@ export default function AssessmentCenter() {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
   }
 
-  // V56：综合测评向导打开时，整页进入向导
+  // v181：两个推荐向导打开时，整页进入向导
   if (suiteOpen) {
     return <CombinedSuite onExit={() => setSuiteOpen(false)} />;
   }
+  if (zhihuiOpen) {
+    return <ZhihuiSuite onExit={() => setZhihuiOpen(false)} />;
+  }
 
-  /* v82：渠道套餐未完整包含综合测评的组成部分时，隐藏一条龙入口（避免引导去做被隐藏的测评） */
+  /* v82：渠道套餐未完整包含测评组成部分时，隐藏对应向导入口（避免引导去做被隐藏的测评） */
   const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
+  const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland", "anchor"].every((k) => visibleSet.has(k));
 
   return (
     <div className="space-y-4">
@@ -391,53 +398,56 @@ export default function AssessmentCenter() {
           </button>
         </div>
       )}
-      {/* V66：三项必测全部完成后，顶部入口变为报告直达（不再显示"开始"造成"要重做"的误解） */}
-      {!testing && allRequired && suiteVisible && (
-        <button
-          onClick={() => navigate("/report-detail?tab=combined")}
-          className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
-        >
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime text-cream">
-            <Sparkles size={24} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex flex-wrap items-center gap-2">
-              <h3 className="text-[17px] font-bold text-olive">综合学习力系统测评 · 已完成 ✓</h3>
-            </span>
-            <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-              MBTI、DISC、学习力诊断都已做完，点开看你的专属综合学习力报告 →
-            </p>
-          </span>
-          <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream">
-            查看报告 →
-          </span>
-        </button>
-      )}
-      {/* V56：综合学习力系统测评（最顶部入口，一条龙） */}
-      {!testing && !allRequired && suiteVisible && (
-        <button
-          onClick={() => setSuiteOpen(true)}
-          className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
-        >
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-cream">
-            <Rocket size={24} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex flex-wrap items-center gap-2">
-              <h3 className="text-[17px] font-bold text-olive">综合学习力系统测评</h3>
-              <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
-            </span>
-            <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-              {requiredDone > 0
-                ? `已完成 ${requiredDone}/3 项必测，点这里把剩下的走完：`
-                : "第一次来？点这里一次走完："}{" "}
-              基本信息 → MBTI 性格 → DISC 学生版 → 学习力诊断 → 学业目标 → 智能五项，全程约 25 分钟，做完自动生成综合学习力报告。
-            </p>
-          </span>
-          <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream">
-            开始 →
-          </span>
-        </button>
+      {/* v181：双推荐轨道——学习力测评 / 选科及升学规划测评 */}
+      {!testing && (suiteVisible || zhihuiSuiteVisible) && (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {suiteVisible && (
+            <button
+              onClick={() => setSuiteOpen(true)}
+              className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-cream">
+                <Rocket size={24} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[17px] font-bold text-olive">学习力测评</h3>
+                  <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
+                  {allRequired && <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[10.5px] font-semibold text-[#2F7A41]">核心项已完成 ✓</span>}
+                </span>
+                <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                  {requiredDone > 0 ? `已完成 ${requiredDone}/3 项核心测评，点这里继续：` : "第一次来？点这里一次走完："}{" "}
+                  MBTI → DISC 学生版 → 学习力诊断 → 学业目标 → 心理健康 A 版 → 智能五项；做完会提醒家长完成「家长 DISC、家长认知」两份问卷，即可生成综合学习力报告。
+                </p>
+              </span>
+              <span className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+                {requiredDone > 0 ? "继续 →" : "开始 →"}
+              </span>
+            </button>
+          )}
+          {zhihuiSuiteVisible && (
+            <button
+              onClick={() => setZhihuiOpen(true)}
+              className="paper-card accent-l flex w-full items-center gap-4 border-lime/60 bg-gradient-to-r from-mint-pale/70 to-cream p-5 text-left shadow-sm hover:from-mint-pale"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime text-cream">
+                <GraduationCap size={24} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[17px] font-bold text-olive">选科及升学规划测评</h3>
+                  <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
+                </span>
+                <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                  学科四维测评 → 霍兰德职业兴趣测评 → 职业锚测评，三项做完自动生成选科及升学规划报告：推荐选科组合、适合的专业与职业、升学路径规划。多元智能五项折叠在职业兴趣后，仅作参考。
+                </p>
+              </span>
+              <span className="shrink-0 rounded-xl bg-lime px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+                开始 →
+              </span>
+            </button>
+          )}
+        </div>
       )}
 
       {/* 顶部简介卡 */}
@@ -447,8 +457,8 @@ export default function AssessmentCenter() {
           <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
-          这里集中了全部测评的入口与报告。三项必测（MBTI 性格、DISC 行为风格、E3 三阶九能学业诊断）是综合学习力报告的基础；
-          选做测评（学科能力、家长卷、家长 DISC、多元智能五项、职业锚、霍兰德职业兴趣、心理健康）帮你和家人从更多角度认识自己，按兴趣挑着做就好。
+          推荐先完成上面两项测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；
+          更多测评（学科能力、家长卷、心理健康、职业锚等）在下方列表里，按需要挑着做。
         </p>
       </div>
 

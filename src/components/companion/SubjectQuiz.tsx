@@ -1,4 +1,5 @@
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
+import { useScrollToQuestion } from "@/lib/quizScroll";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
@@ -41,6 +42,7 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
   /* 当前位置：第一个未答完的科目；科内题号 = 已答题数 */
   const curSubject = pickedValid.find((s) => (answers[s]?.length ?? 0) < (bank?.[s]?.length ?? 0));
   const curIdx = curSubject ? (answers[curSubject]?.length ?? 0) : 0;
+  const qRef = useScrollToQuestion(`${curSubject ?? ""}:${curIdx}`);
   const totalAll = pickedValid.reduce((n, s) => n + (bank?.[s]?.length ?? 0), 0);
   const doneAll = pickedValid.reduce((n, s) => n + (answers[s]?.length ?? 0), 0);
 
@@ -249,19 +251,21 @@ export default function SubjectQuiz({ onDone }: { onDone: () => void }) {
             <span className="rounded-full bg-cream px-2 py-px">目标 {q.level} 阶</span>
           </div>
 
-          <p className="mt-3 text-center text-[16.5px] font-medium leading-relaxed text-olive">{q.point}</p>
+          <div ref={qRef} className="scroll-mt-24">
+            <p className="mt-3 text-center text-[16.5px] font-medium leading-relaxed text-olive">{q.point}</p>
 
-          <div className="mt-5 grid gap-2.5">
-            {OPTIONS.map((opt, i) => (
-              <button
-                key={opt}
-                disabled={submit.isPending}
-                onClick={() => pick(i + 1)}
-                className="rounded-xl border border-border bg-cream px-4 py-3 text-center text-[14.5px] leading-relaxed text-olive-soft transition-colors hover:border-[#E3B53A]/60 hover:bg-butter-pale/60"
-              >
-                {opt}
-              </button>
-            ))}
+            <div className="mt-5 grid gap-2.5">
+              {OPTIONS.map((opt, i) => (
+                <button
+                  key={opt}
+                  disabled={submit.isPending}
+                  onClick={() => pick(i + 1)}
+                  className="rounded-xl border border-border bg-cream px-4 py-3 text-center text-[14.5px] leading-relaxed text-olive-soft transition-colors hover:border-[#E3B53A]/60 hover:bg-butter-pale/60"
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-5 flex items-center justify-between">

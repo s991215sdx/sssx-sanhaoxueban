@@ -25,9 +25,9 @@ describe("v176 学员详情带出学科四维", () => {
     const src = readFileSync("api/studentDetail.ts", "utf-8");
     if (!/"subject4d"/.test(src)) throw new Error("studentDetail 未带 subject4d");
   });
-  it("报告栏目宫格含三好生涯规划报告", () => {
+  it("报告栏目宫格含选科及升学规划报告（v181 起由原「三好生涯规划报告」更名）", () => {
     const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
-    if (!/三好生涯规划报告/.test(src)) throw new Error("ReportView 缺三好生涯规划报告栏目");
+    if (!/选科及升学规划报告/.test(src)) throw new Error("ReportView 缺选科及升学规划报告栏目");
     if (!/studentUserId/.test(src)) throw new Error("ReportView 缺 studentUserId 直达");
   });
 });
