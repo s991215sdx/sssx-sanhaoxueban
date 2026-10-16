@@ -50,6 +50,7 @@ export default function HollandQuiz({ onDone }: { onDone: () => void }) {
   };
 
   /* ------- 结果卡 ------- */
+  const qRef = useScrollToQuestion(idx);
   if (submit.isSuccess && submit.data?.kind === "holland") {
     const result = submit.data.result as HollandResult;
     return (
@@ -96,7 +97,6 @@ export default function HollandQuiz({ onDone }: { onDone: () => void }) {
   /* ------- 作答中 ------- */
   const q = questions?.[Math.min(idx, total - 1)];
   /* v181：换题自动定位到题目+选项区域 */
-  const qRef = useScrollToQuestion(idx);
   return (
     <div className="paper-card p-6">
       <div className="flex items-center justify-between">

@@ -104,6 +104,7 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
   };
 
   /* ------- 结果卡 ------- */
+  const qRef = useScrollToQuestion(idx);
   if (submit.isSuccess && submit.data?.kind === "mentalsdq") {
     const result = submit.data.result as MentalSdqResult;
     return (
@@ -172,7 +173,6 @@ export default function MentalSdqQuiz({ onDone }: { onDone: () => void }) {
   /* ------- 作答中 ------- */
   const q = items[Math.min(idx, total - 1)];
   /* v181：换题自动定位到题目+选项区域 */
-  const qRef = useScrollToQuestion(idx);
   const isLast = idx === total - 1;
   return (
     <div className="paper-card p-6">

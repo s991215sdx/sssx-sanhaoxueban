@@ -72,6 +72,7 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
   };
 
   /* ------- 结果卡 ------- */
+  const qRef = useScrollToQuestion(`${curSubject ?? ""}:${curIdx}`);
   if (submit.isSuccess && submit.data?.kind === "subject4d") {
     const result = submit.data.result as Subject4dResult;
     const ranked = SUBJECT4D_SUBJECTS.map((s) => ({ s, v: result.subjects[s]?.潜力指数 ?? 0 })).sort((a, b) => b.v - a.v);
@@ -117,7 +118,6 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
   const item = curSubject ? bank[curSubject][curIdx] : null;
   const subjectIdx = curSubject ? SUBJECT4D_SUBJECTS.indexOf(curSubject) : 0;
   /* v181：换题/换科自动定位到题目+选项区域 */
-  const qRef = useScrollToQuestion(`${curSubject ?? ""}:${curIdx}`);
 
   return (
     <div className="mx-auto max-w-2xl">

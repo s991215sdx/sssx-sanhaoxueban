@@ -79,4 +79,26 @@ describe("v181 双轨测评中心", () => {
     expect(src).not.toContain("SUBJECT4D_DIM_LABEL");
     expect(src).toContain("scroll-mt-24");
   });
+
+  it("回归：useScrollToQuestion 必须位于所有提前 return 之前（防止白屏）", () => {
+    const files = [
+      "src/components/companion/Subject4dQuiz.tsx",
+      "src/components/companion/HollandQuiz.tsx",
+      "src/components/companion/AnchorQuiz.tsx",
+      "src/components/companion/Multi5Quiz.tsx",
+      "src/components/companion/MentalSdqQuiz.tsx",
+      "src/components/companion/MentalPaQuiz.tsx",
+      "src/components/companion/MentalQuiz.tsx",
+      "src/components/companion/MentalScl90Quiz.tsx",
+      "src/components/companion/SubjectQuiz.tsx",
+      "src/components/welcome/ChoiceStage.tsx",
+    ];
+    for (const p of files) {
+      const lines = read(p).split("\n");
+      const hookAt = lines.findIndex((l) => l.includes("useScrollToQuestion("));
+      expect(hookAt, `${p} 缺少 useScrollToQuestion`).toBeGreaterThanOrEqual(0);
+      const earlyReturn = lines.slice(0, hookAt).findIndex((l) => l.startsWith("  return "));
+      expect(earlyReturn, `${p} 的 useScrollToQuestion 位于提前 return 之后，会导致换分支时 hook 数量变化白屏`).toBe(-1);
+    }
+  });
 });

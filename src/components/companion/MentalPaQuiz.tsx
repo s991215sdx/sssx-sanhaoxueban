@@ -99,6 +99,7 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
   };
 
   /* ------- 结果卡 ------- */
+  const qRef = useScrollToQuestion(idx);
   if (submit.isSuccess && submit.data?.kind === "mentalpa") {
     const result = submit.data.result as unknown as MentalV2Result;
     return (
@@ -160,7 +161,6 @@ export default function MentalPaQuiz({ onDone }: { onDone: () => void }) {
   /* ------- 作答中 ------- */
   const q = items[Math.min(idx, total - 1)];
   /* v181：换题自动定位到题目+选项区域 */
-  const qRef = useScrollToQuestion(idx);
   const isFirstOfSection = q && q.section.questions[0]?.no === q.no;
   const isLast = idx === total - 1;
   return (
