@@ -206,6 +206,7 @@ export async function ssoTicketEntry(c: Context) {
       .select()
       .from(users)
       .where(and(eq(users.phone, phone), inArray(users.role, ["tutor", "admin"] as const), isNull(users.deletedAt)))
+      .orderBy(desc(users.lastSignInAt))
       .limit(1);
     const staff = found[0];
     if (!staff) {

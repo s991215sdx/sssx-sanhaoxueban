@@ -175,6 +175,7 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
           <div className="space-y-3">
             <input className={inputCls} value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="称呼（可空，默认「机构管理员」）" />
             <input className={inputCls} value={adminPhone} onChange={(e) => setAdminPhone(e.target.value)} placeholder="手机号（登录账号）" />
+            <p className="-mt-1.5 text-[11.5px] text-olive-mute">同一个手机号可以担任多个机构的超级管理员；若手机号已在系统中，将为其新建本机构的管理员身份。</p>
             <input className={inputCls} type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="初始密码（6～64 位）" />
           </div>
         </div>
