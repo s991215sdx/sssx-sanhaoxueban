@@ -3,7 +3,7 @@
  * 数据源：zhihui.reportData（学科四维 + 霍兰德 + 成绩档案 + 未来期望 + 资料库）。
  * 打印：每页 A4 page-break，点「下载 / 打印」另存 PDF。
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
@@ -114,6 +114,19 @@ const MENLEI_GROUPS = [
     { n: "文学", d: "语言、文化与传播", c: 3 }, { n: "历史学", d: "以古鉴今，史料与史观", c: 1 },
     { n: "哲学", d: "思辨与价值追问", c: 1 }, { n: "艺术学", d: "创作、设计与表演", c: 5 } ] },
 ];
+
+/** 高中学科 → 关联门类（门类推荐指数 · 学科潜力映射） */
+const SUBJECT_MENLEI: Record<string, string[]> = {
+  语文: ["文学", "教育学"],
+  数学: ["理学", "工学"],
+  英语: ["文学", "经济学", "管理学"],
+  物理: ["工学", "理学"],
+  化学: ["理学", "医学", "工学"],
+  生物: ["医学", "农学", "理学"],
+  历史: ["历史学", "哲学", "文学"],
+  政治: ["法学", "教育学"],
+  地理: ["理学", "工学"],
+};
 
 /* ---------- SVG 工具 ---------- */
 function PyramidChart() {
@@ -312,6 +325,34 @@ export default function ZhihuiReport() {
     return `ZH${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${data?.student.id ?? 0}`;
   }, [data]);
 
+  /* 门类推荐指数：霍兰德门类权重(×2) + 推荐专业类命中(+3) + 学科四维 Top3 映射(4/3/2)；
+     首选历史时自然科学门类折半（呼应「理工农医多要求物理+化学」的选科门槛） */
+  const menleiRec = useMemo(() => {
+    if (!data) return {} as Record<string, number>;
+    const sc: Record<string, number> = {};
+    const add = (m: string, v: number) => { if (m) sc[m] = (sc[m] ?? 0) + v; };
+    for (const [m, w] of Object.entries(data.menleiW ?? {})) add(m, w * 2);
+    for (const c of data.majorCats ?? []) add(c.menlei, 3);
+    const s4 = data.subject4d?.result as Subject4dResult | null | undefined;
+    if (s4?.subjects) {
+      const top = SUBJECT4D_SUBJECTS.map((n) => ({ n, v: s4.subjects[n]?.潜力指数 ?? 0 }))
+        .sort((a, b) => b.v - a.v).slice(0, 3);
+      top.forEach((t, i) => { for (const m of SUBJECT_MENLEI[t.n] ?? []) add(m, 4 - i); });
+      const phys = s4.subjects["物理"]?.潜力指数 ?? 3;
+      const hist = s4.subjects["历史"]?.潜力指数 ?? 3;
+      if (hist > phys) for (const m of ["理学", "工学", "农学", "医学"]) if (sc[m]) sc[m] = sc[m]! * 0.5;
+    }
+    const mx = Math.max(0, ...Object.values(sc));
+    const rec: Record<string, number> = {};
+    if (mx > 0) for (const [m, v] of Object.entries(sc)) {
+      if (v <= 0) continue;
+      const r = Math.round(55 + (43 * v) / mx);
+      if (r >= 60) rec[m] = Math.min(98, r);
+    }
+    return rec;
+  }, [data]);
+  const [openMenlei, setOpenMenlei] = useState<string | null>(null);
+
   if (isLoading) return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
   if (!data) return <p className="py-10 text-center text-olive-mute">报告数据加载失败</p>;
 
@@ -320,6 +361,7 @@ export default function ZhihuiReport() {
     : null;
   const majorCats = data.majorCats ?? [];
   const careerPicks = data.careerPicks ?? [];
+  const menleiCatMap: Record<string, string[]> = Object.fromEntries((data.menleiCats ?? []).map((m) => [m.menlei, m.cats]));
   const targetRows = (data.targetSchool?.rows ?? []).filter((r) => r.y1Min != null).slice(0, 6);
 
   return (
@@ -482,7 +524,7 @@ export default function ZhihuiReport() {
       <Page no={14}>
         <div className="part-tag">PART 3</div>
         <h2>认识世界 · 本科 12 大学科门类</h2>
-        <p className="muted" style={{ marginTop: 12 }}>按自然科学 / 社会科学 / 人文科学三排归纳。各学科门类下设若干专业类，共 90+ 个专业类、1100+ 个本科专业。</p>
+        <p className="muted" style={{ marginTop: 12 }}>按自然科学 / 社会科学 / 人文科学三排归纳，绿色徽标为结合你测评结果的推荐门类，点开门类可查看下设专业类。</p>
         <div style={{ marginTop: 18 }}>
           {MENLEI_GROUPS.map((g) => (
             <div key={g.label} style={{ marginBottom: 18 }}>
@@ -491,10 +533,32 @@ export default function ZhihuiReport() {
                 <span style={{ fontSize: 12, color: C.oliveMute }}>{g.sub}</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {g.items.map((it) => (<div key={it.n} style={{ background: "#fff", border: "1px solid #E8F1EC", borderRadius: 12, padding: "16px 18px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><b style={{ fontSize: 16, color: C.olive }}>{it.n}</b><span style={{ fontSize: 12, color: C.oliveMute }}>{it.c} 类</span></div>
-                  <div style={{ fontSize: 12, color: C.oliveSoft, marginTop: 6 }}>{it.d}</div>
-                </div>))}
+                {g.items.map((it) => {
+                  const rec = menleiRec[it.n];
+                  const open = openMenlei === it.n;
+                  const cats = menleiCatMap[it.n] ?? [];
+                  return (
+                    <div key={it.n} onClick={() => setOpenMenlei(open ? null : it.n)}
+                      style={{ position: "relative", background: rec != null ? "#F0FAF5" : "#fff", border: rec != null ? `1.5px solid ${C.brand}` : "1px solid #E8F1EC", borderRadius: 12, padding: "16px 18px", cursor: "pointer" }}>
+                      {rec != null && (
+                        <span style={{ position: "absolute", top: 10, right: 12, background: C.brand, color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 99 }}>推荐 {rec}%</span>
+                      )}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <b style={{ fontSize: 16, color: C.olive }}>{it.n}</b>
+                        {rec == null && <span style={{ fontSize: 12, color: C.oliveMute }}>{it.c} 类</span>}
+                      </div>
+                      <div style={{ fontSize: 12, color: C.oliveSoft, marginTop: 6 }}>{it.d}</div>
+                      <div style={{ fontSize: 12, color: C.brand, fontWeight: 600, marginTop: 8 }}>{open ? "收起 ⌃" : `${it.c} 个专业类 ⌄`}</div>
+                      {open && (
+                        <div style={{ marginTop: 10, borderTop: "1px dashed #E8F1EC", paddingTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {(cats.length ? cats : [`共 ${it.c} 个专业类（资料库同步中）`]).map((c) => (
+                            <span key={c} style={{ background: "#fff", border: "1px solid #D4F2E8", color: C.oliveSoft, fontSize: 12, padding: "3px 10px", borderRadius: 8 }}>{c}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

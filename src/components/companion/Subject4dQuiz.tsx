@@ -82,7 +82,7 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
         <Sparkles className="mx-auto text-brand" size={36} />
         <h2 className="mt-3 text-[20px] font-bold text-olive">学科四维测评完成</h2>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-mute">
-          9 科 × 4 维共 108 题已完成，结果已写入你的智慧生涯档案。
+          9 科 × 4 维共 108 题已完成，结果已写入你的三好生涯档案。
         </p>
         <div className="mt-5 space-y-2 text-left">
           {top.map(({ s, v }, i) => (
@@ -100,7 +100,7 @@ export default function Subject4dQuiz({ onDone }: { onDone: () => void }) {
             onClick={() => navigate("/zhihui-report")}
             className="rounded-lg bg-brand px-5 py-2.5 text-[14px] font-semibold text-cream hover:bg-lime"
           >
-            查看智慧生涯规划报告
+            查看三好生涯规划报告
           </button>
           <button type="button" onClick={onDone} className="rounded-lg border border-border px-5 py-2.5 text-[14px] text-olive">
             返回测评中心

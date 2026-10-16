@@ -6,7 +6,7 @@ describe("v176 伴学师查看完整报告直达学员报告页", () => {
     const src = readFileSync("src/components/StudentDetailDrawer.tsx", "utf-8");
     if (!/查看完整报告（与学生端一致）/.test(src)) throw new Error("缺：查看完整报告主按钮");
     if (!/bg-\[#0C7064\][\s\S]{0,600}查看完整报告/.test(src)) throw new Error("缺：查看完整报告实心主按钮");
-    if (!/setReportOpen\(\(v\) => !v\)/.test(src)) throw new Error("主按钮未恢复展开报告视图");
+    if (!/setReportOpen\(true\); setWide\(true\);/.test(src)) throw new Error("主按钮未恢复展开报告视图");
     // 不得残留「新标签页直达」旧实现
     if (/window\.open\(`\/zhihui-report\?studentId=\$\{userId\}`/.test(src))
       throw new Error("残留：抽屉主按钮新标签页直达");

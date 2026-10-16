@@ -256,6 +256,17 @@ export const zhihuiRouter = createRouter({
         targetUniversity = us[0] ?? null;
       }
 
+      // 12 门类图：每门类下设专业类清单（门类卡展开用）
+      const menleiCatsMap = new Map<string, string[]>();
+      for (const c of catRows) {
+        const arr = menleiCatsMap.get(c.menlei) ?? [];
+        arr.push(c.cat);
+        menleiCatsMap.set(c.menlei, arr);
+      }
+      const menleiCats = [...menleiCatsMap.entries()]
+        .map(([menlei, cats]) => ({ menlei, cats: cats.sort((a, b) => a.localeCompare(b, "zh")) }))
+        .sort((a, b) => a.menlei.localeCompare(b.menlei, "zh"));
+
       return {
         student: { id: sid, name: user?.name ?? "", grade: (profile?.grade as string | null) ?? null },
         subject4d: s4d ? { result: s4d.result, answers: s4d.answers, createdAt: s4d.createdAt } : null,
@@ -267,6 +278,8 @@ export const zhihuiRouter = createRouter({
         targetUniversity,
         majorCats,
         careerPicks,
+        menleiW,
+        menleiCats,
       };
     }),
 });
