@@ -1010,7 +1010,7 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
   .no-print { display: none !important; }
   .zh-root { background: #fff; padding: 0; }
   /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪 */
-  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; }
+  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; page-break-inside: auto; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; }
   .zh-page:last-child { page-break-after: auto; }
   .pfoot { bottom: 8px; left: 22px; right: 22px; }
   .zh-page .card { padding: 9px 14px; }

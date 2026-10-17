@@ -66,7 +66,8 @@ ul.ob-dots.ob-warn li::before { background: #F0A92E; }
 @media print {
   .ob-root { background: #fff; padding: 0; }
   .ob-book { max-width: none; padding: 0; }
-  .ob-page { box-shadow: none; margin: 0; border-radius: 0; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; break-after: page; page-break-after: always; }
+  /* v195：书页允许自然续页（内容超出一页 A4 时连续排，不产生空白页）；仍每页从新的纸页开始 */
+  .ob-page { box-shadow: none; margin: 0; border-radius: 0; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; break-after: page; page-break-after: always; break-inside: auto; page-break-inside: auto; }
   .ob-page:last-child { break-after: auto; page-break-after: auto; }
   .ob-pfoot { bottom: 8px; left: 22px; right: 22px; }
   .ob-card { padding: 12px 16px; }
@@ -82,7 +83,8 @@ ul.ob-dots.ob-warn li::before { background: #F0A92E; }
 .ob-flow > * { margin-top: 14px; }
 @media print {
   .ob-root .ob-flow { max-width: none; padding: 0; }
-  .ob-flow > .paper-card, .ob-flow > details, .ob-flow > .rounded-xl { break-inside: avoid; page-break-inside: avoid; box-shadow: none; }
+  /* v195：流式内容允许自然跨页，避免比一页还高的卡片/折叠块产生空白页 */
+  .ob-flow > .paper-card, .ob-flow > details, .ob-flow > .rounded-xl { box-shadow: none; }
 }
 `;
 

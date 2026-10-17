@@ -143,18 +143,45 @@ div[id*="kimi-widget" i] {
   #report-print-root [class*="min-w\\["] {
     min-width: 0 !important;
   }
-  /* 图/表/卡片/书页不跨页拆散：跨页的整块推到下一页 */
+  /* v195：只有「保证小余一页」的元素才强制不跨页（图表必须完整呈现）；
+     details/表格/书页/卡片等允许自然跨页——打印前 JS 会展开所有折叠块，
+     若对这些「可能比一页还高」的整块加 break-inside:avoid，Chrome 会先整推到
+     下一页、仍放不下再断开，中间产生大量空白页。 */
   #report-print-root svg,
   #report-print-root canvas,
   #report-print-root img,
-  #report-print-root table,
-  #report-print-root .paper-card,
-  #report-print-root .zh-page,
-  #report-print-root .ob-page,
-  #report-print-root .ob-card,
-  #report-print-root .recharts-responsive-container,
-  #report-print-root details {
+  #report-print-root .recharts-responsive-container {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+  /* 大块跨页时断口补全边框/圆角，视觉连续 */
+  #report-print-root .paper-card,
+  #report-print-root .ob-card,
+  #report-print-root details,
+  #report-print-root .rounded-xl,
+  #report-print-root .ob-page,
+  #report-print-root .zh-page {
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  /* 表格按行断开（thead 自动重复），单行不拆 */
+  #report-print-root tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* 标题/小节题不与后续内容分家，段落不断出孤行寡行 */
+  #report-print-root h1,
+  #report-print-root h2,
+  #report-print-root h3,
+  #report-print-root h4,
+  #report-print-root .ob-sec-title,
+  #report-print-root .ob-part-tag {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  #report-print-root p,
+  #report-print-root li {
+    orphans: 3;
+    widows: 3;
   }
 }
