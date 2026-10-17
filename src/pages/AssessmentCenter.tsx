@@ -381,7 +381,8 @@ export default function AssessmentCenter() {
      学习力测评的套件口径 = 渠道可勾选的四种核心测评（MBTI/DISC/E3/智能五项）；
      心理健康A版在向导内可跳过、且不是渠道可单独勾选的种类，不计入门槛。 */
   const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
-  const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland", "anchor"].every((k) => visibleSet.has(k));
+  /* v194：选科组合门槛 = 学科四维 + 霍兰德（核心两项；职业锚/多元智能为可选增量，校园渠道可不含） */
+  const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland"].every((k) => visibleSet.has(k));
   /* v191：学习力系列任一测评在套餐内 → 展示「综合学习力报告」入口；套餐不含学习力（如校园选科版）则隐藏，避免引导做未开放测评 */
   const suiteGranted = !visibleSet || ["mbti", "disc", "e3"].some((k) => visibleSet.has(k));
 
@@ -447,7 +448,14 @@ export default function AssessmentCenter() {
                       <span className="rounded-full bg-brand px-2 py-px text-[10.5px] font-bold text-cream">推荐</span>
                     </span>
                     <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-                      学科四维测评 → 霍兰德职业兴趣测评 → 职业锚测评，三项做完自动生成选科及升学规划报告：推荐选科组合、适合的专业与职业、升学路径规划。多元智能五项折叠在职业兴趣后，仅作参考。
+                      {(() => {
+                        /* v194：文案按渠道套餐动态裁剪（如校园渠道无职业锚） */
+                        const flow = ["subject4d", "holland", "anchor"]
+                          .filter((k) => !visibleSet || visibleSet.has(k))
+                          .map((k) => ({ subject4d: "学科四维测评", holland: "霍兰德职业兴趣测评", anchor: "职业锚测评" })[k])
+                          .join(" → ");
+                        return `${flow}${access?.campus ? " → 月考成绩（9 科必填）" : ""}，做完自动生成选科及升学规划报告：推荐选科组合、适合的专业与职业、升学路径规划。${!access?.campus ? "多元智能五项折叠在职业兴趣后，仅作参考。" : ""}`;
+                      })()}
                     </p>
                   </span>
                   <span className="shrink-0 rounded-xl bg-lime px-4 py-2.5 text-[13.5px] font-semibold text-cream">
@@ -488,7 +496,14 @@ export default function AssessmentCenter() {
           {suiteVisible && zhihuiSuiteVisible
             ? "推荐先完成上面两项测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；更多测评在下方列表里，按需要挑着做。"
             : zhihuiSuiteVisible
-              ? "推荐先完成上面的「选科及升学规划测评」：学科四维 → 霍兰德职业兴趣 → 职业锚，三项做完自动生成你的选科及升学规划报告（选科组合、适合的专业与职业、升学路径规划）；更多测评在下方列表里，按需要挑着做。"
+              ? (() => {
+                  /* v194：按渠道套餐动态列出流程（校园渠道无职业锚、含成绩步骤） */
+                  const items = [
+                    ...["subject4d", "holland", "anchor"].filter((k) => !visibleSet || visibleSet.has(k)).map((k) => ({ subject4d: "学科四维", holland: "霍兰德职业兴趣", anchor: "职业锚" })[k] as string),
+                    ...(access?.campus ? ["月考成绩（9 科必填）"] : []),
+                  ];
+                  return `推荐先完成上面的「选科及升学规划测评」：${items.join(" → ")}，全部完成自动生成你的选科及升学规划报告（选科组合、适合的专业与职业、升学路径规划）；更多测评在下方列表里，按需要挑着做。`;
+                })()
               : suiteVisible
                 ? "推荐先完成上面的「学习力测评」，做完即可生成你的综合学习力报告；更多测评在下方列表里，按需要挑着做。"
                 : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」两项推荐入口。"}
