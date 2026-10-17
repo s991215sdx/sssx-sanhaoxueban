@@ -4,6 +4,9 @@
       tenant.sameOrg 不再对 NULL 机构账号放行；
       getStudentDetail 严格校验目标学员属于本机构；
       zhihuiRouter.assertStaffIfOther 增加 sameOrg 机构校验（原来只看角色）。
+      【v190 修订】无机构（org_id IS NULL）账号/学员改对本机构管理员可见（owner 确认）：
+      公开邀请码注册的学员不分机构，继续隐藏会导致做完测评却在列表消失；
+      其他机构仍严格隔离。口径见 tenant.orgScope。
    2) 报告排版：HollandHexMap 重排为 RIASEC 两排等宽卡片；
       六型学科地图并入三好生涯报告雷达图同页；移除该报告的多元智能参考页；页码重编。
    要求：BUILD_TAG 递增到 v178。 */
@@ -18,21 +21,19 @@ describe("v179 机构数据严格隔离 + 报告排版", () => {
   const zhihui = readFileSync("src/pages/ZhihuiReport.tsx", "utf-8");
   const router = readFileSync("api/router.ts", "utf-8");
 
-  it("listStudents 严格本机构过滤（历史直客不再放行）", () => {
-    if (/or\(eq\(users\.orgId, orgId\), isNull\(users\.orgId\)\)/.test(detail))
-      throw new Error("残留：listStudents 对 org_id IS NULL 放行");
-    if (!/where\(eq\(users\.orgId, orgId\)\)/.test(detail)) throw new Error("缺：严格 eq(orgId) 过滤");
+  it("v190：listStudents 机构范围 = 本机构 + 无机构（历史直客由数据归位+v190 口径可见）", () => {
+    if (!/orgScope\(orgId\)/.test(detail)) throw new Error("缺：listStudents 使用 orgScope（本机构+无机构）");
+    if (/where\(eq\(users\.orgId, orgId\)\)/.test(detail)) throw new Error("残留 v179：listStudents 仍有 eq(orgId) 独占分支");
   });
 
-  it("sameOrg 不再对 NULL 机构账号放行", () => {
-    if (/t\.orgId === me\.orgId \|\| t\.orgId == null/.test(tenant))
-      throw new Error("残留：sameOrg 放行 NULL 机构账号");
-    if (!/t\.orgId === me\.orgId/.test(tenant)) throw new Error("缺：sameOrg 严格同机构判定");
+  it("v190：sameOrg 无机构账号对本机构管理员放行", () => {
+    if (!/t\.orgId === me\.orgId \|\| t\.orgId == null/.test(tenant))
+      throw new Error("缺：sameOrg 放行 NULL 机构账号（v190 口径）");
   });
 
-  it("getStudentDetail 严格校验本机构学员", () => {
-    if (/target\.orgId !== orgId && target\.orgId != null/.test(detail))
-      throw new Error("残留：getStudentDetail 放行 NULL 机构学员");
+  it("v190：getStudentDetail 无机构学员放行、跨机构拒绝", () => {
+    if (!/target\.orgId !== orgId && target\.orgId != null/.test(detail))
+      throw new Error("缺：getStudentDetail v190 放行口径");
   });
 
   it("智慧生涯接口带机构校验", () => {

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull, or } from "drizzle-orm";
 import { users, type User } from "@db/schema";
 import { getDb } from "./queries/connection";
 
@@ -29,9 +29,21 @@ export function isPlatformAdmin(user: Pick<User, "role" | "orgId">): boolean {
  * - 机构管理员/伴学师只能管理本机构账号。
  * 用于学员详情、AI 问诊带学员、分配校验、角色设置等跨用户访问点。
  * v179：不再对 org_id 为 NULL 的账号放行——新机构管理员绝不可见其他机构/平台直客数据。
+ * v190：无机构（org_id IS NULL）的账号改为对本机构管理员可见——公开邀请码注册的学员
+ * 不分机构，若继续隐藏会导致机构管理员「学生做了测评却在列表消失」；
+ * 其他机构的账号仍严格隔离，不受影响。
  */
 export async function sameOrg(db: ReturnType<typeof getDb>, me: Pick<User, "orgId">, targetUserId: number): Promise<boolean> {
   if (me.orgId == null) return true;
   const t = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, targetUserId)).limit(1))[0];
-  return !!t && t.orgId === me.orgId;
+  return !!t && (t.orgId === me.orgId || t.orgId == null);
+}
+
+/**
+ * v190：机构管理员的数据范围 SQL 条件 = 本机构 + 无机构（org_id IS NULL）用户。
+ * 用法：db.select().from(users).where(orgScope(orgId))，或 and(orgScope(orgId), 其它条件)。
+ * 仅适用机构管理员分支；平台超管（orgId=null）直接不加条件（全量）。
+ */
+export function orgScope(orgId: number) {
+  return or(eq(users.orgId, orgId), isNull(users.orgId));
 }
