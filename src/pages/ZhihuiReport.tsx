@@ -524,7 +524,23 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
         <h1 className="text-[20px] font-bold text-olive">选科及升学规划报告</h1>
         <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade} · 报告编号 {reportNo}</span>
-        <button type="button" onClick={() => window.print()} className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime">
+        <button
+          type="button"
+          onClick={() => {
+            /* v196：另存为 PDF 的默认文件名取自 document.title——校园渠道用「机构名+选科及升学规划报告」 */
+            const prev = document.title;
+            document.title = campus
+              ? `${access?.orgName || "粤华学校"}选科及升学规划报告`
+              : `${data.student.name} - 选科及升学规划报告`;
+            const restore = () => {
+              document.title = prev;
+              window.removeEventListener("afterprint", restore);
+            };
+            window.addEventListener("afterprint", restore);
+            window.print();
+          }}
+          className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime"
+        >
           下载 / 打印
         </button>
       </div>
@@ -1009,8 +1025,9 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
 @media print {
   .no-print { display: none !important; }
   .zh-root { background: #fff; padding: 0; }
-  /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪 */
-  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; page-break-inside: auto; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; }
+  /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪。
+     v196：min-height 收紧到 256mm（+上下内边距 ≈ 270mm < 273mm 可印高度），封面等单页内容严格一页显示完，不再溢出到第二张 */
+  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; page-break-inside: auto; max-width: none; min-height: 256mm !important; height: auto; padding: 14px 22px 40px; }
   .zh-page:last-child { page-break-after: auto; }
   .pfoot { bottom: 8px; left: 22px; right: 22px; }
   .zh-page .card { padding: 9px 14px; }

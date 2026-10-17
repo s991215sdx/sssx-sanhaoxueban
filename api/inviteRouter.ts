@@ -142,16 +142,17 @@ export const inviteRouter = createRouter({
         .orderBy(desc(inviteRegistrations.id))
         .limit(1)
     )[0];
-    if (!reg) return { enabled: false as const, kinds: [] as string[], campus: false as const };
+    if (!reg) return { enabled: false as const, kinds: [] as string[], campus: false as const, orgName: null as string | null };
     const ch = (
       await db
-        .select({ assessmentAccess: inviteChannels.assessmentAccess, assessmentKinds: inviteChannels.assessmentKinds, campus: inviteChannels.campus })
+        .select({ assessmentAccess: inviteChannels.assessmentAccess, assessmentKinds: inviteChannels.assessmentKinds, campus: inviteChannels.campus, orgName: organizations.name })
         .from(inviteChannels)
+        .leftJoin(organizations, eq(organizations.id, inviteChannels.orgId))
         .where(eq(inviteChannels.id, reg.channelId))
         .limit(1)
     )[0];
-    if (!ch || !ch.assessmentAccess) return { enabled: false as const, kinds: [] as string[], campus: false as const };
-    return { enabled: true as const, kinds: normalizeAssessKinds(ch.assessmentKinds) ?? [], campus: !!ch.campus };
+    if (!ch || !ch.assessmentAccess) return { enabled: false as const, kinds: [] as string[], campus: false as const, orgName: null as string | null };
+    return { enabled: true as const, kinds: normalizeAssessKinds(ch.assessmentKinds) ?? [], campus: !!ch.campus, orgName: ch.orgName ?? null };
   }),
 
   /**
