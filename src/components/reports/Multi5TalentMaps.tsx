@@ -42,7 +42,7 @@ function TalentDonut({ multi5 }: { multi5: Multi5Result }) {
   });
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 340 340" style={{ width: "100%", maxWidth: 320, height: "auto", display: "block" }}>
+      <svg viewBox="-42 -14 424 368" style={{ width: "100%", maxWidth: 360, height: "auto", display: "block" }}>
         {/* 外圈：维度名色带 */}
         {segs.map((s) => (
           <path key={`o-${s.k}`} d={ringSeg(CX, CY, 130, 116, s.a0, s.a1)} fill={bandColor(s.v)} opacity={0.92} />
