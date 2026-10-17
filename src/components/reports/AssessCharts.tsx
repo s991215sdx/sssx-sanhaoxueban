@@ -144,7 +144,7 @@ export function DiscBars({ result }: { result: DiscResult }) {
 
 export function AnchorBars({ result, height = 210 }: { result: AnchorResult; height?: number }) {
   const top = new Set(result.top2);
-  const data = ANCHOR_ORDER.map((k: AnchorKey) => ({ label: ANCHOR_LABEL[k], key: k, 得分: result.dims[k] }));
+  const data = [...ANCHOR_ORDER].sort((a, b) => result.dims[b] - result.dims[a]).map((k: AnchorKey) => ({ label: ANCHOR_LABEL[k], key: k, 得分: result.dims[k] }));
   return (
     <div>
       <BlockTitle>职业价值观八锚（Top：{result.top2.map((k) => ANCHOR_LABEL[k]).join("、")}）</BlockTitle>

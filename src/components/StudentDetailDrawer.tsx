@@ -38,8 +38,8 @@ export default function StudentDetailDrawer({
     mental: "心理健康·通用版", mentalsdq: "心理健康·学生版A(SDQ)", mentalpa: "心理健康·学生版B(PHQ-A)",
     scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", subject4d: "学科四维测评（三好生涯）", e3parent: "家长卷", discparent: "家长版 DISC",
   };
-  /** 宽屏模式：电脑上默认右半屏抽屉，可一键放大到全屏阅读报告。 */
-  const [wide, setWide] = useState(false);
+  /** 宽屏模式：电脑上默认全屏打开报告，可一键还原为半屏抽屉（v182：默认全屏，看得更清楚）。 */
+  const [wide, setWide] = useState(true);
   /** 测评报告：默认收起为一行摘要，展开渲染与学生端一致的 ReportView。 */
   const [reportOpen, setReportOpen] = useState(false);
   /** 成绩与目标 · 可代填：伴学师/管理员代学员填写。 */
@@ -52,6 +52,8 @@ export default function StudentDetailDrawer({
       // 后端已放行 admin：两个入口共用同一 mutation，按当前数据源刷新对应查询。
       if (source === "admin") utils.admin.studentDetail.invalidate({ userId });
       else utils.coach.studentDetail.invalidate({ userId });
+      // 每次代填都会追加一条成绩曲线记录，刷新报告页数据源
+      utils.coach.academicRecords.invalidate({ userId });
       setEditAcad(false);
       setAcadSaved(true);
     },
@@ -339,7 +341,9 @@ export default function StudentDetailDrawer({
                       footer={
                         <>
                           {saveMut.isError && (
-                            <p className="mt-2 text-center text-[13px] text-terra">保存失败，请再试一次。</p>
+                            <p className="mt-2 text-center text-[13px] text-terra">
+                              {saveMut.error?.message || "保存失败，请再试一次。"}
+                            </p>
                           )}
                         </>
                       }

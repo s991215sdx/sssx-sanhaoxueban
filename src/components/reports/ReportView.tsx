@@ -13,7 +13,12 @@ import AcademicsForm from "@/components/companion/AcademicsForm";
 import GuidanceTab from "@/components/reports/GuidanceTab";
 import DiscTendencyChart, { DISC_COLOR } from "@/components/reports/DiscTendencyChart";
 import { SubjectAdviceBlocks } from "@/components/reports/SubjectAdviceBlocks";
+import CombinedV39Report from "@/components/reports/CombinedV39";
+import { OliveStyle } from "@/components/reports/olive/OliveBook";
+import { OliveMbti, OliveDisc, OliveHolland, OliveMulti5, OliveAnchor, OliveMentalV2 } from "@/components/reports/olive/OliveSingles";
+import { OliveE3, OliveGuidance, OliveParent } from "@/components/reports/olive/OliveBigs";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
+import { ZhihuiReportBody } from "@/pages/ZhihuiReport";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
@@ -101,10 +106,10 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, ExternalLink, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
-import Multi5TalentMaps from "@/components/reports/Multi5TalentMaps";
+import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
 import MentalDetail from "@/components/reports/MentalDetail";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
@@ -133,8 +138,8 @@ type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics"
    新增「学科能力评估」独立报告栏目。 */
 const TABS: { key: Tab; label: string }[] = [
   { key: "combined", label: "综合学习力报告" },
-  { key: "zhihui", label: "选科及升学规划报告" },
-  { key: "guidance", label: "升学指导报告" },
+  { key: "zhihui", label: "选科及升学规划（高一）" },
+  { key: "guidance", label: "升学指导报告（全学段）" },
   { key: "parent", label: "家长认知冲突报告" },
   { key: "e3", label: "学业诊断报告" },
   { key: "mbti", label: "MBTI 性格详版" },
@@ -1395,7 +1400,7 @@ function discNv(r: DiscResult, k: "D" | "I" | "S" | "C"): number {
  * 家长报告 tab：家长版专属报告——测了 DISC 先解读家长版行为详版（亲子对照 + 逐位家长），
  * 再是家长卷内容（家庭支持与环境观察 + 家长认知对照），最后亲子冲突点清单与改进方案 + 答题明细。
  */
-function ParentReportTab({
+export function ParentReportTab({
   student,
   parents,
   e3parent,
@@ -1622,7 +1627,6 @@ function Multi5SubCard({ title, items }: { title: string; items: string[] }) {
 function Multi5Detail({ result }: { result: Multi5Result }) {
   const report = useMemo(() => buildMulti5Report(result), [result]);
   const topDim = report.dims.find((d) => d.key === report.topKey)!;
-  const radarData = report.dims.map((d) => ({ dim: d.label, 得分: d.score }));
   return (
     <div className="space-y-4">
       {/* 总览卡 */}
@@ -1651,25 +1655,19 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
         <p className="mt-3 text-[12.5px] leading-relaxed text-olive-mute">{MULTI5_THEORY_NOTE}</p>
       </div>
 
-      {/* 雷达图 */}
+      {/* 五维圆环图（取代原雷达图，与学科/职业/提升参考同一图形语言） */}
       <div className="paper-card p-5">
-        <h3 className="font-bold text-olive">五维雷达（百分制）</h3>
-        <p className="mt-1 text-[12.5px] text-olive-mute">每维 8 道客观题的正确率换算得分，越靠外越好。</p>
-        <div className="mt-2 h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#DFE4DA" />
-              <PolarAngleAxis dataKey="dim" tick={{ fill: "#475550", fontSize: 12 }} />
-              <Radar dataKey="得分" stroke="#52A965" fill="#52A965" fillOpacity={0.35} strokeWidth={2.5} />
-            </RadarChart>
-          </ResponsiveContainer>
+        <h3 className="font-bold text-olive">五维得分圆环（百分制）</h3>
+        <p className="mt-1 text-[12.5px] text-olive-mute">每维 8 道客观题的正确率换算得分，色带越满越好。</p>
+        <div className="mt-2 flex justify-center">
+          <TalentDonut multi5={result} />
         </div>
       </div>
 
-      {/* V178：学科 / 职业 / 提升项目参考（图4/5/6 式样） */}
+      {/* V178：学科 / 职业 / 提升项目参考（图4/5/6 式样；圆环已在上方，此处只留卡片） */}
       <div className="paper-card p-5">
         <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
-        <Multi5TalentMaps multi5={result} />
+        <Multi5TalentMaps multi5={result} showDonut={false} />
       </div>
 
       {/* 五维卡片 */}
@@ -2300,7 +2298,6 @@ export default function ReportView({
   profile,
   viewer,
   onEditAcademics,
-  subject4d,
   studentUserId,
 }: {
   data: ReportAssessmentData | undefined;
@@ -2323,15 +2320,39 @@ export default function ReportView({
   const e3v37 = isE3V37Result(data?.e3) ? data.e3 : null;
   const e3Legacy = !!data?.e3 && !isE3V37Result(data.e3);
   // 支持 ?view=lite 直达简版（冒烟/深链）
-  const [combinedView, setCombinedView] = useState<"full" | "lite">(params.get("view") === "lite" ? "lite" : "full");
-  /* 兜底：用户直接 Ctrl+P / 系统菜单打印时，也自动展开所有折叠块，保证 PDF 完整 */
+  const [combinedView, setCombinedView] = useState<"full" | "lite" | "v39">(
+    params.get("view") === "lite" ? "lite" : params.get("view") === "v39" ? "v39" : "full",
+  );
+  /* v184：单项测评报告「原版 / 新版（olive book 式样）」并存切换，按 tab key 记忆 */
+  const [oliveNew, setOliveNew] = useState<Record<string, boolean>>({});
+  /** 各测评的作答日期（取原始记录），用于新版报告封面 */
+  const oliveDate = (kind: string) => {
+    const r = data?.raw?.find((x) => x.kind === kind);
+    return r ? new Date(r.createdAt).toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" }) : undefined;
+  };
+  /* v183c：打印前把打印根直挂 body（配 index.css 的 body.print-report 规则，避免绝对定位
+     分页重影），同时展开所有折叠块；打印后归位，保证 PDF 完整且版式不乱。 */
   useEffect(() => {
     let closed: Element[] = [];
+    const root = () => document.getElementById("report-print-root");
+    let stash: { parent: Node | null; next: Node | null } = { parent: null, next: null };
     const openAll = () => {
-      closed = Array.from(document.querySelectorAll("#report-print-root details:not([open])"));
+      const r = root();
+      if (!r) return;
+      document.body.classList.add("print-report");
+      stash = { parent: r.parentNode, next: r.nextSibling };
+      document.body.appendChild(r);
+      closed = Array.from(r.querySelectorAll("details:not([open])"));
       closed.forEach((d) => d.setAttribute("open", ""));
     };
-    const restore = () => closed.forEach((d) => d.removeAttribute("open"));
+    const restore = () => {
+      document.body.classList.remove("print-report");
+      const r = root();
+      if (r && stash.parent) stash.parent.insertBefore(r, stash.next);
+      stash = { parent: null, next: null };
+      closed.forEach((d) => d.removeAttribute("open"));
+      closed = [];
+    };
     window.addEventListener("beforeprint", openAll);
     window.addEventListener("afterprint", restore);
     return () => {
@@ -2420,7 +2441,8 @@ export default function ReportView({
     if (tab === "disc") return !!(data?.disc && DISC_REPORTS[data.disc.primary]);
     if (tab === "multi5") return !!data?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
-    if (tab === "academics" || tab === "guidance" || tab === "zhihui") return false; // 成绩/升学指导/生涯规划 tab 不提供下载（升学指导可系统打印；生涯规划在完整页内下载）
+    if (tab === "academics" || tab === "zhihui") return false; // 成绩/选科及升学规划 tab 不提供下载（选科报告页内自带下载按钮；升学指导已支持打印/下载）
+    if (tab === "guidance") return true; // v182：升学指导报告（全学段）提供下载/打印（页面所见式样）
     if (tab === "subject") return !!data?.subject; // window.print 直接可用
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
     if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);
@@ -2448,10 +2470,25 @@ export default function ReportView({
     };
     const title = TAB_TITLE[tab];
     const studentName = profile?.name ?? undefined;
+    /* v183d：当前正在看「新版」（olive book 式样）或综合报告「三阶九能版」时，
+       打印/下载直接输出页面所见式样（所见即所得），不再套用旧版独立打印 HTML。 */
+    const liveNewVersion =
+      (tab === "e3" && !!oliveNew.e3) ||
+      (tab === "mbti" && !!oliveNew.mbti) ||
+      (tab === "disc" && !!oliveNew.disc) ||
+      (tab === "multi5" && !!oliveNew.multi5) ||
+      (tab === "anchor" && !!oliveNew.anchor) ||
+      (tab === "holland" && !!oliveNew.holland) ||
+      (tab === "mental" && !!oliveNew.mental) ||
+      ((tab === "parent" || tab === "discparent") && !!oliveNew.parent) ||
+      (tab === "guidance" && !!oliveNew.guidance) ||
+      (tab === "combined" && combinedView === "v39");
     /* V61：优先用独立打印窗口生成器（reportDownload.ts，干净内联样式 HTML），
-       修复 window.print 打印实时页面导致的元素重叠/乱码（绝对定位徽章与网格在打印介质下错位）。 */
-    const html =
-      tab === "e3" && e3v37
+       修复 window.print 打印实时页面导致的元素重叠/乱码（绝对定位徽章与网格在打印介质下错位）。
+       v183c 打印管线重写后新版视图改走页面打印；旧版仍用独立打印 HTML 保持原样。 */
+    const html = liveNewVersion
+      ? null
+      : tab === "e3" && e3v37
         ? e3V37PrintHtml(e3v37, studentName)
         : tab === "mbti" && data?.mbti && MBTI_REPORTS[data.mbti.type]
           ? mbtiPrintHtml(data.mbti)
@@ -2494,6 +2531,24 @@ export default function ReportView({
   const mental = data?.mental ?? undefined;
   const academics = profile?.academics ?? undefined;
   const { data: academicRecords } = trpc.profile.academicRecords.useQuery();
+  /* 伴学师/管理员视角：查所看学员的成绩历史（进步对比数据源；学生端用上面自己的记录）。 */
+  const { data: coachAcademicRecords } = trpc.coach.academicRecords.useQuery(
+    { userId: studentUserId ?? 0 },
+    { enabled: viewer === "tutor" && studentUserId != null },
+  );
+  /** 初次成绩：最早一条带「最近分」的记录（总成绩），用于进步/退步对比。 */
+  const firstScoreRecord = useMemo(() => {
+    const rows = viewer === "tutor" ? coachAcademicRecords : academicRecords;
+    const oldestFirst = [...(rows ?? [])].reverse();
+    for (const r of oldestFirst) {
+      const subs = (r.subjects ?? []) as { lastScore?: number | null }[];
+      if (subs.some((x) => x.lastScore != null)) {
+        return { examName: r.examName ?? "", total: subs.reduce((s, x) => s + (x.lastScore ?? 0), 0) };
+      }
+    }
+    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewer, academicRecords, coachAcademicRecords]);
 
   /** 学习力系统框架图的测评完成状态（全部由 props 数据计算，学生端/伴学师端口径一致）。 */
   const frameworkStatus = useMemo<FrameworkStatus>(() => {
@@ -2579,6 +2634,130 @@ export default function ReportView({
     };
   }, [academics, e3v37, mental, multi5, mbti, disc, data?.anchor, data?.holland]);
 
+  /* 详版章节渲染（02-10 章）。三阶九能版（v39）复用同一渲染，仅跳过「综合结论与行动方案」章
+     （该章由 CombinedV39Report 按新归类渲染，含封面与冰山图）。 */
+  const renderCombinedSections = (skipRoadmap: boolean): ReactNode => {
+    if (!combined) return null;
+    const hasAcadSec = combined.sections.some((x) => x.title.includes("成绩现状"));
+    return combined.sections.map((s, i) => {
+      if (s.title.includes("综合结论与行动方案")) {
+        if (skipRoadmap) return null;
+        return (
+          <RoadmapSection
+            key={i}
+            section={s}
+            index={i}
+            e3={e3v37 ?? undefined}
+            e3Ratings={e3Ratings}
+            academics={academics}
+            mbti={data?.mbti}
+            disc={data?.disc}
+            multi5={data?.multi5 ?? undefined}
+            mental={mental}
+            mentalSdq={mentalSdq}
+            mentalPa={mentalPa}
+            subject={data?.subject ?? undefined}
+            anchor={data?.anchor ?? undefined}
+            holland={data?.holland ?? undefined}
+            charts={e3v37 ? <E3V37OverviewCard e3={e3v37} /> : undefined}
+            raw={data?.raw}
+            onReveal={reveal}
+          />
+        );
+      }
+      /* 详版折叠：先显示结果数据与结论段，图形与详细文字各自折叠（章节 → 图表映射见 V3.7 判读页规则） */
+      const raw = data?.raw;
+      let chartNode: ReactNode;
+      /* 乐学/会学/善学模块章：该阶三能小雷达 */
+      const modSys = (["乐学", "会学", "善学"] as const).find((k) => s.title.includes(`${k}模块`));
+      if (modSys) {
+        chartNode = e3v37 ? (
+          <NineAbilityRadar
+            e3={e3v37}
+            abilities={e3v37.abilities.filter((a) => a.system === modSys)}
+            title={`${modSys} · 三能小雷达`}
+          />
+        ) : undefined;
+      } else if (s.title.includes("条件模块")) {
+        /* 亲子 DISC 对照图只放在「亲子对照」章（V38 起），条件章不再重复 */
+        chartNode = mentalSdq ? (
+          <MentalSdqBars mental={mentalSdq} />
+        ) : mentalPa ? (
+          <MentalV2Bars mental={mentalPa} variant="pa" />
+        ) : mental ? (
+          isMentalV2(mental) ? (
+            <MentalV2Bars mental={mental} />
+          ) : (
+            <MentalBar mental={mental} />
+          )
+        ) : undefined;
+      } else if (s.title.includes("亲子对照")) {
+        chartNode =
+          disc && discParents.length > 0 ? <DiscParentCompare student={disc} parents={discParents} /> : undefined;
+      } else if (s.title.includes("学能模块")) {
+        chartNode =
+          data?.multi5 || e3v37 ? (
+            <div className="space-y-4">
+              {data?.multi5 && <Multi5Radar multi5={data.multi5} />}
+              {data?.multi5 && (
+                <div className="paper-card p-5">
+                  <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
+                  <Multi5TalentMaps multi5={data.multi5} />
+                </div>
+              )}
+              {e3v37 && (
+                <div className="paper-card p-5">
+                  <h3 className="font-bold text-olive">学能三项（注意力 / 工作记忆 / 加工速度）</h3>
+                  <p className="mt-1 text-[12.5px] text-olive-mute">
+                    反映当前加工效率，单独报告不进总分；{E3V37_LEVEL_CAPTION}。
+                  </p>
+                  <MiniBars
+                    max={5}
+                    rows={e3v37.aptitude.map((a) => ({
+                      label: a.label,
+                      value: a.score,
+                      display: `${a.score} · ${a.level}`,
+                      state: (a.level === "卡点" ? "bad" : a.level === "待提升" ? "trait" : "ok") as "bad" | "trait" | "ok",
+                    }))}
+                  />
+                </div>
+              )}
+            </div>
+          ) : undefined;
+      }
+      /* V72：「兴趣与方向」章节已整体迁入升学指导报告，此处雷达/条形图随之下线。 */
+      /* 附录章只留观察点得分表（detail）；答题明细按模块下沉到各章，经 answers 作为独立折叠上移一级。
+         章节 → kinds 单一事实源在 answerBlocks.answerKindsForSection；
+         学科快扫明细在「成绩现状」章缺省时并入条件章（answerBlocks 内置 hasAcadSec 逻辑）。 */
+      const isAppendix = s.title.includes("附录");
+      const detailNode = isAppendix
+        ? e3v37
+          ? <div className="print:hidden"><AbilityScoreTable e3={e3v37} ratings={e3Ratings} /></div>
+          : undefined
+        : undefined;
+      const answersNode =
+        !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec)
+          ? <div className="print:hidden"><AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} /></div>
+          : undefined;
+      /* v153：章节卡左边框色条 = 该模块评分档（乐学/会学/善学取系统分档；条件/亲子对照取条件均分档；学能取学能均分档） */
+      const secAccent: E3V37Level | undefined = (() => {
+        if (!e3v37) return undefined;
+        if (modSys) return e3v37.systems.core.find((c) => c.key === modSys)?.level;
+        if (s.title.includes("条件模块") || s.title.includes("亲子对照")) {
+          const cells = e3v37.systems.condition.cells;
+          return e3v37Level(cells.reduce((a, c) => a + c.score, 0) / cells.length);
+        }
+        if (s.title.includes("学能模块")) {
+          return e3v37Level(e3v37.aptitude.reduce((a, c) => a + c.score, 0) / e3v37.aptitude.length);
+        }
+        return undefined;
+      })();
+      const secNode = <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} accent={secAccent} />;
+      /* 附录章整章不打印（详版） */
+      return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
+    });
+  };
+
   return (
     <div className="space-y-4">
       {viewer === "student" && (
@@ -2615,30 +2794,19 @@ export default function ReportView({
       )}
 
       {/* Tab 切换（v143：轨道=白色，选中=白底+墨绿字+墨绿框，未选中=白底墨绿灰字；
-          v176c：「选科及升学规划报告」为独立完整页，点击直接新开窗口直达，不切 tab） */}
+          v176c→v180：「选科及升学规划（高一）」改为内嵌直开，与其他栏目一致不切页面） */}
       <div className="flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
-            onClick={() => {
-              if (t.key === "zhihui") {
-                if (viewer === "tutor" && studentUserId != null) {
-                  window.open(`/zhihui-report?studentId=${studentUserId}`, "_blank", "noopener");
-                } else {
-                  navigate("/zhihui-report");
-                }
-                return;
-              }
-              setTab(t.key);
-            }}
+            onClick={() => setTab(t.key)}
             className={`grow basis-[30%] rounded-lg border px-2 py-2 text-[12.5px] font-semibold transition ${
               tab === t.key
                 ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
                 : "border-transparent bg-white text-olive hover:border-[#1E3530]/15"
             }`}
           >
-            {t.label}
-            {t.key === "zhihui" && <ExternalLink size={12} className="ml-1 inline-block align-[-1px]" />}
+            {t.key === "zhihui" ? `选科及升学规划（${profile?.grade || "高一"}）` : t.label}
           </button>
         ))}
       </div>
@@ -2656,67 +2824,28 @@ export default function ReportView({
 
       {/* 打印根：window.print() 时仅显示此区域，保证 PDF 与页面所见完全一致。
           v93：桌面端整体放大 1.15 倍（zoom），字号/图表同比变大，阅读不用眯眼；打印与移动端保持原尺寸 */}
+      <OliveStyle />
       <div id="report-print-root" className="report-view-zoom space-y-4">
-      {/* v176：选科及升学规划报告栏目——完整报告为独立页面，这里展示摘要与直达入口 */}
-      {tab === "zhihui" &&
-        (() => {
-          const s4d = subject4d as {
-            subjects?: Record<string, { 兴趣: number; 能力倾向: number; 观念: number; 效能感: number; 潜力指数: number }>;
-          } | null | undefined;
-          const top = s4d?.subjects
-            ? Object.entries(s4d.subjects).sort((a, b) => (b[1]?.潜力指数 ?? 0) - (a[1]?.潜力指数 ?? 0)).slice(0, 3)
-            : [];
-          const openFull = () => {
-            if (viewer === "tutor" && studentUserId != null) {
-              window.open(`/zhihui-report?studentId=${studentUserId}`, "_blank", "noopener");
-            } else {
-              navigate("/zhihui-report");
-            }
-          };
-          return (
-            <div className="paper-card accent-l space-y-4 border-[#0C7064]/30 p-5">
-              <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0C7064] text-cream">
-                  <Compass size={22} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[16px] font-bold text-olive">选科及升学规划报告</h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-                    选科推荐 · 九科四维解读 · 专业职业详解 · 目标院校分差 · 升学路径 · 分年级规划，基于学科四维测评与霍兰德职业兴趣测评自动生成，与学生端完全一致。
-                  </p>
-                </div>
-              </div>
-              {top.length > 0 ? (
-                <div className="rounded-xl bg-cream/70 p-3.5">
-                  <div className="text-[12px] font-semibold text-olive-mute">学科潜力 Top 3（九科四维画像已生成）</div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {top.map(([n, v], i) => (
-                      <span key={n} className="chip !text-[11.5px]">
-                        {i + 1}. {n} · 潜力 {v.潜力指数?.toFixed?.(1) ?? v.潜力指数}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="rounded-xl bg-butter-pale/60 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-olive-soft">
-                  {viewer === "tutor"
-                    ? "学员还未完成学科四维测评，完成本栏目后自动汇总生涯规划报告。"
-                    : "你还未完成学科四维测评（9 科 × 4 维，约 15 分钟），做完即可生成完整的选科及升学规划报告。"}
-                </p>
-              )}
-              <button
-                onClick={openFull}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0C7064] py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#0a5c52]"
-              >
-                {top.length > 0 ? "查看完整选科及升学规划报告 →" : "去完成学科四维测评，生成报告 →"}
-              </button>
-              <p className="text-center text-[11.5px] text-olive-mute">报告页内可下载 / 打印 PDF，方便交给家长。</p>
-            </div>
-          );
-        })()}
+      {/* v180：选科及升学规划（高一）栏目——内嵌完整报告，与学生端一致，不再跳转独立页 */}
+      {tab === "zhihui" && (
+        <ZhihuiReportBody studentId={viewer === "tutor" ? (studentUserId ?? undefined) : undefined} />
+      )}
 
       {tab === "guidance" && (
-        <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
+        <div className="space-y-4">
+          <VerSwitch on={!!oliveNew.guidance} onChange={(v) => setOliveNew((p) => ({ ...p, guidance: v }))} />
+          {oliveNew.guidance ? (
+            <OliveGuidance
+              data={data as ReportAssessmentData | undefined}
+              profile={profile}
+              academics={academics}
+              records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined}
+              onAssess={(start) => reveal({ kind: "assess", start })}
+            />
+          ) : (
+            <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
+          )}
+        </div>
       )}
 
       {tab === "academics" &&
@@ -2815,6 +2944,25 @@ export default function ReportView({
           <MissingCard text="还没有学习力诊断结果。E3 学业诊断（三阶九能 V3.7）约 16-18 分钟，一次一道题，做完一个部分会有鼓励。" actionText="还未测评，开始测评 →" to="/assessments?start=e3" />
         ) : (
           <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.e3} onChange={(v) => setOliveNew((p) => ({ ...p, e3: v }))} />
+            {oliveNew.e3 ? (
+              <OliveE3
+                e3={e3v37}
+                raw={data?.raw}
+                academics={academics}
+                mbti={mbti}
+                disc={disc}
+                holland={holland}
+                anchor={anchor}
+                multi5={multi5}
+                mental={mental}
+                ratings={e3Ratings}
+                name={profile?.name ?? ""}
+                grade={profile?.grade ?? null}
+                date={oliveDate("e3")}
+              />
+            ) : (
+          <>
             {/* 结果概要卡：三阶 + 主卡点 + 状态 */}
             <div className="paper-card accent-l border-lime p-5">
               <div className="flex items-center gap-2">
@@ -2901,6 +3049,8 @@ export default function ReportView({
                 </p>
               </div>
             )}
+          </>
+            )}
           </div>
         ))}
 
@@ -2908,25 +3058,60 @@ export default function ReportView({
         (!mbti ? (
           <MissingCard text="还没有 MBTI 测评结果，28 道二选一，约 5 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=mbti" />
         ) : (
-          <MbtiDetail result={mbti} onGoCombined={goCombined} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.mbti} onChange={(v) => setOliveNew((p) => ({ ...p, mbti: v }))} />
+            {oliveNew.mbti ? (
+              <OliveMbti result={mbti} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("mbti")} />
+            ) : (
+              <MbtiDetail result={mbti} onGoCombined={goCombined} />
+            )}
+          </div>
         ))}
 
       {tab === "disc" &&
         (!disc ? (
           <MissingCard text="还没有 DISC 测评结果，24 道二选一，约 4 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=disc" />
         ) : (
-          <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.disc} onChange={(v) => setOliveNew((p) => ({ ...p, disc: v }))} />
+            {oliveNew.disc ? (
+              <OliveDisc primary={disc.primary} dims={disc.dims} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("disc")} />
+            ) : (
+              <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
+            )}
+          </div>
         ))}
 
       {tab === "multi5" &&
         (!multi5 ? (
           <MissingCard text="多元智能五项为客观题测评（选做），40 题约 8 分钟，比自评更能反映真实能力底子。" actionText="还未测评，开始测评 →" to="/assessments?start=multi5" />
         ) : (
-          <Multi5Detail result={multi5} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.multi5} onChange={(v) => setOliveNew((p) => ({ ...p, multi5: v }))} />
+            {oliveNew.multi5 ? (
+              <OliveMulti5 result={multi5} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("multi5")} />
+            ) : (
+              <Multi5Detail result={multi5} />
+            )}
+          </div>
         ))}
 
       {(tab === "parent" || tab === "discparent") && (
-        <ParentReportTab student={disc ?? null} parents={discParents} e3parent={parentResult} raw={data?.raw} />
+        <div className="space-y-4">
+          <VerSwitch on={!!oliveNew.parent} onChange={(v) => setOliveNew((p) => ({ ...p, parent: v }))} />
+          {oliveNew.parent ? (
+            <OliveParent
+              student={disc ?? null}
+              parents={discParents}
+              e3parent={parentResult}
+              raw={data?.raw}
+              name={profile?.name ?? ""}
+              grade={profile?.grade ?? null}
+            />
+          ) : (
+            <ParentReportTab student={disc ?? null} parents={discParents} e3parent={parentResult} raw={data?.raw} />
+          )}
+        </div>
       )}
 
       {tab === "anchor" &&
@@ -2937,7 +3122,14 @@ export default function ReportView({
             to="/assessments?start=anchor"
           />
         ) : (
-          <AnchorDetail result={anchor} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.anchor} onChange={(v) => setOliveNew((p) => ({ ...p, anchor: v }))} />
+            {oliveNew.anchor ? (
+              <OliveAnchor result={anchor} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("anchor")} />
+            ) : (
+              <AnchorDetail result={anchor} />
+            )}
+          </div>
         ))}
 
       {tab === "holland" &&
@@ -2948,7 +3140,14 @@ export default function ReportView({
             to="/assessments?start=holland"
           />
         ) : (
-          <HollandDetail result={holland} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.holland} onChange={(v) => setOliveNew((p) => ({ ...p, holland: v }))} />
+            {oliveNew.holland ? (
+              <OliveHolland result={holland} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("holland")} />
+            ) : (
+              <HollandDetail result={holland} />
+            )}
+          </div>
         ))}
 
       {tab === "mental" &&
@@ -2973,6 +3172,12 @@ export default function ReportView({
           </div>
         ) : (
           <div className="space-y-4">
+            {/* v184：通用版（PHQ-9+GAD-7）支持 olive book 新版；其余版本保持原版 */}
+            <VerSwitch on={!!oliveNew.mental} onChange={(v) => setOliveNew((p) => ({ ...p, mental: v }))} />
+            {oliveNew.mental && mental && isMentalV2(mental) ? (
+              <OliveMentalV2 result={mental} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("mental")} />
+            ) : (
+            <>
             <MentalScoreGuideCard />
             {/* 学生版 A（SDQ） */}
             {mentalSdq ? (
@@ -3082,6 +3287,8 @@ export default function ReportView({
                 to="/assessments?start=mental"
               />
             )}
+            </>
+            )}
           </div>
         ))}
 
@@ -3176,6 +3383,7 @@ export default function ReportView({
                 [
                   { key: "full", label: "详版报告" },
                   { key: "lite", label: "简版 · 一页看懂" },
+                  { key: "v39", label: "三阶九能版" },
                 ] as const
               ).map((v) => {
                 const active = combinedView === v.key;
@@ -3252,6 +3460,41 @@ export default function ReportView({
                 </div>
               )}
               </>
+            ) : combinedView === "v39" ? (
+              <>
+                {/* 三阶九能版（V3.9）：封面 + 冰山图 + 01 综合结论与行动方案（新归类），02-10 章复用详版渲染 */}
+                <CombinedV39Report
+                  name={profile?.name ?? ""}
+                  grade={profile?.grade ?? null}
+                  e3={e3v37!}
+                  raw={data?.raw}
+                  academics={academics}
+                  mbti={data?.mbti}
+                  disc={data?.disc}
+                  holland={data?.holland ?? undefined}
+                  anchor={data?.anchor ?? undefined}
+                  multi5={data?.multi5 ?? undefined}
+                  mental={mental}
+                  mentalSdq={mentalSdq}
+                  mentalPa={mentalPa}
+                  mentalScl90={mentalScl90}
+                  subject={data?.subject ?? undefined}
+                  firstScoreRecord={firstScoreRecord}
+                  onReveal={reveal}
+                />
+                {renderCombinedSections(true)}
+                <SubjectAdviceBlocks
+                  grade={profile?.grade ?? null}
+                  academics={academics}
+                  multi5={data?.multi5 ?? undefined}
+                  mbtiType={data?.mbti?.type ?? null}
+                  discPrimary={data?.disc?.primary ?? null}
+                  e3MainLabel={e3v37?.mainBlock?.label ?? null}
+                />
+                <p className="text-center text-[12.5px] text-olive-mute">
+                  报告内容聚焦学习相关因子，随学习数据积累持续更新。
+                </p>
+              </>
             ) : (
               <>
             {/* 头部 */}
@@ -3268,125 +3511,7 @@ export default function ReportView({
             </div>
 
             <SectionToc sections={combined.sections} />
-            {(() => {
-              const hasAcadSec = combined.sections.some((x) => x.title.includes("成绩现状"));
-              return combined.sections.map((s, i) => {
-              if (s.title.includes("综合结论与行动方案")) {
-                return (
-                  <RoadmapSection
-                    key={i}
-                    section={s}
-                    index={i}
-                    e3={e3v37 ?? undefined}
-                    e3Ratings={e3Ratings}
-                    academics={academics}
-                    mbti={data?.mbti}
-                    disc={data?.disc}
-                    multi5={data?.multi5 ?? undefined}
-                    mental={mental}
-                    mentalSdq={mentalSdq}
-                    mentalPa={mentalPa}
-                    subject={data?.subject ?? undefined}
-                    anchor={data?.anchor ?? undefined}
-                    holland={data?.holland ?? undefined}
-                    charts={e3v37 ? <E3V37OverviewCard e3={e3v37} /> : undefined}
-                    raw={data?.raw}
-                    onReveal={reveal}
-                  />
-                );
-              }
-              /* 详版折叠：先显示结果数据与结论段，图形与详细文字各自折叠（章节 → 图表映射见 V3.7 判读页规则） */
-              const raw = data?.raw;
-              let chartNode: ReactNode;
-              /* 乐学/会学/善学模块章：该阶三能小雷达 */
-              const modSys = (["乐学", "会学", "善学"] as const).find((k) => s.title.includes(`${k}模块`));
-              if (modSys) {
-                chartNode = e3v37 ? (
-                  <NineAbilityRadar
-                    e3={e3v37}
-                    abilities={e3v37.abilities.filter((a) => a.system === modSys)}
-                    title={`${modSys} · 三能小雷达`}
-                  />
-                ) : undefined;
-              } else if (s.title.includes("条件模块")) {
-                /* 亲子 DISC 对照图只放在「亲子对照」章（V38 起），条件章不再重复 */
-                chartNode = mentalSdq ? (
-                  <MentalSdqBars mental={mentalSdq} />
-                ) : mentalPa ? (
-                  <MentalV2Bars mental={mentalPa} variant="pa" />
-                ) : mental ? (
-                  isMentalV2(mental) ? (
-                    <MentalV2Bars mental={mental} />
-                  ) : (
-                    <MentalBar mental={mental} />
-                  )
-                ) : undefined;
-              } else if (s.title.includes("亲子对照")) {
-                chartNode =
-                  disc && discParents.length > 0 ? <DiscParentCompare student={disc} parents={discParents} /> : undefined;
-              } else if (s.title.includes("学能模块")) {
-                chartNode =
-                  data?.multi5 || e3v37 ? (
-                    <div className="space-y-4">
-                      {data?.multi5 && <Multi5Radar multi5={data.multi5} />}
-                      {data?.multi5 && (
-                        <div className="paper-card p-5">
-                          <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
-                          <Multi5TalentMaps multi5={data.multi5} />
-                        </div>
-                      )}
-                      {e3v37 && (
-                        <div className="paper-card p-5">
-                          <h3 className="font-bold text-olive">学能三项（注意力 / 工作记忆 / 加工速度）</h3>
-                          <p className="mt-1 text-[12.5px] text-olive-mute">
-                            反映当前加工效率，单独报告不进总分；{E3V37_LEVEL_CAPTION}。
-                          </p>
-                          <MiniBars
-                            max={5}
-                            rows={e3v37.aptitude.map((a) => ({
-                              label: a.label,
-                              value: a.score,
-                              display: `${a.score} · ${a.level}`,
-                              state: (a.level === "卡点" ? "bad" : a.level === "待提升" ? "trait" : "ok") as "bad" | "trait" | "ok",
-                            }))}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ) : undefined;
-              }
-              /* V72：「兴趣与方向」章节已整体迁入升学指导报告，此处雷达/条形图随之下线。 */
-              /* 附录章只留观察点得分表（detail）；答题明细按模块下沉到各章，经 answers 作为独立折叠上移一级。
-                 章节 → kinds 单一事实源在 answerBlocks.answerKindsForSection；
-                 学科快扫明细在「成绩现状」章缺省时并入条件章（answerBlocks 内置 hasAcadSec 逻辑）。 */
-              const isAppendix = s.title.includes("附录");
-              const detailNode = isAppendix
-                ? e3v37
-                  ? <div className="print:hidden"><AbilityScoreTable e3={e3v37} ratings={e3Ratings} /></div>
-                  : undefined
-                : undefined;
-              const answersNode =
-                !isAppendix && raw && answerKindsForSection(s.title, hasAcadSec)
-                  ? <div className="print:hidden"><AnswerDetailsByKind raw={raw} kinds={answerKindsForSection(s.title, hasAcadSec)!} /></div>
-                  : undefined;
-              /* v153：章节卡左边框色条 = 该模块评分档（乐学/会学/善学取系统分档；条件/亲子对照取条件均分档；学能取学能均分档） */
-              const secAccent: E3V37Level | undefined = (() => {
-                if (!e3v37) return undefined;
-                if (modSys) return e3v37.systems.core.find((c) => c.key === modSys)?.level;
-                if (s.title.includes("条件模块") || s.title.includes("亲子对照")) {
-                  const cells = e3v37.systems.condition.cells;
-                  return e3v37Level(cells.reduce((a, c) => a + c.score, 0) / cells.length);
-                }
-                if (s.title.includes("学能模块")) {
-                  return e3v37Level(e3v37.aptitude.reduce((a, c) => a + c.score, 0) / e3v37.aptitude.length);
-                }
-                return undefined;
-              })();
-              const secNode = <CollapsibleSection key={i} section={s} index={i} charts={chartNode} detail={detailNode} answers={answersNode} accent={secAccent} />;
-              /* 附录章整章不打印（详版） */
-              return isAppendix ? <div key={i} className="print:hidden">{secNode}</div> : secNode;
-            });
-            })()}
+            {renderCombinedSections(false)}
             {/* v75/v76：学科学习建议（分学段+测评个性化+差异化扬长补短）与四项平衡规划，均默认折叠按需打开 */}
             <SubjectAdviceBlocks
               grade={profile?.grade ?? null}
@@ -3849,6 +3974,31 @@ function AnswerDetails({ raw }: { raw: { kind: string; answers: unknown; created
         你完成的每一次测评、每一道题的作答记录都在这里，默认折叠，点开可看；供家长和伴学师对照查阅。
       </p>
       <AnswerBlocksView blocks={blocks} />
+    </div>
+  );
+}
+
+/** v184：单项报告「原版 / 新版」切换器（视觉与综合报告详版/简版切换一致） */
+function VerSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1 print:hidden">
+      {([{ k: false, l: "原版报告" }, { k: true, l: "新版 · 打印版" }] as const).map((v) => {
+        const active = on === v.k;
+        return (
+          <button
+            key={v.l}
+            onClick={() => onChange(v.k)}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+              active ? "font-semibold text-[#0C7064]" : "font-medium text-olive hover:text-[#1E3530]"
+            }`}
+          >
+            <span className="relative inline-block">
+              {v.l}
+              {active && <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full bg-[#0C7064]" />}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

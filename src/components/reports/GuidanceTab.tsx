@@ -143,6 +143,8 @@ export default function GuidanceTab({
     : null;
 
   const hasSelfExplore = g.hollandBlock || g.mbtiBlock || g.discBlock || g.multi5Block;
+  /* v181：升学指导报告各大项默认折叠（基本数据留在标题行，详细内容点开再看）。 */
+  const doneCnt = g.overview.filter((o) => o.status === "done").length;
 
   /* V84：报告封面信息（样例报告封面：编号/姓名/日期）。 */
   const reportNo = reportNoOf(profile?.name, profile?.grade);
@@ -1086,18 +1088,29 @@ export default function GuidanceTab({
 
       <GroupDivider no="四" title={isHigh ? "个性化选科规划" : isPrimary ? "兴趣与能力启蒙" : "学科优势与学习能力"} />
 
-      {/* 4.1 测评解读（全学段，含图表） */}
-      {renderSelfExplore(
-        isHigh ? "4.1 自我探索（测评解读）" : isPrimary ? "4.1 兴趣与能力启蒙（测评解读）" : "4.1 学科优势画像（测评解读）",
-        isHigh
-          ? "所有测评结论服务于同一个问题：我是谁，我适合怎么学、往哪走。"
-          : isPrimary
-            ? "小学阶段的测评看倾向、不看定论：兴趣和能力方向比分数更值得记住。"
-            : "测评与成绩合起来看：兴趣在哪、能力底子在哪、哪些学科正在成为优势。",
+      {/* 4.1 测评解读（全学段，含图表）——v181 默认折叠，基本数据在标题行 */}
+      {hasSelfExplore && (
+        <Fold
+          title={isHigh ? "4.1 自我探索（测评解读）" : isPrimary ? "4.1 兴趣与能力启蒙（测评解读）" : "4.1 学科优势画像（测评解读）"}
+          sub={`已完成 ${doneCnt}/${g.overview.length} 项测评 · 点击查看详细解读`}
+        >
+          {renderSelfExplore(
+            isHigh ? "4.1 自我探索（测评解读）" : isPrimary ? "4.1 兴趣与能力启蒙（测评解读）" : "4.1 学科优势画像（测评解读）",
+            isHigh
+              ? "所有测评结论服务于同一个问题：我是谁，我适合怎么学、往哪走。"
+              : isPrimary
+                ? "小学阶段的测评看倾向、不看定论：兴趣和能力方向比分数更值得记住。"
+                : "测评与成绩合起来看：兴趣在哪、能力底子在哪、哪些学科正在成为优势。",
+          )}
+        </Fold>
       )}
 
-      {/* V84 Part2：学科表现分析（每科一张画像卡） */}
-      {renderSubjectCards()}
+      {/* V84 Part2：学科表现分析（每科一张画像卡）——v181 默认折叠 */}
+      {g.subjectCards && g.subjectCards.length > 0 && (
+        <Fold title="学科表现分析" sub={`${g.subjectCards.length} 科画像 · 点击查看每科详情`}>
+          {renderSubjectCards()}
+        </Fold>
+      )}
 
       {/* 4.2-4.4：高中为主体；初小为学科方案 + 高中内容折叠参考 */}
       {isHigh ? (
@@ -1108,39 +1121,43 @@ export default function GuidanceTab({
           </div>
 
           {(g.disciplines.length > 0 || g.majors.length > 0) && (
-            <div className="paper-card p-5">
-              {renderMajorPlan()}
-            </div>
+            <Fold title="4.3 推荐专业方向" sub={`${g.majors.length} 个推荐专业类 · 点击查看详细介绍`}>
+              <div className="paper-card !border-0 !bg-transparent !p-0 shadow-none">{renderMajorPlan()}</div>
+            </Fold>
           )}
 
           {(g.scorecard || g.matrix || g.combos.length > 0) && (
-            <div className="paper-card p-5">
-              <div className="flex items-center gap-2">
-                <Target size={16} className="text-olive" />
-                <h3 className="font-bold text-olive">4.4 选科规划方案</h3>
+            <Fold title="4.4 选科规划方案" sub={`${g.combos.length} 个推荐组合 · 冲稳保定位 · 点击查看方案详情`}>
+              <div className="paper-card p-5">
+                <div className="flex items-center gap-2">
+                  <Target size={16} className="text-olive" />
+                  <h3 className="font-bold text-olive">4.4 选科规划方案</h3>
+                </div>
+                {renderFirstSecond()}
+                {renderScorecard()}
+                {renderThreePerspective()}
+                {renderQuadrant()}
+                {renderCombos()}
+                {renderCoverageFolds()}
               </div>
-              {renderFirstSecond()}
-              {renderScorecard()}
-              {renderThreePerspective()}
-              {renderQuadrant()}
-              {renderCombos()}
-              {renderCoverageFolds()}
-            </div>
+            </Fold>
           )}
         </>
       ) : (
         <>
           {(g.scorecard || g.matrix || g.combos.length > 0) && (
-            <div className="paper-card p-5">
-              <div className="flex items-center gap-2">
-                <Target size={16} className="text-olive" />
-                <h3 className="font-bold text-olive">{isPrimary ? "4.2 学科平衡参考" : "4.2 学科发力方案"}</h3>
+            <Fold title={isPrimary ? "4.2 学科平衡参考" : "4.2 学科发力方案"} sub={`${g.combos.length} 个推荐组合 · 点击查看方案详情`}>
+              <div className="paper-card p-5">
+                <div className="flex items-center gap-2">
+                  <Target size={16} className="text-olive" />
+                  <h3 className="font-bold text-olive">{isPrimary ? "4.2 学科平衡参考" : "4.2 学科发力方案"}</h3>
+                </div>
+                {renderScorecard()}
+                {renderQuadrant()}
+                {renderCombos()}
+                {renderFutureExpect()}
               </div>
-              {renderScorecard()}
-              {renderQuadrant()}
-              {renderCombos()}
-              {renderFutureExpect()}
-            </div>
+            </Fold>
           )}
           {renderHighSchoolReference()}
         </>
@@ -1148,27 +1165,33 @@ export default function GuidanceTab({
 
       <GroupDivider no="五" title={isHigh ? "多元升学路径规划" : "升学路径规划"} />
 
-      {/* 5.1：全升学路径图（按学段） + 高中版附加个性化路径清单 */}
-      <div className="paper-card p-5">
-        <div className="flex items-center gap-2">
-          <Route size={16} className="text-olive" />
-          <h3 className="font-bold text-olive">
-            5.1 {isPrimary ? "小升初及后续升学路径" : isHigh ? "多元升学路径规划" : "中考与初升高路径"}
-          </h3>
+      {/* 5.1：全升学路径图（按学段） + 高中版附加个性化路径清单 —— v181 默认折叠 */}
+      <Fold title="5.1 升学路径全景" sub="全路径图 + 适配路径清单 · 点击查看详情">
+        <div className="paper-card p-5">
+          <div className="flex items-center gap-2">
+            <Route size={16} className="text-olive" />
+            <h3 className="font-bold text-olive">
+              5.1 {isPrimary ? "小升初及后续升学路径" : isHigh ? "多元升学路径规划" : "中考与初升高路径"}
+            </h3>
+          </div>
+          <p className="mt-1 text-[12px] leading-relaxed text-olive-mute">
+            {isPrimary
+              ? "从小学到高中，每一段升学都有哪些主流走法——先建立全景图，再一步步走。"
+              : isHigh
+                ? "除裸分高考外，还有多条「数据已识别适配」的通道，全部与高考并行不冲突。"
+                : "初中之后的两段路（中考 → 高考）主流走法一览："}
+          </p>
+          <FullPathwayMap stages={isPrimary ? PATHWAY_XIAOXUE : isHigh ? PATHWAY_GAOZHONG : PATHWAY_CHUZHONG} />
+          {isHigh && renderPathwayList()}
         </div>
-        <p className="mt-1 text-[12px] leading-relaxed text-olive-mute">
-          {isPrimary
-            ? "从小学到高中，每一段升学都有哪些主流走法——先建立全景图，再一步步走。"
-            : isHigh
-              ? "除裸分高考外，还有多条「数据已识别适配」的通道，全部与高考并行不冲突。"
-              : "初中之后的两段路（中考 → 高考）主流走法一览："}
-        </p>
-        <FullPathwayMap stages={isPrimary ? PATHWAY_XIAOXUE : isHigh ? PATHWAY_GAOZHONG : PATHWAY_CHUZHONG} />
-        {isHigh && renderPathwayList()}
-      </div>
+      </Fold>
 
-      {/* 5.2 冲稳保（仅高中） */}
-      {renderSchoolPlan()}
+      {/* 5.2 冲稳保（仅高中）——v181 默认折叠 */}
+      {g.schoolPlan && (
+        <Fold title="5.2 目标院校规划（冲稳保）" sub={`预估 ${g.schoolPlan.estScore} 分 · ${g.schoolPlan.first}类 · ${g.schoolPlan.tier} · 点击查看院校清单`}>
+          {renderSchoolPlan()}
+        </Fold>
+      )}
 
       {/* V84 Part4/Part5：推荐专业详情 + 推荐职业详情（高中版） */}
       {renderMajorDetails()}

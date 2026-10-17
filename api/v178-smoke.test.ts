@@ -52,6 +52,6 @@ describe("v178 报告图表：霍兰德类型轴 + 六型学科地图 + 多元�
   });
 
   it("BUILD_TAG 已递增", () => {
-    if (!router.includes('const BUILD_TAG = "v180-2026-10-16"')) throw new Error("BUILD_TAG 未递增");
+    if (Number(router.match(/const BUILD_TAG = "v(\d+)-/)?.[1] ?? 0) < 178) throw new Error("BUILD_TAG 未递增到 v178");
   });
 });

@@ -105,7 +105,10 @@ div[id*="kimi-widget" i] {
   display: none !important;
 }
 
-/* ===== 打印 / 另存为 PDF：只输出报告内容区，所见即所得、图表不变形 ===== */
+/* ===== 打印 / 另存为 PDF：只输出报告内容区，所见即所得、图表不变形 =====
+   v183c：放弃「visibility 隐藏 + 打印根绝对定位」方案（Chrome 对绝对定位容器分页
+   有重影/叠印 bug），改为打印前把 #report-print-root 直挂 body、其余顶层节点
+   display:none（JS 在 beforeprint/afterprint 中搬运，见 ReportView）。 */
 @media print {
   @page {
     margin: 12mm;
@@ -115,18 +118,11 @@ div[id*="kimi-widget" i] {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
-  /* 只显示报告打印根，其余全部隐藏 */
-  body * {
-    visibility: hidden;
-  }
-  #report-print-root,
-  #report-print-root * {
-    visibility: visible;
+  /* 打印根直挂 body 时，隐藏应用其余顶层节点 */
+  body.print-report > *:not(#report-print-root) {
+    display: none !important;
   }
   #report-print-root {
-    position: absolute;
-    left: 0;
-    top: 0;
     width: 100%;
   }
   /* 报告内的交互控件不进入 PDF */
@@ -146,5 +142,19 @@ div[id*="kimi-widget" i] {
   #report-print-root [class*="min-w-"],
   #report-print-root [class*="min-w\\["] {
     min-width: 0 !important;
+  }
+  /* 图/表/卡片/书页不跨页拆散：跨页的整块推到下一页 */
+  #report-print-root svg,
+  #report-print-root canvas,
+  #report-print-root img,
+  #report-print-root table,
+  #report-print-root .paper-card,
+  #report-print-root .zh-page,
+  #report-print-root .ob-page,
+  #report-print-root .ob-card,
+  #report-print-root .recharts-responsive-container,
+  #report-print-root details {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

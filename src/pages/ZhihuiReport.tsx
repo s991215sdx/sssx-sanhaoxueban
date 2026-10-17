@@ -3,7 +3,7 @@
  * 数据源：zhihui.reportData（学科四维 + 霍兰德 + 成绩档案 + 未来期望 + 资料库）。
  * 打印：每页 A4 page-break，点「下载 / 打印」另存 PDF。
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
@@ -283,10 +283,41 @@ function SecTitle({ n, title, sub }: { n: string | number; title: string; sub?: 
 }
 
 /* ---------- 主组件 ---------- */
-export default function ZhihuiReport() {
-  const [searchParams] = useSearchParams();
-  const studentId = searchParams.get("studentId") ? Number(searchParams.get("studentId")) : undefined;
+/** 报告主体：独立页与内嵌（测评报告栏目）共用；printId 仅独立页传（打印字号规则按 id 匹配）。 */
+export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; printId?: string }) {
   const { data, isLoading } = trpc.zhihui.reportData.useQuery({ studentId });
+
+  /* v183c：打印前把打印根直挂 body（配 index.css 的 body.print-report 规则，避免绝对定位
+     分页重影）；独立页（有 printId）才挂监听，内嵌栏目页由外层 ReportView 统一处理。 */
+  useEffect(() => {
+    if (!printId) return;
+    let closed: Element[] = [];
+    const root = () => document.getElementById("report-print-root");
+    let stash: { parent: Node | null; next: Node | null } = { parent: null, next: null };
+    const openAll = () => {
+      const r = root();
+      if (!r) return;
+      document.body.classList.add("print-report");
+      stash = { parent: r.parentNode, next: r.nextSibling };
+      document.body.appendChild(r);
+      closed = Array.from(r.querySelectorAll("details:not([open])"));
+      closed.forEach((d) => d.setAttribute("open", ""));
+    };
+    const restore = () => {
+      document.body.classList.remove("print-report");
+      const r = root();
+      if (r && stash.parent) stash.parent.insertBefore(r, stash.next);
+      stash = { parent: null, next: null };
+      closed.forEach((d) => d.removeAttribute("open"));
+      closed = [];
+    };
+    window.addEventListener("beforeprint", openAll);
+    window.addEventListener("afterprint", restore);
+    return () => {
+      window.removeEventListener("beforeprint", openAll);
+      window.removeEventListener("afterprint", restore);
+    };
+  }, [printId]);
 
   const s4d = data?.subject4d?.result as Subject4dResult | null | undefined;
   const holland = data?.holland?.result as { dims?: Record<string, number>; top3?: string[]; code?: string; summary?: string } | null | undefined;
@@ -370,7 +401,7 @@ export default function ZhihuiReport() {
   const targetRows = (data.targetSchool?.rows ?? []).filter((r) => r.y1Min != null).slice(0, 6);
 
   return (
-    <div className="zh-root" id="report-print-root">
+    <div className="zh-root" id={printId}>
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
         <h1 className="text-[20px] font-bold text-olive">选科及升学规划报告</h1>
@@ -814,7 +845,7 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
   .no-print { display: none !important; }
   .zh-root { background: #fff; padding: 0; }
   /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪 */
-  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; max-width: none; min-height: 281mm !important; height: auto; padding: 14px 22px 40px; }
+  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; }
   .zh-page:last-child { page-break-after: auto; }
   .pfoot { bottom: 8px; left: 22px; right: 22px; }
   .zh-page .card { padding: 9px 14px; }
@@ -829,3 +860,10 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
   .part-tag { margin-bottom: 8px; }
 }
 `;
+
+/* ---------- 独立页面（/zhihui-report）：带打印根 id 与页头 ---------- */
+export default function ZhihuiReport() {
+  const [searchParams] = useSearchParams();
+  const studentId = searchParams.get("studentId") ? Number(searchParams.get("studentId")) : undefined;
+  return <ZhihuiReportBody studentId={studentId} printId="report-print-root" />;
+}
