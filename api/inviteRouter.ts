@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { desc, eq, or, sql } from "drizzle-orm";
 import { INVITE_CHANNEL_KINDS, INVITE_ASSESS_KINDS, normalizeInviteCode, normalizeReportKinds, normalizeAssessKinds } from "@contracts/invite";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
-import { inviteChannels, inviteRegistrations, studentProfile, studentTutor, users } from "@db/schema";
+import { inviteChannels, inviteRegistrations, organizations, studentProfile, studentTutor, users } from "@db/schema";
 import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { hashPassword, setSessionCookie } from "./auth-router";
@@ -41,12 +41,14 @@ async function assertChannelEditable(db: ReturnType<typeof getDb>, ctx: { user: 
 export const inviteRouter = createRouter({
   /** 管理员/伴学师：新建注册邀请渠道（返回含渠道码的记录，前端据此生成二维码）。伴学师建的码归属自己。 */
   createChannel: tutorQuery
-    .input((v: unknown) => v as { name: string; kind: string; note?: string; reportAccess?: boolean; reportKinds?: unknown; assessmentAccess?: boolean; assessmentKinds?: unknown })
+    .input((v: unknown) => v as { name: string; kind: string; note?: string; reportAccess?: boolean; reportKinds?: unknown; assessmentAccess?: boolean; assessmentKinds?: unknown; campus?: boolean })
     .mutation(async ({ ctx, input }) => {
       const name = (input.name ?? "").trim();
       if (name.length < 2 || name.length > 64) badRequest("渠道名 2～64 个字，比如「地推-万达广场点位」");
       const kind = (INVITE_CHANNEL_KINDS as readonly string[]).includes(input.kind) ? input.kind : "其他";
       const note = (input.note ?? "").trim().slice(0, 255) || null;
+      /* v191 校园模式：本渠道为学校专用入口（注册免手机号，只填姓名+班级+年级） */
+      const campus = !!input.campus;
       /* v80：测评报告功能开关 + 开放的报告种类（注册学员客户端直接可见） */
       const reportAccess = !!input.reportAccess;
       const reportKinds = reportAccess ? normalizeReportKinds(input.reportKinds) : [];
@@ -62,7 +64,7 @@ export const inviteRouter = createRouter({
       for (let i = 0; i < 5; i++) {
         const code = newInviteCode();
         try {
-          await db.insert(inviteChannels).values({ code, name, kind, note, tutorId, orgId, createdBy: ctx.user.id, reportAccess, reportKinds, assessmentAccess, assessmentKinds });
+          await db.insert(inviteChannels).values({ code, name, kind, note, tutorId, orgId, createdBy: ctx.user.id, reportAccess, reportKinds, assessmentAccess, assessmentKinds, campus });
           const row = (await db.select().from(inviteChannels).where(eq(inviteChannels.code, code)).limit(1))[0];
           if (row) return row;
         } catch {
@@ -216,7 +218,7 @@ export const inviteRouter = createRouter({
       return { ok: true as const };
     }),
 
-  /** 公开：扫码落地页校验渠道码（只回渠道名与类型，不泄露任何其他信息）。 */
+  /** 公开：扫码落地页校验渠道码（回渠道名与类型；校园渠道额外回机构品牌信息，不泄露其他信息）。 */
   channelInfo: publicQuery
     .input((v: unknown) => v as { code: string })
     .query(async ({ input }) => {
@@ -226,7 +228,121 @@ export const inviteRouter = createRouter({
       const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.code, code)).limit(1))[0];
       if (!ch) throw new TRPCError({ code: "NOT_FOUND", message: "二维码无效，请确认是否扫对了" });
       if (!ch.active) badRequest("这张二维码已停用，请联系发码的工作人员换一张新的");
-      return { name: ch.name, kind: ch.kind };
+      /* v191 校园模式：回传机构品牌（校徽/校名），落地页按学校品牌展示 */
+      let org: { name: string; brandName: string; logoUrl: string | null } | null = null;
+      if (ch.campus && ch.orgId != null) {
+        const row = (await db.select().from(organizations).where(eq(organizations.id, ch.orgId)).limit(1))[0];
+        if (row) org = { name: row.name, brandName: row.brandName, logoUrl: row.logoUrl ?? null };
+      }
+      return { name: ch.name, kind: ch.kind, campus: !!ch.campus, org };
+    }),
+
+  /**
+   * v191 公开：校园模式注册（学校专用系统入口，免手机号）。
+   * 学生打开学校专属链接 → 只填姓名+班级+年级（学校随渠道固定）→ 完成注册并直接登录。
+   * 同渠道同姓名同班级 = 同一账号：再次填写即免密回到原账号（换设备/清缓存场景）。
+   * 账号体系：users.phone 留空、密码为随机散列（不可用于密码登录），unionId  deterministic。
+   */
+  registerCampus: publicQuery
+    .input((v: unknown) => v as { code: string; name: string; className: string; grade?: string })
+    .mutation(async ({ ctx, input }) => {
+      const code = normalizeInviteCode(input.code ?? "");
+      const name = (input.name ?? "").trim();
+      const className = (input.className ?? "").trim();
+      const grade = (input.grade ?? "高一").trim();
+      if (!code) badRequest("二维码无效");
+      if (name.length < 2 || name.length > 32) badRequest("姓名 2～32 个字");
+      if (!className || className.length > 20) badRequest("请填写班级（20 个字以内），如 3 班 / 高一(3)班");
+      if (!["高一", "高二", "高三"].includes(grade)) badRequest("年级只支持 高一 / 高二 / 高三");
+
+      const db = getDb();
+      const ch = (await db.select().from(inviteChannels).where(eq(inviteChannels.code, code)).limit(1))[0];
+      if (!ch) throw new TRPCError({ code: "NOT_FOUND", message: "二维码无效，请确认是否扫对了" });
+      if (!ch.active) badRequest("这张二维码已停用，请联系老师换一张新的");
+      if (!ch.campus) badRequest("这个入口不是校园专用链接");
+
+      const org =
+        ch.orgId != null
+          ? (await db.select().from(organizations).where(eq(organizations.id, ch.orgId)).limit(1))[0]
+          : undefined;
+      const unionId = `campus:${ch.id}:${name}:${className}`;
+
+      /* 同姓名同班级 = 老用户回来：直接发会话（免密）。 */
+      const existing = (await db.select().from(users).where(eq(users.unionId, unionId)).limit(1))[0];
+      if (existing) {
+        if (existing.deletedAt) badRequest("这个账号已被删除，请联系老师恢复");
+        await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, existing.id));
+        const token = await signSessionToken({ unionId: existing.unionId, clientId: env.appId });
+        setSessionCookie(ctx, token);
+        const rawKinds0 = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
+        const assessQueue0 = rawKinds0.includes("all")
+          ? ["subject4d", ...INVITE_ASSESS_KINDS.map((k) => k.key).filter((k) => k !== "multi5" && k !== "subject4d")]
+          : ["subject4d", ...rawKinds0.filter((k) => k !== "multi5" && k !== "subject4d")];
+        return { ok: true as const, isNewUser: false, name: existing.name ?? name, assessQueue: assessQueue0 };
+      }
+
+      /* 新注册：users.phone 留空（免手机号），密码随机不可登录，姓名即账号标识。 */
+      const passwordHash = hashPassword(randomBytes(18).toString("hex"));
+      let userId = 0;
+      try {
+        const [{ id }] = await db
+          .insert(users)
+          .values({ unionId, phone: null, passwordHash, name, orgId: ch.orgId ?? null, lastSignInAt: new Date() })
+          .$returningId();
+        userId = Number(id);
+      } catch {
+        /* 并发撞 unionId：按老用户处理，重查一次 */
+        const again = (await db.select().from(users).where(eq(users.unionId, unionId)).limit(1))[0];
+        if (!again) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "注册失败，请重试" });
+        const token = await signSessionToken({ unionId: again.unionId, clientId: env.appId });
+        setSessionCookie(ctx, token);
+        return { ok: true as const, isNewUser: false, name: again.name ?? name, assessQueue: [] as string[] };
+      }
+      try {
+        await db.insert(studentProfile).values({
+          userId,
+          name,
+          grade,
+          className,
+          /* 学校随机构固定，写进档案供报告展示 */
+          school: org?.name ?? null,
+          enabledModules: DEFAULT_INVITE_MODULES,
+          tutorId: ch.tutorId ?? null,
+          /* 校园版：注册即视为完成引导（学校/年级已固定），报告中心直接开放 */
+          onboarded: true,
+          reportReleased: true,
+        });
+      } catch {
+        /* 档案建失败不阻断注册，welcome 引导兜底 */
+      }
+      /* 伴学师渠道：同步挂名 + 报告权限随该伴学师的「邀请学员默认可看报告」配置（与手机号注册同口径） */
+      if (ch.tutorId != null) {
+        try {
+          const tutor = (
+            await db.select({ inviteReportDefault: users.inviteReportDefault }).from(users).where(eq(users.id, ch.tutorId)).limit(1)
+          )[0];
+          await db.insert(studentTutor).values({
+            studentUserId: userId,
+            tutorUserId: ch.tutorId,
+            reportAccess: tutor?.inviteReportDefault ?? false,
+            reportAccessExpiresAt: null,
+          });
+        } catch {
+          /* 已有分配记录或迁移未就绪：保持现状 */
+        }
+      }
+      /* invite_registrations.phone 为历史 NOT NULL 列：校园注册无手机号，置空串占位；
+         该表同时是 myReportAccess / myAssessmentAccess（学员端报告与测评放行）的数据源，必须写入。 */
+      await db.insert(inviteRegistrations).values({ channelId: ch.id, channelCode: ch.code, phone: "", studentName: name, grade, userId });
+
+      const token = await signSessionToken({ unionId, clientId: env.appId });
+      setSessionCookie(ctx, token);
+      /* 测评队列与手机号注册同口径（学科四维置顶，多元智能五项选做不进队列） */
+      const rawKinds = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
+      const assessQueue = rawKinds.includes("all")
+        ? ["subject4d", ...INVITE_ASSESS_KINDS.map((k) => k.key).filter((k) => k !== "multi5" && k !== "subject4d")]
+        : ["subject4d", ...rawKinds.filter((k) => k !== "multi5" && k !== "subject4d")];
+      return { ok: true as const, isNewUser: true, name, assessQueue };
     }),
 
   /**

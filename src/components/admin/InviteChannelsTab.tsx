@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Download, Link2, Plus, QrCode, RefreshCw, FileText, ClipboardList } from "lucide-react";
+import { Download, Link2, Plus, QrCode, RefreshCw, FileText, ClipboardList, GraduationCap } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { INVITE_CHANNEL_KINDS, INVITE_REPORT_KINDS, INVITE_ASSESS_KINDS } from "@contracts/invite";
 
@@ -266,6 +266,8 @@ export default function InviteChannelsTab() {
   const [assessOn, setAssessOn] = useState(false);
   const [assessKinds, setAssessKinds] = useState<string[]>([]);
   const [editAssessFor, setEditAssessFor] = useState<number | null>(null);
+  /* v191 校园模式：本二维码为学校专用入口（学生只填姓名+班级+年级，免手机号） */
+  const [campus, setCampus] = useState(false);
 
   const create = trpc.invite.createChannel.useMutation({
     onSuccess: () => {
@@ -275,6 +277,7 @@ export default function InviteChannelsTab() {
       setReportKinds([]);
       setAssessOn(false);
       setAssessKinds([]);
+      setCampus(false);
       utils.invite.channels.invalidate();
     },
   });
@@ -366,6 +369,21 @@ export default function InviteChannelsTab() {
             }}
           />
         </div>
+        {/* v191 校园模式——学校专用入口 */}
+        <label className="mt-2.5 flex cursor-pointer items-start gap-2.5 rounded-xl border border-olive/15 bg-cream/40 px-3.5 py-2.5">
+          <input
+            type="checkbox"
+            checked={campus}
+            onChange={(e) => setCampus(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-brand"
+          />
+          <span>
+            <span className="block text-[13.5px] font-semibold text-olive">校园模式（学校专用入口）</span>
+            <span className="mt-0.5 block text-[12px] leading-relaxed text-olive-mute">
+              学生打开链接只需填「姓名 + 班级 + 年级」（默认高一），免手机号免密码；学校随机构固定，再次填写同名同班直接回到原账号。仅建议给整校采购的机构使用。
+            </span>
+          </span>
+        </label>
         <button
           onClick={() =>
             create.mutate({
@@ -376,6 +394,7 @@ export default function InviteChannelsTab() {
               reportKinds: reportOn ? reportKinds : [],
               assessmentAccess: assessOn,
               assessmentKinds: assessOn ? assessKinds : [],
+              campus,
             })
           }
           disabled={
@@ -416,6 +435,12 @@ export default function InviteChannelsTab() {
                         <span className="flex items-center gap-1 rounded-full bg-butter/70 px-2 py-0.5 text-[11px] font-bold text-[#8A6500]">
                           <FileText size={11} />
                           报告已开放
+                        </span>
+                      )}
+                      {!!c.campus && (
+                        <span className="flex items-center gap-1 rounded-full bg-mint-pale px-2 py-0.5 text-[11px] font-bold text-brand">
+                          <GraduationCap size={11} />
+                          校园模式
                         </span>
                       )}
                       {c.assessmentAccess && (

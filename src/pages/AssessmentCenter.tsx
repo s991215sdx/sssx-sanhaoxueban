@@ -382,6 +382,8 @@ export default function AssessmentCenter() {
      心理健康A版在向导内可跳过、且不是渠道可单独勾选的种类，不计入门槛。 */
   const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
   const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland", "anchor"].every((k) => visibleSet.has(k));
+  /* v191：学习力系列任一测评在套餐内 → 展示「综合学习力报告」入口；套餐不含学习力（如校园选科版）则隐藏，避免引导做未开放测评 */
+  const suiteGranted = !visibleSet || ["mbti", "disc", "e3"].some((k) => visibleSet.has(k));
 
   return (
     <div className="space-y-4">
@@ -483,15 +485,20 @@ export default function AssessmentCenter() {
           <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
-          {suiteVisible || zhihuiSuiteVisible
+          {suiteVisible && zhihuiSuiteVisible
             ? "推荐先完成上面两项测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；更多测评在下方列表里，按需要挑着做。"
-            : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」两项推荐入口。"}
+            : zhihuiSuiteVisible
+              ? "推荐先完成上面的「选科及升学规划测评」：学科四维 → 霍兰德职业兴趣 → 职业锚，三项做完自动生成你的选科及升学规划报告（选科组合、适合的专业与职业、升学路径规划）；更多测评在下方列表里，按需要挑着做。"
+              : suiteVisible
+                ? "推荐先完成上面的「学习力测评」，做完即可生成你的综合学习力报告；更多测评在下方列表里，按需要挑着做。"
+                : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」两项推荐入口。"}
         </p>
       </div>
 
-      {/* 最重要入口：综合学习力报告 + 成绩现状（置顶突出） */}
+      {/* 最重要入口：综合学习力报告 + 成绩现状（置顶突出）；v191：套餐不含学习力测评（如校园选科版）时隐藏综合学习力入口 */}
       {!testing && (
         <div className="grid gap-3 sm:grid-cols-2">
+          {suiteGranted && (
           <button
             onClick={() => navigate("/report-detail?tab=combined")}
             className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-butter-pale/40"
@@ -506,7 +513,9 @@ export default function AssessmentCenter() {
               </p>
             </div>
           </button>
-          {/* V72：升学指导综合报告（霍兰德×职业锚×MBTI×DISC×五项智能） */}
+          )}
+          {/* V72：升学指导综合报告（霍兰德×职业锚×MBTI×DISC×五项智能）；v192：纯选科套餐（如校园模式）不展示 */}
+          {(!zhihuiSuiteVisible || suiteVisible) && (
           <button
             onClick={() => navigate("/report-detail?tab=guidance")}
             className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-butter-pale/40"
@@ -519,6 +528,7 @@ export default function AssessmentCenter() {
               </p>
             </div>
           </button>
+          )}
           <button
             onClick={() => navigate("/report-detail")}
             className="paper-card accent-l border-lime flex items-center gap-3.5 p-5 text-left shadow-sm hover:bg-butter-pale/40"
