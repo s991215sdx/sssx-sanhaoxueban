@@ -782,7 +782,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
 
 /* ---------- 打印样式（与 mockup 一致的书页感） ---------- */
 const ZH_CSS = `
-.zh-root { background: ${C.bg}; padding: 8px 0 40px; }
+.zh-root { background: ${C.bg}; padding: 20px 16px 40px; }
 .zh-page { background: ${C.paper}; margin: 24px auto; padding: 52px 56px 72px; position: relative; box-shadow: 0 2px 14px rgba(11,61,46,.08); border-radius: 4px; max-width: 940px; display: flex; flex-direction: column; }
 .zh-page h1 { color: ${C.olive}; }
 .zh-page h2 { font-size: 22px; color: ${C.olive}; }
