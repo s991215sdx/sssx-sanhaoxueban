@@ -2427,7 +2427,8 @@ export default function ReportView({
     if (tab === "disc") return !!(data?.disc && DISC_REPORTS[data.disc.primary]);
     if (tab === "multi5") return !!data?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
-    if (tab === "academics" || tab === "guidance" || tab === "zhihui") return false; // 成绩/升学指导/生涯规划 tab 不提供下载（升学指导可系统打印；生涯规划在完整页内下载）
+    if (tab === "academics" || tab === "zhihui") return false; // 成绩/选科及升学规划 tab 不提供下载（选科报告页内自带下载按钮；升学指导已支持打印/下载）
+    if (tab === "guidance") return true; // v182：升学指导报告（全学段）提供下载/打印（页面所见式样）
     if (tab === "subject") return !!data?.subject; // window.print 直接可用
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
     if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);

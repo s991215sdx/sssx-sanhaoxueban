@@ -362,8 +362,6 @@ export default function CombinedV39Report({
   const [panelH, setPanelH] = useState(BERG_H);
   const [stacked, setStacked] = useState(false);
   const [stretch, setStretch] = useState(1);
-  /** 计分样式：false=条形版（默认），true=数值版（只显示彩色数值，更省空间）。 */
-  const [plainScores, setPlainScores] = useState(false);
 
   useLayoutEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -463,8 +461,8 @@ export default function CombinedV39Report({
     (ability(abilityLabel)?.focuses ?? []).filter((f) => kps.includes(f.kp)).flatMap((f) => f.items);
 
   /* ---------- 记分卡内容（桌面舞台与打印静态版共用，避免两处文案分叉） ---------- */
-  /** KRow 包装：统一跟随「条形/数值」切换。 */
-  const KR = (p: { label: string; value: number; note?: string; color: string }) => <KRow {...p} plain={plainScores} />;
+  /** KRow 包装：保持卡片内容与渲染口径统一。 */
+  const KR = (p: { label: string; value: number; note?: string; color: string }) => <KRow {...p} />;
   const CardHead = ({ title, note }: { title: string; note?: string }) => (
     <h4 className="text-[14.5px] font-extrabold text-olive">
       {title}
@@ -606,22 +604,7 @@ export default function CombinedV39Report({
         <div className="mb-1 inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-[4px] text-[#0B8A63]">
           <span className="h-0.5 w-[26px] bg-[#0EA875]" />PART 1
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-[20px] font-extrabold text-[#0B3D2E]">学习能力冰山模型 · 三阶九能</h3>
-          {/* 计分样式切换：条形版 / 数值版（数值版更省空间，打印同样生效） */}
-          <div className="flex items-center rounded-full border border-[#D8E8DE] bg-white p-[3px] text-[11.5px] font-bold print:hidden">
-            {([["条形版", false], ["数值版", true]] as const).map(([txt, v]) => (
-              <button
-                key={txt}
-                type="button"
-                onClick={() => setPlainScores(v)}
-                className={`rounded-full px-3 py-1 transition-colors ${plainScores === v ? "bg-[#0EA875] text-white" : "text-olive-soft hover:text-olive"}`}
-              >
-                {txt}
-              </button>
-            ))}
-          </div>
-        </div>
+        <h3 className="text-[20px] font-extrabold text-[#0B3D2E]">学习能力冰山模型 · 三阶九能</h3>
         <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">
           水面之上是看得见的学习成绩；水面之下是乐学（心）、会学（术）、善学（脑）三大系统，共九能，全部计入总分。冰山越往下越隐蔽：能力最好训练、行为靠习惯、动力最难撬动。
         </p>

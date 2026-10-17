@@ -66,7 +66,7 @@ ul.ob-dots.ob-warn li::before { background: #F0A92E; }
 @media print {
   .ob-root { background: #fff; padding: 0; }
   .ob-book { max-width: none; padding: 0; }
-  .ob-page { box-shadow: none; margin: 0; border-radius: 0; max-width: none; min-height: 281mm !important; height: auto; padding: 14px 22px 40px; break-after: page; page-break-after: always; }
+  .ob-page { box-shadow: none; margin: 0; border-radius: 0; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; break-after: page; page-break-after: always; }
   .ob-page:last-child { break-after: auto; page-break-after: auto; }
   .ob-pfoot { bottom: 8px; left: 22px; right: 22px; }
   .ob-card { padding: 12px 16px; }
