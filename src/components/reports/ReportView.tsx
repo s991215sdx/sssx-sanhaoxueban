@@ -2471,10 +2471,25 @@ export default function ReportView({
     };
     const title = TAB_TITLE[tab];
     const studentName = profile?.name ?? undefined;
+    /* v183d：当前正在看「新版」（olive book 式样）或综合报告「三阶九能版」时，
+       打印/下载直接输出页面所见式样（所见即所得），不再套用旧版独立打印 HTML。 */
+    const liveNewVersion =
+      (tab === "e3" && !!oliveNew.e3) ||
+      (tab === "mbti" && !!oliveNew.mbti) ||
+      (tab === "disc" && !!oliveNew.disc) ||
+      (tab === "multi5" && !!oliveNew.multi5) ||
+      (tab === "anchor" && !!oliveNew.anchor) ||
+      (tab === "holland" && !!oliveNew.holland) ||
+      (tab === "mental" && !!oliveNew.mental) ||
+      ((tab === "parent" || tab === "discparent") && !!oliveNew.parent) ||
+      (tab === "guidance" && !!oliveNew.guidance) ||
+      (tab === "combined" && combinedView === "v39");
     /* V61：优先用独立打印窗口生成器（reportDownload.ts，干净内联样式 HTML），
-       修复 window.print 打印实时页面导致的元素重叠/乱码（绝对定位徽章与网格在打印介质下错位）。 */
-    const html =
-      tab === "e3" && e3v37
+       修复 window.print 打印实时页面导致的元素重叠/乱码（绝对定位徽章与网格在打印介质下错位）。
+       v183c 打印管线重写后新版视图改走页面打印；旧版仍用独立打印 HTML 保持原样。 */
+    const html = liveNewVersion
+      ? null
+      : tab === "e3" && e3v37
         ? e3V37PrintHtml(e3v37, studentName)
         : tab === "mbti" && data?.mbti && MBTI_REPORTS[data.mbti.type]
           ? mbtiPrintHtml(data.mbti)
