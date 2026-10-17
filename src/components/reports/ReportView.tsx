@@ -3965,7 +3965,7 @@ function VerSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => vo
             }`}
           >
             <span className="relative inline-block">
-              {v.label}
+              {v.l}
               {active && <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full bg-[#0C7064]" />}
             </span>
           </button>
