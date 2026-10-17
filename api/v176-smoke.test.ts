@@ -19,20 +19,19 @@ describe("v176 伴学师查看完整报告直达学员报告页", () => {
     if (/setParams\(\{ tab: t \}/.test(src)) throw new Error("残留：setParams 整体替换参数");
   });
 
-  it("宫格点三好生涯规划报告直接新开完整报告页", () => {
+  it("选科报告栏目：v181 起改为 ReportView 内嵌渲染（旧「宫格 window.open 直达」方案已由 v181 选科报告内嵌取代）", () => {
     const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
-    if (!/t\.key === "zhihui"[\s\S]{0,200}window\.open\(`\/zhihui-report\?studentId=\$\{studentUserId\}`/.test(src))
-      throw new Error("缺：宫格直达三好生涯规划报告页");
+    if (!/tab === "zhihui" && \(/.test(src)) throw new Error("缺：ReportView 内嵌选科及升学规划栏目");
   });
 
   it("打印白板修复：zhihui 报告页挂到 report-print-root", () => {
     const src = readFileSync("src/pages/ZhihuiReport.tsx", "utf-8");
-    if (!/className="zh-root" id="report-print-root"/.test(src))
+    if (!/id=\{printId\}/.test(src) || !/printId="report-print-root"/.test(src))
       throw new Error("缺：zh-root 挂 report-print-root，打印将白板");
   });
 
   it("BUILD_TAG 已递增到 v176", () => {
     const router = readFileSync("api/router.ts", "utf-8");
-    if (!router.includes('const BUILD_TAG = "v180-2026-10-16";')) throw new Error("BUILD_TAG 未递增到 v176");
+    if (Number(router.match(/const BUILD_TAG = "v(\d+)-/)?.[1] ?? 0) < 176) throw new Error("BUILD_TAG 未递增到 v176");
   });
 });

@@ -457,8 +457,6 @@ export default function CombinedV39Report({
 
   /* ---------- 01 章 · 诊断行数据 ---------- */
   const e3NosOfAbility = (label: string) => (ability(label)?.focuses ?? []).flatMap((f) => f.items);
-  const nosOfKps = (abilityLabel: string, kps: string[]) =>
-    (ability(abilityLabel)?.focuses ?? []).filter((f) => kps.includes(f.kp)).flatMap((f) => f.items);
 
   /* ---------- 记分卡内容（桌面舞台与打印静态版共用，避免两处文案分叉） ---------- */
   /** KRow 包装：保持卡片内容与渲染口径统一。 */

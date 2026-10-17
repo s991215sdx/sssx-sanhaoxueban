@@ -106,7 +106,7 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, ExternalLink, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
@@ -2298,7 +2298,6 @@ export default function ReportView({
   profile,
   viewer,
   onEditAcademics,
-  subject4d,
   studentUserId,
 }: {
   data: ReportAssessmentData | undefined;
