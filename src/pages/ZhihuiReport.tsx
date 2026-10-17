@@ -335,8 +335,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     if (!s4d) return null;
     const gradePct = (n: string): number | null => {
       const a = academics.find((x) => x.name === n || (n === "政治" && x.name === "道德与法治"));
-      if (!a || a.lastScore == null) return null;
-      const full = a.fullScore ?? defaultFullScore(a.name, grade);
+      if (!a?.name || a.lastScore == null) return null;
+      const full = (a as { fullScore?: number | null }).fullScore ?? defaultFullScore(a.name, grade);
       return full > 0 ? Math.round((a.lastScore / full) * 100) : null;
     };
     const w = (n: string): number => {
@@ -585,7 +585,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
                 <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                   {combos.weakTips.map((x) => (
                     <p key={x.n} style={{ fontSize: 13, color: C.oliveSoft, lineHeight: 1.8, margin: 0 }}>
-                      <b style={{ color: C.terra }}>{x.n}</b>（最近成绩得分率 {x.pct}%）：{x.tip}
+                      <b style={{ color: "#B4552D" }}>{x.n}</b>（最近成绩得分率 {x.pct}%）：{x.tip}
                     </p>
                   ))}
                 </div>
