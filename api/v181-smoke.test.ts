@@ -42,8 +42,8 @@ describe("v181 双轨测评中心", () => {
     const src = read("src/pages/AssessmentCenter.tsx");
     // 学习力测评：渠道可勾选的核心四种须全套（MBTI/DISC/E3/智能五项；心理健康A版可跳过、非渠道可勾种类）
     expect(src).toMatch(/\["mbti", "disc", "e3", "multi5"\]\.every/);
-    // 选科及升学规划测评：套餐须含 学科四维/霍兰德/职业锚 全套
-    expect(src).toMatch(/\["subject4d", "holland", "anchor"\]\.every/);
+    // 选科及升学规划测评：核心门槛 = 学科四维/霍兰德（v194 起 anchor 为可选增量，校园渠道可不含）
+    expect(src).toMatch(/\["subject4d", "holland"\]\.every/);
     expect(src).toContain("更多测评");
     expect(src).toContain("assessment-list");
   });
