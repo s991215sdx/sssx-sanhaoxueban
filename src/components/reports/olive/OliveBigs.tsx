@@ -2,7 +2,6 @@
  * 大报告 olive book 式样「新版」：学业诊断报告 / 升学指导报告 / 家长认知冲突报告。
  * 版式与已定稿的选科及升学规划报告（book 式样）一致；内容全部复用既有 buildXxxReport 文案与数据，原版报告零改动、并列入口。
  */
-import type { ReactNode } from "react";
 import { OBook, OPage, OCover, OPartTag, OSecTitle, OCard } from "./OliveBook";
 import { BergSvg } from "../CombinedV39";
 import { buildE3Report } from "@/data/reports/combined";
@@ -27,7 +26,7 @@ import type { OliveBaseProps } from "./OliveSingles";
 import GuidanceTab from "../GuidanceTab";
 import type { ReportAssessmentData, ReportProfileInfo } from "../ReportView";
 import type { GuidanceRecord } from "@/data/reports/guidance";
-import type { E3V37ParentResult } from "@contracts/e3v37";
+import type { E3V37ParentResult } from "@contracts/e3v37Parent";
 import { ParentReportTab } from "../ReportView";
 
 const r1 = (x: number) => Math.round(x * 10) / 10;

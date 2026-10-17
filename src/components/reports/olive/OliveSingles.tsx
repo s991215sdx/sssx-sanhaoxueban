@@ -329,7 +329,7 @@ export function OliveMentalV2({ result, name, grade, date }: OliveBaseProps & { 
           <p className="ob-muted">{result.summary}</p>
         </OCard>
         <OSecTitle n={1} title="继续保持的好习惯" />
-        <ODots items={result.positives.length > 0 ? result.positives : ["规律作息：尽量固定睡觉和起床时间，睡好了情绪才稳。", "每周 3 次、每次 30 分钟以上的运动，是天然的「情绪调节器」。", "保持至少一位可以倾诉的信任对象（朋友、家人、老师），有话别憋着。"]} />
+        <ODots items={result.positives > 0 ? [`本次筛查有 ${result.positives}/16 项积极信号（得分 ≥2 的题），继续保持！`] : ["规律作息：尽量固定睡觉和起床时间，睡好了情绪才稳。", "每周 3 次、每次 30 分钟以上的运动，是天然的「情绪调节器」。", "保持至少一位可以倾诉的信任对象（朋友、家人、老师），有话别憋着。"]} />
       </OPage>
     </OBook>
   );

@@ -104,7 +104,7 @@ export async function listDeletedStudents(db: Db, orgId?: number | null): Promis
   return deletedUsers
     .filter((u) => u.deletedAt != null)
     .filter((u) => profileByUser.has(u.id))
-    .filter((u) => orgId == null || u.orgId === orgId)
+    .filter((u) => orgId == null || u.orgId === orgId || u.orgId == null) // v190：无机构学员对本机构管理员可见
     .map((u) => {
       const p = profileByUser.get(u.id)!;
       const deletedAt = u.deletedAt!;

@@ -565,7 +565,7 @@ function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
                       t.inviteReportDefault ? "bg-brand text-white" : "bg-cream-card text-olive-mute ring-1 ring-border hover:text-olive"
                     }`}
                   >
-                    {t.inviteReportDefault ? "邀请学员默认可看报告 ✓" : "邀请学员默认无报告"}
+                    {t.inviteReportDefault ? "默认可看报告 ✓" : "默认无报告"}
                   </button>
                 </div>
                 <button
