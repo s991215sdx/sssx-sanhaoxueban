@@ -555,6 +555,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         </div>
         <div className="card cover-card" style={{ width: 340 }}>
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "10px 22px", fontSize: 14 }}>
+            {/* v196：校园渠道封面标注学校名称 */}
+            {campus && <><span className="muted">学　　校</span><span style={{ fontWeight: 600 }}>{access?.brandName || access?.orgName || "东莞粤华学校"}</span></>}
             <span className="muted">姓　　名</span><span style={{ fontWeight: 600 }}>{data.student.name}</span>
             <span className="muted">年　　级</span><span style={{ fontWeight: 600 }}>{grade}</span>
             <span className="muted">报告编号</span><span style={{ fontWeight: 600 }}>{reportNo}</span>
