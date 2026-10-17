@@ -4,8 +4,10 @@
  * 打印：每页 A4 page-break，点「下载 / 打印」另存 PDF。
  */
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { defaultFullScore } from "@contracts/academics";
+import { subjectMethodsFor } from "@/data/reports/subjectAdvice";
 import {
   SUBJECT4D_BANK,
   SUBJECT4D_DIM_COLOR,
@@ -325,19 +327,63 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   const exp = data?.expectations;
   const grade = data?.student.grade === "junior" ? "初三" : data?.student.grade === "senior" ? "高三" : data?.student.grade === "高二" ? "高二" : "高一";
 
-  /* 选科推荐：首选 = 物理/历史潜力高者；再选 = 剩余 5 科潜力 Top2（物理首选时化学加权优先） */
+  /* 选科推荐（v193）：广东 3+1+2——首选物理/历史 2 选 1，再选化生政地 4 选 2。
+     计分 = 学科潜力指数×60% + 最近成绩得分率×40%（无成绩按纯潜力）；
+     物理轨化学优先：化学加权分 ≥45 时第一推荐必含化学，过低则放弃并说明；
+     所有组合由去重候选池生成，杜绝科目重复（修复「物理+政治+政治」）。 */
   const combos = useMemo(() => {
     if (!s4d) return null;
-    const p = (n: string) => s4d.subjects[n as keyof typeof s4d.subjects]?.潜力指数 ?? 3;
-    const firstPhys = p("物理") >= p("历史");
-    const rest = ["化学", "生物", "历史", "政治", "地理"].filter((s) => s !== (firstPhys ? "历史" : "物理"));
-    const scored = rest.map((s) => ({ s, v: p(s) + (firstPhys && s === "化学" ? 0.4 : 0) })).sort((a, b) => b.v - a.v);
+    const gradePct = (n: string): number | null => {
+      const a = academics.find((x) => x.name === n || (n === "政治" && x.name === "道德与法治"));
+      if (!a || a.lastScore == null) return null;
+      const full = a.fullScore ?? defaultFullScore(a.name, grade);
+      return full > 0 ? Math.round((a.lastScore / full) * 100) : null;
+    };
+    const w = (n: string): number => {
+      const pot = ((s4d.subjects[n as keyof typeof s4d.subjects]?.潜力指数 ?? 3) / 5) * 100;
+      const g = gradePct(n);
+      return Math.round(g == null ? pot : pot * 0.6 + g * 0.4);
+    };
+    const firstPhys = w("物理") >= w("历史");
     const first = firstPhys ? "物理" : "历史";
-    const c1: [string, string, string][] = [[first, "首选", ""], [scored[0]!.s, "再选", ""], [scored[1]!.s, "再选", ""]];
-    const alt2 = [scored[0]!.s, scored[2]!.s];
-    const alt3 = firstPhys ? ["政治", scored[0]!.s] : [scored[1]!.s, scored[2]!.s];
-    return { c1, second: [first, ...alt2], third: [firstPhys ? "物理" : "历史", ...alt3].slice(0, 3) };
-  }, [s4d]);
+    const pool = ["化学", "生物", "政治", "地理"].map((s) => ({ s, v: w(s) }));
+    const chem = pool[0]!;
+    const chemLow = chem.v < 45;
+    const rest = pool.filter((p) => p.s !== "化学").sort((a, b) => b.v - a.v);
+    /* 物理轨且化学不太低 → 化学置顶；否则纯按加权分排序 */
+    const ranked = firstPhys && !chemLow ? [chem, ...rest] : pool.slice().sort((a, b) => b.v - a.v);
+    /* 防重兜底：任何组合内科目不得重复，不足 3 科时从候选池补齐 */
+    const uniq3 = (head: string, picks: string[]): string[] => {
+      const out: string[] = [];
+      for (const x of [head, ...picks]) if (x && !out.includes(x)) out.push(x);
+      for (const p of ranked) { if (out.length >= 3) break; if (!out.includes(p.s)) out.push(p.s); }
+      return out.slice(0, 3);
+    };
+    const firstTwo = ranked.slice(0, 2).map((p) => p.s);
+    const secondTwo = [ranked[0]!.s, ranked[2]!.s];
+    const otherFirst = firstPhys ? "历史" : "物理";
+    const thirdTwo = ranked.slice(0, 2).map((p) => p.s);
+    const c1 = uniq3(first, firstTwo);
+    /* 弱势学科（第一推荐组合内、成绩得分率 < 60%）→ 中肯提升建议 */
+    const methods = subjectMethodsFor("高中");
+    const methodOf = (n: string) => methods.find((m) => m.subject === n || (n === "政治" && m.subject === "道德与法治"));
+    const weakTips = c1
+      .filter((n) => n !== first)
+      .map((n) => ({ n, pct: gradePct(n) }))
+      .filter((x): x is { n: string; pct: number } => x.pct != null && x.pct < 60)
+      .map((x) => ({ ...x, tip: methodOf(x.n)?.methods[0] ?? "先回归课本与课堂，把基础题的正确率提上来，再谈拔高。" }));
+    const eng = academics.find((x) => x.name === "英语");
+    const englishLow = eng?.lastScore != null && (eng.lastScore ?? 999) < 80;
+    return {
+      c1: c1.map((sub, i): [string, string, string] => [sub, i === 0 ? "首选" : "再选", ""]),
+      second: uniq3(first, secondTwo),
+      third: uniq3(otherFirst, thirdTwo),
+      hasGrades: academics.some((x) => x.lastScore != null),
+      chemLow: firstPhys && chemLow,
+      weakTips,
+      englishLow,
+    };
+  }, [s4d, academics, grade]);
 
   const subjectRows = useMemo(() => {
     if (!s4d) return [];
@@ -515,6 +561,43 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
               <div className="card" style={{ background: "#fff" }}><b style={{ fontSize: 16, color: C.olive }}>{combos.second.join(" + ")}</b><span className="tag t-hi" style={{ marginLeft: 10 }}>第二推荐</span></div>
               <div className="card" style={{ background: "#fff" }}><b style={{ fontSize: 16, color: C.olive }}>{combos.third.join(" + ")}</b><span className="tag t-hi" style={{ marginLeft: 10 }}>第三推荐</span></div>
             </div>
+            {/* v193：化学过低说明 / 成绩权重说明 / 无成绩引导 */}
+            <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+              推荐依据：学科潜力指数 60% + 最近考试成绩 40%{combos.hasGrades ? "（已计入最近一次考试成绩）" : "（尚未录入成绩，暂按纯测评潜力推荐）"}；物理首选时化学优先（满足绝大多数理工类「物理+化学」选考要求）。
+            </p>
+            {combos.chemLow && (
+              <div className="card" style={{ marginTop: 10, borderLeft: `4px solid ${C.brand}`, background: C.cream }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>关于化学：</b>
+                <span style={{ fontSize: 13.5, color: C.oliveSoft }}>你的化学加权得分偏低（&lt;45），第一推荐未强制包含化学。若对医学、化工、材料等专业有明确意向，建议先评估化学提升空间再定组合。</span>
+              </div>
+            )}
+            {!combos.hasGrades && (
+              <div className="card" style={{ marginTop: 10, borderLeft: `4px solid ${C.lime}`, background: C.cream }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>让推荐更精准：</b>
+                <span style={{ fontSize: 13.5, color: C.oliveSoft }}>录入最近一次月考/期考成绩后，选科推荐会把成绩按 40% 权重计入。 </span>
+                <Link to="/report-detail" style={{ fontSize: 13.5, fontWeight: 700, color: C.brandDeep, textDecoration: "underline" }}>去录入成绩 →</Link>
+              </div>
+            )}
+            {/* v193：组合内弱势学科提升建议 */}
+            {combos.weakTips.length > 0 && (
+              <div className="card" style={{ marginTop: 10, background: "#FFFDF5", border: "1px solid #F0E6C8" }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>推荐组合内的提升建议</b>
+                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                  {combos.weakTips.map((x) => (
+                    <p key={x.n} style={{ fontSize: 13, color: C.oliveSoft, lineHeight: 1.8, margin: 0 }}>
+                      <b style={{ color: C.terra }}>{x.n}</b>（最近成绩得分率 {x.pct}%）：{x.tip}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* v193：英语低于 80 分的升学提示 */}
+            {combos.englishLow && (
+              <div className="card" style={{ marginTop: 10, borderLeft: `4px solid #D9A13B`, background: "#FFFBF0" }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>英语成绩提示：</b>
+                <span style={{ fontSize: 13.5, color: C.oliveSoft, lineHeight: 1.8 }}>你最近一次英语成绩低于 80 分（150 分制）。可以考虑两条路：① 评估转学日语高考——提分空间通常更大，但需先确认学校开班情况与个人兴趣；② 英语专项查漏补缺，重点抓词汇与阅读正确率。建议与伴学师、家长商议后再决定。</span>
+              </div>
+            )}
           </>
         ) : <p className="muted">完成学科四维测评后生成推荐组合。</p>}
         <SecTitle n={9} title="距离目标还有多远" sub={exp?.school ? `目标：${exp.school}${exp.majorCat ? ` · ${exp.majorCat}` : ""}` : "填写未来期望后生成分差表"} />

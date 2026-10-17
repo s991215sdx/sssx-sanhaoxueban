@@ -118,14 +118,21 @@ function CampusRegister({ code, school, brandName, logoUrl }: { code: string; sc
           <label className="mt-4 block text-[13px] font-medium text-olive" htmlFor="stu-class">
             班级<span className="text-terra"> *</span>
           </label>
-          <input
+          <select
             id="stu-class"
-            maxLength={20}
-            placeholder="如：3 班 / 高一(3)班"
             value={className}
             onChange={(e) => setClassName(e.target.value)}
-            className={inputCls}
-          />
+            className={`${inputCls} appearance-none bg-cream/60`}
+          >
+            <option value="" disabled>
+              请选择班级
+            </option>
+            {Array.from({ length: 11 }, (_, i) => `${i + 1}班`).map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
 
           <label className="mt-4 block text-[13px] font-medium text-olive">年级</label>
           <div className="mt-1.5 grid grid-cols-3 gap-2">
