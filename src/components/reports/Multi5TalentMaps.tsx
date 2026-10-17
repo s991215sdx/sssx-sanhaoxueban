@@ -34,7 +34,7 @@ const CX = 170;
 const CY = 170;
 const GAP = 0.055; // 段间留白（弧度）
 
-function TalentDonut({ multi5 }: { multi5: Multi5Result }) {
+export function TalentDonut({ multi5 }: { multi5: Multi5Result }) {
   const span = (2 * Math.PI) / 5;
   const segs = MULTI5_DIM_ORDER.map((k, i) => {
     const a0 = -Math.PI / 2 + i * span + GAP / 2;
@@ -106,7 +106,7 @@ function TalentDonut({ multi5 }: { multi5: Multi5Result }) {
   );
 }
 
-export default function Multi5TalentMaps({ multi5 }: { multi5: Multi5Result }) {
+export default function Multi5TalentMaps({ multi5, showDonut = true }: { multi5: Multi5Result; showDonut?: boolean }) {
   const byScore = [...MULTI5_DIM_ORDER].sort((a, b) => multi5.dims[b] - multi5.dims[a]);
   /* 优势口径：≥80 为优势；若全部 <80，则取相对优势前二 */
   const strengthKeys = (() => {
@@ -137,8 +137,8 @@ export default function Multi5TalentMaps({ multi5 }: { multi5: Multi5Result }) {
   );
   return (
     <div>
-      <div className="grid items-center gap-4 md:grid-cols-[260px_1fr]">
-        <TalentDonut multi5={multi5} />
+      <div className={`grid items-center gap-4 ${showDonut ? "md:grid-cols-[260px_1fr]" : ""}`}>
+        {showDonut && <TalentDonut multi5={multi5} />}
         <div className="space-y-3">
           {card("优势学科汇总", (k) => MULTI5_TALENT_MAP[k].subjects, "#0EA875", strengthKeys, fallbackNote ? "本次未出现 ≥80 分维度，按相对优势取前两项" : undefined)}
           {card("优势职业汇总", (k) => MULTI5_TALENT_MAP[k].careers, "#3E7CB1", strengthKeys, fallbackNote ? "本次未出现 ≥80 分维度，按相对优势取前两项" : undefined)}

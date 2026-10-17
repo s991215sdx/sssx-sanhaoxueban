@@ -140,10 +140,9 @@ export function OCover({ klabel, title, subtitle, info, note }: {
 }) {
   return (
     <OPage no={1} flex style={{ minHeight: 1100 }}>
-      <div style={{ display: "flex", gap: 8 }}>
-        <span className="ob-pdot" />
-        <span className="ob-pdot" />
-        <span className="ob-pdot" />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ width: 26, height: 3, borderRadius: 2, background: "#0EA875" }} />
+        <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: 4, color: "#0B3D2E" }}>三好测评</span>
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-start" }}>
         <div className="ob-klabel" style={{ marginBottom: 18 }}>{klabel}</div>

@@ -283,9 +283,8 @@ function SecTitle({ n, title, sub }: { n: string | number; title: string; sub?: 
 }
 
 /* ---------- 主组件 ---------- */
-export default function ZhihuiReport() {
-  const [searchParams] = useSearchParams();
-  const studentId = searchParams.get("studentId") ? Number(searchParams.get("studentId")) : undefined;
+/** 报告主体：独立页与内嵌（测评报告栏目）共用；printId 仅独立页传（打印字号规则按 id 匹配）。 */
+export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; printId?: string }) {
   const { data, isLoading } = trpc.zhihui.reportData.useQuery({ studentId });
 
   const s4d = data?.subject4d?.result as Subject4dResult | null | undefined;
@@ -370,7 +369,7 @@ export default function ZhihuiReport() {
   const targetRows = (data.targetSchool?.rows ?? []).filter((r) => r.y1Min != null).slice(0, 6);
 
   return (
-    <div className="zh-root" id="report-print-root">
+    <div className="zh-root" id={printId}>
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
         <h1 className="text-[20px] font-bold text-olive">选科及升学规划报告</h1>
@@ -829,3 +828,10 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
   .part-tag { margin-bottom: 8px; }
 }
 `;
+
+/* ---------- 独立页面（/zhihui-report）：带打印根 id 与页头 ---------- */
+export default function ZhihuiReport() {
+  const [searchParams] = useSearchParams();
+  const studentId = searchParams.get("studentId") ? Number(searchParams.get("studentId")) : undefined;
+  return <ZhihuiReportBody studentId={studentId} printId="report-print-root" />;
+}

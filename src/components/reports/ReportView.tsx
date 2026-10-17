@@ -18,6 +18,7 @@ import { OliveStyle } from "@/components/reports/olive/OliveBook";
 import { OliveMbti, OliveDisc, OliveHolland, OliveMulti5, OliveAnchor, OliveMentalV2 } from "@/components/reports/olive/OliveSingles";
 import { OliveE3, OliveGuidance, OliveParent } from "@/components/reports/olive/OliveBigs";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
+import { ZhihuiReportBody } from "@/pages/ZhihuiReport";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
@@ -108,7 +109,7 @@ import {
 import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, ExternalLink, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
-import Multi5TalentMaps from "@/components/reports/Multi5TalentMaps";
+import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
 import MentalDetail from "@/components/reports/MentalDetail";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
@@ -137,8 +138,8 @@ type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics"
    新增「学科能力评估」独立报告栏目。 */
 const TABS: { key: Tab; label: string }[] = [
   { key: "combined", label: "综合学习力报告" },
-  { key: "zhihui", label: "选科及升学规划报告" },
-  { key: "guidance", label: "升学指导报告" },
+  { key: "zhihui", label: "选科及升学规划（高一）" },
+  { key: "guidance", label: "升学指导报告（全学段）" },
   { key: "parent", label: "家长认知冲突报告" },
   { key: "e3", label: "学业诊断报告" },
   { key: "mbti", label: "MBTI 性格详版" },
@@ -1626,7 +1627,6 @@ function Multi5SubCard({ title, items }: { title: string; items: string[] }) {
 function Multi5Detail({ result }: { result: Multi5Result }) {
   const report = useMemo(() => buildMulti5Report(result), [result]);
   const topDim = report.dims.find((d) => d.key === report.topKey)!;
-  const radarData = report.dims.map((d) => ({ dim: d.label, 得分: d.score }));
   return (
     <div className="space-y-4">
       {/* 总览卡 */}
@@ -1655,25 +1655,19 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
         <p className="mt-3 text-[12.5px] leading-relaxed text-olive-mute">{MULTI5_THEORY_NOTE}</p>
       </div>
 
-      {/* 雷达图 */}
+      {/* 五维圆环图（取代原雷达图，与学科/职业/提升参考同一图形语言） */}
       <div className="paper-card p-5">
-        <h3 className="font-bold text-olive">五维雷达（百分制）</h3>
-        <p className="mt-1 text-[12.5px] text-olive-mute">每维 8 道客观题的正确率换算得分，越靠外越好。</p>
-        <div className="mt-2 h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#DFE4DA" />
-              <PolarAngleAxis dataKey="dim" tick={{ fill: "#475550", fontSize: 12 }} />
-              <Radar dataKey="得分" stroke="#52A965" fill="#52A965" fillOpacity={0.35} strokeWidth={2.5} />
-            </RadarChart>
-          </ResponsiveContainer>
+        <h3 className="font-bold text-olive">五维得分圆环（百分制）</h3>
+        <p className="mt-1 text-[12.5px] text-olive-mute">每维 8 道客观题的正确率换算得分，色带越满越好。</p>
+        <div className="mt-2 flex justify-center">
+          <TalentDonut multi5={result} />
         </div>
       </div>
 
-      {/* V178：学科 / 职业 / 提升项目参考（图4/5/6 式样） */}
+      {/* V178：学科 / 职业 / 提升项目参考（图4/5/6 式样；圆环已在上方，此处只留卡片） */}
       <div className="paper-card p-5">
         <h3 className="font-bold text-olive">多元智能 · 学科 / 职业 / 提升参考</h3>
-        <Multi5TalentMaps multi5={result} />
+        <Multi5TalentMaps multi5={result} showDonut={false} />
       </div>
 
       {/* 五维卡片 */}
@@ -2507,6 +2501,24 @@ export default function ReportView({
   const mental = data?.mental ?? undefined;
   const academics = profile?.academics ?? undefined;
   const { data: academicRecords } = trpc.profile.academicRecords.useQuery();
+  /* 伴学师/管理员视角：查所看学员的成绩历史（进步对比数据源；学生端用上面自己的记录）。 */
+  const { data: coachAcademicRecords } = trpc.coach.academicRecords.useQuery(
+    { userId: studentUserId ?? 0 },
+    { enabled: viewer === "tutor" && studentUserId != null },
+  );
+  /** 初次成绩：最早一条带「最近分」的记录（总成绩），用于进步/退步对比。 */
+  const firstScoreRecord = useMemo(() => {
+    const rows = viewer === "tutor" ? coachAcademicRecords : academicRecords;
+    const oldestFirst = [...(rows ?? [])].reverse();
+    for (const r of oldestFirst) {
+      const subs = (r.subjects ?? []) as { lastScore?: number | null }[];
+      if (subs.some((x) => x.lastScore != null)) {
+        return { examName: r.examName ?? "", total: subs.reduce((s, x) => s + (x.lastScore ?? 0), 0) };
+      }
+    }
+    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewer, academicRecords, coachAcademicRecords]);
 
   /** 学习力系统框架图的测评完成状态（全部由 props 数据计算，学生端/伴学师端口径一致）。 */
   const frameworkStatus = useMemo<FrameworkStatus>(() => {
@@ -2752,30 +2764,19 @@ export default function ReportView({
       )}
 
       {/* Tab 切换（v143：轨道=白色，选中=白底+墨绿字+墨绿框，未选中=白底墨绿灰字；
-          v176c：「选科及升学规划报告」为独立完整页，点击直接新开窗口直达，不切 tab） */}
+          v176c→v180：「选科及升学规划（高一）」改为内嵌直开，与其他栏目一致不切页面） */}
       <div className="flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
         {tabs.map((t) => (
           <button
             key={t.key}
-            onClick={() => {
-              if (t.key === "zhihui") {
-                if (viewer === "tutor" && studentUserId != null) {
-                  window.open(`/zhihui-report?studentId=${studentUserId}`, "_blank", "noopener");
-                } else {
-                  navigate("/zhihui-report");
-                }
-                return;
-              }
-              setTab(t.key);
-            }}
+            onClick={() => setTab(t.key)}
             className={`grow basis-[30%] rounded-lg border px-2 py-2 text-[12.5px] font-semibold transition ${
               tab === t.key
                 ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
                 : "border-transparent bg-white text-olive hover:border-[#1E3530]/15"
             }`}
           >
-            {t.label}
-            {t.key === "zhihui" && <ExternalLink size={12} className="ml-1 inline-block align-[-1px]" />}
+            {t.key === "zhihui" ? `选科及升学规划（${profile?.grade || "高一"}）` : t.label}
           </button>
         ))}
       </div>
@@ -2795,63 +2796,10 @@ export default function ReportView({
           v93：桌面端整体放大 1.15 倍（zoom），字号/图表同比变大，阅读不用眯眼；打印与移动端保持原尺寸 */}
       <OliveStyle />
       <div id="report-print-root" className="report-view-zoom space-y-4">
-      {/* v176：选科及升学规划报告栏目——完整报告为独立页面，这里展示摘要与直达入口 */}
-      {tab === "zhihui" &&
-        (() => {
-          const s4d = subject4d as {
-            subjects?: Record<string, { 兴趣: number; 能力倾向: number; 观念: number; 效能感: number; 潜力指数: number }>;
-          } | null | undefined;
-          const top = s4d?.subjects
-            ? Object.entries(s4d.subjects).sort((a, b) => (b[1]?.潜力指数 ?? 0) - (a[1]?.潜力指数 ?? 0)).slice(0, 3)
-            : [];
-          const openFull = () => {
-            if (viewer === "tutor" && studentUserId != null) {
-              window.open(`/zhihui-report?studentId=${studentUserId}`, "_blank", "noopener");
-            } else {
-              navigate("/zhihui-report");
-            }
-          };
-          return (
-            <div className="paper-card accent-l space-y-4 border-[#0C7064]/30 p-5">
-              <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0C7064] text-cream">
-                  <Compass size={22} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[16px] font-bold text-olive">选科及升学规划报告</h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-                    选科推荐 · 九科四维解读 · 专业职业详解 · 目标院校分差 · 升学路径 · 分年级规划，基于学科四维测评与霍兰德职业兴趣测评自动生成，与学生端完全一致。
-                  </p>
-                </div>
-              </div>
-              {top.length > 0 ? (
-                <div className="rounded-xl bg-cream/70 p-3.5">
-                  <div className="text-[12px] font-semibold text-olive-mute">学科潜力 Top 3（九科四维画像已生成）</div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {top.map(([n, v], i) => (
-                      <span key={n} className="chip !text-[11.5px]">
-                        {i + 1}. {n} · 潜力 {v.潜力指数?.toFixed?.(1) ?? v.潜力指数}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="rounded-xl bg-butter-pale/60 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-olive-soft">
-                  {viewer === "tutor"
-                    ? "学员还未完成学科四维测评，完成本栏目后自动汇总生涯规划报告。"
-                    : "你还未完成学科四维测评（9 科 × 4 维，约 15 分钟），做完即可生成完整的选科及升学规划报告。"}
-                </p>
-              )}
-              <button
-                onClick={openFull}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0C7064] py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#0a5c52]"
-              >
-                {top.length > 0 ? "查看完整选科及升学规划报告 →" : "去完成学科四维测评，生成报告 →"}
-              </button>
-              <p className="text-center text-[11.5px] text-olive-mute">报告页内可下载 / 打印 PDF，方便交给家长。</p>
-            </div>
-          );
-        })()}
+      {/* v180：选科及升学规划（高一）栏目——内嵌完整报告，与学生端一致，不再跳转独立页 */}
+      {tab === "zhihui" && (
+        <ZhihuiReportBody studentId={viewer === "tutor" ? (studentUserId ?? undefined) : undefined} />
+      )}
 
       {tab === "guidance" && (
         <div className="space-y-4">
@@ -3501,6 +3449,7 @@ export default function ReportView({
                   mentalPa={mentalPa}
                   mentalScl90={mentalScl90}
                   subject={data?.subject ?? undefined}
+                  firstScoreRecord={firstScoreRecord}
                   onReveal={reveal}
                 />
                 {renderCombinedSections(true)}
@@ -4003,7 +3952,7 @@ function AnswerDetails({ raw }: { raw: { kind: string; answers: unknown; created
 function VerSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1 print:hidden">
-      {([{ k: false, l: "原版报告" }, { k: true, l: "新版 · book 式样" }] as const).map((v) => {
+      {([{ k: false, l: "原版报告" }, { k: true, l: "新版 · 打印版" }] as const).map((v) => {
         const active = on === v.k;
         return (
           <button

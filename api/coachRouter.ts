@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc } from "drizzle-orm";
 import { createRouter, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { studentPrescriptions, studentProfile, users } from "@db/schema";
+import { studentPrescriptions, studentProfile, users, academicRecords } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
@@ -79,7 +79,49 @@ export const coachRouter = createRouter({
         // 目标学员尚无档案记录时也允许创建（仅 admin 会走到这里）
         await db.insert(studentProfile).values({ userId: input.userId, academics: value });
       }
+      /* 与学生端 V72 同口径：只要这次保存里有任何一科填了「最近分」，就追加一条历史（成绩曲线数据源）。
+         只改目标分/自评、没填分数的不产生记录，避免把编辑误当一次新考试。 */
+      const hasAnyScore = input.subjects.some((s) => s.lastScore != null);
+      if (hasAnyScore) {
+        await db.insert(academicRecords).values({
+          userId: input.userId,
+          examName: input.examName ?? "",
+          subjects: input.subjects as unknown as Record<string, unknown>[],
+        });
+      }
       return { ok: true as const };
+    }),
+
+  /** 学员成绩历史（新→旧，最多 50 条）：成绩变化曲线与进步对比数据源。伴学师仅可查名下学员。 */
+  academicRecords: tutorQuery
+    .input((v: unknown) => v as { userId: number })
+    .query(async ({ input, ctx }) => {
+      const db = getDb();
+      if (ctx.user.role !== "admin") {
+        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+          throw new Error("这位同学不在你的伴学名单里");
+        }
+      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+        throw new Error("这位同学不在你的机构内");
+      }
+      const rows = await db
+        .select()
+        .from(academicRecords)
+        .where(eq(academicRecords.userId, input.userId))
+        .orderBy(desc(academicRecords.id))
+        .limit(50);
+      return rows.map((r) => ({
+        id: r.id,
+        examName: r.examName,
+        createdAt: r.createdAt,
+        subjects: (r.subjects ?? []) as {
+          name: string;
+          selfLevel: number | null;
+          fullScore: number | null;
+          lastScore: number | null;
+          targetScore: number | null;
+        }[],
+      }));
     }),
 
   /** 开启/关闭学员端功能模块（测评中心恒可用；传空数组=恢复全功能）。伴学师只能管自己名下的学员。 */

@@ -12,6 +12,7 @@ import { ANCHOR_ORDER, ANCHOR_LABEL, buildAnchorReport } from "@contracts/career
 import type { Multi5Result } from "@contracts/multi5";
 import { MULTI5_DIM_ORDER, MULTI5_DIM_LABEL, buildMulti5Report } from "@contracts/multi5";
 import type { MentalV2Result } from "@contracts/mentalHealth";
+import Multi5TalentMaps from "../Multi5TalentMaps";
 import { OBook, OPage, OCover, OPartTag, OSecTitle, OCard, ODots, OTag, OTypeHero, OBigScore, OPairBars, OHBars, ORadar } from "./OliveBook";
 
 const POLE_NAME: Record<string, string> = { E: "外向", I: "内向", S: "实感", N: "直觉", T: "思考", F: "情感", J: "判断", P: "感知" };
@@ -216,7 +217,11 @@ export function OliveMulti5({ result, name, grade, date }: OliveBaseProps & { re
             <tr>{result.perDim.map((p) => (<td key={p.key}><b>{p.correct}</b> / {p.total}</td>))}</tr>
           </tbody>
         </table>
-        <OSecTitle n={3} title="逐项解读与提升建议" />
+        <OSecTitle n={3} title="多元智能 · 学科 / 职业 / 提升参考" sub="五维得分对应的学科、职业与培训项目" />
+        <OCard white>
+          <Multi5TalentMaps multi5={result} />
+        </OCard>
+        <OSecTitle n={4} title="逐项解读与提升建议" />
         <OCard white>
           {dimRows.map((d) => (
             <div key={d.key} style={{ display: "flex", gap: 14, padding: "12px 0", borderBottom: "1px dashed #E3EEE8" }}>
@@ -256,7 +261,7 @@ export function OliveAnchor({ result, name, grade, date }: OliveBaseProps & { re
         </div>
         <OSecTitle n={1} title="八种职业锚得分" sub="满分 5 分 · 红 <3.0 卡点 · 黄 3.0–3.7 · 绿 ≥3.8" />
         <OCard>
-          <OHBars rows={ANCHOR_ORDER.map((k) => ({ label: ANCHOR_LABEL[k], value: result.dims[k], max: 5 }))} height={320} />
+          <OHBars rows={[...ANCHOR_ORDER].sort((a, b) => result.dims[b] - result.dims[a]).map((k) => ({ label: ANCHOR_LABEL[k], value: result.dims[k], max: 5 }))} height={320} />
         </OCard>
       </OPage>
       <OPage no={3} foot="EVALUATION REPORT · ANCHOR">

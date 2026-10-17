@@ -41,6 +41,8 @@ export type CombinedV39Props = {
   mentalPa?: MentalPaResult | null;
   mentalScl90?: Scl90Result | null;
   subject?: SubjectAssessmentResult | null;
+  /** 初次录入的成绩记录（用于进步/退步对比，非首次录入时提供）。 */
+  firstScoreRecord?: { examName: string; total: number } | null;
   onReveal?: (t: { kind: "assess"; start: string } | { kind: "fill-academics" }) => void;
 };
 
@@ -231,8 +233,19 @@ export function BergSvg({ stretch = 1 }: { stretch?: number }) {
   );
 }
 
-/** 计分条行（右列卡片通用）。 */
-function KRow({ label, value, note, color }: { label: string; value: number; note?: string; color: string }) {
+/** 计分条行（右列卡片通用）。plain=数值版：只显示彩色数值，不显示条形，更省空间。 */
+function KRow({ label, value, note, color, plain }: { label: string; value: number; note?: string; color: string; plain?: boolean }) {
+  if (plain) {
+    return (
+      <div className="flex items-baseline justify-between gap-2 py-[4px]">
+        <span className="min-w-0 truncate text-[12.5px] text-olive-soft" title={label}>
+          {label}
+          {note && <span className="ml-1.5 text-[11px] text-olive-mute">{note}</span>}
+        </span>
+        <span className="shrink-0 text-[15px] font-extrabold tabular-nums" style={{ color }}>{value}</span>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-2 py-[3px]">
       <span className="w-[76px] shrink-0 truncate text-[12.5px] text-olive-soft" title={label}>{label}</span>
@@ -256,7 +269,7 @@ const levelColor = (s: number) => E3V37_LEVEL_STYLE[e3v37Level(s)].bar;
 
 export default function CombinedV39Report({
   name, grade, e3, raw, academics, mbti, disc, holland, anchor, multi5,
-  mental, mentalSdq, mentalPa, mentalScl90, subject, onReveal,
+  mental, mentalSdq, mentalPa, mentalScl90, subject, firstScoreRecord, onReveal,
 }: CombinedV39Props) {
   /* ---------- 数据加工（呈现层重归组，题库计分零改动） ---------- */
   const ability = (label: string) => e3.abilities.find((a) => a.label === label);
@@ -299,6 +312,22 @@ export default function CombinedV39Report({
   const subjectsAcad = (academics?.subjects ?? []).filter((x) => x.lastScore != null || x.targetScore != null);
   const lastTotal = subjectsAcad.reduce((a, b) => a + (b.lastScore ?? 0), 0);
   const targetTotal = subjectsAcad.reduce((a, b) => a + (b.targetScore ?? 0), 0);
+  /* 01 章「现状与目标」表格用三阶 + 条件/学能层数据（与详版 RoadmapSection 同源口径）。 */
+  const lvCls = (lv: string) =>
+    lv === "卡点"
+      ? "bg-[#F6D2CB] font-bold text-[#A82524]"
+      : lv === "待提升"
+        ? "bg-[#FAF0CC] font-semibold text-[#8A6500]"
+        : "font-semibold text-[#2F7A41]";
+  const roadmapLayers = [
+    { layer: "乐学", score: core("乐学")?.score ?? 0, level: core("乐学")?.level ?? "正常" },
+    { layer: "会学", score: core("会学")?.score ?? 0, level: core("会学")?.level ?? "正常" },
+    { layer: "善学", score: core("善学")?.score ?? 0, level: core("善学")?.level ?? "正常" },
+  ];
+  const condLearns = [
+    ...condCells.map((c) => ({ label: COND_DISPLAY[c.key] ?? c.label, score: c.score, level: e3v37Level(c.score) })),
+    { label: "学能筛查", score: aptitudeMean, level: e3v37Level(aptitudeMean) },
+  ];
 
   /* 三档分布：九能 + 条件三格 + 学能三项 = 15 个计分点（result JSON 内含，旧数据兼容）。 */
   const itemLevels: E3V37Level[] = (() => {
@@ -333,6 +362,8 @@ export default function CombinedV39Report({
   const [panelH, setPanelH] = useState(BERG_H);
   const [stacked, setStacked] = useState(false);
   const [stretch, setStretch] = useState(1);
+  /** 计分样式：false=条形版（默认），true=数值版（只显示彩色数值，更省空间）。 */
+  const [plainScores, setPlainScores] = useState(false);
 
   useLayoutEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -349,6 +380,7 @@ export default function CombinedV39Report({
         setStretch((p) => (p === 1 ? p : 1));
         if (wrap.style.height) wrap.style.height = "";
         if (stage.style.height) stage.style.height = "";
+        if (stage.style.marginLeft) stage.style.marginLeft = "";
         stage.querySelectorAll<HTMLElement>("[data-row]").forEach((el) => {
           if (el.style.top) el.style.top = "";
         });
@@ -406,6 +438,9 @@ export default function CombinedV39Report({
       /* 一屏看全：宽度和高度双向约束（与定稿样例 v9 一致），并回填缩放后的高度避免留白 */
       const s = Math.min(1, wrap.clientWidth / STAGE_W, (window.innerHeight - 80) / H);
       setScale((prev) => (prev === s ? prev : s));
+      /* 舞台缩放后整体水平居中（图4：冰山偏左修复） */
+      const ml = Math.max(0, Math.round((wrap.clientWidth - STAGE_W * s) / 2));
+      if (stage.style.marginLeft !== `${ml}px`) stage.style.marginLeft = `${ml}px`;
       const scaledH = Math.round(H * s + 10);
       if (wrap.style.height !== `${scaledH}px`) wrap.style.height = `${scaledH}px`;
     };
@@ -428,6 +463,8 @@ export default function CombinedV39Report({
     (ability(abilityLabel)?.focuses ?? []).filter((f) => kps.includes(f.kp)).flatMap((f) => f.items);
 
   /* ---------- 记分卡内容（桌面舞台与打印静态版共用，避免两处文案分叉） ---------- */
+  /** KRow 包装：统一跟随「条形/数值」切换。 */
+  const KR = (p: { label: string; value: number; note?: string; color: string }) => <KRow {...p} plain={plainScores} />;
   const CardHead = ({ title, note }: { title: string; note?: string }) => (
     <h4 className="text-[14.5px] font-extrabold text-olive">
       {title}
@@ -440,16 +477,27 @@ export default function CombinedV39Report({
       {scoreRows.length === 0 ? (
         <p className="py-1 text-[12px] text-olive-mute">学科测评数据未填写</p>
       ) : (
-        scoreRows.slice(0, 8).map((s) => <KRow key={s.name} label={s.name} value={s.score} color={levelColor(s.score)} />)
+        scoreRows.slice(0, 8).map((s) => <KR key={s.name} label={s.name} value={s.score} color={levelColor(s.score)} />)
       )}
+      {(() => {
+        if (!firstScoreRecord || lastTotal <= 0) return null;
+        const diff = Math.round((lastTotal - firstScoreRecord.total) * 10) / 10;
+        if (diff === 0) return null;
+        return (
+          <p className={`mt-1 rounded-lg px-3 py-1.5 text-[12px] font-bold ${diff > 0 ? "bg-[#EAF6EF] text-[#2F7A41]" : "bg-[#FCEEE7] text-[#E4572E]"}`}>
+            本次总分 {lastTotal} 分 · 较初次成绩（{firstScoreRecord.examName || "首次录入"}，{firstScoreRecord.total} 分）
+            {diff > 0 ? `进步 ${diff} 分` : `退步 ${-diff} 分`}
+          </p>
+        );
+      })()}
     </>
   );
   const shanCardBody = (
     <>
       <TotalRow label="善学 · 系统总分" value={core("善学")?.score ?? 0} />
-      <KRow label="元认知" value={metaScore} note="计划 · 监控 · 复盘" color={levelColor(metaScore)} />
-      <KRow label="学能" value={aptitudeMean} note="学习效率" color={levelColor(aptitudeMean)} />
-      <KRow label="AI 智学" value={aiScore} note="运用 AI 自学" color={levelColor(aiScore)} />
+      <KR label="元认知" value={metaScore} note="计划 · 监控 · 复盘" color={levelColor(metaScore)} />
+      <KR label="学能" value={aptitudeMean} note="学习效率" color={levelColor(aptitudeMean)} />
+      <KR label="AI 智学" value={aiScore} note="运用 AI 自学" color={levelColor(aiScore)} />
       {multi5 && (
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-dashed border-[#E3EEE8] pt-2">
           <span className="w-full text-[11px] font-bold text-[#0B8A63]">多元智能五项（百分制 · 参考，不计入总分）</span>
@@ -469,32 +517,32 @@ export default function CombinedV39Report({
   const huiCardBody = (
     <>
       <TotalRow label="会学 · 系统总分" value={core("会学")?.score ?? 0} />
-      <KRow label="听懂" value={ability("学懂")?.score ?? 0} color={levelColor(ability("学懂")?.score ?? 0)} />
-      <KRow label="记住" value={ability("记住")?.score ?? 0} color={levelColor(ability("记住")?.score ?? 0)} />
-      <KRow label="会用" value={ability("会用")?.score ?? 0} color={levelColor(ability("会用")?.score ?? 0)} />
+      <KR label="听懂" value={ability("学懂")?.score ?? 0} color={levelColor(ability("学懂")?.score ?? 0)} />
+      <KR label="记住" value={ability("记住")?.score ?? 0} color={levelColor(ability("记住")?.score ?? 0)} />
+      <KR label="会用" value={ability("会用")?.score ?? 0} color={levelColor(ability("会用")?.score ?? 0)} />
     </>
   );
   const leCardBody = (
     <>
       <TotalRow label="乐学 · 系统总分" value={core("乐学")?.score ?? 0} />
-      <KRow label="学习动力" value={ability("动力")?.score ?? 0} color={levelColor(ability("动力")?.score ?? 0)} />
-      <KRow label="学习信心" value={ability("信心")?.score ?? 0} color={levelColor(ability("信心")?.score ?? 0)} />
-      <KRow label="学习韧劲" value={ability("韧劲")?.score ?? 0} color={levelColor(ability("韧劲")?.score ?? 0)} />
+      <KR label="学习动力" value={ability("动力")?.score ?? 0} color={levelColor(ability("动力")?.score ?? 0)} />
+      <KR label="学习信心" value={ability("信心")?.score ?? 0} color={levelColor(ability("信心")?.score ?? 0)} />
+      <KR label="学习韧劲" value={ability("韧劲")?.score ?? 0} color={levelColor(ability("韧劲")?.score ?? 0)} />
     </>
   );
   const selfCardBody = (
     <>
       {mentalSdq ? (
-        <KRow label="SDQ 困难总分" value={mentalSdq.totalDiff} note={`/40 · ${mentalSdq.totalBand}`} color={mentalSdq.level !== "良好" ? "#E4572E" : "#2F7A41"} />
+        <KR label="SDQ 困难总分" value={mentalSdq.totalDiff} note={`/40 · ${mentalSdq.totalBand}`} color={mentalSdq.level !== "良好" ? "#E4572E" : "#2F7A41"} />
       ) : mentalPa ? (
         <>
-          <KRow label="PHQ-A" value={mentalPa.phq9} note={`/27 · ${mentalPa.phq9Level}`} color={mentalPa.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
-          <KRow label="GAD-7" value={mentalPa.gad7} note={`/21 · ${mentalPa.gad7Level}`} color={mentalPa.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+          <KR label="PHQ-A" value={mentalPa.phq9} note={`/27 · ${mentalPa.phq9Level}`} color={mentalPa.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+          <KR label="GAD-7" value={mentalPa.gad7} note={`/21 · ${mentalPa.gad7Level}`} color={mentalPa.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
         </>
       ) : mental && isMentalV2(mental) ? (
         <>
-          <KRow label="PHQ-9" value={mental.phq9} note={`/27 · ${mental.phq9Level}`} color={mental.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
-          <KRow label="GAD-7" value={mental.gad7} note={`/21 · ${mental.gad7Level}`} color={mental.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+          <KR label="PHQ-9" value={mental.phq9} note={`/27 · ${mental.phq9Level}`} color={mental.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+          <KR label="GAD-7" value={mental.gad7} note={`/21 · ${mental.gad7Level}`} color={mental.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
         </>
       ) : (
         <p className="py-1 text-[12px] text-olive-mute">心理状态测评未做（选做）</p>
@@ -505,7 +553,7 @@ export default function CombinedV39Report({
     <>
       <TotalRow label="支持系统 · 系统总分" value={condMean} />
       {condCells.map((c) => (
-        <KRow key={c.key} label={COND_DISPLAY[c.key] ?? c.label} value={c.score} color={levelColor(c.score)} />
+        <KR key={c.key} label={COND_DISPLAY[c.key] ?? c.label} value={c.score} color={levelColor(c.score)} />
       ))}
     </>
   );
@@ -558,7 +606,22 @@ export default function CombinedV39Report({
         <div className="mb-1 inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-[4px] text-[#0B8A63]">
           <span className="h-0.5 w-[26px] bg-[#0EA875]" />PART 1
         </div>
-        <h3 className="text-[20px] font-extrabold text-[#0B3D2E]">学习能力冰山模型 · 三阶九能</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-[20px] font-extrabold text-[#0B3D2E]">学习能力冰山模型 · 三阶九能</h3>
+          {/* 计分样式切换：条形版 / 数值版（数值版更省空间，打印同样生效） */}
+          <div className="flex items-center rounded-full border border-[#D8E8DE] bg-white p-[3px] text-[11.5px] font-bold print:hidden">
+            {([["条形版", false], ["数值版", true]] as const).map(([txt, v]) => (
+              <button
+                key={txt}
+                type="button"
+                onClick={() => setPlainScores(v)}
+                className={`rounded-full px-3 py-1 transition-colors ${plainScores === v ? "bg-[#0EA875] text-white" : "text-olive-soft hover:text-olive"}`}
+              >
+                {txt}
+              </button>
+            ))}
+          </div>
+        </div>
         <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">
           水面之上是看得见的学习成绩；水面之下是乐学（心）、会学（术）、善学（脑）三大系统，共九能，全部计入总分。冰山越往下越隐蔽：能力最好训练、行为靠习惯、动力最难撬动。
         </p>
@@ -736,7 +799,7 @@ export default function CombinedV39Report({
           </span>
         </div>
 
-        {/* 第一步 · 理清现状与目标 */}
+        {/* 第一步 · 理清现状与目标（与详版一致的表格） */}
         <SectionHead n="1" title="理清现状与目标" />
         {subjectsAcad.length === 0 ? (
           <p className="text-[12.5px] text-olive-mute">
@@ -746,15 +809,69 @@ export default function CombinedV39Report({
                 去填写 →
               </button>
             )}
-            ；三阶现状：{e3.systems.core.map((c) => `${c.key} ${c.score}/5（${c.level}）`).join(" · ")}
+            ；三阶现状：{roadmapLayers.map((l) => `${l.layer} ${l.score}/5（${l.level}）`).join(" · ")}
           </p>
         ) : (
-          <div className="flex flex-wrap items-center gap-1 text-[12.5px] text-olive-soft">
-            {subjectsAcad.filter((x) => (x.targetScore ?? 0) - (x.lastScore ?? 0) > 0).map((x) => (
-              <BadChip key={x.name} label={`${x.name} 差 ${(x.targetScore ?? 0) - (x.lastScore ?? 0)} 分`} />
-            ))}
-            {subjectsAcad.every((x) => (x.targetScore ?? 0) - (x.lastScore ?? 0) <= 0) && <span className="text-[#2F7A41]">各科均已达标</span>}
-            <span className="ml-1 text-olive-mute">三阶现状：{e3.systems.core.map((c) => `${c.key} ${c.score}/5（${c.level}）`).join(" · ")}</span>
+          <div className="mt-1 overflow-x-auto">
+            <table className="w-full min-w-[430px] border-collapse text-[11.5px] sm:text-[12.5px]">
+              <thead>
+                <tr className="bg-[#D4F2E8] text-[#0B8A63]">
+                  <th className="border border-[#CDEBDD] px-1.5 py-1.5 text-left sm:px-2">科目</th>
+                  {subjectsAcad.map((x) => (
+                    <th key={x.name} className="border border-[#CDEBDD] px-1.5 py-1.5 sm:px-2">{x.name}</th>
+                  ))}
+                  <th className="border border-[#CDEBDD] px-1.5 py-1.5 font-bold sm:px-2">总分</th>
+                </tr>
+              </thead>
+              <tbody className="text-center text-olive-soft">
+                <tr>
+                  <td className="border border-[#E8F1EC] bg-[#F0FAF5] px-1.5 py-1.5 text-left font-semibold text-olive sm:px-2">现状</td>
+                  {subjectsAcad.map((x) => (
+                    <td key={x.name} className="border border-[#E8F1EC] px-1.5 py-1.5 sm:px-2">{x.lastScore ?? "-"}</td>
+                  ))}
+                  <td className="border border-[#E8F1EC] px-1.5 py-1.5 font-bold text-olive sm:px-2">{lastTotal}</td>
+                </tr>
+                <tr>
+                  <td className="border border-[#E8F1EC] bg-[#F0FAF5] px-1.5 py-1.5 text-left font-semibold text-olive sm:px-2">目标</td>
+                  {subjectsAcad.map((x) => (
+                    <td key={x.name} className="border border-[#E8F1EC] px-1.5 py-1.5 sm:px-2">{x.targetScore ?? "-"}</td>
+                  ))}
+                  <td className="border border-[#E8F1EC] px-1.5 py-1.5 font-bold text-olive sm:px-2">{targetTotal}</td>
+                </tr>
+                <tr>
+                  <td className="border border-[#E8F1EC] bg-[#F0FAF5] px-1.5 py-1.5 text-left font-semibold text-olive sm:px-2">差距</td>
+                  {subjectsAcad.map((x) => {
+                    const gap = (x.targetScore ?? 0) - (x.lastScore ?? 0);
+                    return (
+                      <td key={x.name} className={`border border-[#E8F1EC] px-1.5 py-1.5 sm:px-2 ${gap > 0 ? "bg-[#FAF2E4] font-bold text-[#DD3534]" : "text-[#2F7A41]"}`}>
+                        {gap > 0 ? `+${gap}` : "已达标"}
+                      </td>
+                    );
+                  })}
+                  <td className={`border border-[#E8F1EC] px-1.5 py-1.5 font-bold sm:px-2 ${targetTotal - lastTotal > 0 ? "bg-[#FAF2E4] text-[#DD3534]" : "text-[#2F7A41]"}`}>
+                    {targetTotal - lastTotal > 0 ? `+${targetTotal - lastTotal}` : "已达标"}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-[#E8F1EC] bg-[#F0FAF5] px-1.5 py-1.5 text-left font-semibold text-olive sm:px-2">三阶</td>
+                  {roadmapLayers.map((l) => (
+                    <td key={l.layer} colSpan={Math.max(1, Math.floor(subjectsAcad.length / 3))} className={`border border-[#E8F1EC] px-1.5 py-1.5 sm:px-2 ${lvCls(l.level)}`}>
+                      {l.layer} {l.score}/5{l.level === "卡点" ? " · 卡点，优先补" : l.level === "待提升" ? " · 待提升" : " · 正常"}
+                    </td>
+                  ))}
+                  <td className="border border-[#E8F1EC] px-1.5 py-1.5 text-olive-mute sm:px-2">3.8 分为线</td>
+                </tr>
+                <tr>
+                  <td className="border border-[#E8F1EC] bg-[#F0FAF5] px-1.5 py-1.5 text-left font-semibold text-olive sm:px-2">条件/学能</td>
+                  {condLearns.map((s) => (
+                    <td key={s.label} colSpan={Math.max(1, Math.floor(subjectsAcad.length / 4))} className={`border border-[#E8F1EC] px-1.5 py-1.5 sm:px-2 ${lvCls(s.level)}`}>
+                      {s.label} {s.score}/5
+                    </td>
+                  ))}
+                  <td className="border border-[#E8F1EC] px-1.5 py-1.5 text-olive-mute sm:px-2">单独报告</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
 

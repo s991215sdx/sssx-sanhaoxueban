@@ -52,6 +52,8 @@ export default function StudentDetailDrawer({
       // 后端已放行 admin：两个入口共用同一 mutation，按当前数据源刷新对应查询。
       if (source === "admin") utils.admin.studentDetail.invalidate({ userId });
       else utils.coach.studentDetail.invalidate({ userId });
+      // 每次代填都会追加一条成绩曲线记录，刷新报告页数据源
+      utils.coach.academicRecords.invalidate({ userId });
       setEditAcad(false);
       setAcadSaved(true);
     },
@@ -339,7 +341,9 @@ export default function StudentDetailDrawer({
                       footer={
                         <>
                           {saveMut.isError && (
-                            <p className="mt-2 text-center text-[13px] text-terra">保存失败，请再试一次。</p>
+                            <p className="mt-2 text-center text-[13px] text-terra">
+                              {saveMut.error?.message || "保存失败，请再试一次。"}
+                            </p>
                           )}
                         </>
                       }
