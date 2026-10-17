@@ -2331,14 +2331,29 @@ export default function ReportView({
     const r = data?.raw?.find((x) => x.kind === kind);
     return r ? new Date(r.createdAt).toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" }) : undefined;
   };
-  /* 兜底：用户直接 Ctrl+P / 系统菜单打印时，也自动展开所有折叠块，保证 PDF 完整 */
+  /* v183c：打印前把打印根直挂 body（配 index.css 的 body.print-report 规则，避免绝对定位
+     分页重影），同时展开所有折叠块；打印后归位，保证 PDF 完整且版式不乱。 */
   useEffect(() => {
     let closed: Element[] = [];
+    const root = () => document.getElementById("report-print-root");
+    let stash: { parent: Node | null; next: Node | null } = { parent: null, next: null };
     const openAll = () => {
-      closed = Array.from(document.querySelectorAll("#report-print-root details:not([open])"));
+      const r = root();
+      if (!r) return;
+      document.body.classList.add("print-report");
+      stash = { parent: r.parentNode, next: r.nextSibling };
+      document.body.appendChild(r);
+      closed = Array.from(r.querySelectorAll("details:not([open])"));
       closed.forEach((d) => d.setAttribute("open", ""));
     };
-    const restore = () => closed.forEach((d) => d.removeAttribute("open"));
+    const restore = () => {
+      document.body.classList.remove("print-report");
+      const r = root();
+      if (r && stash.parent) stash.parent.insertBefore(r, stash.next);
+      stash = { parent: null, next: null };
+      closed.forEach((d) => d.removeAttribute("open"));
+      closed = [];
+    };
     window.addEventListener("beforeprint", openAll);
     window.addEventListener("afterprint", restore);
     return () => {
