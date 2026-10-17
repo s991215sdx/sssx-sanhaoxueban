@@ -148,14 +148,17 @@ export const coachRouter = createRouter({
     .input((v: unknown) => v as { userId: number; released: boolean })
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      /* v189：入参防御——userId 缺失/非法时旧逻辑会插入 user_id=0 的孤儿档案行 */
+      const uid = Number(input.userId);
+      if (!Number.isInteger(uid) || uid <= 0) throw new Error("参数不对：缺少学员 ID");
       const existing = (
-        await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
+        await db.select().from(studentProfile).where(eq(studentProfile.userId, uid)).limit(1)
       )[0];
       if (ctx.user.role !== "admin") {
-        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+        if (!(await isMyStudent(db, ctx.user.id, uid))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
-      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+      } else if (!(await sameOrg(db, ctx.user, uid))) {
         throw new Error("这位同学不在你的机构内");
       }
       /* V55：推送时清掉「请伴学师推送」请求标记 */
@@ -163,7 +166,7 @@ export const coachRouter = createRouter({
       if (existing) {
         await db.update(studentProfile).set({ reportReleased: !!input.released, ...releasePatch }).where(eq(studentProfile.id, existing.id));
       } else {
-        await db.insert(studentProfile).values({ userId: input.userId, reportReleased: !!input.released, ...releasePatch });
+        await db.insert(studentProfile).values({ userId: uid, reportReleased: !!input.released, ...releasePatch });
       }
       return { ok: true as const, released: !!input.released };
     }),
@@ -177,23 +180,26 @@ export const coachRouter = createRouter({
     .input((v: unknown) => v as { userId: number; kinds: unknown })
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      /* v189：入参防御——userId 缺失/非法时旧逻辑会插入 user_id=0 的孤儿档案行 */
+      const uid = Number(input.userId);
+      if (!Number.isInteger(uid) || uid <= 0) throw new Error("参数不对：缺少学员 ID");
       if (ctx.user.role !== "admin") {
-        if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
+        if (!(await isMyStudent(db, ctx.user.id, uid))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
-      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+      } else if (!(await sameOrg(db, ctx.user, uid))) {
         throw new Error("这位同学不在你的机构内");
       }
       const kinds = normalizeAssessKinds(input.kinds);
       if (kinds == null) throw new Error("测评种类格式不对");
       const value = kinds.length === 0 ? null : kinds;
       const existing = (
-        await db.select().from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
+        await db.select().from(studentProfile).where(eq(studentProfile.userId, uid)).limit(1)
       )[0];
       if (existing) {
         await db.update(studentProfile).set({ releasedAssessments: value }).where(eq(studentProfile.id, existing.id));
       } else {
-        await db.insert(studentProfile).values({ userId: input.userId, releasedAssessments: value });
+        await db.insert(studentProfile).values({ userId: uid, releasedAssessments: value });
       }
       return { ok: true as const, released: kinds };
     }),
