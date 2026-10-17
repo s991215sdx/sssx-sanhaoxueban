@@ -14,6 +14,8 @@ import GuidanceTab from "@/components/reports/GuidanceTab";
 import DiscTendencyChart, { DISC_COLOR } from "@/components/reports/DiscTendencyChart";
 import { SubjectAdviceBlocks } from "@/components/reports/SubjectAdviceBlocks";
 import CombinedV39Report from "@/components/reports/CombinedV39";
+import { OliveStyle } from "@/components/reports/olive/OliveBook";
+import { OliveMbti, OliveDisc, OliveHolland, OliveMulti5, OliveAnchor, OliveMentalV2 } from "@/components/reports/olive/OliveSingles";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
@@ -2327,6 +2329,13 @@ export default function ReportView({
   const [combinedView, setCombinedView] = useState<"full" | "lite" | "v39">(
     params.get("view") === "lite" ? "lite" : params.get("view") === "v39" ? "v39" : "full",
   );
+  /* v184：单项测评报告「原版 / 新版（olive book 式样）」并存切换，按 tab key 记忆 */
+  const [oliveNew, setOliveNew] = useState<Record<string, boolean>>({});
+  /** 各测评的作答日期（取原始记录），用于新版报告封面 */
+  const oliveDate = (kind: string) => {
+    const r = data?.raw?.find((x) => x.kind === kind);
+    return r ? new Date(r.createdAt).toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" }) : undefined;
+  };
   /* 兜底：用户直接 Ctrl+P / 系统菜单打印时，也自动展开所有折叠块，保证 PDF 完整 */
   useEffect(() => {
     let closed: Element[] = [];
@@ -2783,6 +2792,7 @@ export default function ReportView({
 
       {/* 打印根：window.print() 时仅显示此区域，保证 PDF 与页面所见完全一致。
           v93：桌面端整体放大 1.15 倍（zoom），字号/图表同比变大，阅读不用眯眼；打印与移动端保持原尺寸 */}
+      <OliveStyle />
       <div id="report-print-root" className="report-view-zoom space-y-4">
       {/* v176：选科及升学规划报告栏目——完整报告为独立页面，这里展示摘要与直达入口 */}
       {tab === "zhihui" &&
@@ -3035,21 +3045,42 @@ export default function ReportView({
         (!mbti ? (
           <MissingCard text="还没有 MBTI 测评结果，28 道二选一，约 5 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=mbti" />
         ) : (
-          <MbtiDetail result={mbti} onGoCombined={goCombined} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.mbti} onChange={(v) => setOliveNew((p) => ({ ...p, mbti: v }))} />
+            {oliveNew.mbti ? (
+              <OliveMbti result={mbti} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("mbti")} />
+            ) : (
+              <MbtiDetail result={mbti} onGoCombined={goCombined} />
+            )}
+          </div>
         ))}
 
       {tab === "disc" &&
         (!disc ? (
           <MissingCard text="还没有 DISC 测评结果，24 道二选一，约 4 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=disc" />
         ) : (
-          <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.disc} onChange={(v) => setOliveNew((p) => ({ ...p, disc: v }))} />
+            {oliveNew.disc ? (
+              <OliveDisc primary={disc.primary} dims={disc.dims} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("disc")} />
+            ) : (
+              <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
+            )}
+          </div>
         ))}
 
       {tab === "multi5" &&
         (!multi5 ? (
           <MissingCard text="多元智能五项为客观题测评（选做），40 题约 8 分钟，比自评更能反映真实能力底子。" actionText="还未测评，开始测评 →" to="/assessments?start=multi5" />
         ) : (
-          <Multi5Detail result={multi5} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.multi5} onChange={(v) => setOliveNew((p) => ({ ...p, multi5: v }))} />
+            {oliveNew.multi5 ? (
+              <OliveMulti5 result={multi5} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("multi5")} />
+            ) : (
+              <Multi5Detail result={multi5} />
+            )}
+          </div>
         ))}
 
       {(tab === "parent" || tab === "discparent") && (
@@ -3064,7 +3095,14 @@ export default function ReportView({
             to="/assessments?start=anchor"
           />
         ) : (
-          <AnchorDetail result={anchor} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.anchor} onChange={(v) => setOliveNew((p) => ({ ...p, anchor: v }))} />
+            {oliveNew.anchor ? (
+              <OliveAnchor result={anchor} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("anchor")} />
+            ) : (
+              <AnchorDetail result={anchor} />
+            )}
+          </div>
         ))}
 
       {tab === "holland" &&
@@ -3075,7 +3113,14 @@ export default function ReportView({
             to="/assessments?start=holland"
           />
         ) : (
-          <HollandDetail result={holland} />
+          <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.holland} onChange={(v) => setOliveNew((p) => ({ ...p, holland: v }))} />
+            {oliveNew.holland ? (
+              <OliveHolland result={holland} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("holland")} />
+            ) : (
+              <HollandDetail result={holland} />
+            )}
+          </div>
         ))}
 
       {tab === "mental" &&
@@ -3100,6 +3145,12 @@ export default function ReportView({
           </div>
         ) : (
           <div className="space-y-4">
+            {/* v184：通用版（PHQ-9+GAD-7）支持 olive book 新版；其余版本保持原版 */}
+            <VerSwitch on={!!oliveNew.mental} onChange={(v) => setOliveNew((p) => ({ ...p, mental: v }))} />
+            {oliveNew.mental && mental && isMentalV2(mental) ? (
+              <OliveMentalV2 result={mental} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("mental")} />
+            ) : (
+            <>
             <MentalScoreGuideCard />
             {/* 学生版 A（SDQ） */}
             {mentalSdq ? (
@@ -3208,6 +3259,8 @@ export default function ReportView({
                 actionText="去测深度评估 →"
                 to="/assessments?start=mental"
               />
+            )}
+            </>
             )}
           </div>
         ))}
@@ -3893,6 +3946,31 @@ function AnswerDetails({ raw }: { raw: { kind: string; answers: unknown; created
         你完成的每一次测评、每一道题的作答记录都在这里，默认折叠，点开可看；供家长和伴学师对照查阅。
       </p>
       <AnswerBlocksView blocks={blocks} />
+    </div>
+  );
+}
+
+/** v184：单项报告「原版 / 新版」切换器（视觉与综合报告详版/简版切换一致） */
+function VerSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1 print:hidden">
+      {([{ k: false, l: "原版报告" }, { k: true, l: "新版 · book 式样" }] as const).map((v) => {
+        const active = on === v.k;
+        return (
+          <button
+            key={v.l}
+            onClick={() => onChange(v.k)}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+              active ? "font-semibold text-[#0C7064]" : "font-medium text-olive hover:text-[#1E3530]"
+            }`}
+          >
+            <span className="relative inline-block">
+              {v.label}
+              {active && <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full bg-[#0C7064]" />}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -427,6 +427,104 @@ export default function CombinedV39Report({
   const nosOfKps = (abilityLabel: string, kps: string[]) =>
     (ability(abilityLabel)?.focuses ?? []).filter((f) => kps.includes(f.kp)).flatMap((f) => f.items);
 
+  /* ---------- 记分卡内容（桌面舞台与打印静态版共用，避免两处文案分叉） ---------- */
+  const CardHead = ({ title, note }: { title: string; note?: string }) => (
+    <h4 className="text-[14.5px] font-extrabold text-olive">
+      {title}
+      {note && <span className="ml-2 text-[11px] font-semibold text-olive-mute">{note}</span>}
+    </h4>
+  );
+  const scoreCardBody = (
+    <>
+      <TotalRow label="学科综合均分" value={scoreMean} />
+      {scoreRows.length === 0 ? (
+        <p className="py-1 text-[12px] text-olive-mute">学科测评数据未填写</p>
+      ) : (
+        scoreRows.slice(0, 8).map((s) => <KRow key={s.name} label={s.name} value={s.score} color={levelColor(s.score)} />)
+      )}
+    </>
+  );
+  const shanCardBody = (
+    <>
+      <TotalRow label="善学 · 系统总分" value={core("善学")?.score ?? 0} />
+      <KRow label="元认知" value={metaScore} note="计划 · 监控 · 复盘" color={levelColor(metaScore)} />
+      <KRow label="学能" value={aptitudeMean} note="学习效率" color={levelColor(aptitudeMean)} />
+      <KRow label="AI 智学" value={aiScore} note="运用 AI 自学" color={levelColor(aiScore)} />
+      {multi5 && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-dashed border-[#E3EEE8] pt-2">
+          <span className="w-full text-[11px] font-bold text-[#0B8A63]">多元智能五项（百分制 · 参考，不计入总分）</span>
+          {MULTI5_DIM_ORDER.map((k) => (
+            <span key={k} className="flex items-center gap-1.5">
+              <span className="text-[11px] text-olive-soft">{MULTI5_DIM_LABEL[k]}</span>
+              <span className="h-[7px] w-14 overflow-hidden rounded-full bg-[#EDF3EF]">
+                <span className="block h-full rounded-full bg-[#7FB89A]" style={{ width: `${multi5.dims[k]}%` }} />
+              </span>
+              <span className="w-6 text-[12px] font-extrabold text-[#0B8A63]">{multi5.dims[k]}</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+  const huiCardBody = (
+    <>
+      <TotalRow label="会学 · 系统总分" value={core("会学")?.score ?? 0} />
+      <KRow label="听懂" value={ability("学懂")?.score ?? 0} color={levelColor(ability("学懂")?.score ?? 0)} />
+      <KRow label="记住" value={ability("记住")?.score ?? 0} color={levelColor(ability("记住")?.score ?? 0)} />
+      <KRow label="会用" value={ability("会用")?.score ?? 0} color={levelColor(ability("会用")?.score ?? 0)} />
+    </>
+  );
+  const leCardBody = (
+    <>
+      <TotalRow label="乐学 · 系统总分" value={core("乐学")?.score ?? 0} />
+      <KRow label="学习动力" value={ability("动力")?.score ?? 0} color={levelColor(ability("动力")?.score ?? 0)} />
+      <KRow label="学习信心" value={ability("信心")?.score ?? 0} color={levelColor(ability("信心")?.score ?? 0)} />
+      <KRow label="学习韧劲" value={ability("韧劲")?.score ?? 0} color={levelColor(ability("韧劲")?.score ?? 0)} />
+    </>
+  );
+  const selfCardBody = (
+    <>
+      {mentalSdq ? (
+        <KRow label="SDQ 困难总分" value={mentalSdq.totalDiff} note={`/40 · ${mentalSdq.totalBand}`} color={mentalSdq.level !== "良好" ? "#E4572E" : "#2F7A41"} />
+      ) : mentalPa ? (
+        <>
+          <KRow label="PHQ-A" value={mentalPa.phq9} note={`/27 · ${mentalPa.phq9Level}`} color={mentalPa.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+          <KRow label="GAD-7" value={mentalPa.gad7} note={`/21 · ${mentalPa.gad7Level}`} color={mentalPa.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+        </>
+      ) : mental && isMentalV2(mental) ? (
+        <>
+          <KRow label="PHQ-9" value={mental.phq9} note={`/27 · ${mental.phq9Level}`} color={mental.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+          <KRow label="GAD-7" value={mental.gad7} note={`/21 · ${mental.gad7Level}`} color={mental.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
+        </>
+      ) : (
+        <p className="py-1 text-[12px] text-olive-mute">心理状态测评未做（选做）</p>
+      )}
+    </>
+  );
+  const envCardBody = (
+    <>
+      <TotalRow label="支持系统 · 系统总分" value={condMean} />
+      {condCells.map((c) => (
+        <KRow key={c.key} label={COND_DISPLAY[c.key] ?? c.label} value={c.score} color={levelColor(c.score)} />
+      ))}
+    </>
+  );
+  const traitCardBody = (
+    <>
+      {disc && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">DISC</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{disc.primary}</span><span className="text-[11px] text-olive-mute">{discName ?? ""}</span></div>}
+      {mbti && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">MBTI</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{mbti.type}</span><span className="text-[11px] text-olive-mute">{mbtiName ?? ""}</span></div>}
+      {holland && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业兴趣</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{holland.code}</span><span className="text-[11px] text-olive-mute">{holland.keywords}</span></div>}
+      {anchor && anchor.top2.length > 0 && (
+        <div className="flex flex-wrap items-baseline gap-2 py-1">
+          <span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业锚</span>
+          <span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{anchor.top2.join("·")}</span>
+          <span className="text-[11px] text-olive-mute">{anchor.top2.map((k) => ANCHOR_LABEL[k]).join(" · ")}</span>
+        </div>
+      )}
+      {!disc && !mbti && !holland && !anchor && <p className="py-1 text-[12px] text-olive-mute">性格/兴趣测评未完成</p>}
+    </>
+  );
+
   return (
     <div className="space-y-4">
       {/* ============ 封面 ============ */}
@@ -465,7 +563,7 @@ export default function CombinedV39Report({
           水面之上是看得见的学习成绩；水面之下是乐学（心）、会学（术）、善学（脑）三大系统，共九能，全部计入总分。冰山越往下越隐蔽：能力最好训练、行为靠习惯、动力最难撬动。
         </p>
 
-        <div ref={wrapRef} className="mt-3 overflow-hidden">
+        <div ref={wrapRef} className="mt-3 overflow-hidden print:hidden">
           <div
             ref={stageRef}
             className="relative"
@@ -486,53 +584,23 @@ export default function CombinedV39Report({
               {/* 右：指标卡（桌面端收窄至 424，把空间留给冰山） */}
               <div data-col="cards" className="flex flex-col gap-3" style={stacked ? undefined : { width: CARD_W }}>
                 <div ref={setCardRef("score")} data-berg="score" className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
-                  <h4 className="text-[14.5px] font-extrabold text-olive">学习成绩<span className="ml-2 text-[11px] font-semibold text-olive-mute">看得见的结果 · 各科三项均分</span></h4>
-                  <TotalRow label="学科综合均分" value={scoreMean} />
-                  {scoreRows.length === 0 ? (
-                    <p className="py-1 text-[12px] text-olive-mute">学科测评数据未填写</p>
-                  ) : (
-                    scoreRows.slice(0, 8).map((s) => (
-                      <KRow key={s.name} label={s.name} value={s.score} color={levelColor(s.score)} />
-                    ))
-                  )}
+                  <CardHead title="学习成绩" note="看得见的结果 · 各科三项均分" />
+                  {scoreCardBody}
                 </div>
 
                 <div ref={setCardRef("shan")} data-berg="shan" className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
-                  <h4 className="text-[14.5px] font-extrabold text-olive">能力系统<span className="ml-2 text-[11px] font-semibold text-olive-mute">学习效率高不高（脑）</span></h4>
-                  <TotalRow label="善学 · 系统总分" value={core("善学")?.score ?? 0} />
-                  <KRow label="元认知" value={metaScore} note="计划 · 监控 · 复盘" color={levelColor(metaScore)} />
-                  <KRow label="学能" value={aptitudeMean} note="学习效率" color={levelColor(aptitudeMean)} />
-                  <KRow label="AI 智学" value={aiScore} note="运用 AI 自学" color={levelColor(aiScore)} />
-                  {multi5 && (
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-dashed border-[#E3EEE8] pt-2">
-                      <span className="w-full text-[11px] font-bold text-[#0B8A63]">多元智能五项（百分制 · 参考，不计入总分）</span>
-                      {MULTI5_DIM_ORDER.map((k) => (
-                        <span key={k} className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-olive-soft">{MULTI5_DIM_LABEL[k]}</span>
-                          <span className="h-[7px] w-14 overflow-hidden rounded-full bg-[#EDF3EF]">
-                            <span className="block h-full rounded-full bg-[#7FB89A]" style={{ width: `${multi5.dims[k]}%` }} />
-                          </span>
-                          <span className="w-6 text-[12px] font-extrabold text-[#0B8A63]">{multi5.dims[k]}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <CardHead title="能力系统" note="学习效率高不高（脑）" />
+                  {shanCardBody}
                 </div>
 
                 <div ref={setCardRef("hui")} data-berg="hui" className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
-                  <h4 className="text-[14.5px] font-extrabold text-olive">行为系统<span className="ml-2 text-[11px] font-semibold text-olive-mute">会不会学（术）</span></h4>
-                  <TotalRow label="会学 · 系统总分" value={core("会学")?.score ?? 0} />
-                  <KRow label="听懂" value={ability("学懂")?.score ?? 0} color={levelColor(ability("学懂")?.score ?? 0)} />
-                  <KRow label="记住" value={ability("记住")?.score ?? 0} color={levelColor(ability("记住")?.score ?? 0)} />
-                  <KRow label="会用" value={ability("会用")?.score ?? 0} color={levelColor(ability("会用")?.score ?? 0)} />
+                  <CardHead title="行为系统" note="会不会学（术）" />
+                  {huiCardBody}
                 </div>
 
                 <div ref={setCardRef("le")} data-berg="le" className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm">
-                  <h4 className="text-[14.5px] font-extrabold text-olive">动力系统<span className="ml-2 text-[11px] font-semibold text-olive-mute">愿不愿学（心）</span></h4>
-                  <TotalRow label="乐学 · 系统总分" value={core("乐学")?.score ?? 0} />
-                  <KRow label="学习动力" value={ability("动力")?.score ?? 0} color={levelColor(ability("动力")?.score ?? 0)} />
-                  <KRow label="学习信心" value={ability("信心")?.score ?? 0} color={levelColor(ability("信心")?.score ?? 0)} />
-                  <KRow label="学习韧劲" value={ability("韧劲")?.score ?? 0} color={levelColor(ability("韧劲")?.score ?? 0)} />
+                  <CardHead title="动力系统" note="愿不愿学（心）" />
+                  {leCardBody}
                 </div>
               </div>
             </div>
@@ -544,43 +612,16 @@ export default function CombinedV39Report({
               style={stacked ? undefined : { width: STAGE_W }}
             >
               <div ref={setCardRef("self")} className={`${stacked ? "w-full" : "min-h-[128px] w-[244px]"} rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm`}>
-                <h4 className="text-[14.5px] font-extrabold text-olive">自我认知 · 心理状态</h4>
-                {mentalSdq ? (
-                  <KRow label="SDQ 困难总分" value={mentalSdq.totalDiff} note={`/40 · ${mentalSdq.totalBand}`} color={mentalSdq.level !== "良好" ? "#E4572E" : "#2F7A41"} />
-                ) : mentalPa ? (
-                  <>
-                    <KRow label="PHQ-A" value={mentalPa.phq9} note={`/27 · ${mentalPa.phq9Level}`} color={mentalPa.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
-                    <KRow label="GAD-7" value={mentalPa.gad7} note={`/21 · ${mentalPa.gad7Level}`} color={mentalPa.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
-                  </>
-                ) : mental && isMentalV2(mental) ? (
-                  <>
-                    <KRow label="PHQ-9" value={mental.phq9} note={`/27 · ${mental.phq9Level}`} color={mental.phq9Level !== "良好" ? "#E4572E" : "#2F7A41"} />
-                    <KRow label="GAD-7" value={mental.gad7} note={`/21 · ${mental.gad7Level}`} color={mental.gad7Level !== "良好" ? "#E4572E" : "#2F7A41"} />
-                  </>
-                ) : (
-                  <p className="py-1 text-[12px] text-olive-mute">心理状态测评未做（选做）</p>
-                )}
+                <CardHead title="自我认知 · 心理状态" />
+                {selfCardBody}
               </div>
               <div ref={setCardRef("env")} className={`${stacked ? "w-full" : "min-h-[128px] w-[288px]"} rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm`}>
-                <h4 className="text-[14.5px] font-extrabold text-olive">支持系统<span className="ml-2 text-[11px] font-semibold text-olive-mute">身心 · 家庭 · 资源</span></h4>
-                <TotalRow label="支持系统 · 系统总分" value={condMean} />
-                {condCells.map((c) => (
-                  <KRow key={c.key} label={COND_DISPLAY[c.key] ?? c.label} value={c.score} color={levelColor(c.score)} />
-                ))}
+                <CardHead title="支持系统" note="身心 · 家庭 · 资源" />
+                {envCardBody}
               </div>
               <div className={`${stacked ? "w-full" : "min-h-[128px] w-[232px]"} rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 shadow-sm`}>
-                <h4 className="text-[14.5px] font-extrabold text-olive">深层特质<span className="ml-2 text-[11px] font-semibold text-olive-mute">性格 · 兴趣 · 锚</span></h4>
-                {disc && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">DISC</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{disc.primary}</span><span className="text-[11px] text-olive-mute">{discName ?? ""}</span></div>}
-                {mbti && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">MBTI</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{mbti.type}</span><span className="text-[11px] text-olive-mute">{mbtiName ?? ""}</span></div>}
-                {holland && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业兴趣</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{holland.code}</span><span className="text-[11px] text-olive-mute">{holland.keywords}</span></div>}
-                {anchor && anchor.top2.length > 0 && (
-                  <div className="flex flex-wrap items-baseline gap-2 py-1">
-                    <span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业锚</span>
-                    <span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{anchor.top2.join("·")}</span>
-                    <span className="text-[11px] text-olive-mute">{anchor.top2.map((k) => ANCHOR_LABEL[k]).join(" · ")}</span>
-                  </div>
-                )}
-                {!disc && !mbti && !holland && !anchor && <p className="py-1 text-[12px] text-olive-mute">性格/兴趣测评未完成</p>}
+                <CardHead title="深层特质" note="性格 · 兴趣 · 锚" />
+                {traitCardBody}
               </div>
             </div>
 
@@ -614,6 +655,53 @@ export default function CombinedV39Report({
               评分为 1–5 分制；三阶九能计入总分；支持系统与多元智能五项单独解读。
             </div>
           </div>
+        </div>
+
+        {/* ---------- 打印静态版：无 transform/绝对定位/连线，冰山+记分卡+底排纵向流式，保证 PDF 不变型 ---------- */}
+        <div className="mt-3 hidden print:block">
+          <div className="flex items-start gap-4">
+            <div className="w-[300px] shrink-0 overflow-hidden rounded-2xl border border-[#E3EEE8] bg-gradient-to-b from-[#F0FAF5] to-[#E4F2E9]">
+              <BergSvg stretch={1} />
+            </div>
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+                <CardHead title="学习成绩" note="看得见的结果 · 各科三项均分" />
+                {scoreCardBody}
+              </div>
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+                <CardHead title="能力系统" note="学习效率高不高（脑）" />
+                {shanCardBody}
+              </div>
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+                <CardHead title="行为系统" note="会不会学（术）" />
+                {huiCardBody}
+              </div>
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+                <CardHead title="动力系统" note="愿不愿学（心）" />
+                {leCardBody}
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+              <CardHead title="自我认知 · 心理状态" />
+              {selfCardBody}
+            </div>
+            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+              <CardHead title="支持系统" note="身心 · 家庭 · 资源" />
+              {envCardBody}
+            </div>
+            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+              <CardHead title="深层特质" note="性格 · 兴趣 · 锚" />
+              {traitCardBody}
+            </div>
+          </div>
+          <p className="mt-3 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute">
+            <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#E4572E" }} />红 &lt; 3.0 卡点（优先干预）　
+            <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#F0A92E" }} />黄 3.0–3.7 待提升　
+            <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#3CC078" }} />绿 ≥ 3.8 正常　|　
+            评分为 1–5 分制；三阶九能计入总分；支持系统与多元智能五项单独解读。
+          </p>
         </div>
       </div>
 
