@@ -25,8 +25,8 @@ APP_DIR="/www/wwwroot/sanhao"
 INTERNAL_URL="https://sanhao.sssx.club"
 CHANNEL_IP="114.132.171.31"
 SSH_KEY="${DEPLOY_KEY:-$HOME/.ssh/id_ed25519_sdx}"
-SSH="ssh -i $SSH_KEY -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new"
-SCP="scp -i $SSH_KEY -o ConnectTimeout=15"
+SSH="ssh -i $SSH_KEY -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+SCP="scp -i $SSH_KEY -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
 
 log()  { echo -e "\033[32m[deploy-dual]\033[0m $*"; }
 fail() { echo -e "\033[31m[deploy-dual] $*\033[0m" >&2; exit 1; }
