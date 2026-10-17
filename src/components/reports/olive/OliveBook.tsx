@@ -77,6 +77,13 @@ ul.ob-dots.ob-warn li::before { background: #F0A92E; }
   .ob-page svg { max-height: 250px; }
   ul.ob-dots li { line-height: 1.85; margin-bottom: 4px; }
 }
+/* ---------- 流式书页：封面 + 原版完整内容直接排入 A4 流（升学指导 / 家长认知用） ---------- */
+.ob-root .ob-flow { max-width: 860px; margin: 0 auto; padding: 2px 4px 36px; }
+.ob-flow > * { margin-top: 14px; }
+@media print {
+  .ob-root .ob-flow { max-width: none; padding: 0; }
+  .ob-flow > .paper-card, .ob-flow > details, .ob-flow > .rounded-xl { break-inside: avoid; page-break-inside: avoid; box-shadow: none; }
+}
 `;
 
 /** 注入 olive 样式（整个应用单例即可，重复注入无害但应避免）。 */

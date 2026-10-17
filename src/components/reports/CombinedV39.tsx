@@ -180,7 +180,7 @@ const ENV_CORNER_X = 288;
 /** 水下拉伸上限：1.6 倍，避免过于细长。 */
 const MAX_STRETCH = 1.6;
 
-function BergSvg({ stretch = 1 }: { stretch?: number }) {
+export function BergSvg({ stretch = 1 }: { stretch?: number }) {
   const k = stretch;
   /* 水下纵向拉伸（以水线 y=150 为轴），水上部分保持不动；比例随内容高度自适应。 */
   const vy = (y: number) => (y < 150 ? y : 150 + (y - 150) * k);

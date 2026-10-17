@@ -16,6 +16,7 @@ import { SubjectAdviceBlocks } from "@/components/reports/SubjectAdviceBlocks";
 import CombinedV39Report from "@/components/reports/CombinedV39";
 import { OliveStyle } from "@/components/reports/olive/OliveBook";
 import { OliveMbti, OliveDisc, OliveHolland, OliveMulti5, OliveAnchor, OliveMentalV2 } from "@/components/reports/olive/OliveSingles";
+import { OliveE3, OliveGuidance, OliveParent } from "@/components/reports/olive/OliveBigs";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
@@ -1398,7 +1399,7 @@ function discNv(r: DiscResult, k: "D" | "I" | "S" | "C"): number {
  * 家长报告 tab：家长版专属报告——测了 DISC 先解读家长版行为详版（亲子对照 + 逐位家长），
  * 再是家长卷内容（家庭支持与环境观察 + 家长认知对照），最后亲子冲突点清单与改进方案 + 答题明细。
  */
-function ParentReportTab({
+export function ParentReportTab({
   student,
   parents,
   e3parent,
@@ -2853,7 +2854,20 @@ export default function ReportView({
         })()}
 
       {tab === "guidance" && (
-        <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
+        <div className="space-y-4">
+          <VerSwitch on={!!oliveNew.guidance} onChange={(v) => setOliveNew((p) => ({ ...p, guidance: v }))} />
+          {oliveNew.guidance ? (
+            <OliveGuidance
+              data={data as ReportAssessmentData | undefined}
+              profile={profile}
+              academics={academics}
+              records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined}
+              onAssess={(start) => reveal({ kind: "assess", start })}
+            />
+          ) : (
+            <GuidanceTab data={data as ReportAssessmentData | undefined} profile={profile} academics={academics} records={(academicRecords ?? undefined) as import("@/data/reports/guidance").GuidanceRecord[] | undefined} onAssess={(start) => reveal({ kind: "assess", start })} />
+          )}
+        </div>
       )}
 
       {tab === "academics" &&
@@ -2952,6 +2966,25 @@ export default function ReportView({
           <MissingCard text="还没有学习力诊断结果。E3 学业诊断（三阶九能 V3.7）约 16-18 分钟，一次一道题，做完一个部分会有鼓励。" actionText="还未测评，开始测评 →" to="/assessments?start=e3" />
         ) : (
           <div className="space-y-4">
+            <VerSwitch on={!!oliveNew.e3} onChange={(v) => setOliveNew((p) => ({ ...p, e3: v }))} />
+            {oliveNew.e3 ? (
+              <OliveE3
+                e3={e3v37}
+                raw={data?.raw}
+                academics={academics}
+                mbti={mbti}
+                disc={disc}
+                holland={holland}
+                anchor={anchor}
+                multi5={multi5}
+                mental={mental}
+                ratings={e3Ratings}
+                name={profile?.name ?? ""}
+                grade={profile?.grade ?? null}
+                date={oliveDate("e3")}
+              />
+            ) : (
+          <>
             {/* 结果概要卡：三阶 + 主卡点 + 状态 */}
             <div className="paper-card accent-l border-lime p-5">
               <div className="flex items-center gap-2">
@@ -3038,6 +3071,8 @@ export default function ReportView({
                 </p>
               </div>
             )}
+          </>
+            )}
           </div>
         ))}
 
@@ -3084,7 +3119,21 @@ export default function ReportView({
         ))}
 
       {(tab === "parent" || tab === "discparent") && (
-        <ParentReportTab student={disc ?? null} parents={discParents} e3parent={parentResult} raw={data?.raw} />
+        <div className="space-y-4">
+          <VerSwitch on={!!oliveNew.parent} onChange={(v) => setOliveNew((p) => ({ ...p, parent: v }))} />
+          {oliveNew.parent ? (
+            <OliveParent
+              student={disc ?? null}
+              parents={discParents}
+              e3parent={parentResult}
+              raw={data?.raw}
+              name={profile?.name ?? ""}
+              grade={profile?.grade ?? null}
+            />
+          ) : (
+            <ParentReportTab student={disc ?? null} parents={discParents} e3parent={parentResult} raw={data?.raw} />
+          )}
+        </div>
       )}
 
       {tab === "anchor" &&
