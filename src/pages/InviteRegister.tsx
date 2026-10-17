@@ -60,6 +60,8 @@ function CampusRegister({ code, school, brandName, logoUrl }: { code: string; sc
   const [className, setClassName] = useState("");
   const [grade, setGrade] = useState("高一");
   const [error, setError] = useState("");
+  /* v198：校园版标题「粤华学校 新高一选科规划与生涯指导」——校名去掉地名前缀（如「东莞」），无校名时兜底 */
+  const schoolShort = (school || brandName).replace(/^东莞/, "") || "学校";
 
   const register = trpc.invite.registerCampus.useMutation({
     onSuccess: async (res) => {
@@ -92,7 +94,7 @@ function CampusRegister({ code, school, brandName, logoUrl }: { code: string; sc
             </span>
           )}
           <h1 className="mt-3 text-[22px] font-bold tracking-tight text-olive">
-            {brandName || school || "校园生涯测评"}
+            {`${schoolShort} 新高一选科规划与生涯指导`}
           </h1>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-olive-mute">
             {school ? <>{school} · 生涯规划测评系统</> : "生涯规划测评系统"}
@@ -109,7 +111,7 @@ function CampusRegister({ code, school, brandName, logoUrl }: { code: string; sc
             id="stu-name"
             maxLength={32}
             autoComplete="name"
-            placeholder="你的真实姓名"
+            placeholder="填写姓名"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className={inputCls}

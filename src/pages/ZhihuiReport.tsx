@@ -291,6 +291,9 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   /* v194：校园渠道标识（粤华版选科规则/权重/成绩门禁） */
   const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
   const campus = !!access?.campus && !studentId; // 内嵌查看（伴学师看别人）时不启用校园版规则
+  /* v198：校园版标题「粤华学校 新高一选科规划与生涯指导」——校名去地名前缀 */
+  const schoolShort = (access?.orgName || "粤华学校").replace(/^东莞/, "");
+  const campusTitle = `${schoolShort} 新高一选科规划与生涯指导`;
 
   /* v183c：打印前把打印根直挂 body（配 index.css 的 body.print-report 规则，避免绝对定位
      分页重影）；独立页（有 printId）才挂监听，内嵌栏目页由外层 ReportView 统一处理。 */
@@ -522,16 +525,14 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     <div className="zh-root" id={printId}>
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
-        <h1 className="text-[20px] font-bold text-olive">选科及升学规划报告</h1>
+        <h1 className="text-[20px] font-bold text-olive">{campus ? campusTitle : "选科及升学规划报告"}</h1>
         <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade} · 报告编号 {reportNo}</span>
         <button
           type="button"
           onClick={() => {
             /* v196：另存为 PDF 的默认文件名取自 document.title——校园渠道用「机构名+选科及升学规划报告」 */
             const prev = document.title;
-            document.title = campus
-              ? `${access?.orgName || "粤华学校"}选科及升学规划报告`
-              : `${data.student.name} - 选科及升学规划报告`;
+            document.title = campus ? campusTitle : `${data.student.name} - 选科及升学规划报告`;
             const restore = () => {
               document.title = prev;
               window.removeEventListener("afterprint", restore);
@@ -548,8 +549,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       {/* 1 封面 */}
       <Page no={1}>
         <div className="flex flex-1 flex-col items-start justify-center">
-          <div className="klabel" style={{ marginBottom: 18 }}>EVALUATION REPORT · 三好生涯测评</div>
-          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>选科及升学规划<br />测评报告</h1>
+          <div className="klabel" style={{ marginBottom: 18 }}>{campus ? `EVALUATION REPORT · ${schoolShort}` : "EVALUATION REPORT · 三好生涯测评"}</div>
+          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>{campus ? campusTitle : <>选科及升学规划<br />测评报告</>}</h1>
           <div style={{ marginTop: 26, width: 64, height: 4, background: C.brand, borderRadius: 2 }} />
           <p style={{ marginTop: 26, color: C.oliveSoft, fontSize: 15, lineHeight: 2.2 }}>认识自我 · 认识世界 · 树立目标 · 制定计划</p>
         </div>
