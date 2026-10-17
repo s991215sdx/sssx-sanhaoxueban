@@ -3,7 +3,7 @@ import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { attempts, dailyPlans, errorLogs, moodEntries, organizations, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
 import { getStudentDetail, listStudents } from "./studentDetail";
-import { isPlatformAdmin, sameOrg } from "./tenant";
+import { isPlatformAdmin, orgScope, sameOrg } from "./tenant";
 
 export const adminRouter = createRouter({
   /**
@@ -89,7 +89,7 @@ export const adminRouter = createRouter({
     const tutors =
       orgId == null
         ? await db.select().from(users).where(eq(users.role, "tutor")) // 平台超管：全部机构
-        : await db.select().from(users).where(and(eq(users.role, "tutor"), eq(users.orgId, orgId)));
+        : await db.select().from(users).where(and(eq(users.role, "tutor"), orgScope(orgId)));
     const profiles = await db.select().from(studentProfile);
     const { listStudentTutorLinks } = await import("./tutorAccess");
     const links = await listStudentTutorLinks(db);
@@ -273,17 +273,17 @@ export const adminRouter = createRouter({
         previewCount: Number((previewRows[0] as { c: number }).c ?? 0),
       };
     }
-    /* 业务量按用户归属机构统计：业务表 inner join users 过滤 orgId */
+    /* 业务量按用户归属机构统计：业务表 inner join users 过滤 orgId（v190：含无机构用户） */
     const joinCount = async (table: never, col: never): Promise<number> => {
       const rows = await db
         .select({ c: sql<number>`count(*)` })
         .from(table as never)
         .innerJoin(users, eq(col as never, users.id))
-        .where(eq(users.orgId, orgId));
+        .where(orgScope(orgId));
       return Number((rows[0] as { c: number }).c ?? 0);
     };
     const [userRows, attemptCount, errorCount, paperCount, moodCount, previewRows] = await Promise.all([
-      db.select({ c: sql<number>`count(*)` }).from(users).where(eq(users.orgId, orgId)),
+      db.select({ c: sql<number>`count(*)` }).from(users).where(orgScope(orgId)),
       joinCount(attempts as never, attempts.userId as never),
       joinCount(errorLogs as never, errorLogs.userId as never),
       joinCount(papers as never, papers.userId as never),
@@ -292,7 +292,7 @@ export const adminRouter = createRouter({
         .select({ c: sql<number>`count(*)` })
         .from(previewSessions)
         .innerJoin(users, eq(previewSessions.userId, users.id))
-        .where(and(eq(previewSessions.completed, true), eq(users.orgId, orgId))),
+        .where(and(eq(previewSessions.completed, true), orgScope(orgId))),
     ]);
     return {
       userCount: Number((userRows[0] as { c: number }).c ?? 0),
@@ -316,12 +316,12 @@ export const adminRouter = createRouter({
     const searchCond = likeKw
       ? or(like(users.name, likeKw), like(users.phone, likeKw), like(users.email, likeKw))
       : undefined;
-    /* v96：已软删的学员不进用户列表（在回收站里） */
+    /* v96：已软删的学员不进用户列表（在回收站里）；v190：机构管理员范围 = 本机构 + 无机构用户 */
     const notDeleted = isNull(users.deletedAt);
     const whereCond =
       orgId == null
         ? and(notDeleted, searchCond)
-        : and(eq(users.orgId, orgId), notDeleted, searchCond);
+        : and(orgScope(orgId), notDeleted, searchCond);
     const allUsers =
       orgId == null
         ? await db.select().from(users).where(whereCond).orderBy(desc(users.createdAt)) // 平台超管：全部机构

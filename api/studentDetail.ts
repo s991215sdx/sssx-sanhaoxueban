@@ -19,6 +19,7 @@ import {
 import type { MbtiResult, DiscResult, E3V27Result, E3V37Result } from "@contracts/assessments";
 import type { MultiResult } from "@contracts/multi";
 import type { AcademicsData } from "@contracts/academics";
+import { orgScope } from "./tenant";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -61,15 +62,16 @@ export type StudentListItem = {
 
 /** 学员列表（有档案的用户视为学员），含测评标签与学习概览。
  *  V59：orgId 限定机构范围；V60：传 null/undefined（平台超管）返回全量——总系统可查所有机构。
- *  v179：机构范围严格限定本机构——历史「平台直客」（org_id IS NULL）不再对所有机构放行，
- *  避免新机构管理员看到其他机构的学员；存量数据已迁移归位到原机构。 */
+ *  v179：机构范围严格限定本机构——历史「平台直客」（org_id IS NULL）不再对所有机构放行；
+ *  v190：无机构学员改对本机构管理员可见（orgScope：本机构 + org_id IS NULL），
+ *  避免公开邀请码注册的学员做完测评却从机构列表消失；其他机构仍严格隔离。 */
 export async function listStudents(db: Db, orgId?: number | null): Promise<StudentListItem[]> {
   const profiles = await db.select().from(studentProfile);
-  /* 机构范围：number=严格本机构；null/undefined=全量（平台超管 god mode） */
+  /* 机构范围：number=本机构+无机构（v190）；null/undefined=全量（平台超管 god mode） */
   const allUsers =
     orgId == null
       ? await db.select().from(users)
-      : await db.select().from(users).where(eq(users.orgId, orgId));
+      : await db.select().from(users).where(orgScope(orgId));
   const userMap = new Map(allUsers.map((u) => [u.id, u]));
   /* V60：附带机构品牌名，超管看全量列表时可分辨学员归属 */
   const orgRows = await db.select().from(organizations);
@@ -212,7 +214,8 @@ export type StudentDetail = {
  *  V59：传 orgId（number）时校验目标学员属于该机构（跨机构访问直接抛错）；
  *  V60：传 null/undefined 不校验（平台超管可查任意学员）。
  *  v179：严格本机构校验——目标学员 org_id 为 NULL（平台直客）也不再放行；
- *  存量直客账号已迁移归位到原机构，机构管理员经本机构可见。
+ *  v190：无机构学员对本机构管理员放行（target.orgId === orgId || target.orgId == null），
+ *  与列表口径一致；其他机构的学员仍严格隔离。
  *  v169：viewer 为伴学师（role=tutor）时校验其报告权限——无权限则 assessments 只下发测评清单（名称+时间）。 */
 export async function getStudentDetail(
   db: Db,
@@ -222,7 +225,7 @@ export async function getStudentDetail(
 ): Promise<StudentDetail> {
   if (orgId != null) {
     const target = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, userId)).limit(1))[0];
-    if (!target || target.orgId !== orgId) {
+    if (!target || (target.orgId !== orgId && target.orgId != null)) {
       throw new Error("无权查看该学员");
     }
   }
