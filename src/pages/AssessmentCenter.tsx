@@ -388,6 +388,18 @@ export default function AssessmentCenter() {
 
   return (
     <div className="space-y-4">
+      {/* v203：粤华校园版专属「预约专业解读」——fixed 悬浮在视口上（滚动不随页面动），
+          无图标小字样式；位置上移避让移动端底部 tab 导航（bottom-20）；仅校园学生可见（access.campus） */}
+      {access?.campus && (
+        <button
+          type="button"
+          onClick={() => window.open("https://sssx.club/signup.html?c=86ecffbd", "_blank", "noopener,noreferrer")}
+          className="fixed bottom-20 right-4 z-40 rounded-full bg-[#0C7064] px-3.5 py-2 text-[12px] font-semibold text-white shadow-lg shadow-[#0C7064]/30 transition-transform hover:scale-105 active:scale-95"
+          title="预约专业老师一对一解读测评报告"
+        >
+          预约专业解读
+        </button>
+      )}
       {/* v82：一站式连测进度（注册套餐落地时逐项连做） */}
       {testing && queue.length > 0 && (
         <div className="paper-card flex items-center justify-between border-[#E3B53A]/60 bg-butter-pale/60 px-4 py-2.5">
@@ -488,23 +500,9 @@ export default function AssessmentCenter() {
 
       {/* 顶部简介卡 */}
       <div className="paper-card accent-l border-lime p-5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <ClipboardCheck size={17} className="text-olive" />
-            <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
-          </div>
-          {/* v202：粤华校园版专属——学员/家长看完测评想请专业老师解读，入口放标题行右侧（不占底部悬浮），
-              无图标小字按钮，新窗口直达报名页；仅校园渠道注册学生可见（access.campus） */}
-          {access?.campus && (
-            <button
-              type="button"
-              onClick={() => window.open("https://sssx.club/signup.html?c=86ecffbd", "_blank", "noopener,noreferrer")}
-              className="shrink-0 rounded-full bg-[#0C7064] px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
-              title="预约专业老师一对一解读测评报告"
-            >
-              预约专业解读
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          <ClipboardCheck size={17} className="text-olive" />
+          <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
           {suiteVisible && zhihuiSuiteVisible

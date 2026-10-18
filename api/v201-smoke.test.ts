@@ -18,8 +18,8 @@ describe("v201 预约专业解读悬浮框（校园版专属）", () => {
     if (!/预约专业解读/.test(page)) throw new Error("缺：按钮文案");
     if (!/sssx\.club\/signup\.html\?c=86ecffbd/.test(page)) throw new Error("缺：报名外链");
     if (!/window\.open\(/.test(page)) throw new Error("缺：新窗口打开");
-    if (/PhoneCall/.test(page)) throw new Error("残留：v202 起电话图标已移除");
-    if (/fixed bottom-6 right-5/.test(page)) throw new Error("残留：v201 的底部悬浮定位");
+    if (/PhoneCall/.test(page)) throw new Error("残留：电话图标已移除");
+    if (!/fixed bottom-20 right-4/.test(page)) throw new Error("缺：v203 视口悬浮定位（上移避让底部 tab）");
   });
 
   it("仅校园学生可见（access.campus 门控）", () => {
