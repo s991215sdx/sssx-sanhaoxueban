@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ACADEMIC_SUBJECTS, SELF_LEVELS, subjectsForGrade, defaultFullScore, isMainSubject, type AcademicsData, type AcademicSubject } from "@contracts/academics";
 import { GraduationCap, Save } from "lucide-react";
 
@@ -51,7 +51,14 @@ export default function AcademicsEditorCore({
   footer?: ReactNode;
   showIntro?: boolean;
 }) {
-  const [examName, setExamName] = useState("");
+  /* v199：最近大考名称默认「高一月考成绩」（按档案年级生成，如高二→高二月考成绩），用户手动改过则以输入为准 */
+  const defaultExamName = (g: string | null | undefined) => (g ? `${g}月考成绩` : "高一月考成绩");
+  const [examName, setExamName] = useState(() => defaultExamName(grade));
+  const examTouched = useRef(false);
+  useEffect(() => {
+    if (!examTouched.current && !examName.trim() && grade) setExamName(defaultExamName(grade));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grade, examName]);
   const [subjects, setSubjects] = useState<Record<string, SubjectDraft>>(
     () => Object.fromEntries(ACADEMIC_SUBJECTS.map((s) => [s, emptyDraft()])),
   );
@@ -134,8 +141,11 @@ export default function AcademicsEditorCore({
         <span className="text-[12.5px] text-olive-soft">最近大考名称</span>
         <input
           value={examName}
-          onChange={(e) => setExamName(e.target.value)}
-          placeholder="如：七年级上期中考试"
+          onChange={(e) => {
+            examTouched.current = true;
+            setExamName(e.target.value);
+          }}
+          placeholder="如：高一期中考试"
           className="mt-1 w-full rounded-xl border border-border bg-cream px-3 py-2 text-[13.5px] text-olive outline-none focus:border-lime"
         />
       </label>
@@ -172,7 +182,7 @@ export default function AcademicsEditorCore({
               </div>
               <div className="mt-2.5 grid grid-cols-3 gap-2">
                 <label className="block">
-                  <span className="block truncate text-[11px] text-olive-mute">满分(可空)</span>
+                  <span className="block truncate text-[11px] text-olive-mute">满分</span>
                   <input
                     type="number"
                     min={1}
@@ -184,7 +194,8 @@ export default function AcademicsEditorCore({
                   />
                 </label>
                 <label className="block">
-                  <span className="block truncate text-[11px] text-olive-mute">最近大考分数</span>
+                  {/* v199：窄屏下「最近大考分数」显示不全，改简洁标签并带满分分母 */}
+                  <span className="block truncate text-[11px] text-olive-mute">考试分数（/{full ?? defaultFullScore(name, grade)}）</span>
                   <input
                     type="number"
                     min={0}

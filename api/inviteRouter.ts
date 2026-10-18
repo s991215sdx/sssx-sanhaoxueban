@@ -156,6 +156,33 @@ export const inviteRouter = createRouter({
   }),
 
   /**
+   * v199：报告页栏目裁剪用——查看对象（默认本人）是否经校园渠道注册。
+   * 权限：本人，或 伴学师/管理员 查看学员时。校园渠道学员的报告页只显示 选科及升学规划/职业兴趣/成绩与目标。
+   */
+  studentCampus: authedQuery.input((v: unknown) => v as { userId?: number }).query(async ({ ctx, input }) => {
+    const target = input?.userId ?? ctx.user.id;
+    if (target !== ctx.user.id && ctx.user.role === "user") return { campus: false as const };
+    const db = getDb();
+    const reg = (
+      await db
+        .select({ channelId: inviteRegistrations.channelId })
+        .from(inviteRegistrations)
+        .where(eq(inviteRegistrations.userId, target))
+        .orderBy(desc(inviteRegistrations.id))
+        .limit(1)
+    )[0];
+    if (!reg) return { campus: false as const };
+    const ch = (
+      await db
+        .select({ campus: inviteChannels.campus })
+        .from(inviteChannels)
+        .where(eq(inviteChannels.id, reg.channelId))
+        .limit(1)
+    )[0];
+    return { campus: !!ch?.campus };
+  }),
+
+  /**
    * v82 管理员/伴学师：修改已有渠道的测评套餐开关与绑定种类（不动其他字段）。
    * 权限口径与 setChannelReports 一致。
    */
