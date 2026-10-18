@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ACADEMIC_SUBJECTS, SELF_LEVELS, subjectsForGrade, defaultFullScore, isMainSubject, type AcademicsData, type AcademicSubject } from "@contracts/academics";
+import { ACADEMIC_SUBJECTS, subjectsForGrade, defaultFullScore, isMainSubject, type AcademicsData, type AcademicSubject } from "@contracts/academics";
 import { GraduationCap, Save } from "lucide-react";
 
 export type AcademicsSubmit = {
@@ -59,9 +59,21 @@ export default function AcademicsEditorCore({
     if (!examTouched.current && !examName.trim() && grade) setExamName(defaultExamName(grade));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grade, examName]);
+  /* v200：满分直接预填真实默认值（语数英高中 150 / 其他 100），可手动改；删掉「默认 N」占位提示 */
   const [subjects, setSubjects] = useState<Record<string, SubjectDraft>>(
-    () => Object.fromEntries(ACADEMIC_SUBJECTS.map((s) => [s, emptyDraft()])),
+    () => Object.fromEntries(ACADEMIC_SUBJECTS.map((s) => [s, { ...emptyDraft(), fullScore: grade ? String(defaultFullScore(s, grade)) : "" }])),
   );
+  /* 年级后到（档案异步加载）时，把仍未填的满分补上默认值 */
+  useEffect(() => {
+    if (!grade) return;
+    setSubjects((prev) => {
+      const next = { ...prev };
+      for (const s of ACADEMIC_SUBJECTS) {
+        if (next[s] && next[s].fullScore === "") next[s] = { ...next[s], fullScore: String(defaultFullScore(s, grade)) };
+      }
+      return next;
+    });
+  }, [grade]);
   const [inited, setInited] = useState(false);
   const [touched, setTouched] = useState(false);
 
@@ -75,7 +87,7 @@ export default function AcademicsEditorCore({
         if (next[s.name]) {
           next[s.name] = {
             selfLevel: s.selfLevel,
-            fullScore: s.fullScore != null ? String(s.fullScore) : "",
+            fullScore: s.fullScore != null ? String(s.fullScore) : (next[s.name]?.fullScore ?? ""),
             lastScore: s.lastScore != null ? String(s.lastScore) : "",
             targetScore: s.targetScore != null ? String(s.targetScore) : "",
           };
@@ -163,24 +175,7 @@ export default function AcademicsEditorCore({
                   <span className="text-[11px] text-olive-mute">不考或没学可不填</span>
                 )}
               </div>
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {SELF_LEVELS.map((lv) => (
-                  <button
-                    key={lv.value}
-                    type="button"
-                    title={lv.hint}
-                    onClick={() => patch(name, { selfLevel: d.selfLevel === lv.value ? null : lv.value })}
-                    className={`rounded-lg px-2 py-1 text-[11.5px] transition-colors ${
-                      d.selfLevel === lv.value
-                        ? "bg-brand text-cream"
-                        : "border border-border text-olive-mute hover:border-[#E3B53A]/60 hover:text-olive"
-                    }`}
-                  >
-                    {lv.label}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-2.5 grid grid-cols-3 gap-2">
+              <div className="mt-2 grid grid-cols-3 gap-2">
                 <label className="block">
                   <span className="block truncate text-[11px] text-olive-mute">满分</span>
                   <input
@@ -189,7 +184,6 @@ export default function AcademicsEditorCore({
                     max={1500}
                     value={d.fullScore}
                     onChange={(e) => patch(name, { fullScore: e.target.value })}
-                    placeholder={`默认 ${defaultFullScore(name, grade)}`}
                     className="mt-1 w-full rounded-lg border border-border bg-cream px-2 py-1.5 text-[13px] text-olive outline-none focus:border-lime"
                   />
                 </label>
