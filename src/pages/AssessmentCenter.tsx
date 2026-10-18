@@ -20,7 +20,7 @@ import CombinedSuite from "@/components/assessment/CombinedSuite";
 import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid } from "lucide-react";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
 type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d";
@@ -388,15 +388,16 @@ export default function AssessmentCenter() {
 
   return (
     <div className="space-y-4">
-      {/* v203：粤华校园版专属「预约专业解读」——fixed 悬浮在视口上（滚动不随页面动），
-          无图标小字样式；位置上移避让移动端底部 tab 导航（bottom-20）；仅校园学生可见（access.campus） */}
+      {/* v204：粤华校园版专属「预约专业解读」——fixed 悬浮在视口上（滚动不随页面动），
+          位置上移避让移动端底部 tab 导航（bottom-20）；小手图标带点按动画更生动；仅校园学生可见（access.campus） */}
       {access?.campus && (
         <button
           type="button"
           onClick={() => window.open("https://sssx.club/signup.html?c=86ecffbd", "_blank", "noopener,noreferrer")}
-          className="fixed bottom-20 right-4 z-40 rounded-full bg-[#0C7064] px-3.5 py-2 text-[12px] font-semibold text-white shadow-lg shadow-[#0C7064]/30 transition-transform hover:scale-105 active:scale-95"
+          className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 rounded-full bg-[#0C7064] px-3.5 py-2 text-[12px] font-semibold text-white shadow-lg shadow-[#0C7064]/30 transition-transform hover:scale-105 active:scale-95"
           title="预约专业老师一对一解读测评报告"
         >
+          <Pointer size={13} strokeWidth={2.6} className="animate-pulse" />
           预约专业解读
         </button>
       )}
