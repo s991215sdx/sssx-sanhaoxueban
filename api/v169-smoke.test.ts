@@ -27,7 +27,7 @@ describe("v169 伴学师报告权限", () => {
     const admin = readFileSync("api/adminRouter.ts", "utf-8");
     if (!/tutors\?: \{ tutorUserId: number; reportAccess\?: boolean; expiresAt\?: string \| null \}\[\]/.test(admin))
       throw new Error("setStudentTutors 缺 tutors 新契约");
-    if (!/grantReportAccess: adminQuery/.test(admin)) throw new Error("缺 grantReportAccess");
+    if (!/grantReportAccess: (adminQuery|staffAdminQuery)/.test(admin)) throw new Error("缺 grantReportAccess");
     if (!/reportAccess: grant, reportAccessExpiresAt: expiresAt/.test(admin)) throw new Error("grant 未写权限字段");
   });
 

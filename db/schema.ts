@@ -361,7 +361,7 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   /** 密码散列（scrypt，含盐），永不返回给前端 */
   passwordHash: varchar("password_hash", { length: 255 }),
-  role: mysqlEnum("role", ["user", "tutor", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "tutor", "admin", "jiaowu"]).default("user").notNull(),
   /** V59 SaaS：所属机构（organizations.id）。null = 平台超管（总系统）。 */
   orgId: bigint("org_id", { mode: "number", unsigned: true }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

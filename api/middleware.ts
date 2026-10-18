@@ -61,3 +61,5 @@ export const authedQuery = t.procedure.use(requireAuth);
 export const adminQuery = authedQuery.use(requireRole("admin"));
 /** 伴学师或管理员。 */
 export const tutorQuery = authedQuery.use(requireAnyRole(["tutor", "admin"]));
+/** v200：教务——只比管理员多一个学员分配相关接口（见 adminRouter 白名单），其余管理接口一律不可访问。 */
+export const staffAdminQuery = authedQuery.use(requireAnyRole(["admin", "jiaowu"]));

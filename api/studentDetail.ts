@@ -2,7 +2,7 @@
  * 学员数据聚合：管理员后台与伴学师工作台共用。
  * 隐私边界：树洞只返回心情分，不返回文字内容。
  */
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import {
   assessmentResults,
   attempts,
@@ -64,14 +64,19 @@ export type StudentListItem = {
  *  V59：orgId 限定机构范围；V60：传 null/undefined（平台超管）返回全量——总系统可查所有机构。
  *  v179：机构范围严格限定本机构——历史「平台直客」（org_id IS NULL）不再对所有机构放行；
  *  v190：无机构学员改对本机构管理员可见（orgScope：本机构 + org_id IS NULL），
- *  避免公开邀请码注册的学员做完测评却从机构列表消失；其他机构仍严格隔离。 */
-export async function listStudents(db: Db, orgId?: number | null): Promise<StudentListItem[]> {
+ *  避免公开邀请码注册的学员做完测评却从机构列表消失；其他机构仍严格隔离。
+ *  v200：支持服务端模糊搜索（search 按姓名/手机号 LIKE）——教务角色按手机号搜索时，
+ *  返回的号码是脱敏的，搜索必须在服务端用真实号码匹配。 */
+export async function listStudents(db: Db, orgId?: number | null, search?: string): Promise<StudentListItem[]> {
   const profiles = await db.select().from(studentProfile);
   /* 机构范围：number=本机构+无机构（v190）；null/undefined=全量（平台超管 god mode） */
+  const kw = search?.trim();
+  const likeKw = kw ? `%${kw.replace(/[\\%_]/g, (m) => "\\" + m)}%` : null;
+  const searchCond = likeKw ? or(like(users.name, likeKw), like(users.phone, likeKw)) : undefined;
   const allUsers =
     orgId == null
-      ? await db.select().from(users)
-      : await db.select().from(users).where(orgScope(orgId));
+      ? await db.select().from(users).where(searchCond)
+      : await db.select().from(users).where(and(orgScope(orgId), searchCond));
   const userMap = new Map(allUsers.map((u) => [u.id, u]));
   /* V60：附带机构品牌名，超管看全量列表时可分辨学员归属 */
   const orgRows = await db.select().from(organizations);

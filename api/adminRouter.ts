@@ -1,9 +1,9 @@
 import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
-import { createRouter, authedQuery, adminQuery } from "./middleware";
+import { createRouter, authedQuery, adminQuery, staffAdminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { attempts, dailyPlans, errorLogs, moodEntries, organizations, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
 import { getStudentDetail, listStudents } from "./studentDetail";
-import { isPlatformAdmin, orgScope, sameOrg } from "./tenant";
+import { isPlatformAdmin, maskPhone, orgScope, sameOrg } from "./tenant";
 
 export const adminRouter = createRouter({
   /**
@@ -37,11 +37,15 @@ export const adminRouter = createRouter({
 
   /** 把某个用户设为/取消角色（仅管理员；机构内不能设置 admin——管理员由平台超管在机构管理中开通）。 */
   setRole: adminQuery
-    .input((v: unknown) => v as { userId: number; role: "user" | "tutor" | "admin" })
+    .input((v: unknown) => v as { userId: number; role: "user" | "tutor" | "admin" | "jiaowu" })
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       if (input.role === "admin" && !isPlatformAdmin(ctx.user)) {
         throw new Error("仅平台超管可设置管理员");
+      }
+      /* v200：教务（jiaowu）只能由平台超管设置/取消——涉及跨账号权限，机构管理员暂不设此入口 */
+      if (input.role === "jiaowu" && !isPlatformAdmin(ctx.user)) {
+        throw new Error("仅平台超管可设置教务角色");
       }
       if (!(await sameOrg(db, ctx.user, input.userId))) throw new Error("该用户不在你的机构内");
       await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
@@ -64,13 +68,18 @@ export const adminRouter = createRouter({
   /**
    * 学员列表：档案 + 测评标签 + 学习概览 + 已分配伴学师。
    * V59：限本机构；V60：超管可看全部；V61：超管可传 orgId 按系统（机构）查看。
+   * v200：对教务（jiaowu）开放——只能搜学员（search 支持手机号，但返回号码脱敏）+看分配关系；
+   * 其余管理接口对教务一律关闭（staffAdminQuery 白名单见下）。
    */
-  students: adminQuery
-    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null }))
+  students: staffAdminQuery
+    .input((v: unknown) => ((v ?? {}) as { orgId?: number | null; search?: string }))
     .query(async ({ ctx, input }) => {
       /* 机构管理员强制本机构；平台超管：orgId 为数字=该系统，空=全部 */
       const scope = ctx.user.orgId ?? input.orgId ?? null;
-      return listStudents(getDb(), scope);
+      const items = await listStudents(getDb(), scope, input.search);
+      /* v200：教务看不到完整手机号（搜索已在服务端用真实号码完成匹配） */
+      if (ctx.user.role === "jiaowu") return items.map((s) => ({ ...s, phone: maskPhone(s.phone) }));
+      return items;
     }),
 
   /** 学员详情：档案 + 学业目标 + 全部测评（含答题明细）+ 学习数据（V59：限本机构；V60 超管不校验）。 */
@@ -80,8 +89,8 @@ export const adminRouter = createRouter({
       return getStudentDetail(getDb(), input.userId, ctx.user.orgId);
     }),
 
-  /** 伴学师列表：每人名下学员数与学员活跃度（V56：含多对多分配，去重；V59：限本机构；V60 超管看全部；V61 超管可按系统查看）。 */
-  tutors: adminQuery
+  /** 伴学师列表：每人名下学员数与学员活跃度（V56：含多对多分配，去重；V59：限本机构；V60 超管看全部；V61 超管可按系统查看）。v200：对教务开放（分配学员时选人用）。 */
+  tutors: staffAdminQuery
     .input((v: unknown) => ((v ?? {}) as { orgId?: number | null }))
     .query(async ({ ctx, input }) => {
     const db = getDb();
@@ -129,8 +138,8 @@ export const adminRouter = createRouter({
       return { ok: true as const, tutorUserId: input.tutorUserId, value: !!input.value };
     }),
 
-  /** 给学员分配/更换/解除伴学师（tutorId=null 解除）。V56：同步写入多对多分配表。V59：双方须同机构。 */
-  assignTutor: adminQuery
+  /** 给学员分配/更换/解除伴学师（tutorId=null 解除）。V56：同步写入多对多分配表。V59：双方须同机构。v200：对教务开放。 */
+  assignTutor: staffAdminQuery
     .input((v: unknown) => v as { studentUserId: number; tutorId: number | null })
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
@@ -153,8 +162,8 @@ export const adminRouter = createRouter({
     }),
 
   /** V56：给一个学员分配多位伴学师（全量替换）。第一位写入 tutor_id 作为主管（兼容旧逻辑）。V59：双方须同机构。
-   *  v169：支持带报告权限分配——tutors 数组（每人 reportAccess + 有效期），旧版 tutorIds 仍兼容（全部默认无权限→实际按库默认 true）。 */
-  setStudentTutors: adminQuery
+   *  v169：支持带报告权限分配——tutors 数组（每人 reportAccess + 有效期），旧版 tutorIds 仍兼容（全部默认无权限→实际按库默认 true）。v200：对教务开放。 */
+  setStudentTutors: staffAdminQuery
     .input(
       (v: unknown) =>
         v as {
@@ -204,8 +213,8 @@ export const adminRouter = createRouter({
       return { ok: true, tutorIds: ids };
     }),
 
-  /** v169：「分配报告」——给某伴学师（可未分配，自动建立分配关系）开通某学员的报告查看权限，可设有效期。 */
-  grantReportAccess: adminQuery
+  /** v169：「分配报告」——给某伴学师（可未分配，自动建立分配关系）开通某学员的报告查看权限，可设有效期。v200：对教务开放。 */
+  grantReportAccess: staffAdminQuery
     .input(
       (v: unknown) =>
         v as { studentUserId: number; tutorUserId: number; reportAccess?: boolean; expiresAt?: string | null },
