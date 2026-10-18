@@ -197,7 +197,8 @@ export async function ssoTicketEntry(c: Context) {
   if (data.valid !== true) return fail("ticket 无效、已过期或已被使用");
 
   /* v168：用户级 ticket（mode=user，无 student_id）——一体通工作台免登进三好后台。
-     按手机号匹配员工账号（伴学师/管理员，软删排除），种 8 小时登录态后 302 首页。 */
+     按手机号匹配员工账号（伴学师/管理员/教务，软删排除），种 8 小时登录态后 302 首页。
+     v205：教务（jiaowu）纳入员工角色——否则一体通免登提示「未开通三好学伴权限」。 */
   if (data.mode === "user") {
     const phone = typeof data.phone === "string" ? data.phone.trim() : "";
     if (!/^1[3-9]\d{9}$/.test(phone)) return fail("ticket 内容非法");
@@ -205,7 +206,7 @@ export async function ssoTicketEntry(c: Context) {
     const found = await db
       .select()
       .from(users)
-      .where(and(eq(users.phone, phone), inArray(users.role, ["tutor", "admin"] as const), isNull(users.deletedAt)))
+      .where(and(eq(users.phone, phone), inArray(users.role, ["tutor", "admin", "jiaowu"] as const), isNull(users.deletedAt)))
       .orderBy(desc(users.lastSignInAt))
       .limit(1);
     const staff = found[0];
