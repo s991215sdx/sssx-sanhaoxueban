@@ -126,8 +126,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   /* V59 SaaS：机构品牌名（商标）；平台超管与未登录一律显示平台品牌 */
   const brand = user?.org?.brandName ?? "三好学伴";
   const orgPaused = !!user?.org && !user.org.active;
-  /* V61 三系统分离：管理员/伴学师用工作台，不显示学员端服务功能导航 */
-  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  /* V61 三系统分离：管理员/伴学师/教务用工作台，不显示学员端服务功能导航（v200：教务纳入） */
+  const isStaff = user?.role === "admin" || user?.role === "tutor" || user?.role === "jiaowu";
   /* 学员端功能开关（v50）：null=全功能；数组=只显示这些模块（测评中心恒显示） */
   const { data: profile } = trpc.profile.get.useQuery();
   const enabledModules = profile?.enabledModules ?? null;
@@ -224,6 +224,20 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && "后台管理"}
             </NavLink>
           )}
+          {/* v200：教务的唯一入口：学员分配台（RoleGate 把教务的其它访问全部重定向到 /admin） */}
+          {user?.role === "jiaowu" && (
+            <NavLink
+              to="/admin"
+              title={collapsed ? "学员分配台" : undefined}
+              className={({ isActive }) =>
+                `group flex items-center rounded-xl transition-colors ${
+                  collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+                } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <ShieldCheck size={18} strokeWidth={2.2} />
+              {!collapsed && "学员分配台"}
+            </NavLink>
+          )}
           {/* v96：回收站（已删学员 2 个月保留期，可恢复） */}
           {showCoach && (
             <NavLink
@@ -277,7 +291,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13.5px] font-semibold text-olive">{displayName}</div>
                 <div className="mono text-[10px] text-olive-mute">
-                  {isPlatformAdmin ? "平台超管" : isAdmin ? "管理员" : "好好学习的账号"}
+                  {isPlatformAdmin ? "平台超管" : isAdmin ? "管理员" : user?.role === "jiaowu" ? "教务" : "好好学习的账号"}
                 </div>
               </div>
               <OrgSwitcher />

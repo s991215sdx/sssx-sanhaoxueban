@@ -54,10 +54,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 档案守卫：无档案，或未走完引导且未点过「稍后再测」→ 先去 /welcome。V61：管理员/伴学师不走学员引导。 */
+/** 档案守卫：无档案，或未走完引导且未点过「稍后再测」→ 先去 /welcome。V61：管理员/伴学师不走学员引导。v200：教务同 staff 待遇。 */
 function ProfileGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  const isStaff = user?.role === "admin" || user?.role === "tutor" || user?.role === "jiaowu";
   const { data: profile, isLoading } = trpc.profile.get.useQuery(undefined, { enabled: !isStaff });
 
   if (isStaff) return <>{children}</>;
@@ -72,7 +72,7 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
 /** v76 基本信息门禁：占位名（同学/同学+尾号，邀请注册默认名）一律先补全真实姓名，才能进入任何学习与测评页面。 */
 function BasicsGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  const isStaff = user?.role === "admin" || user?.role === "tutor" || user?.role === "jiaowu";
   const { data: profile, isLoading } = trpc.profile.get.useQuery(undefined, { enabled: !isStaff });
   if (isStaff) return <>{children}</>;
   if (isLoading) return <FullScreenLoading text="正在打开你的学习档案…" />;
@@ -99,7 +99,7 @@ function BasicsGate({ children }: { children: React.ReactNode }) {
 /** 模块门禁：受限学员（enabledModules 非空）只能访问已开启模块；首页直落测评中心。V61：staff 不受限。 */
 function ModuleGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const isStaff = user?.role === "admin" || user?.role === "tutor";
+  const isStaff = user?.role === "admin" || user?.role === "tutor" || user?.role === "jiaowu";
   const { data: profile } = trpc.profile.get.useQuery(undefined, { enabled: !isStaff });
   const location = useLocation();
   if (isStaff) return <>{children}</>;
@@ -123,6 +123,11 @@ function RoleGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const isStaff = user?.role === "admin" || user?.role === "tutor";
+  /* v200：教务只允许进 /admin（学员分配台），访问其它学员端页面一律回 /admin */
+  if (user?.role === "jiaowu") {
+    if (location.pathname !== "/admin") return <Navigate to="/admin" replace />;
+    return <>{children}</>;
+  }
   const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report"];
   const onStaffPath = staffPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`));
   if (isStaff && !onStaffPath) {

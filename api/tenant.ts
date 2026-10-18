@@ -47,3 +47,13 @@ export async function sameOrg(db: ReturnType<typeof getDb>, me: Pick<User, "orgI
 export function orgScope(orgId: number) {
   return or(eq(users.orgId, orgId), isNull(users.orgId));
 }
+
+/**
+ * v200：手机号脱敏——教务可按手机号搜索学员，但任何列表/详情都看不到完整号码。
+ * 保留前 3 + 后 4，中间打码：13537126329 → 135****6329。不足 7 位的整体打码。
+ */
+export function maskPhone(phone: string | null): string | null {
+  if (!phone) return phone;
+  if (phone.length <= 6) return phone[0] + "****";
+  return phone.slice(0, 3) + "****" + phone.slice(-4);
+}

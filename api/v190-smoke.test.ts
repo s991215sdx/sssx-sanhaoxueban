@@ -29,8 +29,8 @@ describe("v190 机构范围含无机构用户", () => {
     need(tenant, "t.orgId === me.orgId || t.orgId == null", "sameOrg 放行无机构目标");
   });
 
-  it("listStudents 机构分支用 orgScope", () => {
-    need(detail, "where(orgScope(orgId))", "listStudents orgScope 过滤");
+  it("listStudents 机构分支用 orgScope（v200 起与搜索条件合并为 and(orgScope, searchCond)）", () => {
+    need(detail, "and(orgScope(orgId), searchCond)", "listStudents orgScope 过滤");
     need(detail, 'import { orgScope } from "./tenant"', "studentDetail 引入 orgScope");
   });
 
@@ -40,7 +40,7 @@ describe("v190 机构范围含无机构用户", () => {
 
   it("admin.users 机构管理员搜索范围 = 本机构 + 无机构", () => {
     need(admin, "and(orgScope(orgId), notDeleted, searchCond)", "用户列表 whereCond");
-    need(admin, 'import { isPlatformAdmin, orgScope, sameOrg } from "./tenant"', "adminRouter 引入 orgScope");
+    need(admin, 'import { isPlatformAdmin, maskPhone, orgScope, sameOrg } from "./tenant"', "adminRouter 引入 orgScope");
   });
 
   it("admin.tutors / overview 统计口径同步", () => {

@@ -15,11 +15,26 @@ import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandsha
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
 
-/** 后台管理：机构管理员=总览/学员/伴学师/注册邀请；平台超管=机构管理（总系统）。 */
+/** 后台管理：机构管理员=总览/学员/伴学师/注册邀请；平台超管=机构管理（总系统）。v200：教务=只进学员分配台（搜索学员+分配伴学师+报告权限）。 */
 export default function Admin() {
   const { user, refresh } = useAuth();
   const isAdmin = user?.role === "admin";
   const isPlatformAdmin = isAdmin && user?.orgId == null;
+
+  /* v200：教务——只有学员分配台一个页面，其余 tab 与操作一律没有 */
+  if (user?.role === "jiaowu") {
+    return (
+      <div className="space-y-5">
+        <header>
+          <h1 className="text-[22px] font-bold tracking-tight text-[#1E3530]">学员分配台</h1>
+          <p className="mt-1 text-[13px] text-olive-mute">
+            可搜索学员（支持手机号）、分配伴学师、给伴学师开启/关闭学员报告查看权限。手机号已脱敏，完整号码不可见。
+          </p>
+        </header>
+        <StudentsTab jiaowu orgScope={{ orgId: null }} />
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return <ClaimAdminCard onClaimed={() => refresh()} />;
@@ -285,6 +300,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                         )}
                         {renamingId !== u.id && u.role === "admin" && <span className="chip !py-0.5 !text-[10.5px] text-olive">管理员</span>}
                         {renamingId !== u.id && u.role === "tutor" && <span className="chip !py-0.5 !text-[10.5px] text-olive">伴学师</span>}
+                        {renamingId !== u.id && u.role === "jiaowu" && <span className="chip !py-0.5 !text-[10.5px] text-olive">教务</span>}
                         {/* V60：超管看全量列表时标注所属机构 */}
                         {renamingId !== u.id && platform && u.orgName && (
                           <span className="chip !py-0.5 !text-[10.5px] text-olive-soft">{u.orgName}</span>
@@ -321,6 +337,16 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                               {u.role === "admin" ? "取消管理员" : "设为管理员"}
                             </button>
                           )}
+                          {/* v200：教务角色仅平台超管可设置/取消（后端同口径限制） */}
+                          {platform && (
+                            <button
+                              onClick={() => setRole.mutate({ userId: u.id, role: u.role === "jiaowu" ? "user" : "jiaowu" })}
+                              disabled={setRole.isPending}
+                              className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60 disabled:opacity-40"
+                            >
+                              {u.role === "jiaowu" ? "取消教务" : "设为教务"}
+                            </button>
+                          )}
                           <button
                             onClick={() => setRole.mutate({ userId: u.id, role: u.role === "tutor" ? "user" : "tutor" })}
                             disabled={setRole.isPending}
@@ -355,8 +381,8 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   );
 }
 
-/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注；orgScope=超管分系统筛选。 */
-function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgScope: { orgId: number | null } }) {
+/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注；orgScope=超管分系统筛选；jiaowu=教务受限视图（服务端搜索+脱敏手机号+仅分配/报告权限两个操作）。 */
+function StudentsTab({ platform = false, jiaowu = false, orgScope }: { platform?: boolean; jiaowu?: boolean; orgScope: { orgId: number | null } }) {
   /* v157：详情抽屉与 URL 参数联动（?student=<id>），刷新/转发链接可直达学员详情 */
   const [searchParams, setSearchParams] = useSearchParams();
   const studentParam = searchParams.get("student");
@@ -378,12 +404,17 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
     );
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
-  const { data: students, isLoading } = trpc.admin.students.useQuery(orgScope);
+  /* v200：搜索改服务端匹配（教务的手机号是脱敏返回的，客户端过滤永远搜不到）；
+     输入防抖 300ms 再发查询，行为与总览用户搜索一致 */
+  const [debouncedQ, setDebouncedQ] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+  const kw = debouncedQ;
+  const { data: students, isLoading } = trpc.admin.students.useQuery({ ...orgScope, search: kw || undefined });
   const { data: tutors } = trpc.admin.tutors.useQuery(orgScope);
-  const kw = q.trim();
-  const filtered = (students ?? []).filter(
-    (s) => !kw || s.name.includes(kw) || (s.phone ?? "").includes(kw),
-  );
+  const filtered = students ?? [];
   /* v160：学员列表分页（搜索词变化自动回第 1 页） */
   const studentsPager = usePager(filtered, 20, kw);
 
@@ -391,7 +422,7 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
     <div className="paper-card overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3.5">
         <span className="text-[14.5px] font-semibold text-olive">学员列表</span>
-        <span className="text-[12px] text-olive-mute">{filtered.length} 位{kw ? ` / 共 ${students?.length ?? 0} 位` : ""}</span>
+        <span className="text-[12px] text-olive-mute">{filtered.length} 位</span>
         {/* V56：学员查询（姓名/手机号） */}
         <span className="relative ml-auto">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-olive-mute" />
@@ -458,10 +489,13 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 </div>
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                {/* V56：多对多分配伴学师 */}
+                {/* V56：多对多分配伴学师（v200：教务仅有的两个操作之一） */}
                 <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
-                {/* v169：分配报告（开通伴学师报告查看权限，可设有效期） */}
+                {/* v169：分配报告（开通伴学师报告查看权限，可设有效期；v200：教务仅有的两个操作之一） */}
                 <ReportGrantButton studentUserId={s.userId} studentName={s.name} tutors={tutors ?? []} assigned={s.tutors} />
+                {/* 以下操作 v200 起对教务隐藏：报告推送/测评推送/重置密码/删除/详情 */}
+                {!jiaowu && (
+                  <>
                 {/* V54：报告推送开关 */}
                 <ReportAccessButton userId={s.userId} released={s.reportReleased} />
                 {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
@@ -490,6 +524,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
                 >
                   详情
                 </button>
+                  </>
+                )}
               </div>
               {releaseFor === s.userId && (
                 <div className="w-full">
@@ -511,7 +547,8 @@ function StudentsTab({ platform = false, orgScope }: { platform?: boolean; orgSc
         </div>
       )}
       <Pager page={studentsPager.page} totalPages={studentsPager.totalPages} total={studentsPager.total} onChange={studentsPager.setPage} />
-      {detailId !== null && <StudentDetailDrawer userId={detailId} source="admin" onClose={closeDetail} />}
+      {/* v200：教务无学员详情权限（接口对教务关闭），URL 带参数也不渲染抽屉 */}
+      {detailId !== null && !jiaowu && <StudentDetailDrawer userId={detailId} source="admin" onClose={closeDetail} />}
     </div>
   );
 }
