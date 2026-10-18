@@ -20,7 +20,7 @@ import CombinedSuite from "@/components/assessment/CombinedSuite";
 import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, PhoneCall } from "lucide-react";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
 type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d";
@@ -388,19 +388,6 @@ export default function AssessmentCenter() {
 
   return (
     <div className="space-y-4">
-      {/* v201：粤华校园版专属——学员/家长看完测评想要专业老师解读，悬浮框直达报名页（外链）；
-          仅校园渠道注册的学生可见（access.campus），普通渠道学生无此入口 */}
-      {access?.campus && (
-        <button
-          type="button"
-          onClick={() => window.open("https://sssx.club/signup.html?c=86ecffbd", "_blank", "noopener,noreferrer")}
-          className="fixed bottom-6 right-5 z-40 flex items-center gap-2 rounded-full bg-[#0C7064] px-4 py-3 text-[13.5px] font-semibold text-white shadow-lg shadow-[#0C7064]/30 transition-transform hover:scale-105 active:scale-95"
-          title="预约专业老师一对一解读测评报告"
-        >
-          <PhoneCall size={17} strokeWidth={2.4} />
-          预约专业解读
-        </button>
-      )}
       {/* v82：一站式连测进度（注册套餐落地时逐项连做） */}
       {testing && queue.length > 0 && (
         <div className="paper-card flex items-center justify-between border-[#E3B53A]/60 bg-butter-pale/60 px-4 py-2.5">
@@ -501,9 +488,23 @@ export default function AssessmentCenter() {
 
       {/* 顶部简介卡 */}
       <div className="paper-card accent-l border-lime p-5">
-        <div className="flex items-center gap-2">
-          <ClipboardCheck size={17} className="text-olive" />
-          <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck size={17} className="text-olive" />
+            <h2 className="text-[17px] font-bold text-olive">测评中心</h2>
+          </div>
+          {/* v202：粤华校园版专属——学员/家长看完测评想请专业老师解读，入口放标题行右侧（不占底部悬浮），
+              无图标小字按钮，新窗口直达报名页；仅校园渠道注册学生可见（access.campus） */}
+          {access?.campus && (
+            <button
+              type="button"
+              onClick={() => window.open("https://sssx.club/signup.html?c=86ecffbd", "_blank", "noopener,noreferrer")}
+              className="shrink-0 rounded-full bg-[#0C7064] px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+              title="预约专业老师一对一解读测评报告"
+            >
+              预约专业解读
+            </button>
+          )}
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
           {suiteVisible && zhihuiSuiteVisible
