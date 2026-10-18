@@ -240,6 +240,20 @@
       "when": 1792383600000,
       "tag": "0035_subject4d_expectations",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1792470000000,
+      "tag": "0036_campus_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1792556400000,
+      "tag": "0037_jiaowu_role",
+      "breakpoints": true
     }
   ]
 }

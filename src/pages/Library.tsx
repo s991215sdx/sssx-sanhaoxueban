@@ -180,10 +180,10 @@ function MajorsTab({ isAdmin, initialMenlei }: { isAdmin: boolean; initialMenlei
   const filteredCats = cat ? catsInMenlei.filter((c) => c.cat === cat) : catsInMenlei;
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row">
+    <div className="flex flex-col gap-4 md:flex-row">
       {/* 左侧：门类导航（掌上高考式） */}
-      <aside className="w-full shrink-0 lg:w-52">
-        <div className="paper-card sticky top-4 max-h-[70vh] overflow-y-auto p-3">
+      <aside className="w-full shrink-0 md:w-52">
+        <div className="paper-card sticky top-4 max-h-[46vh] overflow-y-auto p-3 md:max-h-[70vh]">
           <button
             type="button"
             onClick={() => pickMenlei("")}

@@ -169,6 +169,8 @@ export const studentProfile = mysqlTable("student_profile", {
     userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
   name: varchar("name", { length: 64 }).notNull().default("同学"),
   grade: varchar("grade", { length: 32 }).notNull().default("初一"),
+  /** v191 校园模式注册：班级（如「高一(3)班」，校园渠道注册时必填） */
+  className: varchar("class_name", { length: 32 }),
   school: varchar("school", { length: 128 }),
   targetSchool: varchar("target_school", { length: 128 }),
   dailyMinutes: int("daily_minutes").notNull().default(45), // 每天可用学习时长（分钟）
@@ -359,7 +361,7 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   /** 密码散列（scrypt，含盐），永不返回给前端 */
   passwordHash: varchar("password_hash", { length: 255 }),
-  role: mysqlEnum("role", ["user", "tutor", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "tutor", "admin", "jiaowu"]).default("user").notNull(),
   /** V59 SaaS：所属机构（organizations.id）。null = 平台超管（总系统）。 */
   orgId: bigint("org_id", { mode: "number", unsigned: true }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -431,6 +433,8 @@ export const inviteChannels = mysqlTable("invite_channels", {
   assessmentAccess: boolean("assessment_access").notNull().default(false),
   /** v82：绑定的测评种类（INVITE_ASSESS_KINDS 的 key 数组；"all"=全部测评） */
   assessmentKinds: json("assessment_kinds").$type<string[]>(),
+  /** v191 校园模式：true=本渠道为校园专用入口——注册免手机号，只填姓名+班级+年级（学校/年级可固定） */
+  campus: boolean("campus").notNull().default(false),
   createdBy: bigint("created_by", { mode: "number", unsigned: true }).notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

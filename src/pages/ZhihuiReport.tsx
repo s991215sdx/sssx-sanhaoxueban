@@ -4,8 +4,10 @@
  * 打印：每页 A4 page-break，点「下载 / 打印」另存 PDF。
  */
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { defaultFullScore } from "@contracts/academics";
+import { subjectMethodsFor } from "@/data/reports/subjectAdvice";
 import {
   SUBJECT4D_BANK,
   SUBJECT4D_DIM_COLOR,
@@ -286,6 +288,12 @@ function SecTitle({ n, title, sub }: { n: string | number; title: string; sub?: 
 /** 报告主体：独立页与内嵌（测评报告栏目）共用；printId 仅独立页传（打印字号规则按 id 匹配）。 */
 export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; printId?: string }) {
   const { data, isLoading } = trpc.zhihui.reportData.useQuery({ studentId });
+  /* v194：校园渠道标识（粤华版选科规则/权重/成绩门禁） */
+  const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
+  const campus = !!access?.campus && !studentId; // 内嵌查看（伴学师看别人）时不启用校园版规则
+  /* v198：校园版标题「粤华学校 新高一选科规划与生涯指导」——校名去地名前缀 */
+  const schoolShort = (access?.orgName || "粤华学校").replace(/^东莞/, "");
+  const campusTitle = `${schoolShort} 新高一选科规划与生涯指导`;
 
   /* v183c：打印前把打印根直挂 body（配 index.css 的 body.print-report 规则，避免绝对定位
      分页重影）；独立页（有 printId）才挂监听，内嵌栏目页由外层 ReportView 统一处理。 */
@@ -325,19 +333,110 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   const exp = data?.expectations;
   const grade = data?.student.grade === "junior" ? "初三" : data?.student.grade === "senior" ? "高三" : data?.student.grade === "高二" ? "高二" : "高一";
 
-  /* 选科推荐：首选 = 物理/历史潜力高者；再选 = 剩余 5 科潜力 Top2（物理首选时化学加权优先） */
+  /* 选科推荐（v193 通用 + v194 校园版）。
+     通用版：广东 3+1+2，潜力 60% + 成绩 40%，物理轨化学加权优先（<45 放弃并说明）。
+     校园版（粤华）：候选池固定 5 组合（物化生/物化地/物化政/政史地/政史生），潜力 65% + 成绩 35%；
+     物化最优 vs 史政最优分高者主推，同分看数学（≥90 物化、<90 史政）；化学弱也推物化并提示补课。
+     所有组合带防重兜底，杜绝科目重复。 */
   const combos = useMemo(() => {
     if (!s4d) return null;
-    const p = (n: string) => s4d.subjects[n as keyof typeof s4d.subjects]?.潜力指数 ?? 3;
-    const firstPhys = p("物理") >= p("历史");
-    const rest = ["化学", "生物", "历史", "政治", "地理"].filter((s) => s !== (firstPhys ? "历史" : "物理"));
-    const scored = rest.map((s) => ({ s, v: p(s) + (firstPhys && s === "化学" ? 0.4 : 0) })).sort((a, b) => b.v - a.v);
+    const gradePct = (n: string): number | null => {
+      const a = academics.find((x) => x.name === n || (n === "政治" && x.name === "道德与法治"));
+      if (!a?.name || a.lastScore == null) return null;
+      const full = (a as { fullScore?: number | null }).fullScore ?? defaultFullScore(a.name, grade);
+      return full > 0 ? Math.round((a.lastScore / full) * 100) : null;
+    };
+    const mkW = (gradeW: number) => (n: string): number => {
+      const pot = ((s4d.subjects[n as keyof typeof s4d.subjects]?.潜力指数 ?? 3) / 5) * 100;
+      const g = gradePct(n);
+      return Math.round(g == null ? pot : pot * (1 - gradeW) + g * gradeW);
+    };
+    /* 弱势学科（第一推荐组合内、成绩得分率 < 60%）→ 中肯提升建议 */
+    const methods = subjectMethodsFor("高中");
+    const methodOf = (n: string) => methods.find((m) => m.subject === n || (n === "政治" && m.subject === "道德与法治"));
+    const mkWeakTips = (c1: string[], head: string) =>
+      c1
+        .filter((n) => n !== head)
+        .map((n) => ({ n, pct: gradePct(n) }))
+        .filter((x): x is { n: string; pct: number } => x.pct != null && x.pct < 60)
+        .map((x) => ({ ...x, tip: methodOf(x.n)?.methods[0] ?? "先回归课本与课堂，把基础题的正确率提上来，再谈拔高。" }));
+    const eng = academics.find((x) => x.name === "英语");
+    const englishLow = eng?.lastScore != null && (eng.lastScore ?? 999) < 80;
+    const hasGrades = academics.some((x) => x.lastScore != null);
+
+    /* ---------- 校园版（粤华） ---------- */
+    if (campus) {
+      const w = mkW(0.35);
+      const CANDS = [
+        { track: "物化" as const, subs: ["物理", "化学", "生物"] },
+        { track: "物化" as const, subs: ["物理", "化学", "地理"] },
+        { track: "物化" as const, subs: ["物理", "化学", "政治"] },
+        { track: "史政" as const, subs: ["历史", "政治", "地理"] },
+        { track: "史政" as const, subs: ["历史", "政治", "生物"] },
+      ];
+      const scored = CANDS.map((c) => ({ ...c, score: Math.round(c.subs.reduce((s, n) => s + w(n), 0) / c.subs.length) }));
+      const phys = scored.filter((c) => c.track === "物化").sort((a, b) => b.score - a.score);
+      const hist = scored.filter((c) => c.track === "史政").sort((a, b) => b.score - a.score);
+      const mathScore = academics.find((x) => x.name === "数学")?.lastScore ?? null;
+      const winTrack =
+        phys[0]!.score > hist[0]!.score ? "物化" : hist[0]!.score > phys[0]!.score ? "史政" : mathScore != null && mathScore >= 90 ? "物化" : "史政";
+      const win = winTrack === "物化" ? phys : hist;
+      const lose = winTrack === "物化" ? hist : phys;
+      const head = winTrack === "物化" ? "物理" : "历史";
+      const toC1 = (subs: string[]): [string, string, string][] =>
+        subs.map((sub, i): [string, string, string] => [sub, i === 0 ? "首选" : "再选", ""]);
+      const c1subs = win[0]!.subs;
+      /* 化学短板提示：主推含化学且化学得分率 < 60% */
+      const chemPct = gradePct("化学");
+      const chemShort = c1subs.includes("化学") && chemPct != null && chemPct < 60;
+      return {
+        campus: true as const,
+        winTrack,
+        tied: phys[0]!.score === hist[0]!.score,
+        mathScore,
+        c1: toC1(c1subs),
+        second: win[1]!.subs,
+        third: lose[0]!.subs,
+        hasGrades,
+        chemLow: chemShort,
+        weakTips: mkWeakTips(c1subs, head),
+        englishLow,
+      };
+    }
+
+    /* ---------- 通用版 ---------- */
+    const w = mkW(0.4);
+    const firstPhys = w("物理") >= w("历史");
     const first = firstPhys ? "物理" : "历史";
-    const c1: [string, string, string][] = [[first, "首选", ""], [scored[0]!.s, "再选", ""], [scored[1]!.s, "再选", ""]];
-    const alt2 = [scored[0]!.s, scored[2]!.s];
-    const alt3 = firstPhys ? ["政治", scored[0]!.s] : [scored[1]!.s, scored[2]!.s];
-    return { c1, second: [first, ...alt2], third: [firstPhys ? "物理" : "历史", ...alt3].slice(0, 3) };
-  }, [s4d]);
+    const pool = ["化学", "生物", "政治", "地理"].map((s) => ({ s, v: w(s) }));
+    const chem = pool[0]!;
+    const chemLow = chem.v < 45;
+    const rest = pool.filter((p) => p.s !== "化学").sort((a, b) => b.v - a.v);
+    /* 物理轨且化学不太低 → 化学置顶；否则纯按加权分排序 */
+    const ranked = firstPhys && !chemLow ? [chem, ...rest] : pool.slice().sort((a, b) => b.v - a.v);
+    /* 防重兜底：任何组合内科目不得重复，不足 3 科时从候选池补齐 */
+    const uniq3 = (head: string, picks: string[]): string[] => {
+      const out: string[] = [];
+      for (const x of [head, ...picks]) if (x && !out.includes(x)) out.push(x);
+      for (const p of ranked) { if (out.length >= 3) break; if (!out.includes(p.s)) out.push(p.s); }
+      return out.slice(0, 3);
+    };
+    const firstTwo = ranked.slice(0, 2).map((p) => p.s);
+    const secondTwo = [ranked[0]!.s, ranked[2]!.s];
+    const otherFirst = firstPhys ? "历史" : "物理";
+    const thirdTwo = ranked.slice(0, 2).map((p) => p.s);
+    const c1 = uniq3(first, firstTwo);
+    return {
+      campus: false as const,
+      c1: c1.map((sub, i): [string, string, string] => [sub, i === 0 ? "首选" : "再选", ""]),
+      second: uniq3(first, secondTwo),
+      third: uniq3(otherFirst, thirdTwo),
+      hasGrades,
+      chemLow: firstPhys && chemLow,
+      weakTips: mkWeakTips(c1, first),
+      englishLow,
+    };
+  }, [s4d, academics, grade, campus]);
 
   const subjectRows = useMemo(() => {
     if (!s4d) return [];
@@ -392,6 +491,28 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   if (isLoading) return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
   if (!data) return <p className="py-10 text-center text-olive-mute">报告数据加载失败</p>;
 
+  /* v194：校园模式成绩门禁——9 科月考成绩全部填完才允许查看报告（组合测评流程内已内置成绩步骤） */
+  const GRADE9 = ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "道德与法治", "地理"];
+  const gradesAll = GRADE9.every((n) => academics.find((a) => a.name === n)?.lastScore != null);
+  if (campus && !gradesAll) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
+        <div className="paper-card max-w-md p-8 text-center">
+          <h2 className="text-[19px] font-bold text-olive">还差一步：录入月考成绩</h2>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
+            选科推荐需要把最近一次月考成绩按 35% 权重计入。请把<b>语数英 + 物化生政史地 9 科</b>成绩填完后，再来查看你的选科及升学规划报告。
+          </p>
+          <Link
+            to="/report-detail"
+            className="mt-5 block rounded-xl bg-brand py-3 text-[14.5px] font-semibold text-cream hover:bg-lime-deep"
+          >
+            去录入月考成绩 →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const expLabel = exp?.school || exp?.majorCat || exp?.careers
     ? { school: exp?.school || "（尚未填写，可由伴学师引导补充）", major: exp?.majorCat || "（待定）", careers: exp?.careers || "（待定）" }
     : null;
@@ -404,9 +525,23 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     <div className="zh-root" id={printId}>
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
-        <h1 className="text-[20px] font-bold text-olive">选科及升学规划报告</h1>
+        <h1 className="text-[20px] font-bold text-olive">{campus ? campusTitle : "选科及升学规划报告"}</h1>
         <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade} · 报告编号 {reportNo}</span>
-        <button type="button" onClick={() => window.print()} className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime">
+        <button
+          type="button"
+          onClick={() => {
+            /* v196：另存为 PDF 的默认文件名取自 document.title——校园渠道用「机构名+选科及升学规划报告」 */
+            const prev = document.title;
+            document.title = campus ? campusTitle : `${data.student.name} - 选科及升学规划报告`;
+            const restore = () => {
+              document.title = prev;
+              window.removeEventListener("afterprint", restore);
+            };
+            window.addEventListener("afterprint", restore);
+            window.print();
+          }}
+          className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime"
+        >
           下载 / 打印
         </button>
       </div>
@@ -414,13 +549,15 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       {/* 1 封面 */}
       <Page no={1}>
         <div className="flex flex-1 flex-col items-start justify-center">
-          <div className="klabel" style={{ marginBottom: 18 }}>EVALUATION REPORT · 三好生涯测评</div>
-          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>选科及升学规划<br />测评报告</h1>
+          <div className="klabel" style={{ marginBottom: 18 }}>{campus ? `EVALUATION REPORT · ${schoolShort}` : "EVALUATION REPORT · 三好生涯测评"}</div>
+          <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>{campus ? campusTitle : <>选科及升学规划<br />测评报告</>}</h1>
           <div style={{ marginTop: 26, width: 64, height: 4, background: C.brand, borderRadius: 2 }} />
           <p style={{ marginTop: 26, color: C.oliveSoft, fontSize: 15, lineHeight: 2.2 }}>认识自我 · 认识世界 · 树立目标 · 制定计划</p>
         </div>
         <div className="card cover-card" style={{ width: 340 }}>
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "10px 22px", fontSize: 14 }}>
+            {/* v196：校园渠道封面标注学校名称 */}
+            {campus && <><span className="muted">学　　校</span><span style={{ fontWeight: 600 }}>{access?.brandName || access?.orgName || "东莞粤华学校"}</span></>}
             <span className="muted">姓　　名</span><span style={{ fontWeight: 600 }}>{data.student.name}</span>
             <span className="muted">年　　级</span><span style={{ fontWeight: 600 }}>{grade}</span>
             <span className="muted">报告编号</span><span style={{ fontWeight: 600 }}>{reportNo}</span>
@@ -508,13 +645,60 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
               </div>
               <div className="side-col" style={{ width: 400, fontSize: 14, lineHeight: 2.2 }}>
                 {combos.c1.map(([sub, tag], i) => (<div key={sub}><i style={{ display: "inline-block", width: 12, height: 12, borderRadius: 3, background: DIMC[i === 0 ? 0 : i], marginRight: 8 }} />{tag} · <b>{sub}</b></div>))}
-                <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>首选{combos.c1[0]![0]}覆盖最广的专业面；再选按学科潜力指数排序（物理首选时化学加权优先，满足绝大多数理工类「物理+化学」选考要求）。</p>
+                <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                  {combos.campus
+                    ? `学校优先推荐组合之一：${combos.c1.map((x) => x[0]).join("+")}，按学科潜力 65% + 月考成绩 35% 加权后在 5 个候选组合中得分最高。`
+                    : `首选${combos.c1[0]![0]}覆盖最广的专业面；再选按学科潜力指数排序（物理首选时化学加权优先，满足绝大多数理工类「物理+化学」选考要求）。`}
+                </p>
               </div>
             </div>
             <div className="grid2" style={{ marginTop: 16 }}>
               <div className="card" style={{ background: "#fff" }}><b style={{ fontSize: 16, color: C.olive }}>{combos.second.join(" + ")}</b><span className="tag t-hi" style={{ marginLeft: 10 }}>第二推荐</span></div>
               <div className="card" style={{ background: "#fff" }}><b style={{ fontSize: 16, color: C.olive }}>{combos.third.join(" + ")}</b><span className="tag t-hi" style={{ marginLeft: 10 }}>第三推荐</span></div>
             </div>
+            {/* v193/v194：权重说明 / 化学说明 / 无成绩引导（校园版与通用版文案分离） */}
+            <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+              {combos.campus
+                ? `推荐依据：学科潜力指数 65% + 最近月考成绩 35%（已计入最近一次月考成绩）；候选组合为学校优推的 5 个组合（物化生/物化地/物化政/政史地/政史生），按加权得分排序推荐。${combos.tied && combos.mathScore != null ? ` 物化与史政组合得分相同，按数学成绩（${combos.mathScore} 分）决断：${combos.mathScore >= 90 ? "≥90 优先物理轨" : "<90 优先历史轨"}。` : ""}`
+                : `推荐依据：学科潜力指数 60% + 最近考试成绩 40%${combos.hasGrades ? "（已计入最近一次考试成绩）" : "（尚未录入成绩，暂按纯测评潜力推荐）"}；物理首选时化学优先（满足绝大多数理工类「物理+化学」选考要求）。`}
+            </p>
+            {combos.chemLow && (
+              <div className="card" style={{ marginTop: 10, borderLeft: `4px solid ${C.brand}`, background: C.cream }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>关于化学：</b>
+                <span style={{ fontSize: 13.5, color: C.oliveSoft }}>
+                  {combos.campus
+                    ? "化学是你当前的组合内短板。物理+化学的专业覆盖最广（理工农医大门敞开），建议同步安排化学补课：先过课本方程式与基础概念，再攻平衡与电化学等重点模块，把化学拉到不拖后腿的水平。"
+                    : "你的化学加权得分偏低（<45），第一推荐未强制包含化学。若对医学、化工、材料等专业有明确意向，建议先评估化学提升空间再定组合。"}
+                </span>
+              </div>
+            )}
+            {!combos.hasGrades && !combos.campus && (
+              <div className="card" style={{ marginTop: 10, borderLeft: `4px solid ${C.lime}`, background: C.cream }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>让推荐更精准：</b>
+                <span style={{ fontSize: 13.5, color: C.oliveSoft }}>录入最近一次月考/期考成绩后，选科推荐会把成绩按 40% 权重计入。 </span>
+                <Link to="/report-detail" style={{ fontSize: 13.5, fontWeight: 700, color: C.brandDeep, textDecoration: "underline" }}>去录入成绩 →</Link>
+              </div>
+            )}
+            {/* v193：组合内弱势学科提升建议 */}
+            {combos.weakTips.length > 0 && (
+              <div className="card" style={{ marginTop: 10, background: "#FFFDF5", border: "1px solid #F0E6C8" }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>推荐组合内的提升建议</b>
+                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                  {combos.weakTips.map((x) => (
+                    <p key={x.n} style={{ fontSize: 13, color: C.oliveSoft, lineHeight: 1.8, margin: 0 }}>
+                      <b style={{ color: "#B4552D" }}>{x.n}</b>（最近成绩得分率 {x.pct}%）：{x.tip}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* v193：英语低于 80 分的升学提示 */}
+            {combos.englishLow && (
+              <div className="card" style={{ marginTop: 10, borderLeft: `4px solid #D9A13B`, background: "#FFFBF0" }}>
+                <b style={{ color: C.olive, fontSize: 14 }}>英语成绩提示：</b>
+                <span style={{ fontSize: 13.5, color: C.oliveSoft, lineHeight: 1.8 }}>你最近一次英语成绩低于 80 分（150 分制）。可以考虑两条路：① 评估转学日语高考——提分空间通常更大，但需先确认学校开班情况与个人兴趣；② 英语专项查漏补缺，重点抓词汇与阅读正确率。建议与伴学师、家长商议后再决定。</span>
+              </div>
+            )}
           </>
         ) : <p className="muted">完成学科四维测评后生成推荐组合。</p>}
         <SecTitle n={9} title="距离目标还有多远" sub={exp?.school ? `目标：${exp.school}${exp.majorCat ? ` · ${exp.majorCat}` : ""}` : "填写未来期望后生成分差表"} />
@@ -844,8 +1028,9 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
 @media print {
   .no-print { display: none !important; }
   .zh-root { background: #fff; padding: 0; }
-  /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪 */
-  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; max-width: none; min-height: 262mm !important; height: auto; padding: 14px 22px 40px; }
+  /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪。
+     v196：min-height 收紧到 256mm（+上下内边距 ≈ 270mm < 273mm 可印高度），封面等单页内容严格一页显示完，不再溢出到第二张 */
+  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; page-break-inside: auto; max-width: none; min-height: 256mm !important; height: auto; padding: 14px 22px 40px; }
   .zh-page:last-child { page-break-after: auto; }
   .pfoot { bottom: 8px; left: 22px; right: 22px; }
   .zh-page .card { padding: 9px 14px; }

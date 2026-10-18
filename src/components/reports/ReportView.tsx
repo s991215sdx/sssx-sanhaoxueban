@@ -2314,7 +2314,30 @@ export default function ReportView({
   const [params, setParams] = useSearchParams();
   const tab: Tab = (params.get("tab") as Tab) || "combined";
   /* V79：我的档案/成绩与目标移出栏目框（学生端置顶「基本信息」区）；伴学师端保留「成绩与目标」栏目 */
-  const tabs = viewer === "tutor" ? [...TABS, { key: "academics" as Tab, label: "成绩与目标" }] : TABS;
+  /* v199：查看对象（或本人）是校园渠道学生（粤华版）时，栏目只保留 选科及升学规划 / 职业兴趣 / 成绩与目标 */
+  const { data: campusInfo } = trpc.invite.studentCampus.useQuery(
+    { userId: viewer === "tutor" ? (studentUserId ?? undefined) : undefined },
+    { enabled: viewer === "student" || studentUserId != null },
+  );
+  const campusView = !!campusInfo?.campus;
+  const tabs = useMemo(() => {
+    const base: { key: Tab; label: string }[] =
+      viewer === "tutor" ? [...TABS, { key: "academics" as Tab, label: "成绩与目标" }] : [...TABS];
+    return campusView ? base.filter((t) => t.key === "zhihui" || t.key === "holland" || t.key === "academics") : base;
+  }, [viewer, campusView]);
+  /* 校园版当前栏目不在保留列表（如旧链接带 tab=combined）时，自动落到选科及升学规划 */
+  useEffect(() => {
+    if (campusView && !tabs.some((t) => t.key === tab)) {
+      setParams(
+        (p) => {
+          const n = new URLSearchParams(p);
+          n.set("tab", "zhihui");
+          return n;
+        },
+        { replace: true },
+      );
+    }
+  }, [campusView, tab, tabs, setParams]);
 
   /** V3.7 判定：有 e3 但不是 V3.7 结果 → 旧版数据，提示重测。 */
   const e3v37 = isE3V37Result(data?.e3) ? data.e3 : null;
