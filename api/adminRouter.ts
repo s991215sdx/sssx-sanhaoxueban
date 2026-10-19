@@ -193,7 +193,8 @@ export const adminRouter = createRouter({
       for (const id of ids) {
         if (!(await sameOrg(db, ctx.user, id))) throw new Error(`用户 ${id} 不在你的机构内`);
         const t = await db.query.users.findFirst({ where: eq(users.id, id) });
-        if (!t || (t.role !== "tutor" && t.role !== "admin")) throw new Error(`用户 ${id} 不是伴学师`);
+        if (!t) throw new Error(`用户 ${id} 不存在`);
+        if (t.role !== "tutor" && t.role !== "admin") throw new Error(`「${t.name ?? id}」当前不是伴学师，请先在总览把该账号设为伴学师，或改选其他伴学师`);
       }
       await db.delete(studentTutor).where(eq(studentTutor.studentUserId, input.studentUserId));
       if (items.length > 0) {

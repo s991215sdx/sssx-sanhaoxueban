@@ -38,9 +38,10 @@ export default function TutorAssignButton({
   });
 
   // 打开时按当前分配初始化勾选与权限（避免渲染期 effect 反复重置用户选择）
+  // v215：只保留当前仍是伴学师的勾选——已换角色/被合并的失效分配不再隐形带入保存请求
   const toggleOpen = () => {
     if (!open) {
-      setSelected(assigned.map((t) => t.id));
+      setSelected(assigned.map((t) => t.id).filter((id) => tutors.some((t) => t.id === id)));
       const init: Record<number, { report: boolean; expiresAt: string | null }> = {};
       for (const t of assigned) {
         init[t.id] = {
