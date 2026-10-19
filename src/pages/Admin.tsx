@@ -11,6 +11,7 @@ import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
 import ReportGrantButton from "@/components/ReportGrantButton";
+import BulkAssignTutors from "@/components/BulkAssignTutors";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
@@ -406,6 +407,15 @@ function StudentsTab({ platform = false, jiaowu = false, orgScope }: { platform?
     );
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
+  /* v217：批量分配伴学师——勾选学员后统一分配（后端单次上限 500 人） */
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const togglePick = (id: number) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   /* v200：搜索改服务端匹配（教务的手机号是脱敏返回的，客户端过滤永远搜不到）；
      输入防抖 300ms 再发查询，行为与总览用户搜索一致 */
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -423,8 +433,35 @@ function StudentsTab({ platform = false, jiaowu = false, orgScope }: { platform?
   return (
     <div className="paper-card overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3.5">
+        {/* v217：全选/反选当前搜索结果的学员 */}
+        <input
+          type="checkbox"
+          checked={filtered.length > 0 && filtered.every((s) => picked.has(s.userId))}
+          onChange={() =>
+            setPicked((prev) => {
+              const all = filtered.every((s) => prev.has(s.userId));
+              const next = new Set(prev);
+              filtered.forEach((s) => (all ? next.delete(s.userId) : next.add(s.userId)));
+              return next;
+            })
+          }
+          className="h-4 w-4 accent-[#0C7064]"
+          title="全选/取消全选当前列表学员"
+        />
         <span className="text-[14.5px] font-semibold text-olive">学员列表</span>
         <span className="text-[12px] text-olive-mute">{filtered.length} 位</span>
+        {picked.size > 0 && (
+          <span className="text-[12px] font-semibold text-brand">已选 {picked.size} 人</span>
+        )}
+        {picked.size > 0 && (
+          <button type="button" onClick={() => setPicked(new Set())} className="text-[11.5px] text-olive-mute underline underline-offset-2 hover:text-brand">清空</button>
+        )}
+        {/* v217：批量分配伴学师（合并语义，不覆盖学员已有其他伴学师） */}
+        <BulkAssignTutors
+          studentIds={[...picked]}
+          tutors={(tutors ?? []).map((t) => ({ id: t.id, name: t.name }))}
+          onDone={() => setPicked(new Set())}
+        />
         {/* V56：学员查询（姓名/手机号） */}
         <span className="relative ml-auto">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-olive-mute" />
@@ -444,6 +481,13 @@ function StudentsTab({ platform = false, jiaowu = false, orgScope }: { platform?
         <div className="divide-y divide-border">
           {studentsPager.pageItems.map((s) => (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
+              <input
+                type="checkbox"
+                checked={picked.has(s.userId)}
+                onChange={() => togglePick(s.userId)}
+                className="h-4 w-4 shrink-0 accent-[#0C7064]"
+                aria-label={`选择 ${s.name}`}
+              />
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[14px] font-bold text-white">
                 {(s.name || "学")[0]}
               </span>
