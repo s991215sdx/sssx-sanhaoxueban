@@ -25,12 +25,14 @@ describe("v206 学员按机构移除守卫", () => {
   const btn = read("src/components/DeleteStudentButton.tsx");
   const router = read("api/router.ts");
 
-  it("守卫①：非学员角色拒绝移除", () => {
-    need(coach, 'if (target.role !== "user") throw new Error("该账号是伴学师/管理员/教务，不能按学员移除', "角色守卫");
+  it("守卫①：管理员/超管拒绝移除（v210 起伴学师/教务可移出，见 v210-smoke）", () => {
+    need(coach, 'if (target.role === "admin") throw new Error("该账号是管理员/超管，不能移出机构', "角色守卫");
   });
 
-  it("守卫②：无机构账号（含平台超管）拒绝移除", () => {
-    need(coach, 'if (target.orgId == null) throw new Error("该账号不属于任何机构（平台/无机构账号），不能从机构中移除")', "无机构守卫");
+  it("守卫②（v210 改口径）：无机构账号不再拒绝，可移出到回收站（公海）——超管误删防护由守卫①角色守卫承接", () => {
+    if (coach.includes("该账号不属于任何机构（平台/无机构账号），不能从机构中移除")) {
+      throw new Error("v210 起无机构账号应允许移出（进回收站/公海），旧守卫必须移除");
+    }
   });
 
   it("守卫③：同手机号多机构账号只移出本机构，并返回其他机构名", () => {

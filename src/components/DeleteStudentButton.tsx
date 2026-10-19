@@ -7,8 +7,8 @@ import { trpc } from "@/providers/trpc";
  * 数据在回收站保留 2 个月，期间可恢复，到期自动物理清除。
  * 伴学师只能删自己名下的学员（后端校验）；管理员可删本机构任意学员。
  * v201：语义改为「移出机构」——若该账号（同手机号）还在其他机构，本次只移出本机构，
- * 其他机构账号不受影响；无机构账号/非学员角色后端直接拒绝。
- */
+ * 其他机构账号不受影响；无机构账号/管理员/超管后端直接拒绝。
+ * v210：伴学师、教务也可移出机构（与学员同口径），仅管理员/超管不可移出。 */
 export default function DeleteStudentButton({
   userId,
   name,
@@ -33,6 +33,7 @@ export default function DeleteStudentButton({
       window.setTimeout(() => setDone(null), 5000);
       void utils.coach.myStudents.invalidate();
       void utils.admin.students.invalidate();
+      void utils.admin.users.invalidate();
     },
     onError: () => {
       setConfirming(false);
