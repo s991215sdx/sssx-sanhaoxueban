@@ -1,0 +1,17 @@
+import { chromium } from 'playwright-core';
+const BASE = 'https://sanhao.sssx.club';
+const browser = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
+const page = await (await browser.newContext({ viewport: { width: 1500, height: 920 }, deviceScaleFactor: 1.2 })).newPage();
+page.on('console', m => { if (m.type() === 'error') console.log('[console.error]', m.text().slice(0, 200)); });
+page.on('response', async r => { if (r.url().includes('trpc') && r.status() >= 400) console.log('HTTP', r.status(), r.url().slice(50, 140)); });
+await page.goto(BASE + '/login', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(3000);
+await page.locator('input').nth(0).fill('13800000100');
+await page.locator('input').nth(1).fill('Yuehua@test2026');
+await page.locator('button').nth(1).click();
+await page.waitForTimeout(3500);
+await page.goto(BASE + '/admin?item=assess', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(6000);
+await page.screenshot({ path: 'D:/KIMI/kimi/tasks/2026-10-02/12-44-25-36022aba/mockups/v223-assess-center.png' });
+console.log('shot saved');
+await browser.close();

@@ -4,6 +4,7 @@ import { getDb } from "./queries/connection";
 import { attempts, errorLogs, moodEntries, organizations, previewSessions, studentProfile, users } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { isPlatformAdmin } from "./tenant";
+import { normalizeAssessKinds } from "@contracts/invite";
 
 /**
  * V59 SaaS 总系统：平台超管（role=admin 且 orgId IS NULL）专用——
@@ -140,7 +141,7 @@ export const orgRouter = createRouter({
       return { ok: true as const, org: org ? await orgRow(db, org) : null };
     }),
 
-  /** 编辑机构资料（名称/商标/Logo/专属入口品牌化 v224）。 */
+  /** 编辑机构资料（名称/商标/Logo/专属入口品牌化 v224）+ v224 校园版开放测评配置（assessKinds：kind 数组或 ["all"]；传 null 清除限制=全部开放）。 */
   update: adminQuery
     .input(
       (v: unknown) =>
@@ -151,6 +152,7 @@ export const orgRouter = createRouter({
           logoUrl?: string | null;
           portalHost?: string | null;
           portalFooter?: string | null;
+          assessKinds?: unknown;
         },
     )
     .mutation(async ({ ctx, input }) => {
@@ -189,6 +191,18 @@ export const orgRouter = createRouter({
         const footer = (input.portalFooter ?? "").trim();
         if (footer.length > 64) throw new Error("底部署名最长 64 个字");
         patch.portalFooter = footer || "上上升学";
+      }
+      /* v224（测评中心）：校园版开放测评配置——写入 settings.assess.kinds */
+      if (input.assessKinds !== undefined) {
+        const prevSettings = (org.settings ?? null) as { xuanke?: { scoreWeight?: number }; assess?: { kinds?: string[] } } | null;
+        if (input.assessKinds === null) {
+          const { assess: _drop, ...rest } = prevSettings ?? {};
+          patch.settings = Object.keys(rest).length ? rest : null;
+        } else {
+          const kinds = normalizeAssessKinds(input.assessKinds);
+          if (!kinds) throw new Error("开放测评格式不对（须为测评 kind 数组或 all）");
+          patch.settings = { ...(prevSettings ?? {}), assess: { kinds } };
+        }
       }
       if (Object.keys(patch).length > 0) {
         await db.update(organizations).set(patch).where(eq(organizations.id, input.id));

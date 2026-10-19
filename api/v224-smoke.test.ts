@@ -28,13 +28,14 @@ describe("v224 入口品牌化（按域名）", () => {
   });
 
   it("公开接口 portalBranding：域名规范化 + 未配置返回 null", () => {
-    const api = read("api/router.ts");
-    need(api, "portalBranding: publicQuery", "公开查询");
-    need(api, "replace(/^https?:\\/\\//", "去协议");
-    need(api, "replace(/:\\d+$", "去端口");
-    need(api, "eq(organizations.portalHost, host)", "按域名查机构");
-    need(api, 'footer: org.portalFooter || "上上升学"', "底部署名缺省");
-    need(api, "logoUrl: org.logoUrl || null", "Logo 可空");
+    const router = read("api/router.ts");
+    need(router, "portalBranding: publicQuery", "公开查询");
+    need(router, "portalOrgByHost", "用 helper 查机构");
+    need(router, 'footer: org.portalFooter || "上上升学"', "底部署名缺省");
+    need(router, "logoUrl: org.logoUrl || null", "Logo 可空");
+    const helper = read("api/portalBranding.ts");
+    need(helper, 'replace(/^https?:\\/\\//', "去协议");
+    need(helper, "replace(/:\\d+$", "去端口");
   });
 
   it("org.update：域名规范化 + 唯一性校验", () => {

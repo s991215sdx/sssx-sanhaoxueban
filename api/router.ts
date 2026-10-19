@@ -1,7 +1,7 @@
 import { createRouter, publicQuery } from "./middleware";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "./queries/connection";
-import { organizations } from "@db/schema";
+import { portalOrgByHost } from "./portalBranding";
 import { graphRouter } from "./graphRouter";
 import { previewRouter } from "./previewRouter";
 import { gapsRouter } from "./gapsRouter";
@@ -25,32 +25,21 @@ import { zhihuiRouter } from "./zhihuiRouter";
 import { schoolRouter } from "./schoolRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v224-2026-10-19";
+const BUILD_TAG = "v226-2026-10-19";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),
   /** v224：入口品牌化——按访问域名返回机构定制的登录页 Logo/底部署名（公开、只读；未配置返回 null） */
-  portalBranding: publicQuery
-    .input((v: unknown) => v as { host: string })
-    .query(async ({ input }) => {
-      const host = (input.host ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
-      if (!host || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(host)) return null;
-      const db = getDb();
-      const org = (
-        await db
-          .select({ logoUrl: organizations.logoUrl, portalFooter: organizations.portalFooter, brandName: organizations.brandName, name: organizations.name })
-          .from(organizations)
-          .where(eq(organizations.portalHost, host))
-          .limit(1)
-      )[0];
-      if (!org) return null;
-      return {
-        logoUrl: org.logoUrl || null,
-        footer: org.portalFooter || "上上升学",
-        brandName: org.brandName,
-        orgName: org.name,
-      };
-    }),
+  portalBranding: publicQuery.input((v: unknown) => v as { host: string }).query(async ({ input }) => {
+    const org = await portalOrgByHost(input.host);
+    if (!org) return null;
+    return {
+      logoUrl: org.logoUrl || null,
+      footer: org.portalFooter || "上上升学",
+      brandName: org.brandName,
+      orgName: org.name,
+    };
+  }),
   /** AI 能力自检：凭据是否配置 + 一次真实模型往返（公开、只读，用于判断网关是否放行） */
   aiHealth: publicQuery.query(async () => {
     const { aiSelfTest } = await import("./ai");
