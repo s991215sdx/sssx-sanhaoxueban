@@ -1,8 +1,11 @@
-/* v208 冒烟：粤华学生「所有报告」页脚统一挂学校品牌 + 页码居中。
-   需求（孙冬晓 2026-10-19）：打印时页脚要有「东莞粤华学校 · 生涯规划测评」，
-   页码从右侧移到中间（双面打印左右页脚对齐）。
-   口径：ReportBrandCtx（null=不变，仅校园渠道学生注入品牌）；
-   覆盖 olive book（OPage）与选科及升学规划报告（zh Page）两类页脚。 */
+/* v208 冒烟：综合学习力报告（三阶九能版）打印分页——封面独占整页、冰山图独立第 2 页一图看全
+   （2026-10-19 唐先生反馈：正式环境打印封面只占半页、冰山图被挤在左列且顶部截断）。
+   口径：
+   - 封面 paper-card 打印态 min-h-[256mm]（与 book 式样 .ob-page 同规则满版）+ break-after-page；
+   - PART 1 冰山图紧随封面分页后整页呈现：打印静态版（print:block 流式、无 transform/绝对定位）
+     内部全部记分卡/底排卡片带 print: 紧凑类，保证整页高度 ≤ A4 内容高（约 1032px）；
+   - 计分行（KRow/TotalRow）、卡头（CardHead）、多元智能五项、深层特质行均带 print: 压缩类。
+   版本注记：与孙冬晓粤华封面增强（v207）同日撞号，本特性顺延为 v208。 */
 import { describe, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -11,33 +14,35 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
-describe("v208 报告页脚品牌 + 页码居中", () => {
-  const olive = read("src/components/reports/olive/OliveBook.tsx");
-  const zh = read("src/pages/ZhihuiReport.tsx");
-  const rv = read("src/components/reports/ReportView.tsx");
-  const invite = read("api/inviteRouter.ts");
+function need(src: string, needle: string, label: string) {
+  if (!src.includes(needle)) throw new Error(`缺 ${label}：${needle}`);
+}
+
+describe("v208 综合学习力报告打印分页", () => {
+  const rpt = read("src/components/reports/CombinedV39.tsx");
   const router = read("api/router.ts");
 
-  it("品牌 Context 存在且 OPage 页脚可替换", () => {
-    if (!/ReportBrandCtx = createContext/.test(olive)) throw new Error("缺：ReportBrandCtx");
-    if (!/brand \?\? foot/.test(olive)) throw new Error("缺：OPage 品牌替换");
+  it("封面打印独占整页", () => {
+    need(rpt, "print:min-h-[256mm]", "封面打印满版高度");
+    need(rpt, "print:break-after-page", "封面打印后强制分页");
   });
 
-  it("页码居中（olive + zh 双口径，含移动端回退）", () => {
-    if (!/\.ob-pno \{ position: absolute; left: 50%/.test(olive)) throw new Error("缺：ob 页码居中");
-    if (!/<span className="ob-pno">/.test(olive)) throw new Error("缺：ob 页码类名");
-    if (!/\.pno \{ position: absolute; left: 50%/.test(zh)) throw new Error("缺：zh 页码居中");
-    if (!/<span className="pno">/.test(zh)) throw new Error("缺：zh 页码类名");
+  it("冰山图打印静态版带紧凑类（整页一图看全）", () => {
+    need(rpt, "hidden print:block", "打印静态版容器");
+    need(rpt, "print:space-y-2", "记分卡列打印紧凑间距");
+    need(rpt, "print:px-3 print:py-2", "记分卡打印内边距压缩");
+    need(rpt, "print:break-after-page", "封面分页（冰山自第 2 页起）");
   });
 
-  it("ReportView / ZhihuiReportBody 注入品牌，studentCampus 返回 brand", () => {
-    if (!/ReportBrandCtx\.Provider value=\{reportBrand\}/.test(rv)) throw new Error("缺：ReportView 注入");
-    if (!/ReportBrandCtx\.Provider value=\{reportBrand\}/.test(zh)) throw new Error("缺：ZhihuiReportBody 注入");
-    if (!/brand: ch\?\.campus/.test(invite)) throw new Error("缺：studentCampus 品牌返回");
+  it("计分行与卡头打印压缩", () => {
+    need(rpt, "print:py-px", "KRow 行距打印压缩");
+    need(rpt, "print:my-[2px] print:py-1", "TotalRow 打印压缩");
+    need(rpt, "print:text-[13px]", "CardHead 打印字号");
   });
 
-  it("BUILD_TAG 已递增到 v208", () => {
+  /* v209：与粤华页脚品牌（v209）合并发版，版本断言改为数值 >= 208，避免同日撞号后互相卡死 */
+  it("BUILD_TAG 不低于 v208", () => {
     const v = Number(router.match(/const BUILD_TAG = "v(\d+)-/)?.[1] ?? 0);
-    if (v < 208) throw new Error(`BUILD_TAG 未递增到 v208（当前 v${v}）`);
+    if (v < 208) throw new Error(`BUILD_TAG 低于 v208（当前 v${v}）`);
   });
 });
