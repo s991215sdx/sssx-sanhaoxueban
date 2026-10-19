@@ -19,7 +19,10 @@ import { METHOD_BY_ID } from "@/data/training/methods";
 export const coachRouter = createRouter({
   /** 我名下的学员列表。管理员（兼伴学师）看本机构全部学员，可给每个学员做陪跑问诊。 */
   myStudents: tutorQuery.query(async ({ ctx }) => {
-    const all = await listStudents(getDb(), ctx.user.orgId);
+    /* v216：伴学师（非管理员）按「分配给我的学员」拉全量再过滤——跨机构分配
+      （平台伴学师带校园渠道学员，如机构1伴学师带粤华学生）此前被 listStudents 的
+      orgScope 在 SQL 层直接排除，过滤还没开始就丢光了。 */
+    const all = await listStudents(getDb(), ctx.user.role === "admin" ? ctx.user.orgId : null);
     if (ctx.user.role === "admin") return all;
     // V56：名下 = 主管伴学师 或 student_tutor 多对多分配
     return all.filter((s) => s.tutorId === ctx.user.id || s.tutorIds.includes(ctx.user.id));
