@@ -14,7 +14,7 @@ import GuidanceTab from "@/components/reports/GuidanceTab";
 import DiscTendencyChart, { DISC_COLOR } from "@/components/reports/DiscTendencyChart";
 import { SubjectAdviceBlocks } from "@/components/reports/SubjectAdviceBlocks";
 import CombinedV39Report from "@/components/reports/CombinedV39";
-import { OliveStyle } from "@/components/reports/olive/OliveBook";
+import { OliveStyle, ReportBrandCtx } from "@/components/reports/olive/OliveBook";
 import { OliveMbti, OliveDisc, OliveHolland, OliveMulti5, OliveAnchor, OliveMentalV2 } from "@/components/reports/olive/OliveSingles";
 import { OliveE3, OliveGuidance, OliveParent } from "@/components/reports/olive/OliveBigs";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
@@ -2320,6 +2320,8 @@ export default function ReportView({
     { enabled: viewer === "student" || studentUserId != null },
   );
   const campusView = !!campusInfo?.campus;
+  /* v208：粤华学生所有报告页脚统一挂学校品牌（如「东莞粤华学校 · 生涯规划测评」）；非校园学生为 null，报告版式不变 */
+  const reportBrand = campusView ? (campusInfo?.brand ?? null) : null;
   const tabs = useMemo(() => {
     const base: { key: Tab; label: string }[] =
       viewer === "tutor" ? [...TABS, { key: "academics" as Tab, label: "成绩与目标" }] : [...TABS];
@@ -2782,6 +2784,7 @@ export default function ReportView({
   };
 
   return (
+    <ReportBrandCtx.Provider value={reportBrand}>
     <div className="space-y-4">
       {viewer === "student" && (
         <button
@@ -3553,6 +3556,7 @@ export default function ReportView({
         ))}
       </div>
     </div>
+    </ReportBrandCtx.Provider>
   );
 }
 

@@ -171,15 +171,17 @@ export const inviteRouter = createRouter({
         .orderBy(desc(inviteRegistrations.id))
         .limit(1)
     )[0];
-    if (!reg) return { campus: false as const };
+    if (!reg) return { campus: false as const, brand: null as string | null };
     const ch = (
       await db
-        .select({ campus: inviteChannels.campus })
+        .select({ campus: inviteChannels.campus, orgName: organizations.name, brandName: organizations.brandName })
         .from(inviteChannels)
+        .leftJoin(organizations, eq(organizations.id, inviteChannels.orgId))
         .where(eq(inviteChannels.id, reg.channelId))
         .limit(1)
     )[0];
-    return { campus: !!ch?.campus };
+    /* v208：校园渠道学生附带机构品牌（报告页脚署名用，如「东莞粤华学校 · 生涯规划测评」） */
+    return { campus: !!ch?.campus, brand: ch?.campus ? (ch.brandName || ch.orgName || null) : null };
   }),
 
   /**

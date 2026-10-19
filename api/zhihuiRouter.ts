@@ -118,11 +118,12 @@ export const zhihuiRouter = createRouter({
       )[0];
       let stuCampus = false;
       let schoolName: string | null = null;
+      let schoolBrand: string | null = null;
       let schoolLogo: string | null = null;
       if (reg) {
         const ch = (
           await db
-            .select({ campus: inviteChannels.campus, orgName: organizations.name, logo: organizations.logoUrl })
+            .select({ campus: inviteChannels.campus, orgName: organizations.name, brandName: organizations.brandName, logo: organizations.logoUrl })
             .from(inviteChannels)
             .leftJoin(organizations, eq(organizations.id, inviteChannels.orgId))
             .where(eq(inviteChannels.id, reg.channelId))
@@ -131,6 +132,7 @@ export const zhihuiRouter = createRouter({
         if (ch?.campus) {
           stuCampus = true;
           schoolName = ch.orgName ?? null;
+          schoolBrand = ch.brandName || ch.orgName || null;
           schoolLogo = ch.logo ?? null;
         }
       }
@@ -314,7 +316,7 @@ export const zhihuiRouter = createRouter({
         .sort((a, b) => a.menlei.localeCompare(b.menlei, "zh"));
 
       return {
-        student: { id: sid, name: profile?.name || user?.name || "", grade: (profile?.grade as string | null) ?? null, className: profile?.className ?? null, campus: stuCampus, schoolName, schoolLogo },
+        student: { id: sid, name: profile?.name || user?.name || "", grade: (profile?.grade as string | null) ?? null, className: profile?.className ?? null, campus: stuCampus, schoolName, schoolBrand, schoolLogo },
         subject4d: s4d ? { result: s4d.result, answers: s4d.answers, createdAt: s4d.createdAt } : null,
         holland: hol ? { result: hol.result, createdAt: hol.createdAt } : null,
         multi5: m5 ? { result: m5.result, createdAt: m5.createdAt } : null,
