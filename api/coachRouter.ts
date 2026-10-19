@@ -407,9 +407,9 @@ export const coachRouter = createRouter({
    * v96：删除学员（软删）——users.deleted_at 打时间戳。学员立即从列表消失、无法登录；
    * 数据保留 2 个月，期间可在回收站恢复，到期自动物理清除。伴学师限名下学员，管理员限本机构。
    * v201：「按机构移除」守卫——只移出本机构，绝不动全局身份：
-   * ① 非学员角色（伴学师/管理员/教务）一律拒绝，角色调整走平台超管；
-   * ② 无机构账号（orgId IS NULL，含平台超管/历史遗留）不属于任何机构，拒绝移除——
-   *    堵住 v190「无机构学员对机构管理员可见」导致的超管误删事故；
+   * ① v210 起角色口径放开：学员/伴学师/教务均可移出机构，仅管理员/超管绝对不可移出；
+   * ② v210 起无机构账号（orgId IS NULL）也允许移出——进入回收站（公海），平台超管可恢复/处置；
+   *    v206 的误删防护由 ① 的角色守卫承接（超管=admin 角色，与机构无关）；
    * ③ 同手机号名下还有其他机构账号时，本次只软删本机构这一行（其他机构账号照常登录），
    *    响应里带 siblingOrgs 告知前端「仅移出本机构」。
    */
@@ -436,9 +436,11 @@ export const coachRouter = createRouter({
       const profile = (
         await db.select({ id: studentProfile.id }).from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
       )[0];
-      if (!profile) throw new Error("只有学员（有学员档案的账号）可以删除");
-      if (target.role !== "user") throw new Error("该账号是伴学师/管理员/教务，不能按学员移除；如需调整角色请联系平台超管");
-      if (target.orgId == null) throw new Error("该账号不属于任何机构（平台/无机构账号），不能从机构中移除");
+      /* v210：伴学师/教务无需档案可直接移出机构 */
+      if (!profile && target.role === "user") throw new Error("只有学员（有学员档案的账号）可以删除");
+      /* v210：仅管理员/超管不可移出；伴学师、教务与学员一样可移出机构。
+         无机构账号（orgId IS NULL）同样允许移出——进入回收站（公海），由平台超管恢复/处置 */
+      if (target.role === "admin") throw new Error("该账号是管理员/超管，不能移出机构；如需调整请联系平台超管");
       /* v201：同手机号多机构账号 → 只软删本机构这一行，返回其他机构名供前端提示 */
       let siblingOrgs: string[] = [];
       if (target.phone) {

@@ -10,6 +10,7 @@
  */
 import { createRequire as mkRequire } from "node:module";
 import type { Context } from "hono";
+import type { Browser } from "playwright-core";
 
 /* 别名化：esbuild 构建 banner 已注入 createRequire，这里不能同名顶层导入 */
 const req = mkRequire(import.meta.url);
@@ -42,8 +43,9 @@ export async function reportPdfHandler(c: Context) {
   const filename = rawName.endsWith(".pdf") ? rawName : `${rawName}.pdf`;
 
   const port = parseInt(process.env.PORT || "3000", 10);
-  const browser = await pw.chromium.launch({ args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+  let browser: Browser | null = null;
   try {
+    browser = await pw.chromium.launch({ args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 1600 }, deviceScaleFactor: 1 });
     /* 会话 Cookie 透传：domain 固定本机回环，页面走 http://127.0.0.1:{port} */
     await ctx.addCookies(
@@ -74,6 +76,6 @@ export async function reportPdfHandler(c: Context) {
   } catch (e) {
     return c.json({ error: `PDF 生成失败：${e instanceof Error ? e.message.slice(0, 120) : "未知错误"}` }, 500);
   } finally {
-    await browser.close().catch(() => undefined);
+    await browser?.close().catch(() => undefined);
   }
 }
