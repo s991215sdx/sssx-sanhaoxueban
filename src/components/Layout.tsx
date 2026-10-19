@@ -200,7 +200,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         ) : (
           <Logo brand={brand} />
         )}
-        <nav className={`mt-10 flex flex-col gap-1.5 ${collapsed ? "items-center" : ""}`}>
+        <nav className={`mt-10 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pb-2 [scrollbar-width:thin] ${collapsed ? "items-center" : ""}`}>
           {/* V61：管理员/伴学师不显示学员端功能（预习/查漏/测评/树洞/报告等），只看工作台 */}
           {!isStaff && NAV.filter((n) => navVisible(n.module)).map((n) => (
             <NavLink
