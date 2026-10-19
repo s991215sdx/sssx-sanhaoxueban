@@ -1,4 +1,5 @@
 import { scryptSync, timingSafeEqual } from "node:crypto";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
