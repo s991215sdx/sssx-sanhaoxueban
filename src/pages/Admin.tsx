@@ -12,36 +12,27 @@ import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
 import ReportGrantButton from "@/components/ReportGrantButton";
 import BulkAssignTutors from "@/components/BulkAssignTutors";
-import SchoolPanel from "@/components/admin/SchoolPanel";
+import SchoolConsole from "@/components/admin/SchoolConsole";
+import StudentsTab from "@/components/admin/StudentsTab";
+import TutorsTab from "@/components/admin/TutorsTab";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
 
-/** 后台管理：机构管理员=总览/学员/伴学师/注册邀请；平台超管=机构管理（总系统）。v200：教务=只进学员分配台（搜索学员+分配伴学师+报告权限）。 */
+/** 后台管理：机构管理员=总览/学员/伴学师/注册邀请；平台超管=机构管理（总系统）。v200：教务=只进学员分配台。
+ *  v220.1：校园机构（粤华等）管理员/教务进学校版控制台（左侧栏），且全站改称「指导老师」。 */
 export default function Admin() {
   const { user, refresh } = useAuth();
   const isAdmin = user?.role === "admin";
   const isPlatformAdmin = isAdmin && user?.orgId == null;
+  const isJiaowu = user?.role === "jiaowu";
+  /* 校园机构判定：机构管理员与教务都查询 */
+  const { data: schoolCtx } = trpc.school.context.useQuery(undefined, {
+    enabled: (isAdmin && !isPlatformAdmin) || isJiaowu,
+  });
 
-  /* v200：教务——只有学员分配台一个页面，其余 tab 与操作一律没有
-   * v220：校园机构（粤华等）的教务增加「校园管理」视图（统计/预警/意向/催办/档案）。 */
-  if (user?.role === "jiaowu") {
-    return <JiaowuPanel />;
-  }
-
-  if (!isAdmin) {
-    return <ClaimAdminCard onClaimed={() => refresh()} />;
-  }
-  /* V60：平台超管 = 机构管理 + 全系统数据（god mode）；机构管理员 = 本机构四 tab */
-  return <AdminPanel selfId={user.id} onRefresh={refresh} platform={isPlatformAdmin} />;
-}
-
-/** v220：教务面板——校园机构=校园管理+学员分配台切换；普通机构=仅学员分配台。 */
-function JiaowuPanel() {
-  const { data: schoolCtx } = trpc.school.context.useQuery();
-  const campus = !!schoolCtx?.campus;
-  const [view, setView] = useState<"school" | "assign">("school");
-  if (!campus) {
+  if (isJiaowu) {
+    if (schoolCtx?.campus) return <SchoolConsole selfName={user?.name ?? "教务"} jiaowu />;
     return (
       <div className="space-y-5">
         <header>
@@ -54,29 +45,16 @@ function JiaowuPanel() {
       </div>
     );
   }
-  return (
-    <div className="space-y-5">
-      <div className="flex gap-2">
-        <button
-          onClick={() => setView("school")}
-          className={`rounded-xl px-3.5 py-2 text-[12.5px] font-bold transition-colors ${
-            view === "school" ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
-          }`}
-        >
-          校园管理
-        </button>
-        <button
-          onClick={() => setView("assign")}
-          className={`rounded-xl px-3.5 py-2 text-[12.5px] font-bold transition-colors ${
-            view === "assign" ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
-          }`}
-        >
-          学员分配台
-        </button>
-      </div>
-      {view === "school" ? <SchoolPanel /> : <StudentsTab jiaowu orgScope={{ orgId: null }} />}
-    </div>
-  );
+
+  if (!isAdmin) {
+    return <ClaimAdminCard onClaimed={() => refresh()} />;
+  }
+  /* v220.1：校园机构管理员直接进学校版控制台 */
+  if (!isPlatformAdmin && schoolCtx?.campus) {
+    return <SchoolConsole selfName={user.name} />;
+  }
+  /* V60：平台超管 = 机构管理 + 全系统数据（god mode）；机构管理员 = 本机构四 tab */
+  return <AdminPanel selfId={user.id} onRefresh={refresh} platform={isPlatformAdmin} />;
 }
 
 /** 系统还没有管理员时，当前用户可一键自任管理员（bootstrap）。 */
@@ -121,7 +99,7 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Users; label: str
   );
 }
 
-type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs" | "dash" | "school";
+type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs" | "dash";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "overview", label: "总览" },
@@ -134,18 +112,14 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   const navigate = useNavigate();
   const refresh = onRefresh;
   const [tab, setTab] = useState<AdminTab>(platform ? "dash" : "overview");
-  /* v220：机构为校园机构（有 campus 渠道）时，追加「校园管理」tab */
-  const { data: schoolCtx } = trpc.school.context.useQuery(undefined, { enabled: !platform });
-  const campusOrg = !!schoolCtx?.campus;
+  /* v220.1：校园机构的管理员已由外层直接导到学校版控制台，此面板只管普通机构与平台超管 */
   const tabs = platform
     ? [
         { key: "orgs" as AdminTab, label: "机构管理" },
         { key: "dash" as AdminTab, label: "数据仪表盘" },
         ...ADMIN_TABS,
       ]
-    : campusOrg
-      ? [...ADMIN_TABS, { key: "school" as AdminTab, label: "校园管理" }]
-      : ADMIN_TABS;
+    : ADMIN_TABS;
   /* V61：平台超管的系统选择器——选某个机构=只看该系统的数据；默认全部 */
   const [orgSel, setOrgSel] = useState<number | "all">("all");
   /* 始终传对象（tRPC input 非可选）；机构管理员的 orgId 会被后端强制为本机构，传 null 无影响 */
@@ -236,7 +210,6 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       {tab === "orgs" && <OrgAdminTab />}
       {tab === "dash" && <PlatformDashboard onPickOrg={(id) => { setOrgSel(id); setTab("overview"); }} />}
       {tab === "invites" && <InviteChannelsTab />}
-      {tab === "school" && campusOrg && <SchoolPanel />}
       {/* V61：超管分系统查看——数据类 tab 上方的系统选择器（机构管理员无此条，恒看本机构） */}
       {platform && (tab === "overview" || tab === "students" || tab === "tutors") && (
         <div className="paper-card flex flex-wrap items-center gap-2.5 px-4 py-2.5">
@@ -425,316 +398,6 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   );
 }
 
-/** 学员 tab：admin.students 列表 + 伴学师多对多分配 + 搜索 + 详情抽屉。platform=超管看全量带机构标注；orgScope=超管分系统筛选；jiaowu=教务受限视图（服务端搜索+脱敏手机号+仅分配/报告权限两个操作）。 */
-function StudentsTab({ platform = false, jiaowu = false, orgScope }: { platform?: boolean; jiaowu?: boolean; orgScope: { orgId: number | null } }) {
-  /* v157：详情抽屉与 URL 参数联动（?student=<id>），刷新/转发链接可直达学员详情 */
-  const [searchParams, setSearchParams] = useSearchParams();
-  const studentParam = searchParams.get("student");
-  const detailId = studentParam && /^\d+$/.test(studentParam) ? Number(studentParam) : null;
-  const openDetail = (id: number) =>
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("student", String(id));
-      return next;
-    });
-  const closeDetail = () =>
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete("student");
-        return next;
-      },
-      { replace: true },
-    );
-  const [releaseFor, setReleaseFor] = useState<number | null>(null);
-  const [q, setQ] = useState("");
-  /* v217：批量分配伴学师——勾选学员后统一分配（后端单次上限 500 人） */
-  const [picked, setPicked] = useState<Set<number>>(new Set());
-  const togglePick = (id: number) =>
-    setPicked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  /* v200：搜索改服务端匹配（教务的手机号是脱敏返回的，客户端过滤永远搜不到）；
-     输入防抖 300ms 再发查询，行为与总览用户搜索一致 */
-  const [debouncedQ, setDebouncedQ] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
-    return () => clearTimeout(t);
-  }, [q]);
-  const kw = debouncedQ;
-  const { data: students, isLoading } = trpc.admin.students.useQuery({ ...orgScope, search: kw || undefined });
-  const { data: tutors } = trpc.admin.tutors.useQuery(orgScope);
-  const filtered = students ?? [];
-  /* v160：学员列表分页（搜索词变化自动回第 1 页） */
-  const studentsPager = usePager(filtered, 20, kw);
-
-  return (
-    <div className="paper-card overflow-hidden">
-      <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3.5">
-        {/* v217：全选/反选当前搜索结果的学员 */}
-        <input
-          type="checkbox"
-          checked={filtered.length > 0 && filtered.every((s) => picked.has(s.userId))}
-          onChange={() =>
-            setPicked((prev) => {
-              const all = filtered.every((s) => prev.has(s.userId));
-              const next = new Set(prev);
-              filtered.forEach((s) => (all ? next.delete(s.userId) : next.add(s.userId)));
-              return next;
-            })
-          }
-          className="h-4 w-4 accent-[#0C7064]"
-          title="全选/取消全选当前列表学员"
-        />
-        <span className="text-[14.5px] font-semibold text-olive">学员列表</span>
-        <span className="text-[12px] text-olive-mute">{filtered.length} 位</span>
-        {picked.size > 0 && (
-          <span className="text-[12px] font-semibold text-brand">已选 {picked.size} 人</span>
-        )}
-        {picked.size > 0 && (
-          <button type="button" onClick={() => setPicked(new Set())} className="text-[11.5px] text-olive-mute underline underline-offset-2 hover:text-brand">清空</button>
-        )}
-        {/* v217：批量分配伴学师（合并语义，不覆盖学员已有其他伴学师） */}
-        <BulkAssignTutors
-          studentIds={[...picked]}
-          tutors={(tutors ?? []).map((t) => ({ id: t.id, name: t.name }))}
-          onDone={() => setPicked(new Set())}
-        />
-        {/* V56：学员查询（姓名/手机号） */}
-        <span className="relative ml-auto">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-olive-mute" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="搜索姓名 / 手机号"
-            className="w-52 rounded-lg border border-border bg-cream-card py-1.5 pl-8 pr-3 text-[12.5px] text-olive outline-none placeholder:text-olive-mute/70 focus:border-lime"
-          />
-        </span>
-      </div>
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
-        </div>
-      ) : (
-        <div className="divide-y divide-border">
-          {studentsPager.pageItems.map((s) => (
-            <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-              <input
-                type="checkbox"
-                checked={picked.has(s.userId)}
-                onChange={() => togglePick(s.userId)}
-                className="h-4 w-4 shrink-0 accent-[#0C7064]"
-                aria-label={`选择 ${s.name}`}
-              />
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0C7064] text-[14px] font-bold text-white">
-                {(s.name || "学")[0]}
-              </span>
-              {/* v184：min-w-[240px] 保证中等宽度（边栏收起）时信息栏不被按钮组挤没，
-                  空间不够时外层 flex-wrap 会把按钮组整组折到下一行 */}
-              <div className="min-w-[240px] flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="truncate text-[14.5px] font-semibold text-[#1E3530]">{s.name}</span>
-                  {s.grade && <span className="text-[11.5px] text-olive-mute">{s.grade}</span>}
-                  {s.mbti && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.mbti}</span>}
-                  {s.disc && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.disc}</span>}
-                  {s.hasMulti && <span className="chip !py-0.5 !text-[10.5px] text-olive">多元✓</span>}
-                  {s.hasAcademics && <span className="chip !py-0.5 !text-[10.5px] text-olive">学业✓</span>}
-                  {/* V60：超管看全量列表时标注所属机构 */}
-                  {platform && s.orgName && (
-                    <span className="chip !py-0.5 !text-[10.5px] text-olive-soft">{s.orgName}</span>
-                  )}
-                </div>
-                {/* V56：名下伴学师（可多选） */}
-                <div className="mt-1 flex flex-wrap items-center gap-1">
-                  <span className="text-[11px] text-olive-mute">伴学师：</span>
-                  {s.tutors.length === 0 ? (
-                    <span className="text-[11px] text-olive-mute">未分配</span>
-                  ) : (
-                    s.tutors.map((t) => (
-                      <span
-                        key={t.id}
-                        title={t.reportAccess === false ? "该伴学师无报告查看权限" : "该伴学师可查看测评报告"}
-                        className={`rounded-full px-1.5 py-px text-[10.5px] font-semibold ${
-                          t.reportAccess === false ? "bg-cream-card text-olive-mute ring-1 ring-border" : "bg-butter-pale text-brand"
-                        }`}
-                      >
-                        {t.name}
-                        {t.reportAccess === false ? "🔒" : ""}
-                      </span>
-                    ))
-                  )}
-                </div>
-                <div className="mono mt-0.5 text-[11px] text-olive-mute">
-                  {s.phone && <>{s.phone} · </>}注册 {new Date(s.createdAt).toLocaleDateString("zh-CN")} · 最近活跃{" "}
-                  {new Date(s.lastSignInAt).toLocaleDateString("zh-CN")}
-                </div>
-                <div className="mono mt-0.5 text-[11px] text-olive-soft">
-                  答题 {s.attempts} · 错题 {s.errors} · 计划 {s.plans} · 预习 {s.previewsDone}
-                </div>
-              </div>
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                {/* V56：多对多分配伴学师（v200：教务仅有的两个操作之一） */}
-                <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
-                {/* v169：分配报告（开通伴学师报告查看权限，可设有效期；v200：教务仅有的两个操作之一） */}
-                <ReportGrantButton studentUserId={s.userId} studentName={s.name} tutors={tutors ?? []} assigned={s.tutors} />
-                {/* 以下操作 v200 起对教务隐藏：报告推送/测评推送/重置密码/删除/详情 */}
-                {!jiaowu && (
-                  <>
-                {/* V54：报告推送开关 */}
-                <ReportAccessButton userId={s.userId} released={s.reportReleased} />
-                {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
-                {(s.assessBoundKinds.length > 0 || s.releasedAssessments.length > 0) && (
-                  <button
-                    type="button"
-                    title="推送测评（解锁套餐外隐藏的测评）"
-                    onClick={() => setReleaseFor(releaseFor === s.userId ? null : s.userId)}
-                    className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${
-                      releaseFor === s.userId
-                        ? "border-transparent bg-brand font-semibold text-white shadow-sm"
-                        : "border-border bg-cream-card text-olive hover:bg-butter-pale/70"
-                    }`}
-                  >
-                    <ClipboardList size={13} />
-                    推送测评
-                  </button>
-                )}
-                {/* V53：管理员可重置任意学员登录密码（默认 123456） */}
-                <ResetPasswordButton userId={s.userId} name={s.name} />
-                {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
-                <DeleteStudentButton userId={s.userId} name={s.name} />
-                <button
-                  onClick={() => openDetail(s.userId)}
-                  className="rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium text-olive whitespace-nowrap transition-colors hover:border-[#E3B53A]/50 hover:bg-butter-pale/60"
-                >
-                  详情
-                </button>
-                  </>
-                )}
-              </div>
-              {releaseFor === s.userId && (
-                <div className="w-full">
-                  <AssessmentReleasePanel
-                    key={`${s.userId}-${s.releasedAssessments.join(",")}`}
-                    userId={s.userId}
-                    released={s.releasedAssessments}
-                    boundKinds={s.assessBoundKinds}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-          {filtered.length === 0 && (
-            <p className="px-5 py-8 text-center text-[13px] text-olive-mute">
-              {kw ? `没有匹配「${kw}」的学员。` : "还没有学员档案。"}
-            </p>
-          )}
-        </div>
-      )}
-      <Pager page={studentsPager.page} totalPages={studentsPager.totalPages} total={studentsPager.total} onChange={studentsPager.setPage} />
-      {/* v200：教务无学员详情权限（接口对教务关闭），URL 带参数也不渲染抽屉 */}
-      {detailId !== null && !jiaowu && <StudentDetailDrawer userId={detailId} source="admin" onClose={closeDetail} />}
-    </div>
-  );
-}
-
-/** 伴学师 tab：admin.tutors 列表，行内学员可调整伴学师分配（多对多）。orgScope=超管分系统筛选。 */
-function TutorsTab({ orgScope }: { orgScope: { orgId: number | null } }) {
-  const { data: tutors, isLoading } = trpc.admin.tutors.useQuery(orgScope);
-  const { data: students } = trpc.admin.students.useQuery(orgScope);
-  const assignedOf = (userId: number) => students?.find((s) => s.userId === userId)?.tutors ?? [];
-  const utils = trpc.useUtils();
-  /* v170：邀请学员默认可看报告开关 */
-  const setInviteDefault = trpc.admin.setTutorInviteReportDefault.useMutation({
-    onSuccess: () => utils.admin.tutors.invalidate(),
-  });
-  /* v161：每位伴学师名下学员默认折叠，点「展开」看全部；伴学师列表分页（每页 10 个） */
-  const [expandedTutors, setExpandedTutors] = useState<number[]>([]);
-  const toggleTutor = (id: number) =>
-    setExpandedTutors((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  const tutorsPager = usePager(tutors ?? [], 10);
-
-  return (
-    <div className="space-y-3">
-      {isLoading ? (
-        <div className="paper-card flex justify-center py-10">
-          <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
-        </div>
-      ) : (
-        <>
-          {tutorsPager.pageItems.map((t) => {
-            const expanded = expandedTutors.includes(t.id);
-            return (
-              <div key={t.id} className="paper-card overflow-hidden">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-5 py-3.5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-cream">
-                    {(t.name || "伴")[0]}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[14.5px] font-semibold text-olive">{t.name}</div>
-                    <div className="mono mt-0.5 text-[11px] text-olive-mute">
-                      学员 {t.studentCount} 人 · 总答题 {t.totalAttempts} · 最近登录{" "}
-                      {new Date(t.lastSignInAt).toLocaleDateString("zh-CN")}
-                    </div>
-                  </div>
-                  {/* v170：邀请学员默认可看报告——开启后扫他的码注册的新学员自动带报告权限 */}
-                  <button
-                    type="button"
-                    title="开启后，扫这位伴学师二维码注册的新学员默认可查看测评报告"
-                    onClick={() => setInviteDefault.mutate({ tutorUserId: t.id, value: !t.inviteReportDefault })}
-                    disabled={setInviteDefault.isPending}
-                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                      t.inviteReportDefault ? "bg-brand text-white" : "bg-cream-card text-olive-mute ring-1 ring-border hover:text-olive"
-                    }`}
-                  >
-                    {t.inviteReportDefault ? "默认可看报告 ✓" : "默认无报告"}
-                  </button>
-                </div>
-                <button
-                  onClick={() => toggleTutor(t.id)}
-                  className="flex w-full items-center gap-1.5 px-5 py-2.5 text-[12.5px] font-medium text-olive-mute transition-colors hover:bg-butter-pale/40 hover:text-olive"
-                >
-                  <ChevronDown size={14} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
-                  {expanded ? "收起学员列表" : `学员 ${t.studentCount} 人 · 点击展开`}
-                </button>
-                {expanded && (
-                  <div className="divide-y divide-border">
-                    {t.students.map((s) => (
-                      <div key={s.userId} className="flex items-center gap-3 px-5 py-2.5">
-                        <span className="text-[13px] text-olive">
-                          {s.name}
-                          {s.grade && <span className="ml-1.5 text-[11.5px] text-olive-mute">{s.grade}</span>}
-                        </span>
-                        <span className="ml-auto">
-                          <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={assignedOf(s.userId)} />
-                        </span>
-                      </div>
-                    ))}
-                    {t.students.length === 0 && (
-                      <p className="px-5 py-4 text-[12.5px] text-olive-mute">还没有分配学员，可在「学员」tab 里分配。</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {tutors?.length === 0 && (
-            <p className="paper-card px-5 py-8 text-center text-[13px] text-olive-mute">
-              还没有伴学师——在「总览」tab 的用户列表里可以把用户设为伴学师。
-            </p>
-          )}
-          {tutorsPager.totalPages > 1 && (
-            <div className="paper-card overflow-hidden">
-              <Pager page={tutorsPager.page} totalPages={tutorsPager.totalPages} total={tutorsPager.total} onChange={tutorsPager.setPage} />
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
 
 /** 用户详情抽屉：最近答题动态 + 近 7 条心情分（不看内容）。 */
 function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => void }) {

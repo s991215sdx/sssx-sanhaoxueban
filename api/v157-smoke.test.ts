@@ -4,7 +4,7 @@ import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
 describe("v157 详情抽屉 URL 参数联动", () => {
-  const admin = readFileSync("src/pages/Admin.tsx", "utf-8");
+  const admin = readFileSync("src/pages/Admin.tsx", "utf-8") + readFileSync("src/components/admin/StudentsTab.tsx", "utf-8") + readFileSync("src/components/admin/TutorsTab.tsx", "utf-8");
   const tutor = readFileSync("src/pages/Tutor.tsx", "utf-8");
 
   it("Admin 学员列表：detailId 来自 student 参数且有校验", () => {

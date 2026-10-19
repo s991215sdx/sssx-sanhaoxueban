@@ -28,7 +28,7 @@ describe("v170 邀请学员默认可看报告", () => {
   it("管理端：伴学师列表开关", () => {
     const admin = readFileSync("api/adminRouter.ts", "utf-8");
     if (!/setTutorInviteReportDefault: adminQuery/.test(admin)) throw new Error("缺设置 mutation");
-    const page = readFileSync("src/pages/Admin.tsx", "utf-8");
+    const page = readFileSync("src/pages/Admin.tsx", "utf-8") + readFileSync("src/components/admin/TutorsTab.tsx", "utf-8");
     if (!/setTutorInviteReportDefault\.useMutation/.test(page)) throw new Error("前端缺开关");
     if (!/邀请学员默认可看报告/.test(page)) throw new Error("前端缺开关文案");
   });

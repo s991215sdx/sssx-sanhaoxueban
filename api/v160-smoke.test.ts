@@ -6,7 +6,7 @@ import { readFileSync } from "fs";
 describe("v160 三个列表分页", () => {
   const pagerHook = readFileSync("src/hooks/usePager.ts", "utf-8");
   const pager = readFileSync("src/components/Pager.tsx", "utf-8");
-  const admin = readFileSync("src/pages/Admin.tsx", "utf-8");
+  const admin = readFileSync("src/pages/Admin.tsx", "utf-8") + readFileSync("src/components/admin/StudentsTab.tsx", "utf-8") + readFileSync("src/components/admin/TutorsTab.tsx", "utf-8");
   const tutor = readFileSync("src/pages/Tutor.tsx", "utf-8");
 
   it("usePager：切片 + resetKey 重置 + 页码夹取", () => {

@@ -27,7 +27,7 @@ describe("v200 教务(jiaowu)角色", () => {
   const tenant = read("api/tenant.ts");
   const detail = read("api/studentDetail.ts");
   const app = read("src/App.tsx");
-  const adminPage = read("src/pages/Admin.tsx");
+  const adminPage = read("src/pages/Admin.tsx") + read("src/components/admin/StudentsTab.tsx") + read("src/components/admin/TutorsTab.tsx");
   const coach = read("api/coachRouter.ts");
   const router = read("api/router.ts");
 
