@@ -46,11 +46,12 @@ function FullScreenLoading({ text }: { text: string }) {
   );
 }
 
-/** 登录守卫：未登录 → /login。 */
+/** 登录守卫：未登录 → /login（v226：保留 query，如 ?portal= 品牌化预览参数）。 */
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
   if (isLoading) return <FullScreenLoading text="学伴唤醒中…" />;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to={`/login${location.search}`} replace />;
   return <>{children}</>;
 }
 
