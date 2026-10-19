@@ -99,6 +99,10 @@ describe("v82 前端接线", () => {
     need(panelSrc, "setReleasedAssessments", "面板保存");
     need(panelSrc, "渠道已绑定", "绑定态禁用");
     need(read("src/pages/Tutor.tsx"), "AssessmentReleasePanel", "伴学师学员卡");
-    need(read("src/pages/Admin.tsx"), "AssessmentReleasePanel", "管理员学员行");
+    /* v220.1 起学员列表拆分为 src/components/admin/StudentsTab.tsx（管理员学员行随之迁移） */
+    const adminStudents = read("src/components/admin/StudentsTab.tsx").includes("AssessmentReleasePanel")
+      ? read("src/components/admin/StudentsTab.tsx")
+      : read("src/pages/Admin.tsx");
+    need(adminStudents, "AssessmentReleasePanel", "管理员学员行");
   });
 });

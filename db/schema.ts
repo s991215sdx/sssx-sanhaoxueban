@@ -391,6 +391,10 @@ export const organizations = mysqlTable("organizations", {
   brandName: varchar("brand_name", { length: 128 }).notNull(),
   /** 品牌 Logo URL（可选；空则只显示品牌名） */
   logoUrl: varchar("logo_url", { length: 512 }),
+  /** v224：专属入口域名（如 yh.sanhao.sssx.club），登录页按域名换 Logo/底部署名；空=未开通 */
+  portalHost: varchar("portal_host", { length: 128 }),
+  /** v224：登录页底部署名（默认「上上升学」） */
+  portalFooter: varchar("portal_footer", { length: 64 }).notNull().default("上上升学"),
   /** 停用后：机构账号登录即见停用提示，管理端置灰 */
   active: boolean("active").notNull().default(true),
   /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40）；

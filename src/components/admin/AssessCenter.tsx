@@ -192,7 +192,7 @@ const TABS = [
 
 /* ---------------------------------- 双图切换（封面 / 报告内页） ---------------------------------- */
 
-function ShotSwitch({ imgs, name, ratio = 118 / 176 }: { imgs: [string, string]; name: string; ratio?: number }) {
+function ShotSwitch({ imgs, name }: { imgs: [string, string]; name: string }) {
   const [i, setI] = useState(0);
   return (
     <div className="relative h-full w-full overflow-hidden">

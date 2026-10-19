@@ -222,6 +222,20 @@ function campusCombos(s4d: Subject4dResult | null, academics: AcademicsLite, gra
 
 type Combo = NonNullable<ReturnType<typeof campusCombos>>;
 
+/** v223-fix：selection 统计的行类型（空列表分支与正常分支共用，保证前端 infer 到的不是 unknown[]） */
+type SelectionRow = {
+  userId: number;
+  name: string | null;
+  className: string | null;
+  grade: string | null;
+  hasS4d: boolean;
+  hasGrades: boolean;
+  comboWeighted: Combo | null;
+  comboSurvey: Combo | null;
+  edits: number;
+  intentions: { roundNo: number; choice: "rec1" | "rec2" | "rec3" | "custom"; subjects: string[]; reason: string; createdAt: Date }[];
+};
+
 /** 拉取某学生的学科四维 + 成绩 + 年级，返回组合（无四维返回 null）。权重取学生所属机构设置。 */
 async function combosForStudent(db: ReturnType<typeof getDb>, userId: number): Promise<Combo | null> {
   const profile = await db.query.studentProfile.findFirst({ where: eq(studentProfile.userId, userId) });
@@ -808,8 +822,7 @@ export const schoolRouter = createRouter({
       const db = getDb();
       const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
       const students = await campusStudents(db, orgId);
-      if (!students.length) return { rounds: [], rows: [] as unknown[] };
-      const ids = students.map((s) => s.userId);
+      if (!students.length) return { rounds: [], rows: [] as SelectionRow[] };
       /* 伴学师只看自己名下（名单层按权限下钻） */
       let scoped = students;
       if (ctx.user.role === "tutor") {
@@ -849,7 +862,7 @@ export const schoolRouter = createRouter({
         .from(intentionRounds)
         .where(orgId != null ? eq(intentionRounds.orgId, orgId) : undefined)
         .orderBy(intentionRounds.roundNo);
-      const rows = scoped.map((stu) => {
+      const rows: SelectionRow[] = scoped.map((stu) => {
         const s4d = s4dLatest.get(stu.userId);
         const profile = profileBy.get(stu.userId);
         const academics = (profile?.academics ?? null) as AcademicsLite;

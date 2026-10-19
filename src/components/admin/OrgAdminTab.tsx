@@ -8,6 +8,8 @@ type OrgRow = {
   name: string;
   brandName: string;
   logoUrl: string | null;
+  portalHost: string | null;
+  portalFooter: string;
   active: boolean;
   createdAt: Date;
   settings?: { assess?: { kinds?: string[] } } | null;
@@ -60,6 +62,9 @@ export default function OrgAdminTab() {
                     {!o.active && <span className="chip !py-0.5 !text-[10.5px] text-terra">已停用</span>}
                   </div>
                   <div className="mt-0.5 text-[12px] text-olive-mute">{o.name}</div>
+                  {o.portalHost && (
+                    <div className="mt-0.5 text-[11.5px] text-brand">专属入口：{o.portalHost}</div>
+                  )}
                 </div>
                 <div className="mono text-[12px] text-olive-soft">
                   学员 {o.studentCount} · 伴学师 {o.tutorCount} · 管理员 {o.adminCount}
@@ -209,7 +214,10 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
   const [name, setName] = useState(org.name);
   const [brandName, setBrandName] = useState(org.brandName);
   const [logoUrl, setLogoUrl] = useState(org.logoUrl ?? "");
-  /* v224：校园版开放测评——null=未配置（全部开放）；数组=仅开放勾选项 */
+  /* v224：专属入口品牌化 */
+  const [portalHost, setPortalHost] = useState(org.portalHost ?? "");
+  const [portalFooter, setPortalFooter] = useState(org.portalFooter ?? "上上升学");
+  /* v224（测评中心）：校园版开放测评——null=未配置（全部开放）；数组=仅开放勾选项 */
   const savedKinds = org.settings?.assess?.kinds;
   const [allOpen, setAllOpen] = useState(!savedKinds || savedKinds.includes("all"));
   const [openKinds, setOpenKinds] = useState<string[]>(savedKinds && !savedKinds.includes("all") ? savedKinds : []);
@@ -236,7 +244,20 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
         </div>
         <div>
           <label className="mb-1 block text-[12.5px] font-semibold text-olive">品牌 Logo URL</label>
-          <input className={inputCls} value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="留空则不显示 Logo" />
+          <input className={inputCls} value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="留空则不显示 Logo；建议用本站 /org-logos/xxx.webp 相对路径" />
+        </div>
+        <div className="rounded-lg bg-cream px-3 py-2.5">
+          <div>
+            <label className="mb-1 block text-[12.5px] font-semibold text-olive">专属入口域名</label>
+            <input className={inputCls} value={portalHost} onChange={(e) => setPortalHost(e.target.value)} placeholder="如 yh.sanhao.sssx.club，留空表示未开通" />
+            <p className="mt-1 text-[11px] leading-relaxed text-olive-mute">
+              绑定后，从该域名打开登录页会显示本机构 Logo；一个域名只能绑定一个机构。
+            </p>
+          </div>
+          <div className="mt-2.5">
+            <label className="mb-1 block text-[12.5px] font-semibold text-olive">登录页底部署名</label>
+            <input className={inputCls} value={portalFooter} onChange={(e) => setPortalFooter(e.target.value)} placeholder="缺省：上上升学" />
+          </div>
         </div>
 
         {/* v224：校园版开放测评配置 */}
@@ -257,10 +278,19 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
             </div>
           )}
         </div>
-
         {update.error && <p className="text-[12.5px] text-terra">{update.error.message}</p>}
         <button
-          onClick={() => update.mutate({ id: org.id, name, brandName, logoUrl, assessKinds: allOpen ? ["all"] : openKinds })}
+          onClick={() =>
+            update.mutate({
+              id: org.id,
+              name,
+              brandName,
+              logoUrl,
+              portalHost: portalHost.trim() || null,
+              portalFooter: portalFooter.trim() || null,
+              assessKinds: allOpen ? ["all"] : openKinds,
+            })
+          }
           disabled={update.isPending || (!allOpen && openKinds.length === 0)}
           className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
