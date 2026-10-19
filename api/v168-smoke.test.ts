@@ -11,7 +11,7 @@ describe("v168 用户级免登 ticket", () => {
   it("识别 mode=user 并按手机号匹配员工账号", () => {
     if (!/data\.mode === "user"/.test(src)) throw new Error("缺：mode=user 分支");
     if (!/eq\(users\.phone, phone\)/.test(src)) throw new Error("缺：按手机号匹配");
-    if (!/inArray\(users\.role, \["tutor", "admin"\]/.test(src)) throw new Error("缺：限定员工角色");
+    if (!/inArray\(users\.role, \["tutor", "admin", "jiaowu"\]/.test(src)) throw new Error("缺：限定员工角色（含教务）");
     if (!/isNull\(users\.deletedAt\)/.test(src)) throw new Error("缺：排除软删");
   });
 
