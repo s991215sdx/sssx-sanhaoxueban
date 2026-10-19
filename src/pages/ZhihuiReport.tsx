@@ -359,7 +359,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     const hasGrades = academics.some((x) => x.lastScore != null);
 
     /* ---------- 校园版（粤华） ---------- */
-    if (campus) {
+    /* v218：伴学师/管理员内嵌查看粤华学生同样走校园版组合池（学校要求第一/第二/第三推荐只限 5 组合） */
+    if (campus || data?.student.campus) {
       const w = mkW(0.35);
       const CANDS = [
         { track: "物化" as const, subs: ["物理", "化学", "生物"] },
@@ -430,7 +431,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       weakTips: mkWeakTips(c1, first),
       englishLow,
     };
-  }, [s4d, academics, grade, campus]);
+  }, [s4d, academics, grade, campus, data?.student.campus]);
 
   const subjectRows = useMemo(() => {
     if (!s4d) return [];
@@ -492,13 +493,19 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     for (const [m, w] of Object.entries(data.menleiW ?? {})) add(m, w * 2);
     for (const c of data.majorCats ?? []) add(c.menlei, 3);
     const s4 = data.subject4d?.result as Subject4dResult | null | undefined;
+    let histFirstRec = false;
     if (s4?.subjects) {
       const top = SUBJECT4D_SUBJECTS.map((n) => ({ n, v: s4.subjects[n]?.潜力指数 ?? 0 }))
         .sort((a, b) => b.v - a.v).slice(0, 3);
       top.forEach((t, i) => { for (const m of SUBJECT_MENLEI[t.n] ?? []) add(m, 4 - i); });
       const phys = s4.subjects["物理"]?.潜力指数 ?? 3;
       const hist = s4.subjects["历史"]?.潜力指数 ?? 3;
-      if (hist > phys) for (const m of ["理学", "工学", "农学", "医学"]) if (sc[m]) sc[m] = sc[m]! * 0.5;
+      /* v218：与后端专业推荐同口径——首选历史时硬核理工农医不再标推荐，理学降权 */
+      histFirstRec = hist > phys;
+      if (histFirstRec) {
+        for (const m of ["工学", "农学", "医学"]) sc[m] = 0;
+        if (sc["理学"]) sc["理学"] = sc["理学"]! * 0.35;
+      }
     }
     const mx = Math.max(0, ...Object.values(sc));
     const rec: Record<string, number> = {};
@@ -507,6 +514,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       const r = Math.round(55 + (43 * v) / mx);
       if (r >= 60) rec[m] = Math.min(98, r);
     }
+    /* 理学降权后若仍过推荐线，压到 45 以下（历史生报理学门类选择面窄） */
+    if (histFirstRec && rec["理学"]) rec["理学"] = Math.min(rec["理学"], 45);
     return rec;
   }, [data]);
   const [openMenlei, setOpenMenlei] = useState<string | null>(null);

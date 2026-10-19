@@ -334,15 +334,43 @@ export const zhihuiRouter = createRouter({
         majorCats.pop();
       }
 
-      // 推荐职业 Top5
-      const careerPicks = careers
-        .map((c) => {
-          const top = c.category.split("·")[0]?.trim() ?? "";
-          return { ...c, w: careerW[top] ?? 0 };
-        })
-        .sort((a, b) => b.w - a.w || a.id - b.id)
+      // 推荐职业 Top5（v218：同步专业推荐口径——学科四维加权 + 首选历史过滤硬核工科职业）
+      const CAREER_MENLEI: Record<string, string[]> = {
+        智能制造: ["工学"], 工程技术: ["工学"], 建筑工程: ["工学"],
+        信息技术: ["工学", "理学"], 能源环保: ["工学", "理学", "农学"],
+        交通物流: ["工学", "管理学"], 农林牧渔: ["农学"],
+        教育科研: ["教育学", "理学"], 医疗健康: ["医学"],
+        文化传媒: ["文学", "艺术学"], 现代服务: ["管理学"],
+        金融财会: ["经济学", "管理学"], 法律政务: ["法学"],
+      };
+      /* 首选历史：硬工科/农林职业直接不报（读不了对应专业）；医/信息/能源/交通降权 */
+      const CAREER_HARD = new Set(["智能制造", "工程技术", "建筑工程", "农林牧渔"]);
+      const CAREER_DEMOTE = new Set(["信息技术", "能源环保", "交通物流", "医疗健康"]);
+      const careerFit = (top: string) => {
+        const mapped = CAREER_MENLEI[top] ?? [];
+        return mapped.length ? Math.max(...mapped.map((m) => menleiFit[m] ?? 0)) : 0.5;
+      };
+      const careerScored = careers.map((c) => {
+        const top = c.category.split("·")[0]?.trim() ?? "";
+        let w = (careerW[top] ?? 0) * (0.6 + 0.8 * careerFit(top));
+        if (histFirst) {
+          if (CAREER_HARD.has(top)) w = 0;
+          else if (CAREER_DEMOTE.has(top)) w *= 0.35;
+        }
+        return { ...c, w };
+      });
+      let careerPicks = careerScored
         .filter((c) => c.w > 0)
+        .sort((a, b) => b.w - a.w || a.id - b.id)
         .slice(0, 5);
+      /* 兜底：霍兰德权重全被过滤时，按学科四维匹配度补位 */
+      if (careerPicks.length === 0) {
+        careerPicks = careerScored
+          .map((c) => ({ ...c, w: careerFit(c.category.split("·")[0]?.trim() ?? "") }))
+          .filter((c) => c.w > 0)
+          .sort((a, b) => b.w - a.w || a.id - b.id)
+          .slice(0, 5);
+      }
 
       // 院校库目标校详情（掌上高考链接）
       let targetUniversity: (typeof universityLib.$inferSelect) | null = null;
