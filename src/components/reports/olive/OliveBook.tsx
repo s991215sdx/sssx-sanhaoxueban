@@ -75,8 +75,8 @@ ul.ob-dots.ob-warn li::before { background: #F0A92E; }
   .ob-root { background: #fff; padding: 0; }
   .ob-book { max-width: none; padding: 0; }
   /* v195：书页允许自然续页（内容超出一页 A4 时连续排，不产生空白页）；仍每页从新的纸页开始。
-     v196：min-height 收紧到 256mm，单页内容（封面等）严格一页显示完 */
-  .ob-page { box-shadow: none; margin: 0; border-radius: 0; max-width: none; min-height: 256mm !important; height: auto; padding: 14px 22px 40px; break-after: page; page-break-after: always; break-inside: auto; page-break-inside: auto; }
+     v217：同 ZH_CSS——box-sizing 显式声明 + 246mm，杜绝 256mm+padding 超出可印高度产生的尾页空白 */
+  .ob-page { box-sizing: border-box; box-shadow: none; margin: 0; border-radius: 0; max-width: none; min-height: 246mm !important; height: auto; padding: 10mm 8mm 14mm; break-after: page; page-break-after: always; break-inside: auto; page-break-inside: auto; }
   .ob-page:last-child { break-after: auto; page-break-after: auto; }
   .ob-pfoot { bottom: 8px; left: 22px; right: 22px; }
   .ob-card { padding: 12px 16px; }
