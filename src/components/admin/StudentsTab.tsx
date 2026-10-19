@@ -69,8 +69,24 @@ export default function StudentsTab({
   const { data: students, isLoading } = trpc.admin.students.useQuery({ ...orgScope, search: kw || undefined });
   const { data: tutors } = trpc.admin.tutors.useQuery(orgScope);
   const filtered = students ?? [];
-  /* v160：学员列表分页（搜索词变化自动回第 1 页） */
-  const studentsPager = usePager(filtered, 20, kw);
+  /* v220.4：班级筛选 + 按班级归类（班级取自学生档案，校园版按班管理） */
+  const [cls, setCls] = useState("");
+  const [groupByClass, setGroupByClass] = useState(false);
+  const classes = [...new Set(filtered.map((s) => s.className).filter((c): c is string => !!c))].sort((a, b) =>
+    a.localeCompare(b, "zh-CN", { numeric: true }),
+  );
+  const byClass = cls ? filtered.filter((s) => (s.className ?? "未分班") === cls) : filtered;
+  /* v160：学员列表分页（搜索词/班级变化自动回第 1 页）；按班级归类时一次性全量展示 */
+  const studentsPager = usePager(byClass, 20, `${kw}|${cls}`);
+  const groups = groupByClass
+    ? [...byClass.reduce((m, s) => {
+        const k = s.className ?? "未分班";
+        if (!m.has(k)) m.set(k, []);
+        m.get(k)!.push(s);
+        return m;
+      }, new Map<string, typeof byClass>())].sort((a, b) => a[0].localeCompare(b[0], "zh-CN", { numeric: true }))
+    : null;
+  const listItems = groups ? groups.flatMap(([, arr]) => arr) : studentsPager.pageItems;
 
   return (
     <div className="paper-card overflow-hidden">
@@ -116,14 +132,61 @@ export default function StudentsTab({
           />
         </span>
       </div>
+      {/* v220.4：班级筛选 + 按班级归类 */}
+      {classes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-5 py-2.5">
+          <span className="text-[11.5px] text-olive-mute">班级</span>
+          <button
+            type="button"
+            onClick={() => setCls("")}
+            className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors ${
+              cls === "" ? "bg-brand text-white" : "bg-cream-card text-olive-soft ring-1 ring-border hover:border-lime"
+            }`}
+          >
+            全部（{filtered.length}）
+          </button>
+          {classes.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCls(cls === c ? "" : c)}
+              className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors ${
+                cls === c ? "bg-brand text-white" : "bg-cream-card text-olive-soft ring-1 ring-border hover:border-lime"
+              }`}
+            >
+              {c}（{filtered.filter((s) => (s.className ?? "未分班") === c).length}）
+            </button>
+          ))}
+          <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-[12px] text-olive-soft">
+            <input
+              type="checkbox"
+              checked={groupByClass}
+              onChange={(e) => setGroupByClass(e.target.checked)}
+              className="h-3.5 w-3.5 accent-[#0C7064]"
+            />
+            按班级归类
+          </label>
+        </div>
+      )}
       {isLoading ? (
         <div className="flex justify-center py-10">
           <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {studentsPager.pageItems.map((s) => (
+          {listItems.map((s, idx) => {
+            const keyOf = (x: (typeof listItems)[number]) => x.className ?? "未分班";
+            const showHeader = !!groups && (idx === 0 || keyOf(listItems[idx - 1]!) !== keyOf(s));
+            return (
             <div key={s.userId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
+              {showHeader && (
+                <div className="flex w-full items-center gap-2 bg-cream px-5 py-2 -mx-5 -mt-3.5 mb-1 border-b border-border">
+                  <span className="text-[13px] font-bold text-olive">{keyOf(s)}</span>
+                  <span className="text-[11.5px] text-olive-mute">
+                    {groups!.find(([k]) => k === keyOf(s))?.[1].length ?? 0} 人
+                  </span>
+                </div>
+              )}
               <input
                 type="checkbox"
                 checked={picked.has(s.userId)}
@@ -140,6 +203,7 @@ export default function StudentsTab({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="truncate text-[14.5px] font-semibold text-[#1E3530]">{s.name}</span>
                   {s.grade && <span className="text-[11.5px] text-olive-mute">{s.grade}</span>}
+                  {s.className && <span className="chip !py-0.5 !text-[10.5px] text-brand">{s.className}</span>}
                   {s.mbti && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.mbti}</span>}
                   {s.disc && <span className="chip !py-0.5 !text-[10.5px] text-olive">{s.disc}</span>}
                   {s.hasMulti && <span className="chip !py-0.5 !text-[10.5px] text-olive">多元✓</span>}
@@ -227,7 +291,8 @@ export default function StudentsTab({
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
           {filtered.length === 0 && (
             <p className="px-5 py-8 text-center text-[13px] text-olive-mute">
               {kw ? `没有匹配「${kw}」的学员。` : "还没有学员档案。"}
@@ -235,7 +300,8 @@ export default function StudentsTab({
           )}
         </div>
       )}
-      <Pager page={studentsPager.page} totalPages={studentsPager.totalPages} total={studentsPager.total} onChange={studentsPager.setPage} />
+      {/* v220.4：按班级归类时一次性展示全量，不翻页 */}
+      {!groups && <Pager page={studentsPager.page} totalPages={studentsPager.totalPages} total={studentsPager.total} onChange={studentsPager.setPage} />}
       {/* v200：教务无学员详情权限（接口对教务关闭），URL 带参数也不渲染抽屉 */}
       {detailId !== null && !jiaowu && <StudentDetailDrawer userId={detailId} source="admin" onClose={closeDetail} />}
     </div>

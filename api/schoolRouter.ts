@@ -627,6 +627,86 @@ export const schoolRouter = createRouter({
   /* ------------------------------- 团体统计 ------------------------------- */
 
   stats: createRouter({
+    /** 选科结构统计：每生一行（班级 + 加权版/纯测评版双口径组合 + 各轮最新意向）。 */
+    selection: authedQuery.query(async ({ ctx }) => {
+      requireStaff(ctx);
+      const db = getDb();
+      const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
+      const students = await campusStudents(db, orgId);
+      if (!students.length) return { rounds: [], rows: [] as unknown[] };
+      const ids = students.map((s) => s.userId);
+      /* 伴学师只看自己名下（名单层按权限下钻） */
+      let scoped = students;
+      if (ctx.user.role === "tutor") {
+        const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+        const mineIds = new Set(mine.map((m) => m.studentUserId));
+        scoped = students.filter((s) => mineIds.has(s.userId));
+      }
+      const scopedIds = scoped.map((s) => s.userId);
+      /* 批量：最新学科四维 + 档案成绩 */
+      const s4dRows = await db
+        .select()
+        .from(assessmentResults)
+        .where(and(inArray(assessmentResults.userId, scopedIds), eq(assessmentResults.kind, "subject4d")));
+      const s4dLatest = new Map<number, (typeof s4dRows)[number]>();
+      for (const r of s4dRows) {
+        const prev = s4dLatest.get(r.userId);
+        if (!prev || r.createdAt > prev.createdAt) s4dLatest.set(r.userId, r);
+      }
+      const profileRows = await db.select().from(studentProfile).where(inArray(studentProfile.userId, scopedIds));
+      const profileBy = new Map(profileRows.map((p) => [p.userId, p]));
+      /* 意向：每生每轮取最新一次，并统计修改次数 */
+      const intRows = scopedIds.length
+        ? await db.select().from(subjectIntentions).where(inArray(subjectIntentions.userId, scopedIds)).orderBy(desc(subjectIntentions.createdAt))
+        : [];
+      const intByUser = new Map<number, typeof intRows>();
+      const editCount = new Map<number, number>();
+      for (const r of intRows) {
+        const arr = intByUser.get(r.userId) ?? [];
+        arr.push(r);
+        intByUser.set(r.userId, arr);
+        editCount.set(r.userId, (editCount.get(r.userId) ?? 0) + 1);
+      }
+      const rounds = await db
+        .select()
+        .from(intentionRounds)
+        .where(orgId != null ? eq(intentionRounds.orgId, orgId) : undefined)
+        .orderBy(intentionRounds.roundNo);
+      const rows = scoped.map((stu) => {
+        const s4d = s4dLatest.get(stu.userId);
+        const profile = profileBy.get(stu.userId);
+        const academics = (profile?.academics ?? null) as AcademicsLite;
+        const hasGrades = !!academics?.subjects?.some((x) => x?.lastScore != null);
+        const comboWeighted = s4d ? campusCombos(s4d.result as unknown as Subject4dResult, academics, stu.grade) : null;
+        const comboSurvey = s4d ? campusCombos(s4d.result as unknown as Subject4dResult, null, stu.grade) : null;
+        const mine = intByUser.get(stu.userId) ?? [];
+        const latestByRound = new Map<number, (typeof mine)[number]>();
+        for (const r of mine) if (!latestByRound.has(r.roundNo)) latestByRound.set(r.roundNo, r);
+        return {
+          userId: stu.userId,
+          name: stu.name,
+          className: stu.className,
+          grade: stu.grade,
+          hasS4d: !!s4d,
+          hasGrades,
+          comboWeighted,
+          comboSurvey,
+          edits: editCount.get(stu.userId) ?? 0,
+          intentions: [...latestByRound.values()].map((r) => ({
+            roundNo: r.roundNo,
+            choice: r.choice,
+            subjects: r.subjects,
+            reason: r.reason,
+            createdAt: r.createdAt,
+          })),
+        };
+      });
+      return {
+        rounds: rounds.map((r) => ({ roundNo: r.roundNo, label: r.label, status: r.status })),
+        rows,
+      };
+    }),
+
     /** 参测完成统计：校园生 × 重点测评种类完成情况 + 班级分布（聚合不点名，缺测名单走 unassessed）。 */
     assessment: authedQuery.query(async ({ ctx }) => {
       requireStaff(ctx);

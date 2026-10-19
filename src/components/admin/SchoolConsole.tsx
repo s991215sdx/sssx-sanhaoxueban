@@ -19,14 +19,16 @@ import {
   Printer,
   BellRing,
   GraduationCap,
+  PieChart,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import StudentsTab from "./StudentsTab";
 import TutorsTab from "./TutorsTab";
+import SelectionStats from "./SelectionStats";
 import InviteChannelsTab from "./InviteChannelsTab";
 
 /* ---------------------------------- 设计令牌（对齐效果图） ---------------------------------- */
-const G = {
+export const G = {
   deep: "#0B5A4E", // 顶条墨绿
   brand: "#0E7A5F", // 主绿
   brandSoft: "#E3F1EB", // 浅绿底
@@ -38,7 +40,7 @@ const G = {
   danger: "#C0523C",
 };
 
-type ItemKey = "tasks" | "progress" | "intention" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users";
+type ItemKey = "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users";
 
 export type SchoolItemKey = ItemKey;
 
@@ -54,6 +56,7 @@ const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeo
     label: "数据统计",
     items: [
       { key: "intention", label: "选科意向分析", icon: BarChart3 },
+      { key: "selection", label: "选科统计分析", icon: PieChart },
       { key: "archive", label: "成长档案", icon: FolderHeart },
     ],
   },
@@ -75,7 +78,7 @@ const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeo
 ];
 
 /* v220.3：教务可见项（学校版教务：看统计/预警/意向/催办/档案 + 学员分配台） */
-const JIAOWU_KEYS: SchoolItemKey[] = ["tasks", "progress", "intention", "archive", "warnings", "students"];
+const JIAOWU_KEYS: SchoolItemKey[] = ["tasks", "progress", "intention", "selection", "archive", "warnings", "students"];
 
 /** v220.3：供外层侧边栏（Layout）渲染学校版菜单；jiaowu=只返回教务可见项 */
 export function visibleSchoolGroups(jiaowu: boolean) {
@@ -111,7 +114,7 @@ const WARN_TYPE_LABEL: Record<string, string> = {
 
 /* ---------------------------------- 通用小件 ---------------------------------- */
 
-function SecTitle({ title, note }: { title: string; note?: string }) {
+export function SecTitle({ title, note }: { title: string; note?: string }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
       <h3 className="flex items-center gap-2 text-[14.5px] font-bold" style={{ color: G.ink }}>
@@ -135,7 +138,7 @@ function BigStat({ value, suffix, label }: { value: string | number; suffix?: st
   );
 }
 
-function RowBar({ label, n, total, color }: { label: string; n: number; total: number; color?: string }) {
+export function RowBar({ label, n, total, color }: { label: string; n: number; total: number; color?: string }) {
   const pct = total > 0 ? Math.round((n / total) * 100) : 0;
   return (
     <div className="flex items-center gap-3">
@@ -151,7 +154,7 @@ function RowBar({ label, n, total, color }: { label: string; n: number; total: n
   );
 }
 
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+export function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div className="rounded-xl border bg-white p-4" style={{ borderColor: G.line, ...style }}>
       {children}
@@ -159,7 +162,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
   );
 }
 
-function Pill({ active, children, onClick }: { active?: boolean; children: React.ReactNode; onClick?: () => void }) {
+export function Pill({ active, children, onClick }: { active?: boolean; children: React.ReactNode; onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -848,6 +851,7 @@ const TITLES: Record<ItemKey, { crumb: string; title: string; sub?: string }> = 
   tasks: { crumb: "测评管理 / 施测任务", title: "施测任务 · 未参测催办", sub: "谁做完了、谁还没动——一键催办，文本直达班主任" },
   progress: { crumb: "测评管理 / 进度看板", title: "进度看板 · 参测完成统计", sub: "全校必测完成率与班级排行，黄色班级建议重点跟进" },
   intention: { crumb: "数据统计 / 选科意向分析", title: "选科意向分析 · 推荐采纳率", sub: "系统推荐与实际确认的对比——前三推荐采纳、自定义理由回收，自动产出「推荐有效率」" },
+  selection: { crumb: "数据统计 / 选科统计分析", title: "选科统计分析", sub: "年级/班级选科结构、第一推荐聚合、三轮意向对比——把个体推荐聚合成管理依据" },
   archive: { crumb: "数据统计 / 成长档案", title: "一生一策成长档案", sub: "测评 + 成绩 + 预警 + 指导记录自动归档，可导出校验" },
   students: { crumb: "学生管理 / 学员管理", title: "学员管理", sub: "搜索学员、分配指导老师、报告查看权限" },
   teachers: { crumb: "学生管理 / 指导老师", title: "指导老师", sub: "名下学员、二维码默认报告权限管理" },
@@ -916,6 +920,7 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
             {item === "tasks" && <TasksSection canManage={canManage} />}
             {item === "progress" && <ProgressSection />}
             {item === "intention" && <IntentionSection canManage={canManage} />}
+            {item === "selection" && <SelectionStats canManage={canManage} />}
             {item === "archive" && <ArchiveSection />}
             {item === "warnings" && <WarningsSection />}
             {item === "students" && <StudentsTab jiaowu={jiaowu} orgScope={{ orgId: null }} tutorLabel="指导老师" />}

@@ -29,9 +29,11 @@ describe("v160 三个列表分页", () => {
   });
 
   it("后台 · 学员列表分页", () => {
-    if (!/const studentsPager = usePager\(filtered, 20, kw\)/.test(admin))
+    /* v220.4：分页对象改为按班级筛选后的 byClass，resetKey 含搜索词+班级；按班级归类时全量展示 */
+    if (!/const studentsPager = usePager\(byClass, 20, `\$\{kw\}\|\$\{cls\}`\)/.test(admin))
       throw new Error("缺：学员列表 usePager");
-    if (!/studentsPager\.pageItems\.map\(\(s\)/.test(admin)) throw new Error("缺：学员列表按页渲染");
+    if (!/studentsPager\.pageItems/.test(admin)) throw new Error("缺：学员列表按页切片");
+    if (!/const listItems = groups \? groups\.flatMap/.test(admin)) throw new Error("缺：按班级归类渲染");
   });
 
   it("伴学工作台 · 学员管理分页（每页 10 卡）", () => {

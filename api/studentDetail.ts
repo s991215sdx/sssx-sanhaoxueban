@@ -29,6 +29,8 @@ export type StudentListItem = {
   phone: string | null;
   grade: string | null;
   school: string | null;
+  /** v220.4：班级（校园版学生档案），学员管理按班级筛选/归类用 */
+  className: string | null;
   mbti: string | null;
   disc: string | null;
   onboarded: boolean;
@@ -148,6 +150,7 @@ export async function listStudents(db: Db, orgId?: number | null, search?: strin
         phone: u.phone ?? null,
         grade: p.grade,
         school: p.school,
+        className: p.className ?? null,
         mbti: p.mbti,
         disc: p.disc,
         onboarded: p.onboarded,
