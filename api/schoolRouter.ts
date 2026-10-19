@@ -16,7 +16,7 @@ import { getDb } from "./queries/connection";
 import { isPlatformAdmin } from "./tenant";
 import type { Subject4dResult } from "@contracts/subject4d";
 import { defaultFullScore } from "@contracts/academics";
-import { normalizeAssessKinds } from "@contracts/invite";
+import { normalizeAssessKinds, INVITE_ASSESS_KINDS } from "@contracts/invite";
 import {
   users,
   studentProfile,
@@ -147,7 +147,7 @@ type AcademicsLite = { subjects?: { name?: string; lastScore?: number | null; fu
 export const XUANKE_W_MIN = 0;
 export const XUANKE_W_MAX = 60;
 
-type OrgSettings = { xuanke?: { scoreWeight?: number } } | null;
+type OrgSettings = { xuanke?: { scoreWeight?: number }; assess?: { kinds?: string[] } } | null;
 
 /**
  * 机构选科成绩权重（%）：读 organizations.settings.xuanke.scoreWeight；
@@ -174,6 +174,18 @@ export async function orgXuankeWeights(db: ReturnType<typeof getDb>, orgIds: (nu
     return orgId != null && campusOrgIds.has(orgId) ? 35 : 40;
   };
   return { weight };
+}
+
+/**
+ * v224 机构测评中心开放测评：读 organizations.settings.assess.kinds。
+ * 返回 null = 未限制（全部开放）；否则返回允许的 kind 数组。
+ */
+export async function orgOpenAssessKinds(db: ReturnType<typeof getDb>, orgId: number | null): Promise<string[] | null> {
+  if (orgId == null) return null;
+  const [org] = await db.select({ settings: organizations.settings }).from(organizations).where(eq(organizations.id, orgId)).limit(1);
+  const kinds = (org?.settings ?? null as OrgSettings | null)?.assess?.kinds;
+  if (!kinds || !kinds.length || kinds.includes("all")) return null;
+  return kinds;
 }
 
 function campusCombos(s4d: Subject4dResult | null, academics: AcademicsLite, grade: string, scoreW = 0.35) {
@@ -329,7 +341,8 @@ export const schoolRouter = createRouter({
         list = list.filter((s) => set.has(s.userId));
       }
       const ids = list.map((s) => s.userId);
-      if (!ids.length) return { targets: [] as { userId: number; name: string; className: string | null; grade: string; doneKinds: string[]; releasedKinds: string[] }[] };
+      const openKindsEarly = await orgOpenAssessKinds(db, ctx.user.orgId ?? null);
+      if (!ids.length) return { openKinds: openKindsEarly, targets: [] as { userId: number; name: string; className: string | null; grade: string; doneKinds: string[]; releasedKinds: string[] }[] };
       const results = await db.select({ userId: assessmentResults.userId, kind: assessmentResults.kind }).from(assessmentResults).where(inArray(assessmentResults.userId, ids));
       const doneBy = new Map<number, Set<string>>();
       for (const r of results) {
@@ -338,7 +351,9 @@ export const schoolRouter = createRouter({
       }
       const profiles = await db.select({ userId: studentProfile.userId, released: studentProfile.releasedAssessments }).from(studentProfile).where(inArray(studentProfile.userId, ids));
       const releasedBy = new Map<number, string[]>(profiles.map((p) => [p.userId, Array.isArray(p.released) ? (p.released as string[]) : []]));
+      const openKinds = await orgOpenAssessKinds(db, ctx.user.orgId ?? null);
       return {
+        openKinds,
         targets: list.map((s) => ({
           userId: s.userId,
           name: s.name,
@@ -361,6 +376,15 @@ export const schoolRouter = createRouter({
         const db = getDb();
         const kinds = normalizeAssessKinds(input.kinds);
         if (!kinds?.length) throw new TRPCError({ code: "BAD_REQUEST", message: "测评种类格式不对" });
+        /* v224：机构被超管限制开放测评时，不允许推送限制外的测评 */
+        const open = await orgOpenAssessKinds(db, ctx.user.orgId ?? null);
+        if (open) {
+          const blocked = kinds.filter((k) => !open.includes(k));
+          if (blocked.length) {
+            const labelOf = (k: string) => INVITE_ASSESS_KINDS.find((a) => a.key === k)?.label ?? k;
+            throw new TRPCError({ code: "FORBIDDEN", message: `以下测评未对本校开放：${blocked.map(labelOf).join("、")}，请联系平台管理员开通` });
+          }
+        }
         const campus = await campusStudents(db, ctx.user.orgId ?? null);
         const campusById = new Map(campus.map((s) => [s.userId, s]));
         if (ctx.user.role === "tutor") {

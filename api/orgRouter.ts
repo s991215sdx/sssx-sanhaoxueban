@@ -4,6 +4,7 @@ import { getDb } from "./queries/connection";
 import { attempts, errorLogs, moodEntries, organizations, previewSessions, studentProfile, users } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { isPlatformAdmin } from "./tenant";
+import { normalizeAssessKinds } from "@contracts/invite";
 
 /**
  * V59 SaaS 总系统：平台超管（role=admin 且 orgId IS NULL）专用——
@@ -140,9 +141,9 @@ export const orgRouter = createRouter({
       return { ok: true as const, org: org ? await orgRow(db, org) : null };
     }),
 
-  /** 编辑机构资料（名称/商标/Logo）。 */
+  /** 编辑机构资料（名称/商标/Logo）+ v224 校园版开放测评配置（assessKinds：kind 数组或 ["all"]；传 null 清除限制=全部开放）。 */
   update: adminQuery
-    .input((v: unknown) => v as { id: number; name?: string; brandName?: string; logoUrl?: string | null })
+    .input((v: unknown) => v as { id: number; name?: string; brandName?: string; logoUrl?: string | null; assessKinds?: unknown })
     .mutation(async ({ ctx, input }) => {
       requirePlatformAdmin(ctx.user);
       const db = getDb();
@@ -160,6 +161,17 @@ export const orgRouter = createRouter({
         patch.brandName = brandName;
       }
       if (input.logoUrl !== undefined) patch.logoUrl = input.logoUrl?.trim() || null;
+      if (input.assessKinds !== undefined) {
+        const prevSettings = (org.settings ?? null) as { xuanke?: { scoreWeight?: number }; assess?: { kinds?: string[] } } | null;
+        if (input.assessKinds === null) {
+          const { assess: _drop, ...rest } = prevSettings ?? {};
+          patch.settings = Object.keys(rest).length ? rest : null;
+        } else {
+          const kinds = normalizeAssessKinds(input.assessKinds);
+          if (!kinds) throw new Error("开放测评格式不对（须为测评 kind 数组或 all）");
+          patch.settings = { ...(prevSettings ?? {}), assess: { kinds } };
+        }
+      }
       if (Object.keys(patch).length > 0) {
         await db.update(organizations).set(patch).where(eq(organizations.id, input.id));
       }

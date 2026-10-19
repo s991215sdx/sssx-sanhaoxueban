@@ -393,8 +393,9 @@ export const organizations = mysqlTable("organizations", {
   logoUrl: varchar("logo_url", { length: 512 }),
   /** 停用后：机构账号登录即见停用提示，管理端置灰 */
   active: boolean("active").notNull().default(true),
-  /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40） */
-  settings: json("settings").$type<{ xuanke?: { scoreWeight?: number } }>(),
+  /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40）；
+   *  assess.kinds = 校园版测评中心开放给本校的测评（INVITE_ASSESS_KINDS key 数组；含 "all" 或缺省=全部开放） */
+  settings: json("settings").$type<{ xuanke?: { scoreWeight?: number }; assess?: { kinds?: string[] } }>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()

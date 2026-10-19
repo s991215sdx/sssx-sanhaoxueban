@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { Building2, Plus, Power, KeyRound, PencilLine, X } from "lucide-react";
+import { INVITE_ASSESS_KINDS } from "@contracts/invite";
 
 type OrgRow = {
   id: number;
@@ -9,6 +10,7 @@ type OrgRow = {
   logoUrl: string | null;
   active: boolean;
   createdAt: Date;
+  settings?: { assess?: { kinds?: string[] } } | null;
   studentCount: number;
   tutorCount: number;
   adminCount: number;
@@ -84,6 +86,10 @@ export default function OrgAdminTab() {
                 <span className="mono ml-2 text-[11px]">
                   最近登录 {o.admin ? new Date(o.admin.lastSignInAt).toLocaleDateString("zh-CN") : "—"}
                 </span>
+                {/* v224：校园版开放测评配置概览 */}
+                <span className="ml-3 inline-flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] text-olive">
+                  校园版开放测评：{openAssessText(o.settings)}
+                </span>
               </div>
             </div>
           ))}
@@ -98,6 +104,12 @@ export default function OrgAdminTab() {
       {resetOrg && <ResetAdminModal org={resetOrg} onClose={() => setResetOrg(null)} />}
     </div>
   );
+}
+
+function openAssessText(settings: OrgRow["settings"]): string {
+  const kinds = settings?.assess?.kinds;
+  if (!kinds || !kinds.length || kinds.includes("all")) return "全部";
+  return `${kinds.length} 项`;
 }
 
 function SetActiveButton({ org }: { org: OrgRow }) {
@@ -197,12 +209,19 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
   const [name, setName] = useState(org.name);
   const [brandName, setBrandName] = useState(org.brandName);
   const [logoUrl, setLogoUrl] = useState(org.logoUrl ?? "");
+  /* v224：校园版开放测评——null=未配置（全部开放）；数组=仅开放勾选项 */
+  const savedKinds = org.settings?.assess?.kinds;
+  const [allOpen, setAllOpen] = useState(!savedKinds || savedKinds.includes("all"));
+  const [openKinds, setOpenKinds] = useState<string[]>(savedKinds && !savedKinds.includes("all") ? savedKinds : []);
   const update = trpc.org.update.useMutation({
     onSuccess: async () => {
       await utils.org.list.invalidate();
       onClose();
     },
   });
+
+  const toggleKind = (key: string) =>
+    setOpenKinds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
   return (
     <Modal title={`编辑品牌 · ${org.brandName}`} onClose={onClose}>
@@ -219,10 +238,30 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
           <label className="mb-1 block text-[12.5px] font-semibold text-olive">品牌 Logo URL</label>
           <input className={inputCls} value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="留空则不显示 Logo" />
         </div>
+
+        {/* v224：校园版开放测评配置 */}
+        <div className="rounded-xl border border-border bg-cream p-3.5">
+          <label className="flex cursor-pointer items-center gap-2 text-[12.5px] font-semibold text-olive">
+            <input type="checkbox" checked={allOpen} onChange={(e) => setAllOpen(e.target.checked)} className="accent-[#0E7A5F]" />
+            开放全部测评
+          </label>
+          <p className="mt-1 text-[11.5px] text-olive-mute">勾上 = 该机构测评中心可见并可推送全部测评；不勾则只开放下面勾选的测评。</p>
+          {!allOpen && (
+            <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+              {INVITE_ASSESS_KINDS.map((k) => (
+                <label key={k.key} className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] text-olive hover:bg-butter-pale/60">
+                  <input type="checkbox" checked={openKinds.includes(k.key)} onChange={() => toggleKind(k.key)} className="accent-[#0E7A5F]" />
+                  {k.label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
         {update.error && <p className="text-[12.5px] text-terra">{update.error.message}</p>}
         <button
-          onClick={() => update.mutate({ id: org.id, name, brandName, logoUrl })}
-          disabled={update.isPending}
+          onClick={() => update.mutate({ id: org.id, name, brandName, logoUrl, assessKinds: allOpen ? ["all"] : openKinds })}
+          disabled={update.isPending || (!allOpen && openKinds.length === 0)}
           className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
           {update.isPending ? "保存中…" : "保存"}
