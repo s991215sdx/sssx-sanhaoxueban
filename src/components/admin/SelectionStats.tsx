@@ -18,7 +18,6 @@ type Row = Selection["rows"][number];
 type Combo = NonNullable<Row["comboWeighted"]>;
 
 const COMBO_LABEL = (subs: string[]) => subs.join("+");
-const ALL_SUBJECTS = ["物理", "历史", "化学", "生物", "政治", "地理"];
 const RESELECT = ["化学", "生物", "政治", "地理"];
 const CLASS_SIZE = 40;
 
@@ -64,8 +63,8 @@ function GradeView({ rows }: { rows: Row[] }) {
     const top = [...countBy(inCls, (r) => { const x = comboOf(r); return x ? COMBO_LABEL(x) : null; }).entries()].sort((a, b) => b[1] - a[1])[0];
     return { cls: c, n: inCls.length, phys: p, top };
   });
-  /* 师资与开班测算 */
-  const perSubject = ALL_SUBJECTS.map((s) => ({ s, n: rows.filter((r) => comboOf(r)?.includes(s)).length }));
+  /* 师资与开班测算：按粤华五大组合统计预测开班数 */
+  const comboPlan = [...dist.entries()].sort((a, b) => b[1] - a[1]);
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -97,28 +96,33 @@ function GradeView({ rows }: { rows: Row[] }) {
           </div>
         </Card>
         <Card>
-          <SecTitle title="师资与开班测算" note={`按 ${CLASS_SIZE} 人/班折算，仅辅助决策`} />
+          <SecTitle title="师资与开班测算" note={`按五大组合统计，${CLASS_SIZE} 人/班折算，仅辅助决策`} />
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="text-left" style={{ color: G.mute }}>
-                <th className="py-1.5 font-medium">科目</th>
+                <th className="py-1.5 font-medium">教学组合</th>
                 <th className="py-1.5 text-right font-medium">选择人数</th>
                 <th className="py-1.5 text-right font-medium">占比</th>
                 <th className="py-1.5 text-right font-medium">建议教学班</th>
               </tr>
             </thead>
             <tbody>
-              {perSubject.map(({ s, n }) => (
-                <tr key={s} className="border-t" style={{ borderColor: G.line }}>
-                  <td className="py-2 font-semibold" style={{ color: G.ink }}>{s}</td>
+              {comboPlan.map(([combo, n]) => (
+                <tr key={combo} className="border-t" style={{ borderColor: G.line }}>
+                  <td className="py-2 font-semibold" style={{ color: G.ink }}>{combo}</td>
                   <td className="py-2 text-right" style={{ color: G.ink }}>{n}</td>
                   <td className="py-2 text-right" style={{ color: G.mute }}>{pct(n, decided)}%</td>
                   <td className="py-2 text-right font-semibold" style={{ color: G.brand }}>{n ? Math.ceil(n / CLASS_SIZE) : 0}</td>
                 </tr>
               ))}
+              {!comboPlan.length && (
+                <tr>
+                  <td colSpan={4} className="py-3 text-center" style={{ color: G.mute }}>暂无人完成测评或提交意向。</td>
+                </tr>
+              )}
             </tbody>
           </table>
-          <p className="mt-2 text-[11px]" style={{ color: G.mute }}>口径：以当前所选口径的组合统计每科被选人数；教学班按 {CLASS_SIZE} 人/班向上取整。</p>
+          <p className="mt-2 text-[11px]" style={{ color: G.mute }}>口径：以当前所选口径（意向/测评推荐）的组合统计各教学组合人数；开班数按 {CLASS_SIZE} 人/班向上取整，供排课与师资配备参考。</p>
         </Card>
       </div>
       <Card>
