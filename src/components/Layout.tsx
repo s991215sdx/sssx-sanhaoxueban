@@ -140,8 +140,12 @@ export default function Layout({ children }: { children: ReactNode }) {
   });
   const isCampus = !!schoolCtx?.campus;
   const isJiaowu = user?.role === "jiaowu";
-  /* 学校版的管理者（校长/教务）：侧边栏直接列出控制台菜单 */
-  const campusMgr = isCampus && (isAdmin || isJiaowu);
+  /* 学校版的管理者（校长/教务）：侧边栏直接列出控制台菜单。
+     v220.5：平台超管（orgId=null）一律走原版界面——school.context 对超管返回 campus=true
+     （表示「存在校园机构」而非「我是校园机构」），不能据此切换学校版。 */
+  const campusMgr = isCampus && user?.orgId != null && (isAdmin || isJiaowu);
+  /* v220.5：超管的「伴学工作台」称谓不跟校园版走 */
+  const campusTutor = isCampus && user?.orgId != null;
   const schoolGroups = campusMgr ? visibleSchoolGroups(isJiaowu) : [];
   const location = useLocation();
   const campusItemActive = (key: SchoolItemKey) => {
@@ -218,7 +222,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           {showCoach && !campusMgr && (
             <NavLink
               to="/tutor"
-              title={collapsed ? (isCampus ? "指导老师工作台" : "伴学工作台") : undefined}
+              title={collapsed ? (campusTutor ? "指导老师工作台" : "伴学工作台") : undefined}
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
@@ -226,7 +230,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               }
             >
               <GraduationCap size={18} strokeWidth={2.2} />
-              {!collapsed && (isCampus ? "指导老师工作台" : "伴学工作台")}
+              {!collapsed && (campusTutor ? "指导老师工作台" : "伴学工作台")}
             </NavLink>
           )}
           {campusMgr &&
@@ -352,7 +356,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <Logo brand={brand} />
         <div className="flex items-center gap-2">
           {showCoach && !campusMgr && (
-            <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title={isCampus ? "指导老师工作台" : "伴学工作台"}>
+            <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title={campusTutor ? "指导老师工作台" : "伴学工作台"}>
               <GraduationCap size={18} />
             </NavLink>
           )}
