@@ -574,14 +574,14 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
               if (!ok) doPrint();
             })();
           }}
-          className="rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime"
+          className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-cream hover:bg-lime"
         >
           下载 PDF
         </button>
         <button
           type="button"
           onClick={doPrint}
-          className="rounded-lg border border-[#1E3530]/20 bg-white px-4 py-2 text-[13px] font-semibold text-olive hover:border-[#0C7064]/50"
+          className="rounded-md border border-[#1E3530]/20 bg-white px-3 py-1.5 text-xs font-semibold text-olive hover:border-[#0C7064]/50"
         >
           打印
         </button>
