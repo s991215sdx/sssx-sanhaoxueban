@@ -7,6 +7,7 @@ import { organizations, users } from "@db/schema";
 import { getSessionCookieOptions } from "./lib/cookies";
 import { createRouter, authedQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
+import { portalOrgByHost } from "./portalBranding";
 import { signSessionToken } from "./kimi/session";
 import { env } from "./lib/env";
 
@@ -93,9 +94,20 @@ export const authRouter = createRouter({
       const db = getDb();
       /* v177：一个手机号可对应多个机构账号（多机构超管）。登录时取出该手机号下
          全部候选账号，按密码匹配定位账号；多个账号同密码时登录最近使用的一个。 */
-      const candidates = await db.select().from(users).where(eq(users.phone, phone));
+      const allCandidates = await db.select().from(users).where(eq(users.phone, phone));
+
+      /* v225：专属入口域名登录限制——从绑定了机构的入口域名（如 yh.sanhao.sssx.club）访问时，
+         只放行该机构自己的账号；同一手机号跨多机构时也在此收敛到本机构账号。 */
+      const portalOrg = await portalOrgByHost(ctx.req.headers.get("host"));
+      const candidates = portalOrg ? allCandidates.filter((u) => u.orgId === portalOrg.id) : allCandidates;
 
       if (!candidates.length) {
+        if (portalOrg) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: `本站是「${portalOrg.name}」专用入口，请使用本校（机构）账号登录；其他机构账号请从对应入口进入`,
+          });
+        }
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "这个手机号还没有注册——三好学伴采用邀请制，请扫描管理员发放的注册二维码完成注册后再登录",
