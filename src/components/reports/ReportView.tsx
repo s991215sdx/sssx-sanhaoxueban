@@ -19,6 +19,7 @@ import { OliveMbti, OliveDisc, OliveHolland, OliveMulti5, OliveAnchor, OliveMent
 import { OliveE3, OliveGuidance, OliveParent } from "@/components/reports/olive/OliveBigs";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
 import { ZhihuiReportBody } from "@/pages/ZhihuiReport";
+import { downloadReportPdf } from "@/lib/reportPdf";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
 import type { MbtiResult, DiscResult } from "@contracts/assessments";
@@ -2476,23 +2477,43 @@ export default function ReportView({
 
   /** 下载当前 tab 的报告：直接调浏览器打印当前页面（所见即所得，PDF 与网页完全一致，图表不变形）。
    *  用户在打印对话框里选「另存为 PDF」即可。打印时通过 document.title 带入报告名作为默认文件名。 */
+  const TAB_TITLE: Record<Tab, string> = {
+    e3: "学业诊断报告（三阶九能 V3.7）",
+    mbti: "MBTI 性格详版报告",
+    disc: "DISC 行为详版报告",
+    multi5: "多元智能五项测评报告",
+    academics: "成绩现状及目标分数", // 该 tab 不提供下载，仅兜底
+    anchor: "职业锚测评报告",
+    holland: "霍兰德职业兴趣测评报告",
+    mental: "心理健康评估报告",
+    subject: "学科能力评估报告",
+    discparent: "家长认知冲突报告（亲子对照与沟通建议）",
+    parent: "家长认知冲突报告（亲子对照与沟通建议）",
+    combined: "综合学习力报告",
+    guidance: "升学指导综合报告",
+    zhihui: "选科及升学规划报告",
+  };
+
   const onDownload = () => {
-    const TAB_TITLE: Record<Tab, string> = {
-      e3: "学业诊断报告（三阶九能 V3.7）",
-      mbti: "MBTI 性格详版报告",
-      disc: "DISC 行为详版报告",
-      multi5: "多元智能五项测评报告",
-      academics: "成绩现状及目标分数", // 该 tab 不提供下载，仅兜底
-      anchor: "职业锚测评报告",
-      holland: "霍兰德职业兴趣测评报告",
-      mental: "心理健康评估报告",
-      subject: "学科能力评估报告",
-      discparent: "家长认知冲突报告（亲子对照与沟通建议）",
-      parent: "家长认知冲突报告（亲子对照与沟通建议）",
-      combined: "综合学习力报告",
-      guidance: "升学指导综合报告",
-      zhihui: "选科及升学规划报告",
-    };
+    const title = TAB_TITLE[tab];
+    /* v211：优先走服务端 Playwright 渲染真 PDF 文件下载（白名单页面）；
+       注意 /report-detail 只渲染「本人」数据，伴学师看别人时仅选科报告（/zhihui-report?studentId=）可用服务端 PDF，
+       其余 tab 失败/伴学师视角时静默回退到原有打印管线。 */
+    if (tab !== "academics") {
+      const sid = viewer === "tutor" ? (studentUserId ?? undefined) : undefined;
+      const serverPdfOk = tab === "zhihui" || viewer === "student";
+      const target = tab === "zhihui" ? `/zhihui-report${sid ? `?studentId=${sid}` : ""}` : `/report-detail?tab=${tab}`;
+      if (serverPdfOk) {
+        void downloadReportPdf(target, `${profile?.name ?? ""}-${title}.pdf`).then((ok) => {
+          if (!ok) legacyDownload();
+        });
+        return;
+      }
+    }
+    legacyDownload();
+  };
+
+  const legacyDownload = () => {
     const title = TAB_TITLE[tab];
     const studentName = profile?.name ?? undefined;
     /* v183d：当前正在看「新版」（olive book 式样）或综合报告「三阶九能版」时，

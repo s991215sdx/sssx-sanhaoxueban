@@ -8,6 +8,7 @@ import { env } from "./lib/env";
 import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
 import { internalStudentSearch, ssoTicketEntry } from "./internal";
+import { reportPdfHandler } from "./reportPdf";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -16,6 +17,8 @@ app.get(Paths.oauthCallback, createOAuthCallbackHandler());
 /* v158：一体通对接——内部档案搜索（HMAC 鉴权 + 限流）与 SSO ticket 兑换（免登短会话） */
 app.post("/api/internal/sssx/student-search", internalStudentSearch);
 app.get("/sso/sssx", ssoTicketEntry);
+/* v211：报告 PDF 下载（服务端 Playwright 渲染，白名单页面 + Cookie 透传） */
+app.get("/api/report-pdf", reportPdfHandler);
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",

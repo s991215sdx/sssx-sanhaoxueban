@@ -5,6 +5,7 @@
  */
 import { useEffect, useMemo, useState, useContext } from "react";
 import { ReportBrandCtx } from "@/components/reports/olive/OliveBook";
+import { downloadReportPdf } from "@/lib/reportPdf";
 import { useSearchParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { defaultFullScore } from "@contracts/academics";
@@ -540,6 +541,18 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   /* v208：校园渠道学生所有报告页脚统一挂学校品牌（独立页/内嵌同口径；内嵌时外层 ReportView 也会供，这里以学生归属为准） */
   const reportBrand = stuCampus ? (data.student.schoolBrand ?? null) : null;
 
+  /* v211：打印——浏览器打印对话框（另存 PDF 的默认文件名取自 document.title，v196 口径不变） */
+  const doPrint = () => {
+    const prev = document.title;
+    document.title = campus ? campusTitle : `${data.student.name} - 选科及升学规划报告`;
+    const restore = () => {
+      document.title = prev;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  };
+
   return (
     <ReportBrandCtx.Provider value={reportBrand}>
     <div className="zh-root" id={printId}>
@@ -547,23 +560,32 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
         <h1 className="text-[20px] font-bold text-olive">{campus ? campusTitle : "选科及升学规划报告"}</h1>
         <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade}{stuClass ? ` · ${stuClass}` : ""}{stuCampus && stuSchool ? ` · 学校：${stuSchool}` : ""} · 报告编号 {reportNo}</span>
+        {/* v211：下载与打印拆成两个按钮——下载走服务端 Playwright 渲染真 PDF 文件；打印走浏览器打印（另存 PDF 仍可用） */}
+        <span className="ml-auto flex items-center gap-2">
         <button
           type="button"
           onClick={() => {
-            /* v196：另存为 PDF 的默认文件名取自 document.title——校园渠道用「机构名+选科及升学规划报告」 */
-            const prev = document.title;
-            document.title = campus ? campusTitle : `${data.student.name} - 选科及升学规划报告`;
-            const restore = () => {
-              document.title = prev;
-              window.removeEventListener("afterprint", restore);
-            };
-            window.addEventListener("afterprint", restore);
-            window.print();
+            void (async () => {
+              const title = campus ? campusTitle : "选科及升学规划报告";
+              const ok = await downloadReportPdf(
+                `/zhihui-report${studentId ? `?studentId=${studentId}` : ""}`,
+                `${data.student.name}-${title}.pdf`,
+              );
+              if (!ok) doPrint();
+            })();
           }}
-          className="ml-auto rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime"
+          className="rounded-lg bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime"
         >
-          下载 / 打印
+          下载 PDF
         </button>
+        <button
+          type="button"
+          onClick={doPrint}
+          className="rounded-lg border border-[#1E3530]/20 bg-white px-4 py-2 text-[13px] font-semibold text-olive hover:border-[#0C7064]/50"
+        >
+          打印
+        </button>
+        </span>
       </div>
 
       {/* 1 封面 */}
