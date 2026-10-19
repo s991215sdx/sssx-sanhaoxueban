@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { createRouter, authedQuery, adminQuery, staffAdminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { attempts, dailyPlans, errorLogs, moodEntries, organizations, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
@@ -159,6 +159,55 @@ export const adminRouter = createRouter({
         await db.insert(studentTutor).values({ studentUserId: input.studentUserId, tutorUserId: input.tutorId });
       }
       return { ok: true };
+    }),
+
+  /** v217：批量分配伴学师——把选中的一批学员统一分配给指定伴学师（合并语义：
+   *  只覆盖这些伴学师在该学员身上的旧记录，学员已有的其他伴学师不受影响；
+   *  学员档案的「主管伴学师」(tutor_id) 仅在为空时补写为第一位。 */
+  batchSetStudentTutors: staffAdminQuery
+    .input(
+      (v: unknown) =>
+        v as {
+          studentUserIds: number[];
+          tutors: { tutorUserId: number; reportAccess?: boolean; expiresAt?: string | null }[];
+        },
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const studentIds = [...new Set((input.studentUserIds ?? []).map(Number))].slice(0, 500);
+      if (studentIds.length === 0) throw new Error("请先勾选学员");
+      const items = (input.tutors ?? []).map((t) => ({
+        tutorUserId: Number(t.tutorUserId),
+        reportAccess: t.reportAccess !== false,
+        expiresAt: typeof t.expiresAt === "string" && t.expiresAt ? new Date(t.expiresAt) : null,
+      }));
+      if (items.length === 0) throw new Error("请至少选择一位伴学师");
+      /* 伴学师校验：角色必须是伴学师/管理员，且在当前操作人的机构范围内 */
+      for (const it of items) {
+        if (!(await sameOrg(db, ctx.user, it.tutorUserId))) throw new Error(`伴学师 ${it.tutorUserId} 不在你的机构内`);
+        const t = await db.query.users.findFirst({ where: eq(users.id, it.tutorUserId) });
+        if (!t) throw new Error(`伴学师 ${it.tutorUserId} 不存在`);
+        if (t.role !== "tutor" && t.role !== "admin") throw new Error(`「${t.name ?? it.tutorUserId}」当前不是伴学师`);
+      }
+      const tutorIds = items.map((t) => t.tutorUserId);
+      for (const sid of studentIds) {
+        if (!(await sameOrg(db, ctx.user, sid))) throw new Error(`学员 ${sid} 不在你的机构内`);
+        /* 合并：仅重写这些伴学师的记录，保留学员名下其他伴学师 */
+        await db.delete(studentTutor).where(and(eq(studentTutor.studentUserId, sid), inArray(studentTutor.tutorUserId, tutorIds)));
+        await db.insert(studentTutor).values(
+          items.map((t) => ({
+            studentUserId: sid,
+            tutorUserId: t.tutorUserId,
+            reportAccess: t.reportAccess,
+            reportAccessExpiresAt: t.expiresAt,
+          })),
+        );
+        const prof = await db.query.studentProfile.findFirst({ where: eq(studentProfile.userId, sid) });
+        if (prof && prof.tutorId == null) {
+          await db.update(studentProfile).set({ tutorId: tutorIds[0]! }).where(eq(studentProfile.id, prof.id));
+        }
+      }
+      return { ok: true as const, count: studentIds.length };
     }),
 
   /** V56：给一个学员分配多位伴学师（全量替换）。第一位写入 tutor_id 作为主管（兼容旧逻辑）。V59：双方须同机构。
