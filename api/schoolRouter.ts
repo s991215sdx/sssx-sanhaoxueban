@@ -16,6 +16,7 @@ import { getDb } from "./queries/connection";
 import { isPlatformAdmin } from "./tenant";
 import type { Subject4dResult } from "@contracts/subject4d";
 import { defaultFullScore } from "@contracts/academics";
+import { normalizeAssessKinds } from "@contracts/invite";
 import {
   users,
   studentProfile,
@@ -30,6 +31,7 @@ import {
   warningEvents,
   reminders,
   studentTutor,
+  campusAssessPushes,
 } from "../db/schema";
 
 /** 职员角色（可看聚合与名单）。 */
@@ -311,6 +313,90 @@ export const schoolRouter = createRouter({
         await db.update(organizations).set({ settings }).where(eq(organizations.id, ctx.user.orgId));
         return { ok: true as const, scoreWeight: input.scoreWeight };
       }),
+  }),
+
+  /* ------------------------------- 测评中心（v223：测评目录 + 组选批量推送） ------------------------------- */
+
+  assessCenter: createRouter({
+    /** 推送目标：校园学生 + 每人已完成/已解锁的测评。职员按角色范围（tutor 限名下学生）。 */
+    targets: authedQuery.query(async ({ ctx }) => {
+      requireStaff(ctx);
+      const db = getDb();
+      let list = await campusStudents(db, ctx.user.orgId ?? null);
+      if (ctx.user.role === "tutor") {
+        const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+        const set = new Set(mine.map((m) => m.studentUserId));
+        list = list.filter((s) => set.has(s.userId));
+      }
+      const ids = list.map((s) => s.userId);
+      if (!ids.length) return { targets: [] as { userId: number; name: string; className: string | null; grade: string; doneKinds: string[]; releasedKinds: string[] }[] };
+      const results = await db.select({ userId: assessmentResults.userId, kind: assessmentResults.kind }).from(assessmentResults).where(inArray(assessmentResults.userId, ids));
+      const doneBy = new Map<number, Set<string>>();
+      for (const r of results) {
+        if (!doneBy.has(r.userId)) doneBy.set(r.userId, new Set());
+        doneBy.get(r.userId)!.add(r.kind);
+      }
+      const profiles = await db.select({ userId: studentProfile.userId, released: studentProfile.releasedAssessments }).from(studentProfile).where(inArray(studentProfile.userId, ids));
+      const releasedBy = new Map<number, string[]>(profiles.map((p) => [p.userId, Array.isArray(p.released) ? (p.released as string[]) : []]));
+      return {
+        targets: list.map((s) => ({
+          userId: s.userId,
+          name: s.name,
+          className: s.className,
+          grade: s.grade,
+          doneKinds: [...(doneBy.get(s.userId) ?? [])],
+          releasedKinds: releasedBy.get(s.userId) ?? [],
+        })),
+      };
+    }),
+    /** 组选推送：把所选测评并入目标学生的「已解锁测评」（union，不收回既有推送），学生客户端立即可见可测；全程留痕。 */
+    push: authedQuery
+      .input(z.object({
+        userIds: z.array(z.number().int().positive()).min(1).max(2000),
+        kinds: z.array(z.string()).min(1),
+        note: z.string().max(200).optional().default(""),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const kinds = normalizeAssessKinds(input.kinds);
+        if (!kinds?.length) throw new TRPCError({ code: "BAD_REQUEST", message: "测评种类格式不对" });
+        const campus = await campusStudents(db, ctx.user.orgId ?? null);
+        const campusById = new Map(campus.map((s) => [s.userId, s]));
+        if (ctx.user.role === "tutor") {
+          const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+          const set = new Set(mine.map((m) => m.studentUserId));
+          for (const id of input.userIds) if (!set.has(id)) throw new TRPCError({ code: "FORBIDDEN", message: "只能推送给自己名下的学生" });
+        }
+        for (const id of input.userIds) {
+          if (!campusById.has(id)) throw new TRPCError({ code: "FORBIDDEN", message: "推送对象必须是本校校园学生" });
+        }
+        for (const id of input.userIds) {
+          const existing = (await db.select({ id: studentProfile.id, released: studentProfile.releasedAssessments }).from(studentProfile).where(eq(studentProfile.userId, id)).limit(1))[0];
+          const prev = existing && Array.isArray(existing.released) ? (existing.released as string[]) : [];
+          const merged = [...new Set([...prev, ...kinds])];
+          if (existing) await db.update(studentProfile).set({ releasedAssessments: merged }).where(eq(studentProfile.id, existing.id));
+          else await db.insert(studentProfile).values({ userId: id, releasedAssessments: merged });
+        }
+        await db.insert(campusAssessPushes).values({
+          orgId: ctx.user.orgId ?? null,
+          createdBy: ctx.user.id,
+          kinds,
+          userIds: input.userIds,
+          userCount: input.userIds.length,
+          note: input.note,
+        });
+        return { ok: true as const, count: input.userIds.length, kinds };
+      }),
+    /** 推送记录（近 50 条，按机构范围）。 */
+    logs: authedQuery.query(async ({ ctx }) => {
+      requireStaff(ctx);
+      const db = getDb();
+      const rows = ctx.user.orgId == null
+        ? await db.select().from(campusAssessPushes).orderBy(desc(campusAssessPushes.id)).limit(50)
+        : await db.select().from(campusAssessPushes).where(eq(campusAssessPushes.orgId, ctx.user.orgId)).orderBy(desc(campusAssessPushes.id)).limit(50);
+      return { logs: rows.map((r) => ({ id: r.id, kinds: r.kinds ?? [], userCount: r.userCount, note: r.note, createdAt: r.createdAt })) };
+    }),
   }),
 
   /* ------------------------------- 选科意向 ------------------------------- */

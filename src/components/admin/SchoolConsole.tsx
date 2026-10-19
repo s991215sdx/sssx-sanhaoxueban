@@ -21,11 +21,13 @@ import {
   GraduationCap,
   PieChart,
   BookOpen,
+  LayoutGrid,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import StudentsTab from "./StudentsTab";
 import TutorsTab from "./TutorsTab";
 import SelectionStats from "./SelectionStats";
+import AssessCenter from "./AssessCenter";
 import InviteChannelsTab from "./InviteChannelsTab";
 import Library from "@/pages/Library";
 
@@ -42,7 +44,7 @@ export const G = {
   danger: "#C0523C",
 };
 
-type ItemKey = "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users" | "library";
+type ItemKey = "assess" | "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users" | "library";
 
 export type SchoolItemKey = ItemKey;
 
@@ -50,6 +52,7 @@ const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeo
   {
     label: "测评管理",
     items: [
+      { key: "assess", label: "测评中心", icon: LayoutGrid },
       { key: "tasks", label: "施测任务", icon: ClipboardList },
       { key: "progress", label: "进度看板", icon: Gauge },
     ],
@@ -84,7 +87,7 @@ const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeo
 ];
 
 /* v220.3：教务可见项（学校版教务：看统计/预警/意向/催办/档案 + 学员分配台） */
-const JIAOWU_KEYS: SchoolItemKey[] = ["tasks", "progress", "intention", "selection", "archive", "warnings", "students"];
+const JIAOWU_KEYS: SchoolItemKey[] = ["assess", "tasks", "progress", "intention", "selection", "archive", "warnings", "students"];
 
 /** v220.3：供外层侧边栏（Layout）渲染学校版菜单；jiaowu=只返回教务可见项 */
 export function visibleSchoolGroups(jiaowu: boolean) {
@@ -858,6 +861,7 @@ function UsersSection() {
 /* ---------------------------------- 页面标题 ---------------------------------- */
 
 const TITLES: Record<ItemKey, { crumb: string; title: string; sub?: string }> = {
+  assess: { crumb: "测评管理 / 测评中心", title: "测评中心", sub: "测评组合与单项测评目录——看报告效果图与功能介绍，勾选后批量推送给学生" },
   tasks: { crumb: "测评管理 / 施测任务", title: "施测任务 · 未参测催办", sub: "谁做完了、谁还没动——一键催办，文本直达班主任" },
   progress: { crumb: "测评管理 / 进度看板", title: "进度看板 · 参测完成统计", sub: "全校必测完成率与班级排行，黄色班级建议重点跟进" },
   intention: { crumb: "数据统计 / 选科意向分析", title: "选科意向分析 · 推荐采纳率", sub: "系统推荐与实际确认的对比——前三推荐采纳、自定义理由回收，自动产出「推荐有效率」" },
@@ -928,6 +932,7 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
           <h1 className="mt-1 text-[20px] font-bold" style={{ color: G.ink }}>{t.title}</h1>
           {t.sub && <p className="mt-1 mb-4 text-[12.5px]" style={{ color: G.mute }}>{t.sub}</p>}
           <div className="mt-4">
+            {item === "assess" && <AssessCenter canManage={canManage} />}
             {item === "tasks" && <TasksSection canManage={canManage} />}
             {item === "progress" && <ProgressSection />}
             {item === "intention" && <IntentionSection canManage={canManage} />}
