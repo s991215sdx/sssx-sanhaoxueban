@@ -21,9 +21,11 @@ describe("v210 总分口径自动判定与 750 折算", () => {
     if (!/defaultFullScore\(a\.name, grade\)/.test(page)) throw new Error("缺：按年级科目满分兜底");
   });
 
-  it("矩阵「你的档」用等效分标注", () => {
-    // v214：矩阵改按 equiv750 定位冲稳保相邻三档（matrixActive / matrixShown / relTier）
-    if (!/matrixActive/.test(page)) throw new Error("缺：矩阵按 equiv750 定位");
+  it("分数段矩阵「不同分数能走哪些路」全分段展示", () => {
+    // v217：不再按学生分数定位冲/稳/保（matrixActive/matrixShown/relTier 已移除），
+    // 改为全部分数段院校一览，双栏每页 8 段自动分页（matrixPages）
+    if (!/不同分数能走哪些路/.test(page)) throw new Error("缺：新版矩阵标题");
+    if (!/matrixPages/.test(page)) throw new Error("缺：矩阵分页");
     if (!/SCORE_PATH_MATRIX/.test(page)) throw new Error("缺：全分段矩阵数据源");
   });
 

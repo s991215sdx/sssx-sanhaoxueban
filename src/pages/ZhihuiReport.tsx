@@ -272,7 +272,10 @@ function SecTitle({ n, title, sub }: { n: string | number; title: string; sub?: 
 /* ---------- 主组件 ---------- */
 /** 报告主体：独立页与内嵌（测评报告栏目）共用；printId 仅独立页传（打印字号规则按 id 匹配）。 */
 export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; printId?: string }) {
-  const { data, isLoading } = trpc.zhihui.reportData.useQuery({ studentId });
+  /* v217：首选科目回传后端做专业推荐过滤。首屏数据未到前为 undefined（后端按四维潜力兜底），
+     combos 算出后回填并触发一次精确重取 */
+  const [firstTrackOpt, setFirstTrackOpt] = useState<"物理" | "历史" | undefined>(undefined);
+  const { data, isLoading } = trpc.zhihui.reportData.useQuery({ studentId, firstTrack: firstTrackOpt });
   /* v194：校园渠道标识（粤华版选科规则/权重/成绩门禁） */
   const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
   const campus = !!access?.campus && !studentId; // 内嵌查看（伴学师看别人）时不启用校园版规则
@@ -453,10 +456,12 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     [academics, grade],
   );
   const equiv750 = fullTotal > 0 ? Math.round((totalScore / fullTotal) * 750) : 0;
-  /* v214：分数段矩阵改用 SCORE_PATH_MATRIX 全分段库（350-680），按等效分定位「冲/稳/保」相邻三档：
-     上一档=冲、所在档=稳、下一档=保；分数段之外（太高/太低/未填成绩）退化为展示参考档。
-     数据里的「480以下」与 450-500/400-450/350-400 重叠，会干扰定位，展示时剔除。 */
+  /* v217：分数段矩阵改版——不再按学生自己的分数定位冲/稳/保，而是「不同分数能走哪些路」，
+     全部分数段（350-680+）对应的院校全部列出；双栏紧凑排版，每页 8 段，超出的自动分页 */
   const firstTrack: "物理" | "历史" = combos?.c1?.[0]?.[0] === "历史" ? "历史" : "物理";
+  useEffect(() => {
+    if (combos && !firstTrackOpt) setFirstTrackOpt(firstTrack);
+  }, [combos, firstTrack, firstTrackOpt]);
   const matrixBands = useMemo(() => {
     const all = (SCORE_PATH_MATRIX[firstTrack] ?? []).filter((b) => b.score !== "480以下");
     return [...all].sort((a, b) => {
@@ -465,30 +470,14 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       return parseInt(fb, 10) - parseInt(fa, 10);
     });
   }, [firstTrack]);
-  const matrixActive = useMemo(() => {
-    if (!equiv750) return null;
-    for (const b of matrixBands) {
-      const m = b.score.match(/(\d+)(?:-(\d+))?/);
-      if (!m) continue;
-      const lo = parseInt(m[1], 10);
-      const hi = m[2] ? parseInt(m[2], 10) : b.score.includes("以上") ? Infinity : lo;
-      if (equiv750 >= lo && equiv750 <= hi) return b.score;
-    }
-    return null;
-  }, [matrixBands, equiv750]);
-  const matrixShown = useMemo(() => {
-    if (!equiv750) return matrixBands;
-    const idx = matrixBands.findIndex((b) => b.score === matrixActive);
-    if (idx === -1) return equiv750 < 370 ? matrixBands.slice(-3) : matrixBands.slice(0, 3);
-    return matrixBands.slice(Math.max(0, idx - 1), Math.min(matrixBands.length, idx + 2));
-  }, [matrixBands, equiv750, matrixActive]);
-  /** 相对当前学生的冲稳保：高于所在档=冲，所在档=稳，低于=保。 */
-  const relTier = (score: string): "冲" | "稳" | "保" => {
-    if (!matrixActive) return matrixBands.find((b) => b.score === score)?.tier ?? "稳";
-    if (score === matrixActive) return "稳";
-    const fi = (x: string) => parseInt(x.match(/(\d+)/)?.[1] ?? "0", 10);
-    return fi(score) > fi(matrixActive) ? "冲" : "保";
-  };
+  const MX_PER_PAGE = 8;
+  const matrixPages = useMemo(() => {
+    const pages: (typeof matrixBands)[] = [];
+    for (let i = 0; i < matrixBands.length; i += MX_PER_PAGE) pages.push(matrixBands.slice(i, i + MX_PER_PAGE));
+    return pages;
+  }, [matrixBands]);
+  const matrixStartNo = 19;
+  const afterMxNo = matrixStartNo + matrixPages.length; // 分年级规划起始页码
   const reportNo = useMemo(() => {
     const d = data?.subject4d?.createdAt ? new Date(data.subject4d.createdAt) : new Date();
     return `ZH${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${data?.student.id ?? 0}`;
@@ -943,39 +932,36 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         </div>
       </Page>
 
-      {/* Part4 分数段矩阵（v214：按等效分定位冲/稳/保相邻三档） */}
-      <Page no={19}>
-        <SecTitle n={2} title="你的分数能走哪些路" sub={`${firstTrack}类 · 按分数段查看可报路径与院校`} />
-        <div id="matrix">
-          {matrixShown.map((b) => {
-            const isActive = equiv750 > 0 && b.score === matrixActive;
-            const tier = relTier(b.score);
-            const tierColor = tier === "冲" ? "#C05A4B" : tier === "稳" ? C.brand : "#5B8DB8";
-            return (
-              <div key={b.score} style={{ background: "#fff", border: `1.5px solid ${isActive ? C.brand : "#E3EEE8"}`, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
-                <div style={{ padding: "15px 22px", background: isActive ? "#F0FAF5" : "#F7FBF9", display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ minWidth: 44, height: 22, background: tierColor, color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 6, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{tier}</span>
-                  <b style={{ fontSize: 15, color: C.olive }}>{b.score} 分</b>
-                  {isActive && <b style={{ fontSize: 12, color: C.brandDeep }}>· 你的档</b>}
-                  <span style={{ fontSize: 12, color: C.oliveMute, marginLeft: "auto" }}>{b.cells.filter((c) => c.schools.length > 0).length} 条路径可报</span>
-                </div>
-                <div style={{ padding: "14px 22px 18px" }}>
-                  {b.cells.map((c) => (<div key={c.path} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
-                    <span style={{ minWidth: 76, height: 24, background: C.brand, color: "#fff", fontSize: 12, fontWeight: 700, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2, flex: "none" }}>{c.path}</span>
-                    <span style={{ fontSize: 12.5, color: C.oliveSoft, lineHeight: 1.9 }}>
-                      {c.schools.length > 0 ? c.schools.join("、") : "该分数段此路径机会较少，可关注相邻分数段或换路径组合。"}
-                    </span>
-                  </div>))}
-                </div>
+      {/* Part4 分数段矩阵（v217：「不同分数能走哪些路」——全部分数段院校一览，双栏紧凑自动分页） */}
+      {matrixPages.map((bands, pi) => (
+      <Page key={pi} no={matrixStartNo + pi}>
+        <SecTitle n={2} title="不同分数能走哪些路" sub={`${firstTrack}类 · 各分数段可报路径与院校一览${matrixPages.length > 1 ? `（${pi + 1}/${matrixPages.length}）` : ""}`} />
+        <div id={pi === 0 ? "matrix" : undefined} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {bands.map((b) => (
+            <div key={b.score} style={{ background: "#fff", border: "1px solid #E3EEE8", borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ padding: "10px 16px", background: "#F7FBF9", display: "flex", alignItems: "center", gap: 8 }}>
+                <b style={{ fontSize: 13.5, color: C.olive }}>{b.score} 分</b>
+                <span style={{ fontSize: 11, color: C.oliveMute, marginLeft: "auto" }}>{b.cells.filter((c) => c.schools.length > 0).length} 条路径可报</span>
               </div>
-            );
-          })}
+              <div style={{ padding: "10px 16px 12px" }}>
+                {b.cells.map((c) => (<div key={c.path} style={{ display: "flex", gap: 8, marginBottom: 7 }}>
+                  <span style={{ minWidth: 62, height: 20, background: C.brand, color: "#fff", fontSize: 10.5, fontWeight: 700, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 1, flex: "none" }}>{c.path}</span>
+                  <span style={{ fontSize: 11, color: C.oliveSoft, lineHeight: 1.75 }}>
+                    {c.schools.length > 0 ? c.schools.join("、") : "该分数段此路径机会较少，可关注相邻分数段或换路径组合。"}
+                  </span>
+                </div>))}
+              </div>
+            </div>
+          ))}
         </div>
-        <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>{equiv750 ? <>你当前折合 750 分制约 <b style={{ color: C.olive }}>{equiv750}</b> 分（本次考试满分 {fullTotal} 分，已按比例折算），以上按你的分数定位到「冲 / 稳 / 保」三个分数段，「你的档」即当前所在段。</> : "填写成绩后，这里会按你的分数定位到「冲 / 稳 / 保」三个分数段。"}每个分数段列出的为参考口径，正式填报以当年一分一段表与招生计划为准。</p>
+        {pi === matrixPages.length - 1 && (
+          <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>以上列出{firstTrack}类各分数段可报的五条路径（高考统招 / 强基计划 / 综合评价 / 港澳升学 / 境外留学）与对应院校；每个分数段都可对照自己的成绩找到可走的路。院校为参考口径，正式填报以当年一分一段表与招生计划为准。</p>
+        )}
       </Page>
+      ))}
 
       {/* Part4 分年级规划 */}
-      <Page no={20}>
+      <Page no={afterMxNo}>
         <SecTitle n={3} title="分年级条件准备规划" sub={`你现在${grade} · 各阶段该做什么一目了然`} />
         <div style={{ display: "grid", gap: 16, marginTop: 16 }}>
           {GRADE_PLANS.map((g) => (
@@ -994,7 +980,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       </Page>
 
       {/* 测评明细 */}
-      <Page no={21}>
+      <Page no={afterMxNo + 1}>
         <div className="part-tag">APPENDIX</div>
         <h2>测评明细</h2>
         <p className="muted" style={{ marginTop: 12 }}>本页为原始作答明细，供伴学师咨询解读与家长存档，可随报告一并打印。</p>
@@ -1021,7 +1007,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       </Page>
 
       {/* 免责 */}
-      <Page no={22} tall={false}>
+      <Page no={afterMxNo + 2} tall={false}>
         <div className="part-tag">声明</div>
         <h2>免责声明</h2>
         <div style={{ display: "grid", gap: 16, marginTop: 28 }}>
@@ -1108,8 +1094,9 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
   .no-print { display: none !important; }
   .zh-root { background: #fff; padding: 0; }
   /* 每页至少撑满一张 A4 可印区域，页与页零留白；内容超出自动跨页不裁剪。
-     v196：min-height 收紧到 256mm（+上下内边距 ≈ 270mm < 273mm 可印高度），封面等单页内容严格一页显示完，不再溢出到第二张 */
-  .zh-page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; page-break-inside: auto; max-width: none; min-height: 256mm !important; height: auto; padding: 14px 22px 40px; }
+     v217 修复空白页：原 256mm min-height + padding 上下 54px 未声明 box-sizing，实际 ≈281mm 超出
+     273mm 可印高度，每页拖出一条 8mm 左右的尾页（几乎全白）。现显式 border-box 并收紧到 246mm。 */
+  .zh-page { box-sizing: border-box; box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; page-break-inside: auto; max-width: none; min-height: 246mm !important; height: auto; padding: 10mm 8mm 14mm; }
   .zh-page:last-child { page-break-after: auto; }
   .pfoot { bottom: 8px; left: 22px; right: 22px; }
   .zh-page .card { padding: 9px 14px; }

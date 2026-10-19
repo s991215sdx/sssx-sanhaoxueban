@@ -98,7 +98,13 @@ export const zhihuiRouter = createRouter({
 
   /** 智慧生涯规划报告数据：学员本人 / 伴学师 / 管理员。 */
   reportData: authedQuery
-    .input(z.object({ studentId: z.number().int().optional() }))
+    .input(
+      z.object({
+        studentId: z.number().int().optional(),
+        /* v217：首选科目（物理/历史）。文科首选时专业推荐过滤要求物理+化学的理工农医硬核门类 */
+        firstTrack: z.enum(["物理", "历史"]).optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const db = getDb();
       await assertStaffIfOther(ctx, input.studentId);
@@ -254,14 +260,60 @@ export const zhihuiRouter = createRouter({
         for (const [c, w] of Object.entries(HOLLAND_CAREER_W[h] ?? {})) careerW[c] = (careerW[c] ?? 0) + w;
       }
 
-      // 推荐专业类 Top5：按门类权重取该门类下代表专业（含课程/就业等字段）
+      // 推荐专业类 Top5（v217 修复：文科生被拼音序工科刷屏的系统性错误）
       const catRows = await db
         .selectDistinct({ cat: majorLib.cat, menlei: majorLib.menlei })
         .from(majorLib);
+      /* 学科四维 → 门类匹配度（潜力指数 0–5 归一到 0–1，取映射学科里的最高值）。
+         注意与前端 SUBJECT_MENLEI 保持一致。 */
+      const SUBJECT_MENLEI_MAP: Record<string, string[]> = {
+        语文: ["文学", "教育学"],
+        数学: ["理学", "工学"],
+        英语: ["文学", "经济学", "管理学"],
+        物理: ["工学", "理学"],
+        化学: ["理学", "医学", "工学"],
+        生物: ["医学", "农学", "理学"],
+        历史: ["历史学", "哲学", "文学"],
+        政治: ["法学", "教育学"],
+        地理: ["理学", "工学"],
+      };
+      const s4Subjects = (s4d?.result as { subjects?: Record<string, { 潜力指数?: number }> } | null)?.subjects ?? {};
+      const menleiFit: Record<string, number> = {};
+      for (const [subj, menleis] of Object.entries(SUBJECT_MENLEI_MAP)) {
+        const p = s4Subjects[subj]?.潜力指数;
+        if (typeof p !== "number") continue;
+        const f = Math.max(0, Math.min(1, p / 5));
+        for (const m of menleis) menleiFit[m] = Math.max(menleiFit[m] ?? 0, f);
+      }
+      /* 首选历史：硬核理工农医在新高考下多要求物理+化学，历史生报不了——剔除；理学降权保留。
+         前端未传 firstTrack 时（首屏），按学科四维物理/历史潜力兜底判定 */
+      const histPot = s4Subjects["历史"]?.潜力指数 ?? 3;
+      const physPot = s4Subjects["物理"]?.潜力指数 ?? 3;
+      const histFirst = input.firstTrack ? input.firstTrack === "历史" : histPot > physPot;
+      const HIST_HARD_EXCLUDE = new Set(["工学", "医学", "农学"]);
+      const fitOf = (menlei: string) => menleiFit[menlei] ?? 0;
       const catRanked = catRows
-        .map((c) => ({ ...c, w: menleiW[c.menlei] ?? 0 }))
-        .sort((a, b) => b.w - a.w || a.cat.localeCompare(b.cat, "zh"));
-      const pickedCats = catRanked.slice(0, 5);
+        .map((c) => {
+          const base = menleiW[c.menlei] ?? 0;
+          /* 霍兰德门类权重 × 学科四维匹配度（0.6–1.4 调节带）；权重为 0 的门类不进推荐 */
+          let w = base > 0 ? base * (0.6 + 0.8 * fitOf(c.menlei)) : 0;
+          if (histFirst) {
+            if (HIST_HARD_EXCLUDE.has(c.menlei)) w = 0;
+            else if (c.menlei === "理学") w *= 0.35;
+          }
+          return { ...c, w, fit: fitOf(c.menlei) };
+        })
+        .filter((c) => c.w > 0)
+        .sort((a, b) => b.w - a.w || b.fit - a.fit || a.cat.localeCompare(b.cat, "zh"));
+      let pickedCats = catRanked.slice(0, 5);
+      /* 兜底：霍兰德未做或全部被过滤时，按学科四维匹配度补位，保证有推荐 */
+      if (pickedCats.length === 0) {
+        pickedCats = catRows
+          .map((c) => ({ ...c, w: 0, fit: fitOf(c.menlei) }))
+          .filter((c) => c.fit > 0 && !(histFirst && HIST_HARD_EXCLUDE.has(c.menlei)))
+          .sort((a, b) => b.fit - a.fit || a.cat.localeCompare(b.cat, "zh"))
+          .slice(0, 5);
+      }
       const majorCats = [];
       for (const c of pickedCats) {
         const reps = await db

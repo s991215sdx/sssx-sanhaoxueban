@@ -1,7 +1,7 @@
 /* v208 冒烟：综合学习力报告（三阶九能版）打印分页——封面独占整页、冰山图独立第 2 页一图看全
    （2026-10-19 唐先生反馈：正式环境打印封面只占半页、冰山图被挤在左列且顶部截断）。
    口径：
-   - 封面 paper-card 打印态 min-h-[256mm]（与 book 式样 .ob-page 同规则满版）+ break-after-page；
+   - 封面 paper-card 打印态 min-h-[246mm]（与 book 式样 .ob-page 同规则满版，v217 与可印高度对齐）+ break-after-page；
    - PART 1 冰山图紧随封面分页后整页呈现：打印静态版（print:block 流式、无 transform/绝对定位）
      内部全部记分卡/底排卡片带 print: 紧凑类，保证整页高度 ≤ A4 内容高（约 1032px）；
    - 计分行（KRow/TotalRow）、卡头（CardHead）、多元智能五项、深层特质行均带 print: 压缩类。
@@ -23,7 +23,7 @@ describe("v208 综合学习力报告打印分页", () => {
   const router = read("api/router.ts");
 
   it("封面打印独占整页", () => {
-    need(rpt, "print:min-h-[256mm]", "封面打印满版高度");
+    need(rpt, "print:min-h-[246mm]", "封面打印满版高度");
     need(rpt, "print:break-after-page", "封面打印后强制分页");
   });
 

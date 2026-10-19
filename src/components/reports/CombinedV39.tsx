@@ -179,8 +179,9 @@ const ANCHORS_VB: Record<string, [number, number]> = {
 const TIP_VB: [number, number] = [215, 483];
 const ENV_VB: [number, number] = [331, 462];
 const ENV_CORNER_X = 288;
-/** 水下拉伸上限：1.6 倍，避免过于细长。 */
+/** 水下拉伸上限：桌面 1.6 倍；手机端 1.45（容器窄，再高会显得细长）。 */
 const MAX_STRETCH = 1.6;
+const MAX_STRETCH_MOBILE = 1.45;
 
 export function BergSvg({ stretch = 1 }: { stretch?: number }) {
   const k = stretch;
@@ -375,7 +376,13 @@ export default function CombinedV39Report({
         /* 手机端：静态堆叠，无绝对定位/连线/缩放；清掉桌面端遗留的内联定位 */
         setGeom((p) => (p === null ? p : null));
         setScale((p) => (p === 1 ? p : 1));
-        setStretch((p) => (p === 1 ? p : 1));
+        /* v217：手机端同样按记分卡列高度拉伸冰山（1–1.6，随容器宽度折算自然高），
+           冰山更长、下方留白更少（唐先生反馈：空白太多，拉长点） */
+        const cardsEl = stage.querySelector<HTMLElement>('[data-col="cards"]');
+        const cardsH = cardsEl?.offsetHeight ?? 0;
+        const natH = BERG_H * (Math.min(BERG_W, wrap.clientWidth) / BERG_W);
+        const k = cardsH > 0 ? Math.max(1, Math.min(MAX_STRETCH_MOBILE, cardsH / Math.max(1, natH))) : 1;
+        setStretch((p) => (p === k ? p : k));
         if (wrap.style.height) wrap.style.height = "";
         if (stage.style.height) stage.style.height = "";
         if (stage.style.marginLeft) stage.style.marginLeft = "";
@@ -572,8 +579,8 @@ export default function CombinedV39Report({
   return (
     <div className="space-y-4">
       {/* ============ 封面 ============ */}
-      {/* 打印：封面独占一整页（与 book 式样 .ob-page 同规则的 256mm 满版），随后分页进入冰山图页 */}
-      <div className="paper-card relative flex min-h-[520px] flex-col overflow-hidden px-7 py-8 print:min-h-[256mm] print:break-after-page sm:px-10">
+      {/* 打印：封面独占一整页（与 book 式样 .ob-page 同规则的 246mm 满版，v217 与可印高度对齐），随后分页进入冰山图页 */}
+      <div className="paper-card relative flex min-h-[520px] flex-col overflow-hidden px-7 py-8 print:min-h-[246mm] print:break-after-page sm:px-10">
         <div className="flex gap-2">
           <span className="h-[7px] w-[7px] rounded-full bg-[#0EA875]" />
           <span className="h-[7px] w-[7px] rounded-full bg-[#0EA875]" />
@@ -625,7 +632,7 @@ export default function CombinedV39Report({
                 }
                 style={stacked ? undefined : { width: BERG_W, height: panelH }}
               >
-                <BergSvg stretch={stacked ? 1 : stretch} />
+                <BergSvg stretch={stretch} />
               </div>
               {/* 右：指标卡（桌面端收窄至 424，把空间留给冰山） */}
               <div data-col="cards" className="flex flex-col gap-3" style={stacked ? undefined : { width: CARD_W }}>
