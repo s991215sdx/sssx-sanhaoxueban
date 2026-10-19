@@ -286,6 +286,9 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   /* v206：按「被查看学生」是否校园渠道决定封面展示（伴学师/管理员内嵌查看粤华学生同样生效）；
      只影响报告封面信息，不动上面 campus 的选科规则/成绩门禁口径，非校园渠道学生完全不受影响 */
   const stuCampus = campus || !!data?.student.campus;
+  /* v221：成绩权重由机构管理员后台可调（未设置默认：校园 35 / 通用 40），四维权重 = 100 - 成绩权重 */
+  const scorePct = data?.xuankeScoreWeight ?? (campus ? 35 : 40);
+  const potPct = 100 - scorePct;
   const stuSchool = data?.student.schoolName ?? null;
   const stuClass = data?.student.className ?? null;
   const stuLogo = data?.student.schoolLogo ?? null;
@@ -328,9 +331,9 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   const exp = data?.expectations;
   const grade = data?.student.grade === "junior" ? "初三" : data?.student.grade === "senior" ? "高三" : data?.student.grade === "高二" ? "高二" : "高一";
 
-  /* 选科推荐（v193 通用 + v194 校园版）。
-     通用版：广东 3+1+2，潜力 60% + 成绩 40%，物理轨化学加权优先（<45 放弃并说明）。
-     校园版（粤华）：候选池固定 5 组合（物化生/物化地/物化政/政史地/政史生），潜力 65% + 成绩 35%；
+  /* 选科推荐（v193 通用 + v194 校园版 + v221 机构可调权重）。
+     通用版：广东 3+1+2，潜力 + 成绩（默认 60/40，机构可调），物理轨化学加权优先（<45 放弃并说明）。
+     校园版（粤华）：候选池固定 5 组合（物化生/物化地/物化政/政史地/政史生），默认潜力 65% + 成绩 35%（机构可调）；
      物化最优 vs 史政最优分高者主推，同分看数学（≥90 物化、<90 史政）；化学弱也推物化并提示补课。
      所有组合带防重兜底，杜绝科目重复。 */
   const combos = useMemo(() => {
@@ -362,7 +365,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     /* ---------- 校园版（粤华） ---------- */
     /* v218：伴学师/管理员内嵌查看粤华学生同样走校园版组合池（学校要求第一/第二/第三推荐只限 5 组合） */
     if (campus || data?.student.campus) {
-      const w = mkW(0.35);
+      const w = mkW(scorePct / 100);
       const CANDS = [
         { track: "物化" as const, subs: ["物理", "化学", "生物"] },
         { track: "物化" as const, subs: ["物理", "化学", "地理"] },
@@ -401,7 +404,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     }
 
     /* ---------- 通用版 ---------- */
-    const w = mkW(0.4);
+    const w = mkW(scorePct / 100);
     const firstPhys = w("物理") >= w("历史");
     const first = firstPhys ? "物理" : "历史";
     const pool = ["化学", "生物", "政治", "地理"].map((s) => ({ s, v: w(s) }));
@@ -432,7 +435,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       weakTips: mkWeakTips(c1, first),
       englishLow,
     };
-  }, [s4d, academics, grade, campus, data?.student.campus]);
+  }, [s4d, academics, grade, campus, data?.student.campus, scorePct]);
 
   const subjectRows = useMemo(() => {
     if (!s4d) return [];
@@ -533,7 +536,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         <div className="paper-card max-w-md p-8 text-center">
           <h2 className="text-[19px] font-bold text-olive">还差一步：录入月考成绩</h2>
           <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
-            选科推荐需要把最近一次月考成绩按 35% 权重计入。请把<b>语数英 + 物化生政史地 9 科</b>成绩填完后，再来查看你的选科及升学规划报告。
+            选科推荐需要把最近一次月考成绩按 {scorePct}% 权重计入。请把<b>语数英 + 物化生政史地 9 科</b>成绩填完后，再来查看你的选科及升学规划报告。
           </p>
           <Link
             to="/report-detail"
@@ -709,7 +712,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
                 {combos.c1.map(([sub, tag], i) => (<div key={sub}><i style={{ display: "inline-block", width: 12, height: 12, borderRadius: 3, background: DIMC[i === 0 ? 0 : i], marginRight: 8 }} />{tag} · <b>{sub}</b></div>))}
                 <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
                   {combos.campus
-                    ? `学校优先推荐组合之一：${combos.c1.map((x) => x[0]).join("+")}，按学科潜力 65% + 月考成绩 35% 加权后在 5 个候选组合中得分最高。`
+                    ? `学校优先推荐组合之一：${combos.c1.map((x) => x[0]).join("+")}，按学科潜力 ${potPct}% + 月考成绩 ${scorePct}% 加权后在 5 个候选组合中得分最高。`
                     : `首选${combos.c1[0]![0]}覆盖最广的专业面；再选按学科潜力指数排序（物理首选时化学加权优先，满足绝大多数理工类「物理+化学」选考要求）。`}
                 </p>
               </div>
@@ -721,8 +724,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
             {/* v193/v194：权重说明 / 化学说明 / 无成绩引导（校园版与通用版文案分离） */}
             <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>
               {combos.campus
-                ? `推荐依据：学科潜力指数 65% + 最近月考成绩 35%（已计入最近一次月考成绩）；候选组合为学校优推的 5 个组合（物化生/物化地/物化政/政史地/政史生），按加权得分排序推荐。${combos.tied && combos.mathScore != null ? ` 物化与史政组合得分相同，按数学成绩（${combos.mathScore} 分）决断：${combos.mathScore >= 90 ? "≥90 优先物理轨" : "<90 优先历史轨"}。` : ""}`
-                : `推荐依据：学科潜力指数 60% + 最近考试成绩 40%${combos.hasGrades ? "（已计入最近一次考试成绩）" : "（尚未录入成绩，暂按纯测评潜力推荐）"}；物理首选时化学优先（满足绝大多数理工类「物理+化学」选考要求）。`}
+                ? `推荐依据：学科潜力指数 ${potPct}% + 最近月考成绩 ${scorePct}%（已计入最近一次月考成绩）；候选组合为学校优推的 5 个组合（物化生/物化地/物化政/政史地/政史生），按加权得分排序推荐。${combos.tied && combos.mathScore != null ? ` 物化与史政组合得分相同，按数学成绩（${combos.mathScore} 分）决断：${combos.mathScore >= 90 ? "≥90 优先物理轨" : "<90 优先历史轨"}。` : ""}`
+                : `推荐依据：学科潜力指数 ${potPct}% + 最近考试成绩 ${scorePct}%${combos.hasGrades ? "（已计入最近一次考试成绩）" : "（尚未录入成绩，暂按纯测评潜力推荐）"}；物理首选时化学优先（满足绝大多数理工类「物理+化学」选考要求）。`}
             </p>
             {combos.chemLow && (
               <div className="card" style={{ marginTop: 10, borderLeft: `4px solid ${C.brand}`, background: C.cream }}>
@@ -737,7 +740,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
             {!combos.hasGrades && !combos.campus && (
               <div className="card" style={{ marginTop: 10, borderLeft: `4px solid ${C.lime}`, background: C.cream }}>
                 <b style={{ color: C.olive, fontSize: 14 }}>让推荐更精准：</b>
-                <span style={{ fontSize: 13.5, color: C.oliveSoft }}>录入最近一次月考/期考成绩后，选科推荐会把成绩按 40% 权重计入。 </span>
+                <span style={{ fontSize: 13.5, color: C.oliveSoft }}>录入最近一次月考/期考成绩后，选科推荐会把成绩按 {scorePct}% 权重计入。 </span>
                 <Link to="/report-detail" style={{ fontSize: 13.5, fontWeight: 700, color: C.brandDeep, textDecoration: "underline" }}>去录入成绩 →</Link>
               </div>
             )}

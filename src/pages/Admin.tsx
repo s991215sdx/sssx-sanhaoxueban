@@ -15,6 +15,7 @@ import BulkAssignTutors from "@/components/BulkAssignTutors";
 import SchoolConsole from "@/components/admin/SchoolConsole";
 import StudentsTab from "@/components/admin/StudentsTab";
 import TutorsTab from "@/components/admin/TutorsTab";
+import XuankeWeightPanel from "@/components/admin/XuankeWeightPanel";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
@@ -99,13 +100,14 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Users; label: str
   );
 }
 
-type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs" | "dash";
+type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs" | "dash" | "xuanke";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "overview", label: "总览" },
   { key: "students", label: "学员" },
   { key: "tutors", label: "伴学师" },
   { key: "invites", label: "注册邀请" },
+  { key: "xuanke", label: "选科设置" },
 ];
 
 function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; onRefresh: () => void; platform?: boolean }) {
@@ -210,6 +212,8 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       {tab === "orgs" && <OrgAdminTab />}
       {tab === "dash" && <PlatformDashboard onPickOrg={(id) => { setOrgSel(id); setTab("overview"); }} />}
       {tab === "invites" && <InviteChannelsTab />}
+      {/* v221：选科评分权重（机构管理员可调；平台超管只读预览） */}
+      {tab === "xuanke" && <XuankeWeightPanel canEdit={!platform} />}
       {/* V61：超管分系统查看——数据类 tab 上方的系统选择器（机构管理员无此条，恒看本机构） */}
       {platform && (tab === "overview" || tab === "students" || tab === "tutors") && (
         <div className="paper-card flex flex-wrap items-center gap-2.5 px-4 py-2.5">

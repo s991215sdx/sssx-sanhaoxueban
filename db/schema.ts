@@ -393,6 +393,8 @@ export const organizations = mysqlTable("organizations", {
   logoUrl: varchar("logo_url", { length: 512 }),
   /** 停用后：机构账号登录即见停用提示，管理端置灰 */
   active: boolean("active").notNull().default(true),
+  /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40） */
+  settings: json("settings").$type<{ xuanke?: { scoreWeight?: number } }>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()

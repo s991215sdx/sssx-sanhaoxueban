@@ -261,6 +261,13 @@
       "when": 1792404695760,
       "tag": "0038_school_v220",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1792992000000,
+      "tag": "0039_org_settings",
+      "breakpoints": true
     }
   ]
 }

@@ -20,12 +20,14 @@ import {
   BellRing,
   GraduationCap,
   PieChart,
+  BookOpen,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import StudentsTab from "./StudentsTab";
 import TutorsTab from "./TutorsTab";
 import SelectionStats from "./SelectionStats";
 import InviteChannelsTab from "./InviteChannelsTab";
+import Library from "@/pages/Library";
 
 /* ---------------------------------- 设计令牌（对齐效果图） ---------------------------------- */
 export const G = {
@@ -40,7 +42,7 @@ export const G = {
   danger: "#C0523C",
 };
 
-type ItemKey = "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users";
+type ItemKey = "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users" | "library";
 
 export type SchoolItemKey = ItemKey;
 
@@ -74,6 +76,10 @@ const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeo
       { key: "invites", label: "注册邀请", icon: QrCode },
       { key: "users", label: "组织架构", icon: Network },
     ],
+  },
+  {
+    label: "教学资源",
+    items: [{ key: "library", label: "资料库", icon: BookOpen }],
   },
 ];
 
@@ -343,6 +349,10 @@ function IntentionSection({ canManage }: { canManage: boolean }) {
   const openRound = rounds?.find((r) => r.status === "open");
   const decided = adoption?.decided ?? 0;
   const hitRate = adoption?.pct?.hitRate ?? null;
+  /* v221：成绩权重随机构设置动态显示（默认校园 35） */
+  const { data: xw } = trpc.school.xuankeWeight.get.useQuery();
+  const scorePct = xw?.scoreWeight ?? 35;
+  const potPct = 100 - scorePct;
   return (
     <div className="space-y-4">
       {canManage && (
@@ -404,7 +414,7 @@ function IntentionSection({ canManage }: { canManage: boolean }) {
                 : `本轮 ${decided} 人完成意向确认：系统推荐采纳率 ${hitRate}%，其中第一推荐采纳 ${adoption.pct?.rec1 ?? 0}%；自定义选科 ${adoption.buckets.custom} 人（理由回收率 ${adoption.buckets.custom ? 100 : 0}%）。`}
             </div>
             <div className="mt-1 text-[11px] opacity-75">
-              口径：最终确认以学校开放轮为准；推荐为学科潜力 65% + 月考成绩 35% 加权 TOP3。
+              口径：最终确认以学校开放轮为准；推荐为学科潜力 {potPct}% + 月考成绩 {scorePct}% 加权 TOP3。
             </div>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -858,6 +868,7 @@ const TITLES: Record<ItemKey, { crumb: string; title: string; sub?: string }> = 
   warnings: { crumb: "学校管理 / 预警中心", title: "预警中心", sub: "心理红线 / 学业下滑 / 动力不足——处置留痕，可审计" },
   invites: { crumb: "学校管理 / 注册邀请", title: "注册邀请", sub: "生成注册二维码，配置开放的测评与报告" },
   users: { crumb: "学校管理 / 组织架构", title: "组织架构 · 用户与角色", sub: "管理员、指导老师、教务的角色管理" },
+  library: { crumb: "教学资源 / 资料库", title: "资料库", sub: "专业库、职业库、院校分数库与 12 学科门类图，供咨询与报告生成时查询调用" },
 };
 
 /* ---------------------------------- 主控制台 ---------------------------------- */
@@ -927,6 +938,7 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
             {item === "teachers" && <TutorsTab orgScope={{ orgId: null }} tutorLabel="指导老师" />}
             {item === "invites" && <InviteChannelsTab />}
             {item === "users" && <UsersSection />}
+            {item === "library" && <Library />}
           </div>
         </main>
       </div>

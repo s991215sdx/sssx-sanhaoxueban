@@ -11,6 +11,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../api/router";
 import { trpc } from "@/providers/trpc";
 import { G, Card, SecTitle, Pill, RowBar } from "./SchoolConsole";
+import XuankeWeightPanel from "./XuankeWeightPanel";
 
 type Selection = inferRouterOutputs<AppRouter>["school"]["stats"]["selection"];
 type Row = Selection["rows"][number];
@@ -434,6 +435,8 @@ export default function SelectionStats({ canManage }: { canManage: boolean }) {
   ] as const;
   return (
     <div className="space-y-4">
+      {/* v221 快捷通道：选科评分权重调节（机构管理员），调后全机构报告/意向/统计即时重算 */}
+      <XuankeWeightPanel canEdit={canManage} compact />
       <div className="flex flex-wrap gap-2">
         {VIEWS.map((v) => (
           <Pill key={v.key} active={view === v.key} onClick={() => setView(v.key)}>{v.label}</Pill>

@@ -39,6 +39,9 @@ export default function ZhihuiSuite({ onExit }: { onExit: () => void }) {
   const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
   const { data: profile } = trpc.profile.get.useQuery();
   const campus = !!access?.campus;
+  /* v221：机构可调成绩权重（提示文案动态显示；未设置默认校园 35 / 通用 40） */
+  const { data: xw } = trpc.school.xuankeWeight.get.useQuery();
+  const scorePct = xw?.scoreWeight ?? (campus ? 35 : 40);
   const steps = useMemo((): { key: StepKey; label: string }[] => {
     const kinds = access?.kinds ?? [];
     const base: { key: StepKey; label: string }[] =
@@ -91,7 +94,7 @@ export default function ZhihuiSuite({ onExit }: { onExit: () => void }) {
           {/* v194：校园模式必须先把 9 科月考成绩填完才能看报告 */}
           {campus && !gradesOk && (
             <p className="mt-3 rounded-xl bg-butter-pale/70 px-4 py-2.5 text-[13px] leading-relaxed text-olive">
-              月考成绩已出分：请先把<b>语数英 + 物化生政史地 9 科成绩</b>录入系统，选科推荐需要按成绩加权（权重 35%）生成。
+              月考成绩已出分：请先把<b>语数英 + 物化生政史地 9 科成绩</b>录入系统，选科推荐需要按成绩加权（权重 {scorePct}%）生成。
             </p>
           )}
           <div className="mt-5 flex gap-2">
@@ -209,6 +212,9 @@ function RefPanel({ open, onToggle, done, onRefDone }: { open: boolean; onToggle
 function CampusGradesStep({ onDone }: { onDone: () => void }) {
   const utils = trpc.useUtils();
   const { data: profile, isLoading } = trpc.profile.get.useQuery();
+  /* v221：成绩权重提示随机构设置动态显示（默认校园 35） */
+  const { data: xw } = trpc.school.xuankeWeight.get.useQuery();
+  const scorePct = xw?.scoreWeight ?? 35;
   const [missing, setMissing] = useState<string[]>([]);
   const save = trpc.profile.saveAcademics.useMutation({
     onSuccess: () => {
@@ -237,7 +243,7 @@ function CampusGradesStep({ onDone }: { onDone: () => void }) {
   return (
     <div className="paper-card p-4">
       <p className="mb-3 rounded-xl bg-mint-pale/70 px-4 py-2.5 text-[13px] leading-relaxed text-olive">
-        月考成绩是选科推荐的重要依据（与测评潜力一起按 35% 权重计入）。请把<b>语数英 + 物化生政史地 9 科</b>的最近月考分数都填上，填完即可查看你的选科及升学规划报告。
+        月考成绩是选科推荐的重要依据（与测评潜力一起按 {scorePct}% 权重计入）。请把<b>语数英 + 物化生政史地 9 科</b>的最近月考分数都填上，填完即可查看你的选科及升学规划报告。
       </p>
       {missing.length > 0 && (
         <p className="mb-3 rounded-xl bg-terra/10 px-4 py-2.5 text-[13px] font-medium text-terra">
