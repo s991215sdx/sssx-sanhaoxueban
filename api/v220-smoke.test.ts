@@ -54,19 +54,23 @@ describe("v220 学校版专版", () => {
     need(api, "ch?.campus", "仅校园渠道生效");
   });
 
-  it("前端：管理端校园面板 + 报告页意向入口", () => {
+  it("前端：学校版控制台（顶条+左侧栏）+ 报告页意向入口 + 指导老师称谓", () => {
     const admin = read("src/pages/Admin.tsx");
-    need(admin, "SchoolPanel", "校园管理 tab");
-    need(admin, '"school"', "tab key");
+    need(admin, "SchoolConsole", "控制台接入");
+    const consoleSrc = read("src/components/admin/SchoolConsole.tsx");
+    need(consoleSrc, "三好学伴 · 学校版", "顶部品牌条");
+    need(consoleSrc, "指导老师", "指导老师称谓");
+    const studentsTab = read("src/components/admin/StudentsTab.tsx");
+    need(studentsTab, 'tutorLabel = "伴学师"', "称谓可配置");
+    const tutorsTab = read("src/components/admin/TutorsTab.tsx");
+    need(tutorsTab, "tutorLabel", "指导老师 tab 称谓");
     const zhihui = read("src/pages/ZhihuiReport.tsx");
     need(zhihui, "SubjectIntentionCard", "报告页意向入口");
     const card = read("src/components/SubjectIntentionCard.tsx");
     need(card, "school.intentions.submit", "意向提交调用");
     need(card, "no-print", "打印隐藏");
-    const panel = read("src/components/admin/SchoolPanel.tsx");
-    need(panel, "school.warnings.reevaluate", "预警扫描");
-    need(panel, "school.archive.portfolio", "成长档案");
-    need(panel, "school.unassessed.remind", "一键催办");
+    const tutorPage = read("src/pages/Tutor.tsx");
+    need(tutorPage, "指导老师工作台", "工作台称谓");
   });
 
   it("BUILD_TAG 已递增到 v220", () => {

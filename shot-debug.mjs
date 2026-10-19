@@ -1,0 +1,16 @@
+import { chromium } from 'playwright-core';
+const BASE = 'https://sanhao.sssx.club';
+const browser = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
+const page = await (await browser.newContext({ viewport: { width: 1360, height: 880 } })).newPage();
+page.on('console', m => { if (m.type() === 'error') console.log('[console.error]', m.text().slice(0, 200)); });
+page.on('response', async r => { if (r.url().includes('trpc') && r.status() >= 400) console.log('HTTP', r.status(), r.url().slice(60, 160), (await r.text().catch(()=>'')).slice(0, 150)); });
+await page.goto(BASE + '/login', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(3000);
+await page.locator('input').nth(0).fill('13800000100');
+await page.locator('input').nth(1).fill('Yuehua@test2026');
+await page.locator('button').nth(1).click();
+await page.waitForTimeout(3500);
+await page.goto(BASE + '/tutor?student=26652343&tab=zhihui', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(9000);
+console.log('body:', (await page.locator('body').innerText()).slice(0, 400).replace(/\n/g, ' | '));
+await browser.close();

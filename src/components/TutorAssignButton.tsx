@@ -14,12 +14,15 @@ export default function TutorAssignButton({
   studentUserId,
   tutors,
   assigned,
+  tutorLabel = "伴学师",
 }: {
   studentUserId: number;
   /** 全部伴学师选项 */
   tutors: { id: number; name: string }[];
   /** 当前已分配的伴学师（含报告权限与有效期） */
   assigned: { id: number; name: string; reportAccess?: boolean; reportAccessExpiresAt?: Date | string | null }[];
+  /** v220.2：角色称谓（学校版传「指导老师」，机构版默认「伴学师」） */
+  tutorLabel?: string;
 }) {
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
@@ -92,7 +95,7 @@ export default function TutorAssignButton({
     <span ref={anchorRef} className="relative inline-block" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
-        title="分配伴学师（可多选，可设置报告权限）"
+        title={`分配${tutorLabel}（可多选，可设置报告权限）`}
         onClick={toggleOpen}
         className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
           assigned.length > 0
@@ -101,7 +104,7 @@ export default function TutorAssignButton({
         }`}
       >
         <UserPlus size={13} />
-        {assigned.length > 0 ? `伴学师 ${assigned.length}` : "分配伴学师"}
+        {assigned.length > 0 ? `${tutorLabel} ${assigned.length}` : `分配${tutorLabel}`}
       </button>
 
       {open &&
@@ -112,14 +115,14 @@ export default function TutorAssignButton({
             className="fixed z-[90] w-[280px] rounded-xl border border-border bg-cream-card p-3 shadow-lg"
           >
             <span className="flex items-center justify-between">
-              <span className="text-[12px] font-bold text-olive">分配给哪些伴学师？</span>
+              <span className="text-[12px] font-bold text-olive">分配给哪些{tutorLabel}？</span>
               <button onClick={() => setOpen(false)} className="rounded p-0.5 text-olive-mute hover:text-olive">
                 <X size={14} />
               </button>
             </span>
             <span className="mt-2 flex flex-col gap-1.5">
               {tutors.length === 0 && (
-                <span className="text-[12px] text-olive-mute">还没有伴学师，请先在「总览」里设置。</span>
+                <span className="text-[12px] text-olive-mute">还没有{tutorLabel}，请先在「总览」里设置。</span>
               )}
               {tutors.map((t) => {
                 const on = selected.includes(t.id);

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,6 +6,7 @@ import { useSwipeBack } from "@/hooks/useSwipeBack";
 import UpdateToast from "@/components/UpdateToast";
 import BackBar from "@/components/BackBar";
 import { trpc } from "@/providers/trpc";
+import { visibleSchoolGroups, type SchoolItemKey } from "@/components/admin/SchoolConsole";
 
 /** 导航项所属学员端模块（测评中心恒可用；首页属 home，受限学员不显示）。 */
 const NAV = [
@@ -132,6 +133,27 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { data: profile } = trpc.profile.get.useQuery();
   const enabledModules = profile?.enabledModules ?? null;
   const navVisible = (m: string) => enabledModules === null || m === "assessments" || enabledModules.includes(m);
+
+  /* v220.3：校园机构判定（机构管理员/教务）——学校版后台菜单并入外层侧边栏，隐藏伴学工作台 */
+  const { data: schoolCtx } = trpc.school.context.useQuery(undefined, {
+    enabled: (isAdmin && !isPlatformAdmin) || user?.role === "jiaowu",
+  });
+  const isCampus = !!schoolCtx?.campus;
+  const isJiaowu = user?.role === "jiaowu";
+  /* 学校版的管理者（校长/教务）：侧边栏直接列出控制台菜单。
+     v220.5：平台超管（orgId=null）一律走原版界面——school.context 对超管返回 campus=true
+     （表示「存在校园机构」而非「我是校园机构」），不能据此切换学校版。 */
+  const campusMgr = isCampus && user?.orgId != null && (isAdmin || isJiaowu);
+  /* v220.5：超管的「伴学工作台」称谓不跟校园版走 */
+  const campusTutor = isCampus && user?.orgId != null;
+  const schoolGroups = campusMgr ? visibleSchoolGroups(isJiaowu) : [];
+  const location = useLocation();
+  const campusItemActive = (key: SchoolItemKey) => {
+    if (location.pathname !== "/admin") return false;
+    const cur = new URLSearchParams(location.search).get("item");
+    const first = schoolGroups[0]?.items[0]?.key;
+    return (cur ?? first ?? "progress") === key;
+  };
   /* 桌面侧边栏折叠态：记住用户选择，折叠后只留图标，给阅读区让出最大空间 */
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -178,7 +200,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         ) : (
           <Logo brand={brand} />
         )}
-        <nav className={`mt-10 flex flex-col gap-1.5 ${collapsed ? "items-center" : ""}`}>
+        <nav className={`mt-10 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pb-2 [scrollbar-width:thin] ${collapsed ? "items-center" : ""}`}>
           {/* V61：管理员/伴学师不显示学员端功能（预习/查漏/测评/树洞/报告等），只看工作台 */}
           {!isStaff && NAV.filter((n) => navVisible(n.module)).map((n) => (
             <NavLink
@@ -196,10 +218,11 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && n.label}
             </NavLink>
           ))}
-          {showCoach && (
+          {/* v220.3：学校版管理者隐藏「伴学工作台」，侧边栏直接列出学校版控制台菜单（与回收站并列） */}
+          {showCoach && !campusMgr && (
             <NavLink
               to="/tutor"
-              title={collapsed ? "伴学工作台" : undefined}
+              title={collapsed ? (campusTutor ? "指导老师工作台" : "伴学工作台") : undefined}
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
@@ -207,10 +230,31 @@ export default function Layout({ children }: { children: ReactNode }) {
               }
             >
               <GraduationCap size={18} strokeWidth={2.2} />
-              {!collapsed && "伴学工作台"}
+              {!collapsed && (campusTutor ? "指导老师工作台" : "伴学工作台")}
             </NavLink>
           )}
-          {isAdmin && (
+          {campusMgr &&
+            schoolGroups.map((g) => (
+              <div key={g.label} className={collapsed ? "flex flex-col items-center gap-1" : ""}>
+                {!collapsed && (
+                  <div className="px-3.5 pb-1 pt-2 text-[10.5px] font-bold tracking-wider text-olive-mute/80">{g.label}</div>
+                )}
+                {g.items.map((it) => (
+                  <NavLink
+                    key={it.key}
+                    to={`/admin?item=${it.key}`}
+                    title={collapsed ? it.label : undefined}
+                    className={`group flex items-center rounded-xl transition-colors ${
+                      collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+                    } ${campusItemActive(it.key) ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+                  >
+                    <it.icon size={18} strokeWidth={2.2} />
+                    {!collapsed && it.label}
+                  </NavLink>
+                ))}
+              </div>
+            ))}
+          {isAdmin && !campusMgr && (
             <NavLink
               to="/admin"
               title={collapsed ? "后台管理" : undefined}
@@ -224,8 +268,8 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && "后台管理"}
             </NavLink>
           )}
-          {/* v200：教务的唯一入口：学员分配台（RoleGate 把教务的其它访问全部重定向到 /admin） */}
-          {user?.role === "jiaowu" && (
+          {/* v200：教务的唯一入口：学员分配台（RoleGate 把教务的其它访问全部重定向到 /admin）；v220.3：校园教务改走学校版菜单 */}
+          {user?.role === "jiaowu" && !campusMgr && (
             <NavLink
               to="/admin"
               title={collapsed ? "学员分配台" : undefined}
@@ -311,8 +355,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
         <Logo brand={brand} />
         <div className="flex items-center gap-2">
-          {showCoach && (
-            <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title="伴学工作台">
+          {showCoach && !campusMgr && (
+            <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title={campusTutor ? "指导老师工作台" : "伴学工作台"}>
               <GraduationCap size={18} />
             </NavLink>
           )}

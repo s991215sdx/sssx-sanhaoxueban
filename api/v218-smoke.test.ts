@@ -34,7 +34,7 @@ describe("v218 推荐口径统一与粤华组合池", () => {
 
   it("粤华学生全视角走 5 组合池", () => {
     need(page, "campus || data?.student.campus", "内嵌查看同样校园版");
-    need(page, "data?.student.campus]);", "依赖数组带学生 campus");
+    need(page, "data?.student.campus, scorePct]);", "依赖数组带学生 campus 与权重（v221）");
   });
 
   it("BUILD_TAG 已递增到 v218", () => {

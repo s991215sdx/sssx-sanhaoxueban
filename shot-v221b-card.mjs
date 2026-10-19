@@ -1,0 +1,32 @@
+import { chromium } from 'playwright-core';
+const OUT = 'D:/KIMI/kimi/tasks/2026-10-02/12-44-25-36022aba/mockups';
+const BASE = 'https://sanhao.sssx.club';
+const browser = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+const page = await ctx.newPage();
+await page.goto(BASE + '/login', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(3000);
+const inputs = page.locator('input');
+const n = await inputs.count();
+for (let i = 0; i < n; i++) {
+  const ph = await inputs.nth(i).getAttribute('placeholder') || '';
+  const type = await inputs.nth(i).getAttribute('type') || '';
+  if (/tel|手机|电话/.test(type + ph)) await inputs.nth(i).fill('13800000100');
+  if (/密码|password/i.test(type + ph)) await inputs.nth(i).fill('Yuehua@test2026');
+}
+await page.click('button:has-text("进入三好学伴")').catch(()=>page.keyboard.press('Enter'));
+await page.waitForTimeout(1500);
+console.log('input values:', await inputs.allInputValues ? await inputs.evaluateAll(els => els.map(e => e.value)) : 'n/a');
+await page.waitForTimeout(2500);
+console.log('after login url:', page.url());
+await page.goto(BASE + '/admin?item=selection', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(5000);
+console.log('url now:', page.url());
+console.log('body head:', (await page.locator('body').innerText()).slice(0, 300).replace(/\n/g, ' | '));
+const card = page.getByText('师资与开班测算').last().locator('xpath=ancestor::div[contains(@class,"rounded-xl")][1]');
+await card.scrollIntoViewIfNeeded();
+await page.waitForTimeout(800);
+await card.screenshot({ path: `${OUT}/v221b-combo-plan.png` });
+console.log((await card.innerText()).replace(/\n/g, ' | '));
+await browser.close();
+console.log('done');

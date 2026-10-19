@@ -3,7 +3,7 @@ import { describe, it } from "vitest";
 import { readFileSync } from "fs";
 
 describe("v161 伴学师列表折叠 + 分页", () => {
-  const admin = readFileSync("src/pages/Admin.tsx", "utf-8");
+  const admin = readFileSync("src/pages/Admin.tsx", "utf-8") + readFileSync("src/components/admin/StudentsTab.tsx", "utf-8") + readFileSync("src/components/admin/TutorsTab.tsx", "utf-8");
 
   it("学员默认折叠，点击展开/收起", () => {
     if (!/const \[expandedTutors, setExpandedTutors\] = useState<number\[\]>\(\[\]\)/.test(admin))

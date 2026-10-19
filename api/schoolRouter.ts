@@ -16,6 +16,7 @@ import { getDb } from "./queries/connection";
 import { isPlatformAdmin } from "./tenant";
 import type { Subject4dResult } from "@contracts/subject4d";
 import { defaultFullScore } from "@contracts/academics";
+import { normalizeAssessKinds } from "@contracts/invite";
 import {
   users,
   studentProfile,
@@ -30,6 +31,7 @@ import {
   warningEvents,
   reminders,
   studentTutor,
+  campusAssessPushes,
 } from "../db/schema";
 
 /** 职员角色（可看聚合与名单）。 */
@@ -139,7 +141,42 @@ const CAMPUS_CANDS = [
 
 type AcademicsLite = { subjects?: { name?: string; lastScore?: number | null; fullScore?: number | null }[] } | null;
 
-function campusCombos(s4d: Subject4dResult | null, academics: AcademicsLite, grade: string) {
+/* ------------------------------- 选科评分权重（机构管理员可调，v221） ------------------------------- */
+
+/** 成绩权重可调范围（%）：0 = 纯测评，60 = 成绩占六成（上限防唯分数）。 */
+export const XUANKE_W_MIN = 0;
+export const XUANKE_W_MAX = 60;
+
+type OrgSettings = { xuanke?: { scoreWeight?: number } } | null;
+
+/**
+ * 机构选科成绩权重（%）：读 organizations.settings.xuanke.scoreWeight；
+ * 未设置时按机构类型取默认——校园机构 35，通用机构 40。
+ * 返回 weight(orgId) 取值函数，供统计批量场景复用。
+ */
+export async function orgXuankeWeights(db: ReturnType<typeof getDb>, orgIds: (number | null)[]) {
+  const uniq = [...new Set(orgIds.filter((x): x is number => x != null))];
+  const rows = uniq.length
+    ? await db.select({ id: organizations.id, settings: organizations.settings }).from(organizations).where(inArray(organizations.id, uniq))
+    : [];
+  const settingsBy = new Map(rows.map((r) => [r.id, (r.settings ?? null) as OrgSettings]));
+  /* 校园机构默认 35：有 campus 渠道即视为校园机构 */
+  const campusOrgIds = new Set<number>();
+  if (uniq.length) {
+    const chs = await db.select({ orgId: inviteChannels.orgId }).from(inviteChannels).where(and(eq(inviteChannels.campus, true), inArray(inviteChannels.orgId, uniq)));
+    for (const c of chs) if (c.orgId != null) campusOrgIds.add(c.orgId);
+  }
+  const weight = (orgId: number | null): number => {
+    if (orgId != null) {
+      const s = settingsBy.get(orgId)?.xuanke?.scoreWeight;
+      if (typeof s === "number" && Number.isFinite(s)) return Math.min(XUANKE_W_MAX, Math.max(XUANKE_W_MIN, Math.round(s)));
+    }
+    return orgId != null && campusOrgIds.has(orgId) ? 35 : 40;
+  };
+  return { weight };
+}
+
+function campusCombos(s4d: Subject4dResult | null, academics: AcademicsLite, grade: string, scoreW = 0.35) {
   if (!s4d?.subjects) return null;
   const gradePct = (n: string): number | null => {
     const a = academics?.subjects?.find((x) => x.name === n || (n === "政治" && x.name === "道德与法治"));
@@ -150,7 +187,7 @@ function campusCombos(s4d: Subject4dResult | null, academics: AcademicsLite, gra
   const w = (n: string): number => {
     const pot = ((s4d.subjects[n as keyof typeof s4d.subjects]?.潜力指数 ?? 3) / 5) * 100;
     const g = gradePct(n);
-    return Math.round(g == null ? pot : pot * 0.65 + g * 0.35);
+    return Math.round(g == null ? pot : pot * (1 - scoreW) + g * scoreW);
   };
   const scored = CAMPUS_CANDS.map((c) => ({ ...c, score: Math.round(c.subs.reduce((s, n) => s + w(n), 0) / c.subs.length) }));
   const phys = scored.filter((c) => c.track === "物化").sort((a, b) => b.score - a.score);
@@ -173,7 +210,7 @@ function campusCombos(s4d: Subject4dResult | null, academics: AcademicsLite, gra
 
 type Combo = NonNullable<ReturnType<typeof campusCombos>>;
 
-/** 拉取某学生的学科四维 + 成绩 + 年级，返回组合（无四维返回 null）。 */
+/** 拉取某学生的学科四维 + 成绩 + 年级，返回组合（无四维返回 null）。权重取学生所属机构设置。 */
 async function combosForStudent(db: ReturnType<typeof getDb>, userId: number): Promise<Combo | null> {
   const profile = await db.query.studentProfile.findFirst({ where: eq(studentProfile.userId, userId) });
   const [s4d] = await db
@@ -183,7 +220,9 @@ async function combosForStudent(db: ReturnType<typeof getDb>, userId: number): P
     .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
     .limit(1);
   if (!s4d) return null;
-  return campusCombos(s4d.result as unknown as Subject4dResult, (profile?.academics ?? null) as AcademicsLite, gradeLabel(profile?.grade));
+  const [u] = await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, userId)).limit(1);
+  const { weight } = await orgXuankeWeights(db, [u?.orgId ?? null]);
+  return campusCombos(s4d.result as unknown as Subject4dResult, (profile?.academics ?? null) as AcademicsLite, gradeLabel(profile?.grade), weight(u?.orgId ?? null) / 100);
 }
 
 /* ------------------------------- 预警规则 ------------------------------- */
@@ -246,6 +285,118 @@ export const schoolRouter = createRouter({
     }
     const mine = await myCampusInfo(db, ctx.user.id);
     return { role, campus: mine.campus, orgId: mine.orgId, orgName: null, logoUrl: null };
+  }),
+
+  /* ------------------------------- 选科评分权重（v221：机构管理员可调，0-60%） ------------------------------- */
+
+  xuankeWeight: createRouter({
+    /** 当前生效值：职员取本机构，学生/家长取本人所属机构；未设置按机构类型默认（校园35/通用40）。 */
+    get: authedQuery.query(async ({ ctx }) => {
+      const db = getDb();
+      const staff = (STAFF_ROLES as readonly string[]).includes(ctx.user.role);
+      const orgId = staff ? (ctx.user.orgId ?? null) : (await myCampusInfo(db, ctx.user.id)).orgId ?? ctx.user.orgId ?? null;
+      const { weight } = await orgXuankeWeights(db, [orgId]);
+      return { orgId, scoreWeight: weight(orgId) };
+    }),
+    /** 调整本机构成绩权重：保存后全机构学生报告、意向与统计立即按新权重重算。仅机构管理员。 */
+    set: authedQuery
+      .input(z.object({ scoreWeight: z.number().int().min(XUANKE_W_MIN).max(XUANKE_W_MAX) }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" || ctx.user.orgId == null) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "仅机构管理员可调整本机构的选科成绩权重" });
+        }
+        const db = getDb();
+        const [org] = await db.select({ settings: organizations.settings }).from(organizations).where(eq(organizations.id, ctx.user.orgId)).limit(1);
+        if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "机构不存在" });
+        const prev = (org.settings ?? null) as OrgSettings;
+        const settings = { ...(prev ?? {}), xuanke: { ...(prev?.xuanke ?? {}), scoreWeight: input.scoreWeight } };
+        await db.update(organizations).set({ settings }).where(eq(organizations.id, ctx.user.orgId));
+        return { ok: true as const, scoreWeight: input.scoreWeight };
+      }),
+  }),
+
+  /* ------------------------------- 测评中心（v223：测评目录 + 组选批量推送） ------------------------------- */
+
+  assessCenter: createRouter({
+    /** 推送目标：校园学生 + 每人已完成/已解锁的测评。职员按角色范围（tutor 限名下学生）。 */
+    targets: authedQuery.query(async ({ ctx }) => {
+      requireStaff(ctx);
+      const db = getDb();
+      let list = await campusStudents(db, ctx.user.orgId ?? null);
+      if (ctx.user.role === "tutor") {
+        const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+        const set = new Set(mine.map((m) => m.studentUserId));
+        list = list.filter((s) => set.has(s.userId));
+      }
+      const ids = list.map((s) => s.userId);
+      if (!ids.length) return { targets: [] as { userId: number; name: string; className: string | null; grade: string; doneKinds: string[]; releasedKinds: string[] }[] };
+      const results = await db.select({ userId: assessmentResults.userId, kind: assessmentResults.kind }).from(assessmentResults).where(inArray(assessmentResults.userId, ids));
+      const doneBy = new Map<number, Set<string>>();
+      for (const r of results) {
+        if (!doneBy.has(r.userId)) doneBy.set(r.userId, new Set());
+        doneBy.get(r.userId)!.add(r.kind);
+      }
+      const profiles = await db.select({ userId: studentProfile.userId, released: studentProfile.releasedAssessments }).from(studentProfile).where(inArray(studentProfile.userId, ids));
+      const releasedBy = new Map<number, string[]>(profiles.map((p) => [p.userId, Array.isArray(p.released) ? (p.released as string[]) : []]));
+      return {
+        targets: list.map((s) => ({
+          userId: s.userId,
+          name: s.name,
+          className: s.className,
+          grade: s.grade,
+          doneKinds: [...(doneBy.get(s.userId) ?? [])],
+          releasedKinds: releasedBy.get(s.userId) ?? [],
+        })),
+      };
+    }),
+    /** 组选推送：把所选测评并入目标学生的「已解锁测评」（union，不收回既有推送），学生客户端立即可见可测；全程留痕。 */
+    push: authedQuery
+      .input(z.object({
+        userIds: z.array(z.number().int().positive()).min(1).max(2000),
+        kinds: z.array(z.string()).min(1),
+        note: z.string().max(200).optional().default(""),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const kinds = normalizeAssessKinds(input.kinds);
+        if (!kinds?.length) throw new TRPCError({ code: "BAD_REQUEST", message: "测评种类格式不对" });
+        const campus = await campusStudents(db, ctx.user.orgId ?? null);
+        const campusById = new Map(campus.map((s) => [s.userId, s]));
+        if (ctx.user.role === "tutor") {
+          const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+          const set = new Set(mine.map((m) => m.studentUserId));
+          for (const id of input.userIds) if (!set.has(id)) throw new TRPCError({ code: "FORBIDDEN", message: "只能推送给自己名下的学生" });
+        }
+        for (const id of input.userIds) {
+          if (!campusById.has(id)) throw new TRPCError({ code: "FORBIDDEN", message: "推送对象必须是本校校园学生" });
+        }
+        for (const id of input.userIds) {
+          const existing = (await db.select({ id: studentProfile.id, released: studentProfile.releasedAssessments }).from(studentProfile).where(eq(studentProfile.userId, id)).limit(1))[0];
+          const prev = existing && Array.isArray(existing.released) ? (existing.released as string[]) : [];
+          const merged = [...new Set([...prev, ...kinds])];
+          if (existing) await db.update(studentProfile).set({ releasedAssessments: merged }).where(eq(studentProfile.id, existing.id));
+          else await db.insert(studentProfile).values({ userId: id, releasedAssessments: merged });
+        }
+        await db.insert(campusAssessPushes).values({
+          orgId: ctx.user.orgId ?? null,
+          createdBy: ctx.user.id,
+          kinds,
+          userIds: input.userIds,
+          userCount: input.userIds.length,
+          note: input.note,
+        });
+        return { ok: true as const, count: input.userIds.length, kinds };
+      }),
+    /** 推送记录（近 50 条，按机构范围）。 */
+    logs: authedQuery.query(async ({ ctx }) => {
+      requireStaff(ctx);
+      const db = getDb();
+      const rows = ctx.user.orgId == null
+        ? await db.select().from(campusAssessPushes).orderBy(desc(campusAssessPushes.id)).limit(50)
+        : await db.select().from(campusAssessPushes).where(eq(campusAssessPushes.orgId, ctx.user.orgId)).orderBy(desc(campusAssessPushes.id)).limit(50);
+      return { logs: rows.map((r) => ({ id: r.id, kinds: r.kinds ?? [], userCount: r.userCount, note: r.note, createdAt: r.createdAt })) };
+    }),
   }),
 
   /* ------------------------------- 选科意向 ------------------------------- */
@@ -627,6 +778,88 @@ export const schoolRouter = createRouter({
   /* ------------------------------- 团体统计 ------------------------------- */
 
   stats: createRouter({
+    /** 选科结构统计：每生一行（班级 + 加权版/纯测评版双口径组合 + 各轮最新意向）。 */
+    selection: authedQuery.query(async ({ ctx }) => {
+      requireStaff(ctx);
+      const db = getDb();
+      const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
+      const students = await campusStudents(db, orgId);
+      if (!students.length) return { rounds: [], rows: [] as unknown[] };
+      const ids = students.map((s) => s.userId);
+      /* 伴学师只看自己名下（名单层按权限下钻） */
+      let scoped = students;
+      if (ctx.user.role === "tutor") {
+        const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+        const mineIds = new Set(mine.map((m) => m.studentUserId));
+        scoped = students.filter((s) => mineIds.has(s.userId));
+      }
+      const scopedIds = scoped.map((s) => s.userId);
+      /* 批量：最新学科四维 + 档案成绩 */
+      const s4dRows = await db
+        .select()
+        .from(assessmentResults)
+        .where(and(inArray(assessmentResults.userId, scopedIds), eq(assessmentResults.kind, "subject4d")));
+      const s4dLatest = new Map<number, (typeof s4dRows)[number]>();
+      for (const r of s4dRows) {
+        const prev = s4dLatest.get(r.userId);
+        if (!prev || r.createdAt > prev.createdAt) s4dLatest.set(r.userId, r);
+      }
+      const profileRows = await db.select().from(studentProfile).where(inArray(studentProfile.userId, scopedIds));
+      const profileBy = new Map(profileRows.map((p) => [p.userId, p]));
+      /* v221：选科成绩权重按学生所属机构取值（管理员调权后统计即时重算） */
+      const { weight: orgWeight } = await orgXuankeWeights(db, scoped.map((s) => s.orgId));
+      /* 意向：每生每轮取最新一次，并统计修改次数 */
+      const intRows = scopedIds.length
+        ? await db.select().from(subjectIntentions).where(inArray(subjectIntentions.userId, scopedIds)).orderBy(desc(subjectIntentions.createdAt))
+        : [];
+      const intByUser = new Map<number, typeof intRows>();
+      const editCount = new Map<number, number>();
+      for (const r of intRows) {
+        const arr = intByUser.get(r.userId) ?? [];
+        arr.push(r);
+        intByUser.set(r.userId, arr);
+        editCount.set(r.userId, (editCount.get(r.userId) ?? 0) + 1);
+      }
+      const rounds = await db
+        .select()
+        .from(intentionRounds)
+        .where(orgId != null ? eq(intentionRounds.orgId, orgId) : undefined)
+        .orderBy(intentionRounds.roundNo);
+      const rows = scoped.map((stu) => {
+        const s4d = s4dLatest.get(stu.userId);
+        const profile = profileBy.get(stu.userId);
+        const academics = (profile?.academics ?? null) as AcademicsLite;
+        const hasGrades = !!academics?.subjects?.some((x) => x?.lastScore != null);
+        const comboWeighted = s4d ? campusCombos(s4d.result as unknown as Subject4dResult, academics, stu.grade, orgWeight(stu.orgId) / 100) : null;
+        const comboSurvey = s4d ? campusCombos(s4d.result as unknown as Subject4dResult, null, stu.grade) : null;
+        const mine = intByUser.get(stu.userId) ?? [];
+        const latestByRound = new Map<number, (typeof mine)[number]>();
+        for (const r of mine) if (!latestByRound.has(r.roundNo)) latestByRound.set(r.roundNo, r);
+        return {
+          userId: stu.userId,
+          name: stu.name,
+          className: stu.className,
+          grade: stu.grade,
+          hasS4d: !!s4d,
+          hasGrades,
+          comboWeighted,
+          comboSurvey,
+          edits: editCount.get(stu.userId) ?? 0,
+          intentions: [...latestByRound.values()].map((r) => ({
+            roundNo: r.roundNo,
+            choice: r.choice,
+            subjects: r.subjects,
+            reason: r.reason,
+            createdAt: r.createdAt,
+          })),
+        };
+      });
+      return {
+        rounds: rounds.map((r) => ({ roundNo: r.roundNo, label: r.label, status: r.status })),
+        rows,
+      };
+    }),
+
     /** 参测完成统计：校园生 × 重点测评种类完成情况 + 班级分布（聚合不点名，缺测名单走 unassessed）。 */
     assessment: authedQuery.query(async ({ ctx }) => {
       requireStaff(ctx);

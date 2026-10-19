@@ -22,7 +22,7 @@ describe("v124 浅米黄框架强调色", () => {
   });
 
   it("后台页签/侧栏激活态为深青绿底白字（v125），无 lime-pale 残留", () => {
-    const admin = read("src/pages/Admin.tsx");
+    const admin = read("src/pages/Admin.tsx") + read("src/components/admin/StudentsTab.tsx") + read("src/components/admin/TutorsTab.tsx");
     if (!admin.includes("border-transparent bg-brand font-semibold text-white shadow-sm")) throw new Error("缺：页签激活态");
     if (/bg-lime-pale/.test(admin)) throw new Error("残留：Admin lime-pale");
     const layout = read("src/components/Layout.tsx");

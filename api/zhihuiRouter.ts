@@ -13,6 +13,7 @@ import { assessmentResults, studentExpectations, studentProfile, users } from ".
 import { gdScores, majorLib, universityLib, careerLib } from "../db/schema";
 import { inviteChannels, inviteRegistrations, organizations } from "../db/schema";
 import { like, or, asc, sql } from "drizzle-orm";
+import { orgXuankeWeights } from "./schoolRouter";
 
 /** 查看/代编他人数据须为伴学师或管理员；v179：且目标学员须在本机构内
  *  （平台超管 orgId=null 放行；机构管理员/伴学师跨机构一律拒绝）。 */
@@ -142,6 +143,10 @@ export const zhihuiRouter = createRouter({
           schoolLogo = ch.logo ?? null;
         }
       }
+
+      /* v221：学生所属机构的选科成绩权重（机构管理员后台可调，未设置按机构类型默认） */
+      const [stuUser] = await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, sid)).limit(1);
+      const xuankeScoreWeight = stuUser?.orgId != null ? (await orgXuankeWeights(db, [stuUser.orgId])).weight(stuUser.orgId) : stuCampus ? 35 : 40;
 
       // 最近一次学科四维测评
       const [s4d] = await db
@@ -397,6 +402,7 @@ export const zhihuiRouter = createRouter({
 
       return {
         student: { id: sid, name: profile?.name || user?.name || "", grade: (profile?.grade as string | null) ?? null, className: profile?.className ?? null, campus: stuCampus, schoolName, schoolBrand, schoolLogo },
+        xuankeScoreWeight,
         subject4d: s4d ? { result: s4d.result, answers: s4d.answers, createdAt: s4d.createdAt } : null,
         holland: hol ? { result: hol.result, createdAt: hol.createdAt } : null,
         multi5: m5 ? { result: m5.result, createdAt: m5.createdAt } : null,

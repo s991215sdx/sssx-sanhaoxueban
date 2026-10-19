@@ -13,10 +13,13 @@ export default function BulkAssignTutors({
   studentIds,
   tutors,
   onDone,
+  tutorLabel = "伴学师",
 }: {
   studentIds: number[];
   tutors: { id: number; name: string }[];
   onDone: () => void;
+  /** v220.2：角色称谓（学校版传「指导老师」，机构版默认「伴学师」） */
+  tutorLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
@@ -46,12 +49,12 @@ export default function BulkAssignTutors({
       <button
         type="button"
         disabled={studentIds.length === 0}
-        title="把勾选的学员统一分配给伴学师（不覆盖学员已有的其他伴学师）"
+        title={`把勾选的学员统一分配给${tutorLabel}（不覆盖学员已有的其他${tutorLabel}）`}
         onClick={() => setOpen(true)}
         className="flex items-center gap-1 rounded-lg border border-border bg-cream-card px-2.5 py-1.5 text-[12px] font-semibold text-olive transition-colors hover:border-lime disabled:cursor-not-allowed disabled:opacity-40"
       >
         <UserPlus size={13} />
-        批量分配伴学师{studentIds.length > 0 ? `（已选 ${studentIds.length} 人）` : ""}
+        批量分配{tutorLabel}{studentIds.length > 0 ? `（已选 ${studentIds.length} 人）` : ""}
       </button>
 
       {open &&
@@ -63,18 +66,18 @@ export default function BulkAssignTutors({
             >
               <div className="flex items-center justify-between">
                 <span className="text-[13px] font-bold text-olive">
-                  批量分配伴学师<span className="ml-1 text-[11.5px] font-normal text-olive-mute">（{studentIds.length} 位学员）</span>
+                  批量分配{tutorLabel}<span className="ml-1 text-[11.5px] font-normal text-olive-mute">（{studentIds.length} 位学员）</span>
                 </span>
                 <button onClick={() => setOpen(false)} className="rounded p-0.5 text-olive-mute hover:text-olive">
                   <X size={15} />
                 </button>
               </div>
               <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
-                为勾选的学员添加以下伴学师；学员已有的其他伴学师保持不变。未勾选的学员不受影响。
+                为勾选的学员添加以下{tutorLabel}；学员已有的其他{tutorLabel}保持不变。未勾选的学员不受影响。
               </p>
               <div className="mt-3 flex flex-col gap-1.5">
                 {tutors.length === 0 && (
-                  <span className="text-[12px] text-olive-mute">还没有伴学师，请先在「总览」里设置。</span>
+                  <span className="text-[12px] text-olive-mute">还没有{tutorLabel}，请先在「总览」里设置。</span>
                 )}
                 {tutors.map((t) => {
                   const on = selected.includes(t.id);

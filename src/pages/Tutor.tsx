@@ -65,11 +65,14 @@ function StudentModulesPanel({ userId, enabledModules }: { userId: number; enabl
   );
 }
 
-/** 伴学工作台（/tutor）：伴学师查看名下学员，admin 可看全部。 */
+/** 伴学工作台（/tutor）：伴学师查看名下学员，admin 可看全部。学校版（校园机构）界面改称「指导老师」。 */
 export default function Tutor() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const allowed = user?.role === "tutor" || user?.role === "admin";
+  /* v220.1：校园机构判定——工作台称谓改「指导老师」。v220.5：平台超管（orgId=null）不适用 */
+  const { data: schoolCtx } = trpc.school.context.useQuery();
+  const campusView = !!schoolCtx?.campus && schoolCtx?.orgId != null;
   /* v157：详情抽屉与 URL 参数联动（?student=<id>），刷新/转发链接可直达学员详情 */
   const [searchParams, setSearchParams] = useSearchParams();
   const studentParam = searchParams.get("student");
@@ -108,9 +111,11 @@ export default function Tutor() {
       <div className="mx-auto mt-16 max-w-md">
         <div className="paper-card p-8 text-center">
           <GraduationCap className="mx-auto text-olive" size={34} />
-          <h1 className="mt-3 text-[19px] font-bold text-olive">伴学工作台</h1>
+          <h1 className="mt-3 text-[19px] font-bold text-olive">{campusView ? "指导老师工作台" : "伴学工作台"}</h1>
           <p className="mt-2 text-[13.5px] leading-relaxed text-olive-mute">
-            这里是伴学师的工作台，需要伴学师权限。如果你负责伴学，请联系管理员为你开通。
+            {campusView
+              ? "这里是指导老师的工作台，需要指导老师权限。如果你负责学生指导，请联系管理员为你开通。"
+              : "这里是伴学师的工作台，需要伴学师权限。如果你负责伴学，请联系管理员为你开通。"}
           </p>
         </div>
       </div>
@@ -122,7 +127,7 @@ export default function Tutor() {
       <header>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-[22px] font-bold tracking-tight text-olive">伴学工作台</h1>
+            <h1 className="text-[22px] font-bold tracking-tight text-olive">{campusView ? "指导老师工作台" : "伴学工作台"}</h1>
             <p className="mt-1 text-[13px] text-olive-mute">
               名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。
             </p>

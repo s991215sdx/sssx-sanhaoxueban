@@ -393,6 +393,8 @@ export const organizations = mysqlTable("organizations", {
   logoUrl: varchar("logo_url", { length: 512 }),
   /** 停用后：机构账号登录即见停用提示，管理端置灰 */
   active: boolean("active").notNull().default(true),
+  /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40） */
+  settings: json("settings").$type<{ xuanke?: { scoreWeight?: number } }>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -744,3 +746,17 @@ export const reminders = mysqlTable("reminders", {
 });
 
 export type Reminder = typeof reminders.$inferSelect;
+
+/** v223 测评中心批量推送记录：管理员组选测评推送给学生，留痕可审计。 */
+export const campusAssessPushes = mysqlTable("campus_assess_pushes", {
+  id: serial("id").primaryKey(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  createdBy: bigint("created_by", { mode: "number", unsigned: true }),
+  kinds: json("kinds").$type<string[]>().notNull(),
+  userIds: json("user_ids").$type<number[]>().notNull(),
+  userCount: int("user_count").notNull().default(0),
+  note: varchar("note", { length: 200 }).notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type CampusAssessPush = typeof campusAssessPushes.$inferSelect;
