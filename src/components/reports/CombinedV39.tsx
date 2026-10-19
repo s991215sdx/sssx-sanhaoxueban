@@ -247,21 +247,21 @@ function KRow({ label, value, note, color, plain }: { label: string; value: numb
     );
   }
   return (
-    <div className="flex items-center gap-2 py-[3px]">
-      <span className="w-[76px] shrink-0 truncate text-[12.5px] text-olive-soft" title={label}>{label}</span>
-      <span className="w-[40px] shrink-0 text-right text-[13px] font-extrabold" style={{ color }}>{value}</span>
+    <div className="flex items-center gap-2 py-[3px] print:py-px">
+      <span className="w-[76px] shrink-0 truncate text-[12.5px] text-olive-soft print:text-[11.5px]" title={label}>{label}</span>
+      <span className="w-[40px] shrink-0 text-right text-[13px] font-extrabold print:text-[12px]" style={{ color }}>{value}</span>
       <div className="h-2 w-[38%] shrink-0 overflow-hidden rounded-full bg-[#EDF3EF]">
         <div className="h-full rounded-full" style={{ width: `${Math.min(100, value * 20)}%`, background: color }} />
       </div>
-      {note && <span className="shrink-0 text-[11px] text-olive-mute">{note}</span>}
+      {note && <span className="shrink-0 text-[11px] text-olive-mute print:text-[10px]">{note}</span>}
     </div>
   );
 }
 function TotalRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-baseline justify-between rounded-lg bg-[#F0FAF5] px-3.5 py-1.5 my-[7px]">
-      <span className="text-[12.5px] font-bold text-olive-soft">{label}</span>
-      <span className="text-[19px] font-extrabold text-[#0B8A63]">{value}<small className="text-[11px] font-semibold text-olive-mute">/ 5</small></span>
+    <div className="flex items-baseline justify-between rounded-lg bg-[#F0FAF5] px-3.5 py-1.5 my-[7px] print:my-[2px] print:py-1">
+      <span className="text-[12.5px] font-bold text-olive-soft print:text-[11.5px]">{label}</span>
+      <span className="text-[19px] font-extrabold text-[#0B8A63] print:text-[16px]">{value}<small className="text-[11px] font-semibold text-olive-mute">/ 5</small></span>
     </div>
   );
 }
@@ -462,9 +462,9 @@ export default function CombinedV39Report({
   /** KRow 包装：保持卡片内容与渲染口径统一。 */
   const KR = (p: { label: string; value: number; note?: string; color: string }) => <KRow {...p} />;
   const CardHead = ({ title, note }: { title: string; note?: string }) => (
-    <h4 className="text-[14.5px] font-extrabold text-olive">
+    <h4 className="text-[14.5px] font-extrabold text-olive print:text-[13px]">
       {title}
-      {note && <span className="ml-2 text-[11px] font-semibold text-olive-mute">{note}</span>}
+      {note && <span className="ml-2 text-[11px] font-semibold text-olive-mute print:text-[10px]">{note}</span>}
     </h4>
   );
   const scoreCardBody = (
@@ -495,15 +495,15 @@ export default function CombinedV39Report({
       <KR label="学能" value={aptitudeMean} note="学习效率" color={levelColor(aptitudeMean)} />
       <KR label="AI 智学" value={aiScore} note="运用 AI 自学" color={levelColor(aiScore)} />
       {multi5 && (
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-dashed border-[#E3EEE8] pt-2">
-          <span className="w-full text-[11px] font-bold text-[#0B8A63]">多元智能五项（百分制 · 参考，不计入总分）</span>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-dashed border-[#E3EEE8] pt-2 print:mt-1 print:gap-x-3 print:gap-y-1 print:pt-1">
+          <span className="w-full text-[11px] font-bold text-[#0B8A63] print:text-[10px]">多元智能五项（百分制 · 参考，不计入总分）</span>
           {MULTI5_DIM_ORDER.map((k) => (
             <span key={k} className="flex items-center gap-1.5">
-              <span className="text-[11px] text-olive-soft">{MULTI5_DIM_LABEL[k]}</span>
-              <span className="h-[7px] w-14 overflow-hidden rounded-full bg-[#EDF3EF]">
+              <span className="text-[11px] text-olive-soft print:text-[10px]">{MULTI5_DIM_LABEL[k]}</span>
+              <span className="h-[7px] w-14 overflow-hidden rounded-full bg-[#EDF3EF] print:w-10">
                 <span className="block h-full rounded-full bg-[#7FB89A]" style={{ width: `${multi5.dims[k]}%` }} />
               </span>
-              <span className="w-6 text-[12px] font-extrabold text-[#0B8A63]">{multi5.dims[k]}</span>
+              <span className="w-6 text-[12px] font-extrabold text-[#0B8A63] print:text-[11px]">{multi5.dims[k]}</span>
             </span>
           ))}
         </div>
@@ -555,9 +555,9 @@ export default function CombinedV39Report({
   );
   const traitCardBody = (
     <>
-      {disc && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">DISC</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{disc.primary}</span><span className="text-[11px] text-olive-mute">{discName ?? ""}</span></div>}
-      {mbti && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">MBTI</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{mbti.type}</span><span className="text-[11px] text-olive-mute">{mbtiName ?? ""}</span></div>}
-      {holland && <div className="flex items-baseline gap-2 py-1"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业兴趣</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{holland.code}</span><span className="text-[11px] text-olive-mute">{holland.keywords}</span></div>}
+      {disc && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">DISC</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{disc.primary}</span><span className="text-[11px] text-olive-mute">{discName ?? ""}</span></div>}
+      {mbti && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">MBTI</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{mbti.type}</span><span className="text-[11px] text-olive-mute">{mbtiName ?? ""}</span></div>}
+      {holland && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业兴趣</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{holland.code}</span><span className="text-[11px] text-olive-mute">{holland.keywords}</span></div>}
       {anchor && anchor.top2.length > 0 && (
         <div className="flex flex-wrap items-baseline gap-2 py-1">
           <span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业锚</span>
@@ -572,7 +572,8 @@ export default function CombinedV39Report({
   return (
     <div className="space-y-4">
       {/* ============ 封面 ============ */}
-      <div className="paper-card relative flex min-h-[520px] flex-col overflow-hidden px-7 py-8 sm:px-10">
+      {/* 打印：封面独占一整页（与 book 式样 .ob-page 同规则的 256mm 满版），随后分页进入冰山图页 */}
+      <div className="paper-card relative flex min-h-[520px] flex-col overflow-hidden px-7 py-8 print:min-h-[256mm] print:break-after-page sm:px-10">
         <div className="flex gap-2">
           <span className="h-[7px] w-[7px] rounded-full bg-[#0EA875]" />
           <span className="h-[7px] w-[7px] rounded-full bg-[#0EA875]" />
@@ -598,12 +599,13 @@ export default function CombinedV39Report({
       </div>
 
       {/* ============ PART 1 冰山模型 ============ */}
-      <div className="paper-card px-5 py-6 sm:px-7">
-        <div className="mb-1 inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-[4px] text-[#0B8A63]">
+      {/* 打印：封面已分页，本块自第 2 页顶部起；内部紧凑排版保证整页一图看全（A4 内容高约 1032px） */}
+      <div className="paper-card px-5 py-6 print:py-5 sm:px-7">
+        <div className="mb-1 inline-flex items-center gap-2.5 text-[13px] font-semibold tracking-[4px] text-[#0B8A63] print:mb-0.5">
           <span className="h-0.5 w-[26px] bg-[#0EA875]" />PART 1
         </div>
-        <h3 className="text-[20px] font-extrabold text-[#0B3D2E]">学习能力冰山模型 · 三阶九能</h3>
-        <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft">
+        <h3 className="text-[20px] font-extrabold text-[#0B3D2E] print:text-[18px]">学习能力冰山模型 · 三阶九能</h3>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-olive-soft print:mt-1 print:text-[11px] print:leading-snug">
           水面之上是看得见的学习成绩；水面之下是乐学（心）、会学（术）、善学（脑）三大系统，共九能，全部计入总分。冰山越往下越隐蔽：能力最好训练、行为靠习惯、动力最难撬动。
         </p>
 
@@ -707,40 +709,40 @@ export default function CombinedV39Report({
             <div className="w-[300px] shrink-0 overflow-hidden rounded-2xl border border-[#E3EEE8] bg-gradient-to-b from-[#F0FAF5] to-[#E4F2E9]">
               <BergSvg stretch={1} />
             </div>
-            <div className="min-w-0 flex-1 space-y-3">
-              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+            <div className="min-w-0 flex-1 space-y-3 print:space-y-2">
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 print:px-3 print:py-2">
                 <CardHead title="学习成绩" note="看得见的结果 · 各科三项均分" />
                 {scoreCardBody}
               </div>
-              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 print:px-3 print:py-2">
                 <CardHead title="能力系统" note="学习效率高不高（脑）" />
                 {shanCardBody}
               </div>
-              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 print:px-3 print:py-2">
                 <CardHead title="行为系统" note="会不会学（术）" />
                 {huiCardBody}
               </div>
-              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+              <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 print:px-3 print:py-2">
                 <CardHead title="动力系统" note="愿不愿学（心）" />
                 {leCardBody}
               </div>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+          <div className="mt-3 grid grid-cols-3 gap-3 print:mt-2 print:gap-2">
+            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 print:px-3 print:py-2">
               <CardHead title="自我认知 · 心理状态" />
               {selfCardBody}
             </div>
-            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 print:px-3 print:py-2">
               <CardHead title="支持系统" note="身心 · 家庭 · 资源" />
               {envCardBody}
             </div>
-            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3">
+            <div className="rounded-xl border border-[#E3EEE8] bg-white px-4 py-3 print:px-3 print:py-2">
               <CardHead title="深层特质" note="性格 · 兴趣 · 锚" />
               {traitCardBody}
             </div>
           </div>
-          <p className="mt-3 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute">
+          <p className="mt-3 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute print:mt-2 print:pt-1.5 print:text-[11px] print:leading-snug">
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#E4572E" }} />红 &lt; 3.0 卡点（优先干预）　
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#F0A92E" }} />黄 3.0–3.7 待提升　
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#3CC078" }} />绿 ≥ 3.8 正常　|　
