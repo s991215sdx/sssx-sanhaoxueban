@@ -8,10 +8,11 @@
  * - playwright-core 用 createRequire 运行时加载（esbuild 不打进 bundle），浏览器内核用服务器
  *   已有的 ~/.cache/ms-playwright（与 1.64.1 匹配的 chromium-1243），不额外下载。
  */
-import { createRequire } from "node:module";
+import { createRequire as mkRequire } from "node:module";
 import type { Context } from "hono";
 
-const req = createRequire(import.meta.url);
+/* 别名化：esbuild 构建 banner 已注入 createRequire，这里不能同名顶层导入 */
+const req = mkRequire(import.meta.url);
 type PlaywrightCore = typeof import("playwright-core");
 
 /** 允许生成 PDF 的页面路径（其余一律 400，防止被当任意网页截图/SSRF 用） */
