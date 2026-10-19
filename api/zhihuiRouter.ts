@@ -11,6 +11,7 @@ import { getDb } from "./queries/connection";
 import { sameOrg } from "./tenant";
 import { assessmentResults, studentExpectations, studentProfile, users } from "../db/schema";
 import { gdScores, majorLib, universityLib, careerLib } from "../db/schema";
+import { inviteChannels, inviteRegistrations, organizations } from "../db/schema";
 import { like, or, asc, sql } from "drizzle-orm";
 
 /** 查看/代编他人数据须为伴学师或管理员；v179：且目标学员须在本机构内
@@ -105,6 +106,34 @@ export const zhihuiRouter = createRouter({
 
       const [user] = await db.select({ name: users.name, phone: users.phone }).from(users).where(eq(users.id, sid)).limit(1);
       const profile = await db.query.studentProfile.findFirst({ where: eq(studentProfile.userId, sid) });
+
+      /* v206：学生归属的校园渠道信息（报告封面「学校/班级/校徽」用，伴学师内嵌查看同样生效；非校园渠道学生不受影响） */
+      const reg = (
+        await db
+          .select({ channelId: inviteRegistrations.channelId })
+          .from(inviteRegistrations)
+          .where(eq(inviteRegistrations.userId, sid))
+          .orderBy(desc(inviteRegistrations.id))
+          .limit(1)
+      )[0];
+      let stuCampus = false;
+      let schoolName: string | null = null;
+      let schoolLogo: string | null = null;
+      if (reg) {
+        const ch = (
+          await db
+            .select({ campus: inviteChannels.campus, orgName: organizations.name, logo: organizations.logoUrl })
+            .from(inviteChannels)
+            .leftJoin(organizations, eq(organizations.id, inviteChannels.orgId))
+            .where(eq(inviteChannels.id, reg.channelId))
+            .limit(1)
+        )[0];
+        if (ch?.campus) {
+          stuCampus = true;
+          schoolName = ch.orgName ?? null;
+          schoolLogo = ch.logo ?? null;
+        }
+      }
 
       // 最近一次学科四维测评
       const [s4d] = await db
@@ -285,7 +314,7 @@ export const zhihuiRouter = createRouter({
         .sort((a, b) => a.menlei.localeCompare(b.menlei, "zh"));
 
       return {
-        student: { id: sid, name: profile?.name || user?.name || "", grade: (profile?.grade as string | null) ?? null },
+        student: { id: sid, name: profile?.name || user?.name || "", grade: (profile?.grade as string | null) ?? null, className: profile?.className ?? null, campus: stuCampus, schoolName, schoolLogo },
         subject4d: s4d ? { result: s4d.result, answers: s4d.answers, createdAt: s4d.createdAt } : null,
         holland: hol ? { result: hol.result, createdAt: hol.createdAt } : null,
         multi5: m5 ? { result: m5.result, createdAt: m5.createdAt } : null,

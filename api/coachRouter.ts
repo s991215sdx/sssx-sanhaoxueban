@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { eq, inArray, desc } from "drizzle-orm";
+import { and, eq, inArray, desc, isNull, ne } from "drizzle-orm";
 import { createRouter, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { studentPrescriptions, studentProfile, users, academicRecords } from "@db/schema";
+import { studentPrescriptions, studentProfile, users, academicRecords, organizations } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
@@ -406,6 +406,12 @@ export const coachRouter = createRouter({
   /**
    * v96：删除学员（软删）——users.deleted_at 打时间戳。学员立即从列表消失、无法登录；
    * 数据保留 2 个月，期间可在回收站恢复，到期自动物理清除。伴学师限名下学员，管理员限本机构。
+   * v201：「按机构移除」守卫——只移出本机构，绝不动全局身份：
+   * ① 非学员角色（伴学师/管理员/教务）一律拒绝，角色调整走平台超管；
+   * ② 无机构账号（orgId IS NULL，含平台超管/历史遗留）不属于任何机构，拒绝移除——
+   *    堵住 v190「无机构学员对机构管理员可见」导致的超管误删事故；
+   * ③ 同手机号名下还有其他机构账号时，本次只软删本机构这一行（其他机构账号照常登录），
+   *    响应里带 siblingOrgs 告知前端「仅移出本机构」。
    */
   deleteStudent: tutorQuery
     .input((v: unknown) => v as { userId: number })
@@ -419,7 +425,11 @@ export const coachRouter = createRouter({
         throw new Error("这位同学不在你的机构内");
       }
       const target = (
-        await db.select({ id: users.id, deletedAt: users.deletedAt }).from(users).where(eq(users.id, input.userId)).limit(1)
+        await db
+          .select({ id: users.id, deletedAt: users.deletedAt, role: users.role, orgId: users.orgId, phone: users.phone })
+          .from(users)
+          .where(eq(users.id, input.userId))
+          .limit(1)
       )[0];
       if (!target) throw new Error("学员账号不存在");
       if (target.deletedAt) throw new Error("该学员已在回收站里");
@@ -427,9 +437,26 @@ export const coachRouter = createRouter({
         await db.select({ id: studentProfile.id }).from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1)
       )[0];
       if (!profile) throw new Error("只有学员（有学员档案的账号）可以删除");
+      if (target.role !== "user") throw new Error("该账号是伴学师/管理员/教务，不能按学员移除；如需调整角色请联系平台超管");
+      if (target.orgId == null) throw new Error("该账号不属于任何机构（平台/无机构账号），不能从机构中移除");
+      /* v201：同手机号多机构账号 → 只软删本机构这一行，返回其他机构名供前端提示 */
+      let siblingOrgs: string[] = [];
+      if (target.phone) {
+        const siblings = await db
+          .select({ orgId: users.orgId })
+          .from(users)
+          .where(and(eq(users.phone, target.phone), isNull(users.deletedAt), ne(users.id, target.id)));
+        if (siblings.length > 0) {
+          const orgIds = [...new Set(siblings.map((s) => s.orgId).filter((v): v is number => v != null))];
+          if (orgIds.length > 0) {
+            const orgRows = await db.select().from(organizations).where(inArray(organizations.id, orgIds));
+            siblingOrgs = orgRows.map((o) => o.brandName || o.name);
+          }
+        }
+      }
       /* v99：记录删除人——回收站按"谁删的"做伴学师可见性判定 */
       await db.update(users).set({ deletedAt: new Date(), deletedBy: ctx.user.id }).where(eq(users.id, input.userId));
-      return { ok: true as const };
+      return { ok: true as const, removedOrgOnly: siblingOrgs.length > 0, siblingOrgs };
     }),
 
   /** v96：从回收站恢复学员（清除 deleted_at）。权限同删除（v99：含"我删的"）。 */
