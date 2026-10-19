@@ -6,7 +6,8 @@
  * - 登录态：透传请求 Cookie 给无头浏览器，页面权限与当前用户一致（渲染出登录页即判 401）；
  * - 字体：服务器已装 Noto Sans CJK（渲染前等待图表与字体就绪）；
  * - playwright-core 用 createRequire 运行时加载（esbuild 不打进 bundle），浏览器内核用服务器
- *   已有的 ~/.cache/ms-playwright（与 1.64.1 匹配的 chromium-1243），不额外下载。
+ *   ~/.cache/ms-playwright 的 chromium_headless_shell-1248 目录（官方源国内不可达时可用
+ *   1243 复制别名，见手册「内部版/渠道版服务器备忘」，不额外下载。
  */
 import { createRequire as mkRequire } from "node:module";
 import type { Context } from "hono";
