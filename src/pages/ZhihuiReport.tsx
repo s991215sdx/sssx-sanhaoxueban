@@ -23,6 +23,7 @@ import {
 } from "@contracts/subject4d";
 import { HOLLAND_LABEL, hollandTopWithTies } from "@contracts/holland";
 import HollandHexMap from "@/components/reports/HollandHexMap";
+import { SCORE_PATH_MATRIX } from "@/data/reports/scoreMatrix";
 
 /* ---------- 设计令牌（与 mockup-v4 一致） ---------- */
 const C = {
@@ -88,26 +89,6 @@ const GRADE_PLANS: { grade: string; theme: string; items: string[] }[] = [
     "6 月：高考 → 校测 → 按「冲稳保」原则完成 45 个平行志愿填报"] },
 ];
 
-const MATRIX: { band: string; rows: [string, string][] }[] = [
-  { band: "650 - 670 分", rows: [
-    ["高考统招", "哈尔滨工业大学(深圳)、中山大学(热门专业)、浙江大学、南京大学、中国科学技术大学、武汉大学、西安交通大学"],
-    ["强基计划", "中山大学、浙江大学、南京大学、中国科学技术大学、西安交通大学、哈尔滨工业大学"],
-    ["综合评价", "南方科技大学、香港中文大学(深圳)、中山大学、深圳北理莫斯科大学"],
-    ["港澳升学", "香港大学、香港科技大学、香港中文大学、香港城市大学"],
-    ["境外留学", "剑桥大学、牛津大学、新加坡国立大学、南洋理工大学（世界前 50 强）"] ] },
-  { band: "630 - 650 分", rows: [
-    ["高考统招", "中山大学、华南理工大学、华东师范大学、北京外国语大学、南开大学、华中科技大学、武汉大学"],
-    ["强基计划", "哈尔滨工业大学、西安交通大学、同济大学、北京师范大学、中山大学"],
-    ["综合评价", "南方科技大学、香港中文大学(深圳)、深圳北理莫斯科大学"],
-    ["港澳升学", "香港城市大学、香港理工大学（世界前 100 强）"],
-    ["境外留学", "新加坡前二、澳洲八大、英国前 30"] ] },
-  { band: "610 - 630 分", rows: [
-    ["高考统招", "华南理工大学(中外)、中国农业大学、西北工业大学、重庆大学、中南大学、暨南大学、深圳大学(热门)"],
-    ["强基计划", "东南大学、中国农业大学、兰州大学"],
-    ["综合评价", "香港中文大学(深圳)、西交利物浦大学"],
-    ["港澳升学", "香港浸会大学、澳门大学"],
-    ["境外留学", "澳门大学、香港教育大学、海外世界前 200 强"] ] },
-];
 
 const MENLEI_GROUPS = [
   { label: "自然科学", sub: "探究自然规律", items: [
@@ -472,6 +453,42 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     [academics, grade],
   );
   const equiv750 = fullTotal > 0 ? Math.round((totalScore / fullTotal) * 750) : 0;
+  /* v214：分数段矩阵改用 SCORE_PATH_MATRIX 全分段库（350-680），按等效分定位「冲/稳/保」相邻三档：
+     上一档=冲、所在档=稳、下一档=保；分数段之外（太高/太低/未填成绩）退化为展示参考档。
+     数据里的「480以下」与 450-500/400-450/350-400 重叠，会干扰定位，展示时剔除。 */
+  const firstTrack: "物理" | "历史" = combos?.c1?.[0]?.[0] === "历史" ? "历史" : "物理";
+  const matrixBands = useMemo(() => {
+    const all = (SCORE_PATH_MATRIX[firstTrack] ?? []).filter((b) => b.score !== "480以下");
+    return [...all].sort((a, b) => {
+      const fa = (a.score.match(/(\d+)/)?.[1] ?? "0");
+      const fb = (b.score.match(/(\d+)/)?.[1] ?? "0");
+      return parseInt(fb, 10) - parseInt(fa, 10);
+    });
+  }, [firstTrack]);
+  const matrixActive = useMemo(() => {
+    if (!equiv750) return null;
+    for (const b of matrixBands) {
+      const m = b.score.match(/(\d+)(?:-(\d+))?/);
+      if (!m) continue;
+      const lo = parseInt(m[1], 10);
+      const hi = m[2] ? parseInt(m[2], 10) : b.score.includes("以上") ? Infinity : lo;
+      if (equiv750 >= lo && equiv750 <= hi) return b.score;
+    }
+    return null;
+  }, [matrixBands, equiv750]);
+  const matrixShown = useMemo(() => {
+    if (!equiv750) return matrixBands;
+    const idx = matrixBands.findIndex((b) => b.score === matrixActive);
+    if (idx === -1) return equiv750 < 370 ? matrixBands.slice(-3) : matrixBands.slice(0, 3);
+    return matrixBands.slice(Math.max(0, idx - 1), Math.min(matrixBands.length, idx + 2));
+  }, [matrixBands, equiv750, matrixActive]);
+  /** 相对当前学生的冲稳保：高于所在档=冲，所在档=稳，低于=保。 */
+  const relTier = (score: string): "冲" | "稳" | "保" => {
+    if (!matrixActive) return matrixBands.find((b) => b.score === score)?.tier ?? "稳";
+    if (score === matrixActive) return "稳";
+    const fi = (x: string) => parseInt(x.match(/(\d+)/)?.[1] ?? "0", 10);
+    return fi(score) > fi(matrixActive) ? "冲" : "保";
+  };
   const reportNo = useMemo(() => {
     const d = data?.subject4d?.createdAt ? new Date(data.subject4d.createdAt) : new Date();
     return `ZH${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${data?.student.id ?? 0}`;
@@ -926,23 +943,35 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         </div>
       </Page>
 
-      {/* Part4 分数段矩阵 */}
+      {/* Part4 分数段矩阵（v214：按等效分定位冲/稳/保相邻三档） */}
       <Page no={19}>
-        <SecTitle n={2} title="你的分数能走哪些路" sub="物理类 · 按分数段查看可报路径与院校" />
+        <SecTitle n={2} title="你的分数能走哪些路" sub={`${firstTrack}类 · 按分数段查看可报路径与院校`} />
         <div id="matrix">
-          {MATRIX.map((b) => (
-            <div key={b.band} style={{ background: "#fff", border: "1px solid #E3EEE8", borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
-              <div style={{ padding: "15px 22px", background: "#F7FBF9" }}><b style={{ fontSize: 15, color: C.olive }}>{b.band} · {equiv750 ? (equiv750 >= Number(b.band.slice(0, 3)) && equiv750 <= Number(b.band.slice(6, 9)) ? "你的档" : "") : ""}</b><span style={{ fontSize: 12, color: C.oliveMute, marginLeft: 10 }}>5 条路径可报</span></div>
-              <div style={{ padding: "14px 22px 18px" }}>
-                {b.rows.map(([tag, list]) => (<div key={tag} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
-                  <span style={{ minWidth: 76, height: 24, background: C.brand, color: "#fff", fontSize: 12, fontWeight: 700, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2 }}>{tag}</span>
-                  <span style={{ fontSize: 12.5, color: C.oliveSoft, lineHeight: 1.9 }}>{list}</span>
-                </div>))}
+          {matrixShown.map((b) => {
+            const isActive = equiv750 > 0 && b.score === matrixActive;
+            const tier = relTier(b.score);
+            const tierColor = tier === "冲" ? "#C05A4B" : tier === "稳" ? C.brand : "#5B8DB8";
+            return (
+              <div key={b.score} style={{ background: "#fff", border: `1.5px solid ${isActive ? C.brand : "#E3EEE8"}`, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
+                <div style={{ padding: "15px 22px", background: isActive ? "#F0FAF5" : "#F7FBF9", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ minWidth: 44, height: 22, background: tierColor, color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 6, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{tier}</span>
+                  <b style={{ fontSize: 15, color: C.olive }}>{b.score} 分</b>
+                  {isActive && <b style={{ fontSize: 12, color: C.brandDeep }}>· 你的档</b>}
+                  <span style={{ fontSize: 12, color: C.oliveMute, marginLeft: "auto" }}>{b.cells.filter((c) => c.schools.length > 0).length} 条路径可报</span>
+                </div>
+                <div style={{ padding: "14px 22px 18px" }}>
+                  {b.cells.map((c) => (<div key={c.path} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+                    <span style={{ minWidth: 76, height: 24, background: C.brand, color: "#fff", fontSize: 12, fontWeight: 700, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2, flex: "none" }}>{c.path}</span>
+                    <span style={{ fontSize: 12.5, color: C.oliveSoft, lineHeight: 1.9 }}>
+                      {c.schools.length > 0 ? c.schools.join("、") : "该分数段此路径机会较少，可关注相邻分数段或换路径组合。"}
+                    </span>
+                  </div>))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-        <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>{equiv750 ? <>你当前折合 750 分制约 <b style={{ color: C.olive }}>{equiv750}</b> 分（本次考试满分 {fullTotal} 分，已按比例折算，「你的档」据此标注）。</> : ""}每个分数段均可报 5 条路径；矩阵数据每年随广东录取数据库更新。</p>
+        <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>{equiv750 ? <>你当前折合 750 分制约 <b style={{ color: C.olive }}>{equiv750}</b> 分（本次考试满分 {fullTotal} 分，已按比例折算），以上按你的分数定位到「冲 / 稳 / 保」三个分数段，「你的档」即当前所在段。</> : "填写成绩后，这里会按你的分数定位到「冲 / 稳 / 保」三个分数段。"}每个分数段列出的为参考口径，正式填报以当年一分一段表与招生计划为准。</p>
       </Page>
 
       {/* Part4 分年级规划 */}
