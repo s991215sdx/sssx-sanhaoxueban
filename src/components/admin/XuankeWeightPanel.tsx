@@ -22,6 +22,7 @@ export default function XuankeWeightPanel({ canEdit, compact = false }: { canEdi
     },
   });
   const [val, setVal] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
   useEffect(() => {
     if (data && val == null) setVal(data.scoreWeight);
   }, [data, val]);
