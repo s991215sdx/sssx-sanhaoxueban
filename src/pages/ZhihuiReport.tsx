@@ -581,7 +581,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         <div className="part-tag">PART 1</div>
         <h2>测评结果概览</h2>
         <p className="muted" style={{ marginTop: 16 }}>
-          亲爱的{data.student.name}同学，你好！这份报告基于你完成的<b>学科四维测评</b>{holland ? "与<b>职业兴趣测评</b>" : ""}，从学科表现、专业方向、职业倾向三个层面，帮助你认识自己、了解世界、树立目标。测评结果没有好坏之分，它只是一面镜子，为你接下来的选科与升学规划提供参考。
+          亲爱的{data.student.name}同学，你好！这份报告基于你完成的<b>学科四维测评</b>{holland ? <>与<b>职业兴趣测评</b></> : ""}，从学科表现、专业方向、职业倾向三个层面，帮助你认识自己、了解世界、树立目标。测评结果没有好坏之分，它只是一面镜子，为你接下来的选科与升学规划提供参考。
         </p>
         <SecTitle n={1} title="学科表现金字塔模型" sub="学科表现 = 兴趣 + 能力倾向 + 观念 + 效能感" />
         <div className="card flexrow" style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
