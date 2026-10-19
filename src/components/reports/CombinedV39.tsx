@@ -247,7 +247,7 @@ function KRow({ label, value, note, color, plain }: { label: string; value: numb
     );
   }
   return (
-    <div className="flex items-center gap-2 py-[3px] print:py-px">
+    <div className="flex items-center gap-2 py-[3px] print:py-0">
       <span className="w-[76px] shrink-0 truncate text-[12.5px] text-olive-soft print:text-[11.5px]" title={label}>{label}</span>
       <span className="w-[40px] shrink-0 text-right text-[13px] font-extrabold print:text-[12px]" style={{ color }}>{value}</span>
       <div className="h-2 w-[38%] shrink-0 overflow-hidden rounded-full bg-[#EDF3EF]">
@@ -259,7 +259,7 @@ function KRow({ label, value, note, color, plain }: { label: string; value: numb
 }
 function TotalRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-baseline justify-between rounded-lg bg-[#F0FAF5] px-3.5 py-1.5 my-[7px] print:my-[2px] print:py-1">
+    <div className="flex items-baseline justify-between rounded-lg bg-[#F0FAF5] px-3.5 py-1.5 my-[7px] print:my-[1px] print:py-1">
       <span className="text-[12.5px] font-bold text-olive-soft print:text-[11.5px]">{label}</span>
       <span className="text-[19px] font-extrabold text-[#0B8A63] print:text-[16px]">{value}<small className="text-[11px] font-semibold text-olive-mute">/ 5</small></span>
     </div>
@@ -500,7 +500,7 @@ export default function CombinedV39Report({
           {MULTI5_DIM_ORDER.map((k) => (
             <span key={k} className="flex items-center gap-1.5">
               <span className="text-[11px] text-olive-soft print:text-[10px]">{MULTI5_DIM_LABEL[k]}</span>
-              <span className="h-[7px] w-14 overflow-hidden rounded-full bg-[#EDF3EF] print:w-10">
+              <span className="h-[7px] w-14 overflow-hidden rounded-full bg-[#EDF3EF] print:w-10 print:hidden">
                 <span className="block h-full rounded-full bg-[#7FB89A]" style={{ width: `${multi5.dims[k]}%` }} />
               </span>
               <span className="w-6 text-[12px] font-extrabold text-[#0B8A63] print:text-[11px]">{multi5.dims[k]}</span>
@@ -555,14 +555,14 @@ export default function CombinedV39Report({
   );
   const traitCardBody = (
     <>
-      {disc && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">DISC</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{disc.primary}</span><span className="text-[11px] text-olive-mute">{discName ?? ""}</span></div>}
-      {mbti && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">MBTI</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{mbti.type}</span><span className="text-[11px] text-olive-mute">{mbtiName ?? ""}</span></div>}
-      {holland && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业兴趣</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{holland.code}</span><span className="text-[11px] text-olive-mute">{holland.keywords}</span></div>}
+      {disc && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft print:text-[10px]">DISC</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63] print:text-[12px]">{disc.primary}</span><span className="min-w-0 truncate text-[11px] text-olive-mute print:text-[9px] print:leading-tight">{discName ?? ""}</span></div>}
+      {mbti && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft print:text-[10px]">MBTI</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63] print:text-[12px]">{mbti.type}</span><span className="min-w-0 truncate text-[11px] text-olive-mute print:text-[9px] print:leading-tight">{mbtiName ?? ""}</span></div>}
+      {holland && <div className="flex items-baseline gap-2 py-1 print:py-px"><span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft print:text-[10px]">职业兴趣</span><span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63] print:text-[12px]">{holland.code}</span><span className="min-w-0 truncate text-[11px] text-olive-mute print:text-[9px] print:leading-tight">{holland.keywords}</span></div>}
       {anchor && anchor.top2.length > 0 && (
-        <div className="flex flex-wrap items-baseline gap-2 py-1">
-          <span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft">职业锚</span>
-          <span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63]">{anchor.top2.join("·")}</span>
-          <span className="text-[11px] text-olive-mute">{anchor.top2.map((k) => ANCHOR_LABEL[k]).join(" · ")}</span>
+        <div className="flex flex-wrap items-baseline gap-2 py-1 print:py-px">
+          <span className="w-[52px] shrink-0 text-[11.5px] font-bold text-olive-soft print:text-[10px]">职业锚</span>
+          <span className="text-[15px] font-extrabold tracking-wide text-[#0B8A63] print:text-[12px]">{anchor.top2.join("·")}</span>
+          <span className="min-w-0 truncate text-[11px] text-olive-mute print:text-[9px] print:leading-tight">{anchor.top2.map((k) => ANCHOR_LABEL[k]).join(" · ")}</span>
         </div>
       )}
       {!disc && !mbti && !holland && !anchor && <p className="py-1 text-[12px] text-olive-mute">性格/兴趣测评未完成</p>}
@@ -742,7 +742,7 @@ export default function CombinedV39Report({
               {traitCardBody}
             </div>
           </div>
-          <p className="mt-3 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute print:mt-2 print:pt-1.5 print:text-[11px] print:leading-snug">
+          <p className="mt-3 border-t border-[#E3EEE8] pt-2.5 text-[12px] leading-[1.8] text-olive-mute print:mt-2 print:pt-1.5 print:text-[10px] print:leading-none">
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#E4572E" }} />红 &lt; 3.0 卡点（优先干预）　
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#F0A92E" }} />黄 3.0–3.7 待提升　
             <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: "#3CC078" }} />绿 ≥ 3.8 正常　|　

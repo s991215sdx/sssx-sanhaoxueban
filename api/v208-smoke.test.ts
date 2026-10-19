@@ -36,7 +36,7 @@ describe("v208 综合学习力报告打印分页", () => {
 
   it("计分行与卡头打印压缩", () => {
     need(rpt, "print:py-px", "KRow 行距打印压缩");
-    need(rpt, "print:my-[2px] print:py-1", "TotalRow 打印压缩");
+    need(rpt, "print:my-[1px] print:py-1", "TotalRow 打印压缩");
     need(rpt, "print:text-[13px]", "CardHead 打印字号");
   });
 
