@@ -4,12 +4,19 @@
  * 屏幕 + 打印（A4 分页不变型）双适配；样式经 <style> 注入，类名 ob- 前缀避免与全局冲突。
  */
 import type { CSSProperties, ReactNode } from "react";
+import { createContext, useContext } from "react";
+
+/** v208：报告页脚品牌 Context——校园渠道（粤华）学生所有报告页脚左侧统一挂学校品牌
+ *  （如「东莞粤华学校 · 生涯规划测评」）；null 时保持原「EVALUATION REPORT · …」不变。 */
+export const ReportBrandCtx = createContext<string | null>(null);
 
 export const OLIVE_CSS = `
 .ob-root { background: #EAF3EE; padding: 8px 0 40px; border-radius: 12px; }
 .ob-book { max-width: 900px; margin: 0 auto; padding: 0 12px; }
 .ob-page { background: #FFFFFF; margin: 24px auto; padding: 52px 56px 72px; position: relative; box-shadow: 0 2px 14px rgba(11,61,46,.08); border-radius: 4px; max-width: 860px; min-height: 1100px; display: flex; flex-direction: column; }
 .ob-pfoot { position: absolute; bottom: 22px; left: 56px; right: 56px; display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 3px; color: #8FA39B; }
+/* v208：页码从右侧移到中间（双面打印左右页脚对齐，翻页更整齐） */
+.ob-pno { position: absolute; left: 50%; transform: translateX(-50%); }
 .ob-pdot { width: 7px; height: 7px; border-radius: 50%; background: #0EA875; display: inline-block; margin-right: 6px; }
 .ob-page h1 { font-size: 30px; letter-spacing: 2px; color: #0B3D2E; font-weight: 800; line-height: 1.35; }
 .ob-page h2 { font-size: 22px; color: #0B3D2E; font-weight: 800; }
@@ -47,6 +54,7 @@ ul.ob-dots.ob-warn li::before { background: #F0A92E; }
   .ob-book { padding: 0; }
   .ob-page { margin: 0 auto 14px; padding: 26px 16px 36px; max-width: 100%; min-height: 0 !important; border-radius: 0; box-shadow: none; border-bottom: 1px solid #E3EEE8; }
   .ob-pfoot { position: static; margin-top: 26px; padding-top: 10px; border-top: 1px dashed #E3EEE8; }
+  .ob-pno { position: static; transform: none; margin: 0 auto; }
   .ob-page h1 { font-size: 26px; }
   .ob-page h2 { font-size: 19px; }
   .ob-card { padding: 16px 18px; }
@@ -120,15 +128,17 @@ export function OPage({ no, foot = FOOT, flex, style, children }: {
   style?: CSSProperties;
   children: ReactNode;
 }) {
+  /* v208：校园渠道学生页脚左侧挂学校品牌（如「东莞粤华学校 · 生涯规划测评」），页码居中 */
+  const brand = useContext(ReportBrandCtx);
   return (
     <div className="ob-page" style={{ ...(flex ? { justifyContent: "flex-start" } : undefined), ...style }}>
       {children}
       <div className="ob-pfoot">
         <span>
           <i className="ob-pdot" />
-          {foot}
+          {brand ?? foot}
         </span>
-        <span>{String(no).padStart(2, "0")}</span>
+        <span className="ob-pno">{String(no).padStart(2, "0")}</span>
       </div>
     </div>
   );

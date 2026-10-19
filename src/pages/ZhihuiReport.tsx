@@ -3,7 +3,8 @@
  * 数据源：zhihui.reportData（学科四维 + 霍兰德 + 成绩档案 + 未来期望 + 资料库）。
  * 打印：每页 A4 page-break，点「下载 / 打印」另存 PDF。
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useContext } from "react";
+import { ReportBrandCtx } from "@/components/reports/olive/OliveBook";
 import { useSearchParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { defaultFullScore } from "@contracts/academics";
@@ -267,10 +268,12 @@ function DimBars({ dims }: { dims: [string, number, string][] }) {
 
 /* ---------- 页面骨架 ---------- */
 function Page({ no, children, tall = true }: { no: number; children: React.ReactNode; tall?: boolean }) {
+  /* v208：校园渠道学生页脚挂学校品牌，页码居中（与 olive book 同口径） */
+  const brand = useContext(ReportBrandCtx);
   return (
     <div className="zh-page" style={{ minHeight: tall ? 1120 : 560 }}>
       {children}
-      <div className="pfoot"><span><i className="pdot" />EVALUATION REPORT</span><span>{String(no).padStart(2, "0")}</span></div>
+      <div className="pfoot"><span><i className="pdot" />{brand ?? "EVALUATION REPORT"}</span><span className="pno">{String(no).padStart(2, "0")}</span></div>
     </div>
   );
 }
@@ -527,7 +530,11 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   const menleiCatMap: Record<string, string[]> = Object.fromEntries((data.menleiCats ?? []).map((m) => [m.menlei, m.cats]));
   const targetRows = (data.targetSchool?.rows ?? []).filter((r) => r.y1Min != null).slice(0, 6);
 
+  /* v208：校园渠道学生所有报告页脚统一挂学校品牌（独立页/内嵌同口径；内嵌时外层 ReportView 也会供，这里以学生归属为准） */
+  const reportBrand = stuCampus ? (data.student.schoolBrand ?? null) : null;
+
   return (
+    <ReportBrandCtx.Provider value={reportBrand}>
     <div className="zh-root" id={printId}>
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
@@ -971,6 +978,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         </div>
       </Page>
     </div>
+    </ReportBrandCtx.Provider>
   );
 }
 
@@ -981,6 +989,8 @@ const ZH_CSS = `
 .zh-page h1 { color: ${C.olive}; }
 .zh-page h2 { font-size: 22px; color: ${C.olive}; }
 .pfoot { position: absolute; bottom: 22px; left: 56px; right: 56px; display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 3px; color: ${C.oliveMute}; }
+/* v208：页码移到中间（双面打印对齐） */
+.pno { position: absolute; left: 50%; transform: translateX(-50%); }
 .pdot { width: 7px; height: 7px; border-radius: 50%; background: ${C.brand}; display: inline-block; margin-right: 6px; }
 .klabel { font-size: 12px; letter-spacing: 3px; color: ${C.oliveMute}; }
 .card { background: ${C.cream}; border: 1px solid ${C.line}; border-radius: 12px; padding: 22px 26px; }
@@ -1014,6 +1024,7 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
   .zh-page { margin: 0 auto 14px; padding: 26px 16px 36px; max-width: 100%; min-height: auto !important; border-radius: 0; box-shadow: none; border-bottom: 1px solid ${C.line}; zoom: 1.12; }
   .zh-page svg { max-width: 100%; height: auto; }
   .pfoot { position: static; margin-top: 26px; padding-top: 10px; border-top: 1px dashed ${C.line}; }
+  .pno { position: static; transform: none; margin: 0 auto; }
   .zh-page h2 { font-size: 19px; }
   .card { padding: 16px 18px; }
   .muted { font-size: 14px; line-height: 1.95; }
