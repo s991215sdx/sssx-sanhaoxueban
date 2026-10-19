@@ -140,9 +140,19 @@ export const orgRouter = createRouter({
       return { ok: true as const, org: org ? await orgRow(db, org) : null };
     }),
 
-  /** 编辑机构资料（名称/商标/Logo）。 */
+  /** 编辑机构资料（名称/商标/Logo/专属入口品牌化 v224）。 */
   update: adminQuery
-    .input((v: unknown) => v as { id: number; name?: string; brandName?: string; logoUrl?: string | null })
+    .input(
+      (v: unknown) =>
+        v as {
+          id: number;
+          name?: string;
+          brandName?: string;
+          logoUrl?: string | null;
+          portalHost?: string | null;
+          portalFooter?: string | null;
+        },
+    )
     .mutation(async ({ ctx, input }) => {
       requirePlatformAdmin(ctx.user);
       const db = getDb();
@@ -160,6 +170,26 @@ export const orgRouter = createRouter({
         patch.brandName = brandName;
       }
       if (input.logoUrl !== undefined) patch.logoUrl = input.logoUrl?.trim() || null;
+      /* v224：专属入口域名——小写、去协议/路径/端口，唯一性校验 */
+      if (input.portalHost !== undefined) {
+        let host = (input.portalHost ?? "").trim().toLowerCase();
+        if (host) {
+          host = host.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "");
+          if (!/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(host)) throw new Error("专属入口域名格式不对，形如 yh.sanhao.sssx.club");
+          const dup = await db
+            .select({ id: organizations.id })
+            .from(organizations)
+            .where(and(eq(organizations.portalHost, host), sql`id <> ${input.id}`))
+            .limit(1);
+          if (dup[0]) throw new Error(`域名 ${host} 已被其他机构占用`);
+        }
+        patch.portalHost = host || null;
+      }
+      if (input.portalFooter !== undefined) {
+        const footer = (input.portalFooter ?? "").trim();
+        if (footer.length > 64) throw new Error("底部署名最长 64 个字");
+        patch.portalFooter = footer || "上上升学";
+      }
       if (Object.keys(patch).length > 0) {
         await db.update(organizations).set(patch).where(eq(organizations.id, input.id));
       }

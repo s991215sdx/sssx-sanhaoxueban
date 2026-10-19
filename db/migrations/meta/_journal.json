@@ -275,6 +275,13 @@
       "when": 1793078400000,
       "tag": "0040_campus_assess_push",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "5",
+      "when": 1793116800000,
+      "tag": "0041_portal_branding",
+      "breakpoints": true
     }
   ]
 }

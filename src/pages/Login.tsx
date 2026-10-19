@@ -3,7 +3,8 @@ import { useNavigate } from "react-router";
 import { KeyRound } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 
-/** 登录页：手机号 + 密码。邀请制注册——没有账号的家长需扫描管理员发放的注册二维码（/invite/{code}）完成注册。 */
+/** 登录页：手机号 + 密码。邀请制注册——没有账号的家长需扫描管理员发放的注册二维码（/invite/{code}）完成注册。
+ *  v224：机构专属入口品牌化——按访问域名（或 ?portal= 预览参数）换登录页 Logo 与底部署名。 */
 export default function Login() {
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -11,6 +12,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showForgot, setShowForgot] = useState(false);
+
+  /* v224：优先 ?portal= 预览参数（测试环境验收用），否则取当前访问域名 */
+  const host =
+    new URLSearchParams(window.location.search).get("portal")?.trim().toLowerCase() || window.location.hostname.toLowerCase();
+  const { data: portal } = trpc.portalBranding.useQuery(
+    { host },
+    { staleTime: 5 * 60 * 1000, retry: false },
+  );
 
   const loginMutation = trpc.auth.loginPhone.useMutation({
     onSuccess: async () => {
@@ -31,14 +40,18 @@ export default function Login() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-cream px-4">
       <div className="w-full max-w-sm">
-        {/* 品牌区 */}
+        {/* 品牌区（v224：专属入口域名匹配到机构时显示机构 Logo） */}
         <div className="flex flex-col items-center text-center">
-          <svg width="64" height="64" viewBox="0 0 34 34" fill="none" aria-hidden>
-            <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#1E3530" />
-            <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#8EBD86" />
-            <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#CDE3CC" />
-            <circle cx="17" cy="9.5" r="2.2" fill="#FCCE45" />
-          </svg>
+          {portal?.logoUrl ? (
+            <img src={portal.logoUrl} alt={portal.brandName} className="h-16 w-16 rounded-[9px] object-contain" />
+          ) : (
+            <svg width="64" height="64" viewBox="0 0 34 34" fill="none" aria-hidden>
+              <rect x="1.5" y="1.5" width="31" height="31" rx="9" fill="#1E3530" />
+              <path d="M17 25c0-6.5 1.5-11 7-14-.5 6.5-2 11.5-7 14Z" fill="#8EBD86" />
+              <path d="M17 25c0-6.5-1.5-11-7-14 .5 6.5 2 11.5 7 14Z" fill="#CDE3CC" />
+              <circle cx="17" cy="9.5" r="2.2" fill="#FCCE45" />
+            </svg>
+          )}
           <h1 className="mt-4 text-[26px] font-bold tracking-tight text-olive">三好学伴</h1>
           <p className="mt-1.5 text-[14px] leading-relaxed text-olive-mute">
             先测评，再设计，向未来
@@ -109,9 +122,9 @@ export default function Login() {
         <p className="mt-6 text-center mono text-[10.5px] tracking-wider text-olive-mute/70">
           好好学习 · 天天向上
         </p>
-        {/* v83：品牌署名「上上升学」 */}
+        {/* v83：品牌署名「上上升学」（v224：专属入口可配置，缺省上上升学） */}
         <p className="mt-2.5 text-center text-[10px] tracking-[0.3em] text-olive-mute/45">
-          上上升学
+          {portal?.footer ?? "上上升学"}
         </p>
       </div>
 

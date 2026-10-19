@@ -349,7 +349,6 @@ function IntentionSection({ canManage }: { canManage: boolean }) {
       utils.school.intentions.adoption.invalidate();
     },
   });
-  const openRound = rounds?.find((r) => r.status === "open");
   const decided = adoption?.decided ?? 0;
   const hitRate = adoption?.pct?.hitRate ?? null;
   /* v221：成绩权重随机构设置动态显示（默认校园 35） */

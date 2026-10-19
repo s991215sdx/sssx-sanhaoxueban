@@ -99,7 +99,7 @@ export default function XuankeWeightPanel({ canEdit, compact = false }: { canEdi
       )}
       {setW.isError && (
         <p className="mt-2 text-[12px] font-medium" style={{ color: G.danger }}>
-          保存失败：{(setW.error as Error)?.message ?? "请再试一次"}
+          保存失败：{(setW.error as unknown as Error)?.message ?? "请再试一次"}
         </p>
       )}
     </div>

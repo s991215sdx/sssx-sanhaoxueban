@@ -1,22 +1,16 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { useSearchParams, useNavigate } from "react-router";
-import StudentDetailDrawer from "@/components/StudentDetailDrawer";
-import ResetPasswordButton from "@/components/ResetPasswordButton";
-import DeleteStudentButton from "@/components/DeleteStudentButton";
+import { useNavigate } from "react-router";
 import InviteChannelsTab from "@/components/admin/InviteChannelsTab";
 import OrgAdminTab from "@/components/admin/OrgAdminTab";
-import ReportAccessButton from "@/components/ReportAccessButton";
-import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
-import TutorAssignButton from "@/components/TutorAssignButton";
-import ReportGrantButton from "@/components/ReportGrantButton";
-import BulkAssignTutors from "@/components/BulkAssignTutors";
+import ResetPasswordButton from "@/components/ResetPasswordButton";
+import DeleteStudentButton from "@/components/DeleteStudentButton";
 import SchoolConsole from "@/components/admin/SchoolConsole";
 import StudentsTab from "@/components/admin/StudentsTab";
 import TutorsTab from "@/components/admin/TutorsTab";
 import XuankeWeightPanel from "@/components/admin/XuankeWeightPanel";
-import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown, Library as LibraryIcon } from "lucide-react";
+import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
 
@@ -52,7 +46,7 @@ export default function Admin() {
   }
   /* v220.1：校园机构管理员直接进学校版控制台 */
   if (!isPlatformAdmin && schoolCtx?.campus) {
-    return <SchoolConsole selfName={user.name} />;
+    return <SchoolConsole selfName={user.name ?? "管理员"} />;
   }
   /* V60：平台超管 = 机构管理 + 全系统数据（god mode）；机构管理员 = 本机构四 tab */
   return <AdminPanel selfId={user.id} onRefresh={refresh} platform={isPlatformAdmin} />;
