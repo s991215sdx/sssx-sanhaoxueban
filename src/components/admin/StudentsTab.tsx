@@ -103,6 +103,7 @@ export default function StudentsTab({
           studentIds={[...picked]}
           tutors={(tutors ?? []).map((t) => ({ id: t.id, name: t.name }))}
           onDone={() => setPicked(new Set())}
+          tutorLabel={tutorLabel}
         />
         {/* V56：学员查询（姓名/手机号） */}
         <span className="relative ml-auto">
@@ -178,7 +179,7 @@ export default function StudentsTab({
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 {/* V56：多对多分配指导老师（v200：教务仅有的两个操作之一） */}
-                <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} />
+                <TutorAssignButton studentUserId={s.userId} tutors={tutors ?? []} assigned={s.tutors} tutorLabel={tutorLabel} />
                 {/* v169：分配报告（开通指导老师报告查看权限，可设有效期；v200：教务仅有的两个操作之一） */}
                 <ReportGrantButton studentUserId={s.userId} studentName={s.name} tutors={tutors ?? []} assigned={s.tutors} />
                 {/* 以下操作 v200 起对教务隐藏：报告推送/测评推送/重置密码/删除/详情 */}
