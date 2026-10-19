@@ -463,7 +463,14 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
     }));
   }, [holland]);
 
+  /* v210：按实际填写的科目满分合计自动判定总分口径（如高一 9 科 = 语数英150×3 + 其余100×6 = 1050），
+     再按比例折算成 750 分制等效分去对照院校矩阵/冲稳保——不再把 1050 满分的高一成绩直接当 750 分制用 */
   const totalScore = useMemo(() => academics.reduce((s, a) => s + (a.lastScore ?? 0), 0), [academics]);
+  const fullTotal = useMemo(
+    () => academics.reduce((s, a) => (a.lastScore != null && a.name ? s + ((a as { fullScore?: number | null }).fullScore ?? defaultFullScore(a.name, grade)) : s), 0),
+    [academics, grade],
+  );
+  const equiv750 = fullTotal > 0 ? Math.round((totalScore / fullTotal) * 750) : 0;
   const reportNo = useMemo(() => {
     const d = data?.subject4d?.createdAt ? new Date(data.subject4d.createdAt) : new Date();
     return `ZH${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${data?.student.id ?? 0}`;
@@ -871,7 +878,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
               <tbody>{targetRows.slice(0, 8).map((r) => (<tr key={r.id}><td style={{ textAlign: "left", paddingLeft: 14 }}>{r.school}<div style={{ fontSize: 11, fontWeight: 400, color: C.oliveMute }}>{r.groupName}</div></td><td style={{ textAlign: "left", paddingLeft: 14 }}>{r.majorFull || r.major}</td><td>{r.y1Min ?? "—"}</td><td>{r.estRank26 ?? "—"}</td></tr>))}</tbody>
             </table>
             </div>
-            <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>冲 / 稳 / 保 按你的当前总分 {totalScore || "—"} 与录取位次对照生成；院校专业分数库每年随广东录取数据更新。</p>
+            <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>冲 / 稳 / 保 按你的当前成绩与录取位次对照生成{fullTotal > 0 ? `（本次满分 ${fullTotal} 分，折合 750 分制约 ${equiv750} 分）` : ""}；院校专业分数库每年随广东录取数据更新。</p>
           </>
         ) : <p className="muted">{exp?.school ? "未匹配到该院校近三年录取数据，可联系伴学师在资料库核对院校名称（支持简称）。" : "在「未来期望」填写目标院校后生成。"}</p>}
       </Page>
@@ -903,7 +910,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         <div id="matrix">
           {MATRIX.map((b) => (
             <div key={b.band} style={{ background: "#fff", border: "1px solid #E3EEE8", borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
-              <div style={{ padding: "15px 22px", background: "#F7FBF9" }}><b style={{ fontSize: 15, color: C.olive }}>{b.band} · {totalScore ? (totalScore >= Number(b.band.slice(0, 3)) && totalScore <= Number(b.band.slice(6, 9)) ? "你的档" : "") : ""}</b><span style={{ fontSize: 12, color: C.oliveMute, marginLeft: 10 }}>5 条路径可报</span></div>
+              <div style={{ padding: "15px 22px", background: "#F7FBF9" }}><b style={{ fontSize: 15, color: C.olive }}>{b.band} · {equiv750 ? (equiv750 >= Number(b.band.slice(0, 3)) && equiv750 <= Number(b.band.slice(6, 9)) ? "你的档" : "") : ""}</b><span style={{ fontSize: 12, color: C.oliveMute, marginLeft: 10 }}>5 条路径可报</span></div>
               <div style={{ padding: "14px 22px 18px" }}>
                 {b.rows.map(([tag, list]) => (<div key={tag} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
                   <span style={{ minWidth: 76, height: 24, background: C.brand, color: "#fff", fontSize: 12, fontWeight: 700, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2 }}>{tag}</span>
@@ -913,7 +920,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
             </div>
           ))}
         </div>
-        <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>每个分数段均可报 5 条路径；矩阵数据每年随广东录取数据库更新。</p>
+        <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>{equiv750 ? <>你当前折合 750 分制约 <b style={{ color: C.olive }}>{equiv750}</b> 分（本次考试满分 {fullTotal} 分，已按比例折算，「你的档」据此标注）。</> : ""}每个分数段均可报 5 条路径；矩阵数据每年随广东录取数据库更新。</p>
       </Page>
 
       {/* Part4 分年级规划 */}
