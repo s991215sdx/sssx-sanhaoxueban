@@ -294,6 +294,12 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   /* v198：校园版标题「粤华学校 新高一选科规划与生涯指导」——校名去地名前缀 */
   const schoolShort = (access?.orgName || "粤华学校").replace(/^东莞/, "");
   const campusTitle = `${schoolShort} 新高一选科规划与生涯指导`;
+  /* v206：按「被查看学生」是否校园渠道决定封面展示（伴学师/管理员内嵌查看粤华学生同样生效）；
+     只影响报告封面信息，不动上面 campus 的选科规则/成绩门禁口径，非校园渠道学生完全不受影响 */
+  const stuCampus = campus || !!data?.student.campus;
+  const stuSchool = data?.student.schoolName ?? null;
+  const stuClass = data?.student.className ?? null;
+  const stuLogo = data?.student.schoolLogo ?? null;
 
   /* v183c：打印前把打印根直挂 body（配 index.css 的 body.print-report 规则，避免绝对定位
      分页重影）；独立页（有 printId）才挂监听，内嵌栏目页由外层 ReportView 统一处理。 */
@@ -526,7 +532,7 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       <style>{ZH_CSS}</style>
       <div className="mb-4 flex flex-wrap items-center gap-3 no-print">
         <h1 className="text-[20px] font-bold text-olive">{campus ? campusTitle : "选科及升学规划报告"}</h1>
-        <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade} · 报告编号 {reportNo}</span>
+        <span className="text-[12.5px] text-olive-mute">{data.student.name} · {grade}{stuClass ? ` · ${stuClass}` : ""}{stuCampus && stuSchool ? ` · 学校：${stuSchool}` : ""} · 报告编号 {reportNo}</span>
         <button
           type="button"
           onClick={() => {
@@ -549,6 +555,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
       {/* 1 封面 */}
       <Page no={1}>
         <div className="flex flex-1 flex-col items-start justify-center">
+          {/* v206：校园渠道学生在报告封面左上角挂校徽（打印/下载同样带上） */}
+          {stuCampus && stuLogo && <img src={stuLogo} alt="校徽" style={{ height: 54, width: "auto", marginBottom: 16 }} />}
           <div className="klabel" style={{ marginBottom: 18 }}>{campus ? `EVALUATION REPORT · ${schoolShort}` : "EVALUATION REPORT · 三好生涯测评"}</div>
           <h1 style={{ fontSize: 30, letterSpacing: 2, lineHeight: 1.4 }}>{campus ? campusTitle : <>选科及升学规划<br />测评报告</>}</h1>
           <div style={{ marginTop: 26, width: 64, height: 4, background: C.brand, borderRadius: 2 }} />
@@ -556,10 +564,12 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
         </div>
         <div className="card cover-card" style={{ width: 340 }}>
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "10px 22px", fontSize: 14 }}>
-            {/* v196：校园渠道封面标注学校名称 */}
-            {campus && <><span className="muted">学　　校</span><span style={{ fontWeight: 600 }}>{access?.brandName || access?.orgName || "东莞粤华学校"}</span></>}
+            {/* v196：校园渠道封面标注学校名称；v206：内嵌查看（伴学师/管理员看粤华学生）按学生归属机构标注 */}
+            {(campus || stuCampus) && <><span className="muted">学　　校</span><span style={{ fontWeight: 600 }}>{campus ? access?.brandName || access?.orgName || stuSchool : stuSchool}</span></>}
             <span className="muted">姓　　名</span><span style={{ fontWeight: 600 }}>{data.student.name}</span>
             <span className="muted">年　　级</span><span style={{ fontWeight: 600 }}>{grade}</span>
+            {/* v206：校园渠道学生在年级后加班级行 */}
+            {stuCampus && stuClass && <><span className="muted">班　　级</span><span style={{ fontWeight: 600 }}>{stuClass}</span></>}
             <span className="muted">报告编号</span><span style={{ fontWeight: 600 }}>{reportNo}</span>
             <span className="muted">报告日期</span><span style={{ fontWeight: 600 }}>{new Date().toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" })}</span>
           </div>
