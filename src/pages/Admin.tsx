@@ -356,6 +356,8 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
                           </button>
                           {/* V89：管理员重置该用户登录密码（复用 V53 接口，重置后默认 123456） */}
                           <ResetPasswordButton userId={u.id} name={u.name} />
+                          {/* v210：伴学师/教务可移出机构（后端拒绝管理员/超管；学员在学员管理里移出） */}
+                          {(u.role === "tutor" || u.role === "jiaowu") && <DeleteStudentButton userId={u.id} name={u.name} />}
                         </>
                       )}
                     </div>
