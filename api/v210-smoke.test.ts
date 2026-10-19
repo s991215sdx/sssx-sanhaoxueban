@@ -22,7 +22,9 @@ describe("v210 总分口径自动判定与 750 折算", () => {
   });
 
   it("矩阵「你的档」用等效分标注", () => {
-    if (!/equiv750 >= Number\(b\.band\.slice\(0, 3\)\)/.test(page)) throw new Error("缺：矩阵按 equiv750 对照");
+    // v214：矩阵改按 equiv750 定位冲稳保相邻三档（matrixActive / matrixShown / relTier）
+    if (!/matrixActive/.test(page)) throw new Error("缺：矩阵按 equiv750 定位");
+    if (!/SCORE_PATH_MATRIX/.test(page)) throw new Error("缺：全分段矩阵数据源");
   });
 
   it("BUILD_TAG 已递增到 v210", () => {
