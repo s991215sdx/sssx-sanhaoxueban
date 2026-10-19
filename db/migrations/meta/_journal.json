@@ -254,6 +254,13 @@
       "when": 1792556400000,
       "tag": "0037_jiaowu_role",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1792404695760,
+      "tag": "0038_school_v220",
+      "breakpoints": true
     }
   ]
 }

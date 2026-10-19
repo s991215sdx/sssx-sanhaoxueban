@@ -1,9 +1,9 @@
 import { scryptSync, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { academicRecords, assessmentResults, studentProfile, users, type StudentProfile } from "@db/schema";
+import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import {
   MBTI_QUESTIONS,
@@ -568,6 +568,46 @@ export const assessmentRouter = createRouter({
       }): Promise<AssessmentSubmitOutcome> => {
       const userId = ctx.user.id;
       const db = getDb();
+
+      /* v220 学校版心理测评合规：校园生每学年（9月1日起算）每套心理量表仅测一次，
+       * 防止重复筛查刷数据；复测需求由老师线下评估后处理。 */
+      if (input.kind === "mental" || input.kind === "mentalsdq" || input.kind === "mentalpa" || input.kind === "scl90") {
+        const [reg] = await db
+          .select({ channelId: inviteRegistrations.channelId })
+          .from(inviteRegistrations)
+          .where(eq(inviteRegistrations.userId, userId))
+          .orderBy(desc(inviteRegistrations.id))
+          .limit(1);
+        if (reg) {
+          const [ch] = await db
+            .select({ campus: inviteChannels.campus })
+            .from(inviteChannels)
+            .where(eq(inviteChannels.id, reg.channelId))
+            .limit(1);
+          if (ch?.campus) {
+            const now = new Date();
+            const y = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+            const yearStart = new Date(y, 8, 1); // 本学年 9月1日
+            const prev = await db
+              .select({ id: assessmentResults.id })
+              .from(assessmentResults)
+              .where(
+                and(
+                  eq(assessmentResults.userId, userId),
+                  eq(assessmentResults.kind, input.kind),
+                  gte(assessmentResults.createdAt, yearStart),
+                ),
+              )
+              .limit(1);
+            if (prev.length) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "本学年已完成该心理筛查（每学年一次）。如确需复测，请联系老师评估后处理。",
+              });
+            }
+          }
+        }
+      }
 
       let outcome: AssessmentSubmitOutcome;
       let mergedSubjectAnswers: Record<string, number[]> | undefined; /* v81 学科累计作答（存库用） */

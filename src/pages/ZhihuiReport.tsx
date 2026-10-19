@@ -23,6 +23,7 @@ import {
 } from "@contracts/subject4d";
 import { HOLLAND_LABEL, hollandTopWithTies } from "@contracts/holland";
 import HollandHexMap from "@/components/reports/HollandHexMap";
+import SubjectIntentionCard from "@/components/SubjectIntentionCard";
 import { SCORE_PATH_MATRIX } from "@/data/reports/scoreMatrix";
 
 /* ---------- 设计令牌（与 mockup-v4 一致） ---------- */
@@ -760,6 +761,8 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
                 <span style={{ fontSize: 13.5, color: C.oliveSoft, lineHeight: 1.8 }}>你最近一次英语成绩低于 80 分（150 分制）。可以考虑两条路：① 评估转学日语高考——提分空间通常更大，但需先确认学校开班情况与个人兴趣；② 英语专项查漏补缺，重点抓词汇与阅读正确率。建议与伴学师、家长商议后再决定。</span>
               </div>
             )}
+            {/* v220：校园生本人查看时，提供「确认我的选科意向」入口（打印/PDF 自动隐藏） */}
+            {combos.campus && !studentId && <SubjectIntentionCard />}
           </>
         ) : <p className="muted">完成学科四维测评后生成推荐组合。</p>}
         <SecTitle n={9} title="距离目标还有多远" sub={exp?.school ? `目标：${exp.school}${exp.majorCat ? ` · ${exp.majorCat}` : ""}` : "填写未来期望后生成分差表"} />

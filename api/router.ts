@@ -21,9 +21,10 @@ import { orgRouter } from "./orgRouter";
 import { ssoRouter } from "./ssoRouter";
 import { libraryRouter } from "./libraryRouter";
 import { zhihuiRouter } from "./zhihuiRouter";
+import { schoolRouter } from "./schoolRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v219-2026-10-19";
+const BUILD_TAG = "v220-2026-10-19";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),
@@ -221,6 +222,8 @@ export const appRouter = createRouter({
   /** v171：智慧生涯数据底座三库（专业/职业/广东分数）+ 分年级规划模板 + 未来期望 */
   library: libraryRouter,
   zhihui: zhihuiRouter,
+  /** v220：学校版专版（粤华打样）——选科意向/预警中心/团体统计/催办/成长档案 */
+  school: schoolRouter,
   analyze: analyzeRouter,
   graph: graphRouter,
   preview: previewRouter,

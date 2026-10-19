@@ -12,6 +12,7 @@ import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import TutorAssignButton from "@/components/TutorAssignButton";
 import ReportGrantButton from "@/components/ReportGrantButton";
 import BulkAssignTutors from "@/components/BulkAssignTutors";
+import SchoolPanel from "@/components/admin/SchoolPanel";
 import { ShieldCheck, Users, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, PenLine, X, Search, ChevronDown, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
 import { usePager } from "@/hooks/usePager";
@@ -22,8 +23,25 @@ export default function Admin() {
   const isAdmin = user?.role === "admin";
   const isPlatformAdmin = isAdmin && user?.orgId == null;
 
-  /* v200：教务——只有学员分配台一个页面，其余 tab 与操作一律没有 */
+  /* v200：教务——只有学员分配台一个页面，其余 tab 与操作一律没有
+   * v220：校园机构（粤华等）的教务增加「校园管理」视图（统计/预警/意向/催办/档案）。 */
   if (user?.role === "jiaowu") {
+    return <JiaowuPanel />;
+  }
+
+  if (!isAdmin) {
+    return <ClaimAdminCard onClaimed={() => refresh()} />;
+  }
+  /* V60：平台超管 = 机构管理 + 全系统数据（god mode）；机构管理员 = 本机构四 tab */
+  return <AdminPanel selfId={user.id} onRefresh={refresh} platform={isPlatformAdmin} />;
+}
+
+/** v220：教务面板——校园机构=校园管理+学员分配台切换；普通机构=仅学员分配台。 */
+function JiaowuPanel() {
+  const { data: schoolCtx } = trpc.school.context.useQuery();
+  const campus = !!schoolCtx?.campus;
+  const [view, setView] = useState<"school" | "assign">("school");
+  if (!campus) {
     return (
       <div className="space-y-5">
         <header>
@@ -36,12 +54,29 @@ export default function Admin() {
       </div>
     );
   }
-
-  if (!isAdmin) {
-    return <ClaimAdminCard onClaimed={() => refresh()} />;
-  }
-  /* V60：平台超管 = 机构管理 + 全系统数据（god mode）；机构管理员 = 本机构四 tab */
-  return <AdminPanel selfId={user.id} onRefresh={refresh} platform={isPlatformAdmin} />;
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setView("school")}
+          className={`rounded-xl px-3.5 py-2 text-[12.5px] font-bold transition-colors ${
+            view === "school" ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
+          }`}
+        >
+          校园管理
+        </button>
+        <button
+          onClick={() => setView("assign")}
+          className={`rounded-xl px-3.5 py-2 text-[12.5px] font-bold transition-colors ${
+            view === "assign" ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
+          }`}
+        >
+          学员分配台
+        </button>
+      </div>
+      {view === "school" ? <SchoolPanel /> : <StudentsTab jiaowu orgScope={{ orgId: null }} />}
+    </div>
+  );
 }
 
 /** 系统还没有管理员时，当前用户可一键自任管理员（bootstrap）。 */
@@ -86,7 +121,7 @@ function StatCard({ icon: Icon, label, value }: { icon: typeof Users; label: str
   );
 }
 
-type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs" | "dash";
+type AdminTab = "overview" | "students" | "tutors" | "invites" | "orgs" | "dash" | "school";
 
 const ADMIN_TABS: { key: AdminTab; label: string }[] = [
   { key: "overview", label: "总览" },
@@ -99,13 +134,18 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
   const navigate = useNavigate();
   const refresh = onRefresh;
   const [tab, setTab] = useState<AdminTab>(platform ? "dash" : "overview");
+  /* v220：机构为校园机构（有 campus 渠道）时，追加「校园管理」tab */
+  const { data: schoolCtx } = trpc.school.context.useQuery(undefined, { enabled: !platform });
+  const campusOrg = !!schoolCtx?.campus;
   const tabs = platform
     ? [
         { key: "orgs" as AdminTab, label: "机构管理" },
         { key: "dash" as AdminTab, label: "数据仪表盘" },
         ...ADMIN_TABS,
       ]
-    : ADMIN_TABS;
+    : campusOrg
+      ? [...ADMIN_TABS, { key: "school" as AdminTab, label: "校园管理" }]
+      : ADMIN_TABS;
   /* V61：平台超管的系统选择器——选某个机构=只看该系统的数据；默认全部 */
   const [orgSel, setOrgSel] = useState<number | "all">("all");
   /* 始终传对象（tRPC input 非可选）；机构管理员的 orgId 会被后端强制为本机构，传 null 无影响 */
@@ -196,6 +236,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
       {tab === "orgs" && <OrgAdminTab />}
       {tab === "dash" && <PlatformDashboard onPickOrg={(id) => { setOrgSel(id); setTab("overview"); }} />}
       {tab === "invites" && <InviteChannelsTab />}
+      {tab === "school" && campusOrg && <SchoolPanel />}
       {/* V61：超管分系统查看——数据类 tab 上方的系统选择器（机构管理员无此条，恒看本机构） */}
       {platform && (tab === "overview" || tab === "students" || tab === "tutors") && (
         <div className="paper-card flex flex-wrap items-center gap-2.5 px-4 py-2.5">

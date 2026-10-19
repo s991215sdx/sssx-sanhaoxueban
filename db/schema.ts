@@ -680,3 +680,67 @@ export const studentExpectations = mysqlTable("student_expectations", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 });
+
+/* ------------------------------ v220 学校版专版（粤华打样） ----------------------------- */
+
+/** v220 选科意向：家长/学生从三大推荐确认或自定义（custom 必填理由），按轮次组织。 */
+export const subjectIntentions = mysqlTable("subject_intentions", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  roundNo: int("round_no").notNull().default(1),
+  choice: mysqlEnum("choice", ["rec1", "rec2", "rec3", "custom"]).notNull(),
+  subjects: json("subjects").$type<string[]>().notNull(),
+  reason: varchar("reason", { length: 500 }).notNull().default(""),
+  source: mysqlEnum("source", ["parent", "student", "tutor"]).notNull().default("parent"),
+  term: varchar("term", { length: 64 }).notNull().default(""),
+  createdBy: bigint("created_by", { mode: "number", unsigned: true }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type SubjectIntention = typeof subjectIntentions.$inferSelect;
+
+/** v220 意向轮次：管理员开启/关闭，家长端只对 open 轮可提交。 */
+export const intentionRounds = mysqlTable("intention_rounds", {
+  id: serial("id").primaryKey(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }).notNull(),
+  roundNo: int("round_no").notNull(),
+  label: varchar("label", { length: 64 }).notNull().default(""),
+  status: mysqlEnum("status", ["open", "closed"]).notNull().default("open"),
+  createdBy: bigint("created_by", { mode: "number", unsigned: true }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type IntentionRound = typeof intentionRounds.$inferSelect;
+
+/** v220 预警中心：心理红线 / 学业下滑 / 动力预警，处置留痕可审计。 */
+export const warningEvents = mysqlTable("warning_events", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  type: mysqlEnum("type", ["mental_redline", "academic_drop", "low_motivation"]).notNull(),
+  level: mysqlEnum("level", ["关注", "预警", "高风险"]).notNull().default("关注"),
+  detail: json("detail").$type<Record<string, unknown>>(),
+  status: mysqlEnum("status", ["open", "acknowledged", "resolved"]).notNull().default("open"),
+  handledBy: bigint("handled_by", { mode: "number", unsigned: true }),
+  handledAt: timestamp("handled_at"),
+  handleNote: varchar("handle_note", { length: 500 }).notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type WarningEvent = typeof warningEvents.$inferSelect;
+
+/** v220 催办提醒：未参测学生名单推给班主任/年级主任/管理员（学校脱敏场景不靠手机号）。 */
+export const reminders = mysqlTable("reminders", {
+  id: serial("id").primaryKey(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  studentId: bigint("student_id", { mode: "number", unsigned: true }).notNull(),
+  kind: mysqlEnum("kind", ["unassessed"]).notNull().default("unassessed"),
+  message: varchar("message", { length: 500 }).notNull().default(""),
+  audience: mysqlEnum("audience", ["tutor", "admin", "jiaowu"]).notNull().default("admin"),
+  audienceUserId: bigint("audience_user_id", { mode: "number", unsigned: true }),
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Reminder = typeof reminders.$inferSelect;

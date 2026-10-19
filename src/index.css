@@ -128,7 +128,8 @@ div[id*="kimi-widget" i] {
   /* 报告内的交互控件不进入 PDF */
   #report-print-root button,
   #report-print-root [role="tab"],
-  #report-print-root a[href^="/"] {
+  #report-print-root a[href^="/"],
+  #report-print-root .no-print {
     display: none !important;
   }
   /* 折叠条的可点击标题行不进入 PDF（折叠内容打印前已由 JS 全部展开） */
