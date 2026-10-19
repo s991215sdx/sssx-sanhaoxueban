@@ -4,6 +4,7 @@
  * 约定：粤华学校版不出现「伴学师」，统一称「指导老师」；聚合分布不点名，名单按职员权限下钻。
  */
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import {
   ClipboardList,
   Gauge,
@@ -39,6 +40,8 @@ const G = {
 
 type ItemKey = "tasks" | "progress" | "intention" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users";
 
+export type SchoolItemKey = ItemKey;
+
 const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeof Gauge; jiaowu?: boolean }[] }[] = [
   {
     label: "测评管理",
@@ -70,6 +73,17 @@ const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeo
     ],
   },
 ];
+
+/* v220.3：教务可见项（学校版教务：看统计/预警/意向/催办/档案 + 学员分配台） */
+const JIAOWU_KEYS: SchoolItemKey[] = ["tasks", "progress", "intention", "archive", "warnings", "students"];
+
+/** v220.3：供外层侧边栏（Layout）渲染学校版菜单；jiaowu=只返回教务可见项 */
+export function visibleSchoolGroups(jiaowu: boolean) {
+  return GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => (jiaowu ? JIAOWU_KEYS.includes(it.key) : true)),
+  })).filter((g) => g.items.length);
+}
 
 const KIND_LABEL: Record<string, string> = {
   subject4d: "学科四维",
@@ -845,15 +859,15 @@ const TITLES: Record<ItemKey, { crumb: string; title: string; sub?: string }> = 
 /* ---------------------------------- 主控制台 ---------------------------------- */
 
 export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: string; jiaowu?: boolean }) {
-  const [item, setItem] = useState<ItemKey>("progress");
+  /* v220.3：导航状态放进 URL（?item=xxx），外层侧边栏（Layout）可直接链接到各区块 */
+  const [params, setParams] = useSearchParams();
   const { data: ctx } = trpc.school.context.useQuery();
   const canManage = !jiaowu;
-  /* 教务可见项（学校版教务：看统计/预警/意向/催办/档案 + 学员分配台） */
-  const JIAOWU_KEYS: ItemKey[] = ["tasks", "progress", "intention", "archive", "warnings", "students"];
-  const visibleGroups = GROUPS.map((g) => ({
-    ...g,
-    items: g.items.filter((it) => (jiaowu ? JIAOWU_KEYS.includes(it.key) : true)),
-  })).filter((g) => g.items.length);
+  const allKeys = visibleSchoolGroups(jiaowu).flatMap((g) => g.items.map((it) => it.key));
+  const raw = params.get("item") as SchoolItemKey | null;
+  const item: SchoolItemKey = raw && allKeys.includes(raw) ? raw : "progress";
+  const setItem = (k: SchoolItemKey) => setParams({ item: k });
+  const visibleGroups = visibleSchoolGroups(jiaowu);
   const t = TITLES[item];
   return (
     <div className="flex min-h-screen flex-col" style={{ background: "#F2F5F1" }}>
@@ -866,8 +880,8 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
         <span className="ml-auto text-[12px] opacity-90">{jiaowu ? "教务" : "校长"} · {selfName}</span>
       </header>
       <div className="flex flex-1">
-        {/* 左侧栏 */}
-        <aside className="w-52 shrink-0 border-r bg-white py-4" style={{ borderColor: G.line }}>
+        {/* v220.3：内层栏仅移动端保留（桌面端菜单已并入外层侧边栏 Layout） */}
+        <aside className="w-52 shrink-0 border-r bg-white py-4 md:hidden" style={{ borderColor: G.line }}>
           {visibleGroups.map((g) => (
             <div key={g.label} className="mb-4">
               <div className="px-4 pb-1.5 text-[10.5px] font-bold tracking-wider" style={{ color: G.mute }}>{g.label}</div>
