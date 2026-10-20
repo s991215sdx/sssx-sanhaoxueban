@@ -6,7 +6,10 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
-import { createRouter, authedQuery } from "./middleware";
+import { createRouter, serviceAuthedQuery } from "./middleware";
+
+/* v229：选科规划开关 */
+const authedQuery = serviceAuthedQuery("xuanke");
 import { getDb } from "./queries/connection";
 import { sameOrg } from "./tenant";
 import { assessmentResults, studentExpectations, studentProfile, users } from "../db/schema";

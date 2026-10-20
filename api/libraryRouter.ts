@@ -1,6 +1,10 @@
 import { and, asc, count, eq, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
-import { createRouter, tutorQuery, adminQuery } from "./middleware";
+import { createRouter, serviceTutorQuery, serviceAdminQuery } from "./middleware";
+
+/* v229：资料库开关——平台超管关闭后本机构全部账号 403（默认全开，存量零变化） */
+const tutorQuery = serviceTutorQuery("library");
+const adminQuery = serviceAdminQuery("library");
 import { getDb } from "./queries/connection";
 import {
   majorLib,

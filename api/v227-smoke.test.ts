@@ -86,8 +86,9 @@ describe("v227 机构版本（edition）", () => {
     need(school, "版本与功能", "菜单文案");
   });
 
-  it("版本号递增 v227", () => {
+  it("版本号 ≥ v227（后续版本递增不追溯修改本断言）", () => {
     const router = read("api/router.ts");
-    need(router, 'BUILD_TAG = "v227-', "BUILD_TAG 已升 v227");
+    const m = router.match(/BUILD_TAG = "v(\d+)-/);
+    if (!m || Number(m[1]) < 227) throw new Error("BUILD_TAG 应不低于 v227");
   });
 });
