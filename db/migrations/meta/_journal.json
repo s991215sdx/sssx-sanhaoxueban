@@ -282,6 +282,13 @@
       "when": 1793116800000,
       "tag": "0041_portal_branding",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "5",
+      "when": 1793203200000,
+      "tag": "0042_org_edition",
+      "breakpoints": true
     }
   ]
 }

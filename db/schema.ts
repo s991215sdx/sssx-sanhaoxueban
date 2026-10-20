@@ -397,9 +397,17 @@ export const organizations = mysqlTable("organizations", {
   portalFooter: varchar("portal_footer", { length: 64 }).notNull().default("上上升学"),
   /** 停用后：机构账号登录即见停用提示，管理端置灰 */
   active: boolean("active").notNull().default(true),
+  /** v227：机构版本——school=校园版（学校控制台/指导老师体系）/ org=机构版（机构后台/伴学师体系）；
+   *  开通时平台超管二选一，决定后台形态、测评登录页与术语；存量按「有无校园渠道」回填 */
+  edition: mysqlEnum("edition", ["school", "org"]).notNull().default("org"),
   /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40）；
-   *  assess.kinds = 校园版测评中心开放给本校的测评（INVITE_ASSESS_KINDS key 数组；含 "all" 或缺省=全部开放） */
-  settings: json("settings").$type<{ xuanke?: { scoreWeight?: number }; assess?: { kinds?: string[] } }>(),
+   *  assess.kinds = 校园版测评中心开放给本校的测评（INVITE_ASSESS_KINDS key 数组；含 "all" 或缺省=全部开放）；
+   *  services = 功能权限包（ORG_SERVICES key → 布尔；缺省=全部开启，见 contracts/edition.ts） */
+  settings: json("settings").$type<{
+    xuanke?: { scoreWeight?: number };
+    assess?: { kinds?: string[] };
+    services?: Partial<import("@contracts/edition").OrgServices>;
+  }>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()

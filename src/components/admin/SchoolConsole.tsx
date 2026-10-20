@@ -22,6 +22,7 @@ import {
   PieChart,
   BookOpen,
   LayoutGrid,
+  BadgeCheck,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import StudentsTab from "./StudentsTab";
@@ -30,6 +31,7 @@ import SelectionStats from "./SelectionStats";
 import AssessCenter from "./AssessCenter";
 import InviteChannelsTab from "./InviteChannelsTab";
 import Library from "@/pages/Library";
+import OrgFeaturesCard from "./OrgFeaturesCard";
 
 /* ---------------------------------- 设计令牌（对齐效果图） ---------------------------------- */
 export const G = {
@@ -44,7 +46,7 @@ export const G = {
   danger: "#C0523C",
 };
 
-type ItemKey = "assess" | "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users" | "library";
+type ItemKey = "assess" | "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users" | "library" | "features";
 
 export type SchoolItemKey = ItemKey;
 
@@ -78,6 +80,7 @@ const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeo
       { key: "warnings", label: "预警中心", icon: AlertTriangle },
       { key: "invites", label: "注册邀请", icon: QrCode },
       { key: "users", label: "组织架构", icon: Network },
+      { key: "features", label: "版本与功能", icon: BadgeCheck },
     ],
   },
   {
@@ -871,6 +874,7 @@ const TITLES: Record<ItemKey, { crumb: string; title: string; sub?: string }> = 
   warnings: { crumb: "学校管理 / 预警中心", title: "预警中心", sub: "心理红线 / 学业下滑 / 动力不足——处置留痕，可审计" },
   invites: { crumb: "学校管理 / 注册邀请", title: "注册邀请", sub: "生成注册二维码，配置开放的测评与报告" },
   users: { crumb: "学校管理 / 组织架构", title: "组织架构 · 用户与角色", sub: "管理员、指导老师、教务的角色管理" },
+  features: { crumb: "学校管理 / 版本与功能", title: "版本与功能", sub: "当前开通的系统版本与功能权限（只读，由平台超管统一管理）" },
   library: { crumb: "教学资源 / 资料库", title: "资料库", sub: "专业库、职业库、院校分数库与 12 学科门类图，供咨询与报告生成时查询调用" },
 };
 
@@ -942,6 +946,7 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
             {item === "teachers" && <TutorsTab orgScope={{ orgId: null }} tutorLabel="指导老师" />}
             {item === "invites" && <InviteChannelsTab />}
             {item === "users" && <UsersSection />}
+            {item === "features" && <OrgFeaturesCard />}
             {item === "library" && <Library />}
           </div>
         </main>

@@ -16,6 +16,7 @@ export const JOURNAL_ENTRIES: { idx: number; when: number; tag: string }[] = [{"
 , {"idx": 39, "when": 1792992000000, "tag": "0039_org_settings"}
 , {"idx": 40, "when": 1793078400000, "tag": "0040_campus_assess_push"}
 , {"idx": 41, "when": 1793116800000, "tag": "0041_portal_branding"}
+, {"idx": 42, "when": 1793203200000, "tag": "0042_org_edition"}
 ];
 
 
@@ -65,4 +66,5 @@ export const MIGRATION_SQL: Record<string, string> = {
   "0039_org_settings": "-- v221：机构级设置（JSON）——选科成绩权重等按机构可调项\n-- organizations.settings: { xuanke: { scoreWeight: 0-60 } }，空 = 默认（校园机构35/通用机构40）\nALTER TABLE `organizations` ADD COLUMN `settings` json NULL;\n",
   "0040_campus_assess_push": "-- v223：测评中心批量推送——管理员组选测评推送给校园学生，留痕可审计\nCREATE TABLE `campus_assess_pushes` (\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `org_id` bigint unsigned,\n  `created_by` bigint unsigned NOT NULL,\n  `kinds` json NOT NULL,\n  `user_ids` json NOT NULL,\n  `user_count` int NOT NULL DEFAULT 0,\n  `note` varchar(200) NOT NULL DEFAULT '',\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `campus_assess_pushes_org_idx` (`org_id`)\n);\n",
   "0041_portal_branding": "-- v224：机构专属入口品牌化——按域名定制登录页 Logo 与底部署名\nALTER TABLE `organizations` ADD COLUMN `portal_host` varchar(128) NULL;\n--> statement-breakpoint\nALTER TABLE `organizations` ADD COLUMN `portal_footer` varchar(64) NOT NULL DEFAULT '上上升学';\n--> statement-breakpoint\nCREATE UNIQUE INDEX `organizations_portal_host_uidx` ON `organizations` (`portal_host`);\n",
+  "0042_org_edition": "-- v227：机构版本——校园版(school)/机构版(org)，平台超管开通时二选一，决定后台形态/测评登录页/术语\n-- 1) 新增版本字段，存量默认机构版（纯加法，老代码无感）\nALTER TABLE `organizations` ADD COLUMN `edition` enum('school','org') NOT NULL DEFAULT 'org';\n--> statement-breakpoint\n-- 2) 存量回填：存在 campus=true 邀请渠道的机构 = 校园版（与现行「有无校园渠道」判定逐字节一致，粤华自动归位，零行为变化）\nUPDATE `organizations` SET `edition` = 'school' WHERE EXISTS (SELECT 1 FROM `invite_channels` c WHERE c.org_id = `organizations`.`id` AND c.campus = 1);\n",
 };

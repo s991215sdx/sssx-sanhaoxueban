@@ -7,6 +7,7 @@ import OrgAdminTab from "@/components/admin/OrgAdminTab";
 import ResetPasswordButton from "@/components/ResetPasswordButton";
 import DeleteStudentButton from "@/components/DeleteStudentButton";
 import SchoolConsole from "@/components/admin/SchoolConsole";
+import OrgFeaturesCard from "@/components/admin/OrgFeaturesCard";
 import StudentsTab from "@/components/admin/StudentsTab";
 import TutorsTab from "@/components/admin/TutorsTab";
 import XuankeWeightPanel from "@/components/admin/XuankeWeightPanel";
@@ -189,6 +190,7 @@ function AdminPanel({ selfId, onRefresh, platform = false }: { selfId: number; o
 
       {/* Tab 切换 */}
       {/* v127：tab 条白底，选中=草绿色卡（色卡）+白字，未选中=白底墨字 */}
+      {!platform && <OrgFeaturesCard />}
       <div className="flex rounded-xl border border-[#1E3530]/10 bg-white p-1">
         {tabs.map((t) => (
           <button
