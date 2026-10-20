@@ -118,7 +118,7 @@ export default function StudentsTab({
         {/* v217：批量分配指导老师（合并语义，不覆盖学员已有其他指导老师） */}
         <BulkAssignTutors
           studentIds={[...picked]}
-          tutors={(tutors ?? []).map((t) => ({ id: t.id, name: t.name }))}
+          tutors={(tutors ?? []).map((t) => ({ id: t.id, name: t.name, orgName: t.orgName }))}
           onDone={() => setPicked(new Set())}
           tutorLabel={tutorLabel}
         />
