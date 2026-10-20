@@ -9,7 +9,7 @@ import { sanitizeModules } from "@contracts/studentModules";
 import { normalizeAssessKinds } from "@contracts/invite";
 import { getStudentDetail, listStudents } from "./studentDetail";
 import { isMyStudent } from "./tutorAccess";
-import { sameOrg } from "./tenant";
+import { sameOrg, canAccessUser } from "./tenant";
 import { tryChat } from "./ai";
 import { THREE_TIER_PLANS } from "@/data/training/threeTierPlans";
 import { E3V37_ABILITY_TRAINING } from "@/data/training/e3v37Training";
@@ -37,10 +37,13 @@ export const coachRouter = createRouter({
         if (!(await isMyStudent(db, ctx.user.id, input.userId))) {
           throw new Error("这位同学不在你的伴学名单里");
         }
-      } else if (!(await sameOrg(db, ctx.user, input.userId))) {
+      } else if (!(await canAccessUser(db, ctx.user, input.userId))) {
         throw new Error("这位同学不在你的机构内");
       }
-      return getStudentDetail(db, input.userId, ctx.user.orgId, { userId: ctx.user.id, role: ctx.user.role });
+      /* v230：跨机构分配（平台超管建立）的学员按全量视图返回，不再按本机构范围裁剪 */
+      const same = await sameOrg(db, ctx.user, input.userId);
+      const orgParam = same ? ctx.user.orgId : null;
+      return getStudentDetail(db, input.userId, orgParam, { userId: ctx.user.id, role: ctx.user.role });
     }),
 
   /** 伴学师代学员填写成绩与目标（校验规则与学生端 profileRouter.saveAcademics 一致）。 */

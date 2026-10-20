@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { inviteChannels, inviteRegistrations, studentProfile, studentTutor, users } from "@db/schema";
+import { inviteChannels, inviteRegistrations, studentProfile, studentTutor } from "@db/schema";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -100,21 +100,13 @@ export async function listInviteeStudentIds(db: Db, tutorUserId: number): Promis
 
 /**
  * V56：判定某学员是否在某伴学师名下。
- * 命中条件（任一）：student_profile.tutor_id 主管伴学师，或 student_tutor 多对多分配表中有记录。
- * V59：必须同机构（users.orgId 一致），跨机构记录一律不认。
- * v99：追加第三条件——学员扫的是该伴学师自己的注册二维码（渠道归属判定）。
+ * 命中条件（任一）：student_profile.tutor_id 主管伴学师，或 student_tutor 多对多分配表中有记录，
+ * 或学员扫的是该伴学师自己的注册二维码（渠道归属判定）。
+ * v230：跨机构分配记录同样生效——跨机构分配只能由平台超管建立（机构管理员建分配仍双向 sameOrg 校验），
+ * 因此此处按「关系命中即认」不会破坏机构隔离；平台超管把学校学员分配给机构伴学师后，
+ * 该伴学师即可查看/管理这些学员（详情见 coach.studentDetail 的全量视图处理）。
  */
 export async function isMyStudent(db: Db, tutorUserId: number, studentUserId: number): Promise<boolean> {
-  const [me, target] = await Promise.all([
-    db.select({ orgId: users.orgId }).from(users).where(eq(users.id, tutorUserId)).limit(1),
-    db.select({ orgId: users.orgId }).from(users).where(eq(users.id, studentUserId)).limit(1),
-  ]);
-  if (!me[0] || !target[0]) return false;
-  /* v93：一方为 NULL（平台直客/无机构伴学师）时跳过机构一致性校验，只要名下关系命中即可；
-     双方都有机构且不同 → 仍一律不认（跨机构隔离不破） */
-  const meOrg = me[0].orgId;
-  const targetOrg = target[0].orgId;
-  if (meOrg != null && targetOrg != null && meOrg !== targetOrg) return false;
   const p = (
     await db
       .select({ tutorId: studentProfile.tutorId })

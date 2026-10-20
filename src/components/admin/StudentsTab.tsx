@@ -67,7 +67,8 @@ export default function StudentsTab({
   }, [q]);
   const kw = debouncedQ;
   const { data: students, isLoading } = trpc.admin.students.useQuery({ ...orgScope, search: kw || undefined });
-  const { data: tutors } = trpc.admin.tutors.useQuery(orgScope);
+  /* v230：平台超管选人不受「查看系统」筛选限制——可跨机构把学员分配给任何机构的伴学师 */
+  const { data: tutors } = trpc.admin.tutors.useQuery(platform ? { orgId: null } : orgScope);
   const filtered = students ?? [];
   /* v220.4：班级筛选 + 按班级归类（班级取自学生档案，校园版按班管理） */
   const [cls, setCls] = useState("");

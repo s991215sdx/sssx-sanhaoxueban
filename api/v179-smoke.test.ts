@@ -37,7 +37,7 @@ describe("v179 机构数据严格隔离 + 报告排版", () => {
   });
 
   it("智慧生涯接口带机构校验", () => {
-    if (!/sameOrg/.test(zhihuiRouter)) throw new Error("缺：zhihuiRouter 引入 sameOrg");
+    if (!/canAccessUser|sameOrg/.test(zhihuiRouter)) throw new Error("缺：zhihuiRouter 引入机构校验");
     if (!/await assertStaffIfOther/.test(zhihuiRouter)) throw new Error("缺：assertStaffIfOther 异步机构校验");
     if (!/该学员不在你的机构内/.test(zhihuiRouter)) throw new Error("缺：跨机构拒绝提示");
   });
