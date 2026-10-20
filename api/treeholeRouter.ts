@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { and, desc, eq, gte } from "drizzle-orm";
-import { createRouter, authedQuery } from "./middleware";
+import { createRouter, serviceAuthedQuery } from "./middleware";
+
+/* v229：AI 陪练与树洞开关 */
+const authedQuery = serviceAuthedQuery("aiCoach");
 import { getDb } from "./queries/connection";
 import { moodEntries } from "@db/schema";
 import { dayStr } from "./helpers";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { and, eq, inArray, desc, isNull, ne } from "drizzle-orm";
-import { createRouter, tutorQuery } from "./middleware";
+import { createRouter, tutorQuery, serviceTutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { studentPrescriptions, studentProfile, users, academicRecords, organizations } from "@db/schema";
 import { hashPassword } from "./auth-router";
@@ -310,7 +310,8 @@ export const coachRouter = createRouter({
 
   /** V57：AI 陪跑问诊——描述孩子近期遇到的问题，AI 结合三阶九能训练方案库给对策。
    *  AI 不可用时降级为规则匹配（按关键词命中能力 → 典型问题 + 简要方案 + 训练方法），功能永不硬失败。 */
-  askAdvice: tutorQuery
+  /* v229：AI 建议受「AI 陪练与树洞」开关管控 */
+  askAdvice: serviceTutorQuery("aiCoach")
     .input(
       z.object({
         question: z.string().min(4).max(2000),

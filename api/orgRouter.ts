@@ -256,6 +256,26 @@ export const orgRouter = createRouter({
         const edition = normalizeEdition(input.edition);
         if (!edition) throw new Error("版本不对（school=校园版 / org=机构版）");
         patch.edition = edition;
+        /* v228：升级为校园版但机构还没有校园渠道时，自动补一条（学生注册/校园报告封面依赖渠道级 campus 标识） */
+        if (edition === "school") {
+          const [ch] = await db
+            .select({ id: inviteChannels.id })
+            .from(inviteChannels)
+            .where(and(eq(inviteChannels.orgId, input.id), eq(inviteChannels.campus, true)))
+            .limit(1);
+          if (!ch) {
+            const fresh = (await db.select().from(organizations).where(eq(organizations.id, input.id)).limit(1))[0];
+            await db.insert(inviteChannels).values({
+              code: newInviteCode(),
+              name: `${fresh?.brandName ?? "校园"}·校园入口`,
+              kind: "校园",
+              orgId: input.id,
+              createdBy: ctx.user.id,
+              assessmentAccess: true,
+              campus: true,
+            });
+          }
+        }
       }
       /* v227：功能权限包——写入 settings.services；null=清除配置（恢复默认全开） */
       if (input.services !== undefined) {

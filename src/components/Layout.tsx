@@ -146,7 +146,12 @@ export default function Layout({ children }: { children: ReactNode }) {
   const campusMgr = isCampus && user?.orgId != null && (isAdmin || isJiaowu);
   /* v220.5：超管的「伴学工作台」称谓不跟校园版走 */
   const campusTutor = isCampus && user?.orgId != null;
-  const schoolGroups = campusMgr ? visibleSchoolGroups(isJiaowu) : [];
+  /* v229：资料库功能被平台超管关闭时，学校版菜单同步隐藏该入口 */
+  const schoolGroups = campusMgr
+    ? (schoolCtx?.services?.library === false
+        ? visibleSchoolGroups(isJiaowu).map((g) => ({ ...g, items: g.items.filter((it) => it.key !== "library") })).filter((g) => g.items.length)
+        : visibleSchoolGroups(isJiaowu))
+    : [];
   const location = useLocation();
   const campusItemActive = (key: SchoolItemKey) => {
     if (location.pathname !== "/admin") return false;

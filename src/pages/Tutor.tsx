@@ -132,13 +132,16 @@ export default function Tutor() {
               名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/library")}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60"
-          >
-            <LibraryIcon size={14} /> 资料库
-          </button>
+          {/* v229：资料库功能被平台超管关闭时隐藏入口（服务端同步 403） */}
+          {schoolCtx?.services?.library !== false && (
+            <button
+              type="button"
+              onClick={() => navigate("/library")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60"
+            >
+              <LibraryIcon size={14} /> 资料库
+            </button>
+          )}
         </div>
         {/* V57：两大专栏切换 */}
         {/* v127：与后台统一——tab 条白底，选中=草绿色卡+白字 */}
@@ -311,8 +314,12 @@ export default function Tutor() {
 
       {section === "training" && (
         <div className="space-y-4">
-          {/* V57：AI 陪跑问诊 */}
-          <AiCoachPanel />
+          {/* V57：AI 陪跑问诊。v229：AI 功能被平台超管关闭时隐藏（服务端同步 403） */}
+          {schoolCtx?.services?.aiCoach !== false ? (
+            <AiCoachPanel />
+          ) : (
+            <p className="paper-card px-5 py-4 text-[13px] text-olive-mute">AI 陪练功能未对本机构开通，请联系平台管理员。</p>
+          )}
           {/* 学习力陪跑训练方案（三阶九能）：典型问题 + 简要方案，点开看详细做法 */}
           <TrainingPlanLibrary />
         </div>

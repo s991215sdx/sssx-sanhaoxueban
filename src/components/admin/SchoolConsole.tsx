@@ -890,6 +890,11 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
   const item: SchoolItemKey = raw && allKeys.includes(raw) ? raw : "progress";
   const setItem = (k: SchoolItemKey) => setParams({ item: k });
   const visibleGroups = visibleSchoolGroups(jiaowu);
+  /* v229：资料库功能被平台超管关闭时，菜单隐藏该入口（服务端接口同步 403） */
+  const svcGroups =
+    ctx?.services?.library === false
+      ? visibleGroups.map((g) => ({ ...g, items: g.items.filter((it) => it.key !== "library") })).filter((g) => g.items.length)
+      : visibleGroups;
   const t = TITLES[item];
   return (
     <div className="flex min-h-screen flex-col" style={{ background: "#F2F5F1" }}>
@@ -904,7 +909,7 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
       <div className="flex flex-1">
         {/* v220.3：内层栏仅移动端保留（桌面端菜单已并入外层侧边栏 Layout） */}
         <aside className="w-52 shrink-0 border-r bg-white py-4 md:hidden" style={{ borderColor: G.line }}>
-          {visibleGroups.map((g) => (
+          {svcGroups.map((g) => (
             <div key={g.label} className="mb-4">
               <div className="px-4 pb-1.5 text-[10.5px] font-bold tracking-wider" style={{ color: G.mute }}>{g.label}</div>
               {g.items.map((it) => {

@@ -11,7 +11,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { createHash } from "crypto";
-import { createRouter, authedQuery } from "./middleware";
+import { createRouter, authedQuery, serviceAuthedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { isPlatformAdmin } from "./tenant";
 import type { Subject4dResult } from "@contracts/subject4d";
@@ -35,6 +35,10 @@ import {
   studentTutor,
   campusAssessPushes,
 } from "../db/schema";
+
+/* v229：功能权限基座——测评中心服务包（测评中心/预警/催办）与选科统计服务包（意向/统计/档案） */
+const assessSvcQuery = serviceAuthedQuery("assessCenter");
+const intentionSvcQuery = serviceAuthedQuery("intention");
 
 /** 职员角色（可看聚合与名单）。 */
 const STAFF_ROLES = ["tutor", "admin", "jiaowu"] as const;
@@ -120,15 +124,16 @@ async function myCampusInfo(db: ReturnType<typeof getDb>, userId: number) {
   return { campus: true as const, orgId: ch.orgId ?? null };
 }
 
-/** 职员当前机构是否校园机构（管理端 tab 判定）。 */
+/** 职员当前机构是否校园机构（管理端 tab 判定）。v228：按机构版本（edition）判定，不再靠渠道猜测；
+ *  平台超管（orgId=null）维持原口径：任一 campus 渠道即为校园平台。 */
 async function staffCampusContext(db: ReturnType<typeof getDb>, orgId: number | null) {
   if (orgId == null) {
     // 平台超管：任一 campus 渠道即为校园平台
     const [any] = await db.select({ id: inviteChannels.id }).from(inviteChannels).where(eq(inviteChannels.campus, true)).limit(1);
     return !!any;
   }
-  const [ch] = await db.select({ id: inviteChannels.id }).from(inviteChannels).where(and(eq(inviteChannels.orgId, orgId), eq(inviteChannels.campus, true))).limit(1);
-  return !!ch;
+  const [org] = await db.select({ edition: organizations.edition }).from(organizations).where(eq(organizations.id, orgId)).limit(1);
+  return org?.edition === "school";
 }
 
 /* ------------------------------- 选科组合（与前端 ZhihuiReport 校园版同口径复刻） ------------------------------- */
@@ -159,21 +164,17 @@ type OrgSettings = { xuanke?: { scoreWeight?: number }; assess?: { kinds?: strin
 export async function orgXuankeWeights(db: ReturnType<typeof getDb>, orgIds: (number | null)[]) {
   const uniq = [...new Set(orgIds.filter((x): x is number => x != null))];
   const rows = uniq.length
-    ? await db.select({ id: organizations.id, settings: organizations.settings }).from(organizations).where(inArray(organizations.id, uniq))
+    ? await db.select({ id: organizations.id, edition: organizations.edition, settings: organizations.settings }).from(organizations).where(inArray(organizations.id, uniq))
     : [];
+  /* v228：校园机构默认 35——按机构版本（edition）判定 */
+  const editionBy = new Map(rows.map((r) => [r.id, r.edition]));
   const settingsBy = new Map(rows.map((r) => [r.id, (r.settings ?? null) as OrgSettings]));
-  /* 校园机构默认 35：有 campus 渠道即视为校园机构 */
-  const campusOrgIds = new Set<number>();
-  if (uniq.length) {
-    const chs = await db.select({ orgId: inviteChannels.orgId }).from(inviteChannels).where(and(eq(inviteChannels.campus, true), inArray(inviteChannels.orgId, uniq)));
-    for (const c of chs) if (c.orgId != null) campusOrgIds.add(c.orgId);
-  }
   const weight = (orgId: number | null): number => {
     if (orgId != null) {
       const s = settingsBy.get(orgId)?.xuanke?.scoreWeight;
       if (typeof s === "number" && Number.isFinite(s)) return Math.min(XUANKE_W_MAX, Math.max(XUANKE_W_MIN, Math.round(s)));
     }
-    return orgId != null && campusOrgIds.has(orgId) ? 35 : 40;
+    return orgId != null && editionBy.get(orgId) === "school" ? 35 : 40;
   };
   return { weight };
 }
@@ -361,7 +362,7 @@ export const schoolRouter = createRouter({
 
   assessCenter: createRouter({
     /** 推送目标：校园学生 + 每人已完成/已解锁的测评。职员按角色范围（tutor 限名下学生）。 */
-    targets: authedQuery.query(async ({ ctx }) => {
+    targets: assessSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       let list = await campusStudents(db, ctx.user.orgId ?? null);
@@ -395,7 +396,7 @@ export const schoolRouter = createRouter({
       };
     }),
     /** 组选推送：把所选测评并入目标学生的「已解锁测评」（union，不收回既有推送），学生客户端立即可见可测；全程留痕。 */
-    push: authedQuery
+    push: assessSvcQuery
       .input(z.object({
         userIds: z.array(z.number().int().positive()).min(1).max(2000),
         kinds: z.array(z.string()).min(1),
@@ -443,7 +444,7 @@ export const schoolRouter = createRouter({
         return { ok: true as const, count: input.userIds.length, kinds };
       }),
     /** 推送记录（近 50 条，按机构范围）。 */
-    logs: authedQuery.query(async ({ ctx }) => {
+    logs: assessSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const rows = ctx.user.orgId == null
@@ -457,7 +458,7 @@ export const schoolRouter = createRouter({
 
   intentions: createRouter({
     /** 我的（学生/家长端）：三大推荐 + 开放轮次 + 我已提交的意向。 */
-    myOptions: authedQuery.query(async ({ ctx }) => {
+    myOptions: intentionSvcQuery.query(async ({ ctx }) => {
       const db = getDb();
       const mine = await myCampusInfo(db, ctx.user.id);
       if (!mine.campus) throw new TRPCError({ code: "FORBIDDEN", message: "仅校园版学生可确认选科意向" });
@@ -481,7 +482,7 @@ export const schoolRouter = createRouter({
     }),
 
     /** 提交意向（本人/家长；伴学师可代录）。custom 必须填理由。 */
-    submit: authedQuery
+    submit: intentionSvcQuery
       .input(
         z.object({
           roundNo: z.number().int().min(1).max(9),
@@ -540,7 +541,7 @@ export const schoolRouter = createRouter({
       }),
 
     /** 轮次管理（机构 admin/jiaowu）：列表自动补第 1 轮。 */
-    rounds: authedQuery.query(async ({ ctx }) => {
+    rounds: intentionSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const orgId = ctx.user.orgId;
@@ -556,7 +557,7 @@ export const schoolRouter = createRouter({
       return rounds.map((r) => ({ roundNo: r.roundNo, label: r.label, status: r.status, count: per.get(r.roundNo) ?? 0 }));
     }),
 
-    roundsSet: authedQuery
+    roundsSet: intentionSvcQuery
       .input(z.object({ roundNo: z.number().int().min(1).max(9), label: z.string().max(64).optional(), open: z.boolean() }))
       .mutation(async ({ ctx, input }) => {
         requireStaff(ctx);
@@ -595,7 +596,7 @@ export const schoolRouter = createRouter({
       }),
 
     /** 采纳率统计：最终意向 vs 系统三大推荐（rec1/rec2/rec3/custom/unset 占比 + 自定义理由名单）。 */
-    adoption: authedQuery
+    adoption: intentionSvcQuery
       .input(z.object({ roundNo: z.number().int().min(1).max(9) }).optional())
       .query(async ({ ctx, input }) => {
         requireStaff(ctx);
@@ -661,7 +662,7 @@ export const schoolRouter = createRouter({
 
   warnings: createRouter({
     /** 预警名单（按职员范围过滤）。 */
-    list: authedQuery
+    list: assessSvcQuery
       .input(z.object({ status: z.enum(["open", "acknowledged", "resolved"]).optional(), className: z.string().optional() }).optional())
       .query(async ({ ctx, input }) => {
         requireStaff(ctx);
@@ -706,7 +707,7 @@ export const schoolRouter = createRouter({
       }),
 
     /** 全量重扫：按规则生成预警（同类型有未结预警则跳过，幂等）。 */
-    reevaluate: authedQuery.mutation(async ({ ctx }) => {
+    reevaluate: assessSvcQuery.mutation(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
@@ -813,7 +814,7 @@ export const schoolRouter = createRouter({
     }),
 
     /** 处置：确认 / 办结 + 留痕。 */
-    handle: authedQuery
+    handle: assessSvcQuery
       .input(z.object({ id: z.number().int(), action: z.enum(["acknowledge", "resolve"]), note: z.string().max(500).optional().default("") }))
       .mutation(async ({ ctx, input }) => {
         requireStaff(ctx);
@@ -833,7 +834,7 @@ export const schoolRouter = createRouter({
 
   stats: createRouter({
     /** 选科结构统计：每生一行（班级 + 加权版/纯测评版双口径组合 + 各轮最新意向）。 */
-    selection: authedQuery.query(async ({ ctx }) => {
+    selection: intentionSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
@@ -914,7 +915,7 @@ export const schoolRouter = createRouter({
     }),
 
     /** 参测完成统计：校园生 × 重点测评种类完成情况 + 班级分布（聚合不点名，缺测名单走 unassessed）。 */
-    assessment: authedQuery.query(async ({ ctx }) => {
+    assessment: intentionSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
@@ -965,7 +966,7 @@ export const schoolRouter = createRouter({
 
   unassessed: createRouter({
     /** 缺测名单：按班级分组（职员范围内）。 */
-    list: authedQuery.query(async ({ ctx }) => {
+    list: assessSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
@@ -1003,7 +1004,7 @@ export const schoolRouter = createRouter({
     }),
 
     /** 一键催办：为缺测学生生成系统提醒（audience=admin），并返回可复制给班主任的文本。 */
-    remind: authedQuery.mutation(async ({ ctx }) => {
+    remind: assessSvcQuery.mutation(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const orgId = ctx.user.orgId;
@@ -1046,7 +1047,7 @@ export const schoolRouter = createRouter({
     }),
 
     /** 我的提醒列表。 */
-    my: authedQuery.query(async ({ ctx }) => {
+    my: assessSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const rows = await db
@@ -1063,7 +1064,7 @@ export const schoolRouter = createRouter({
 
   archive: createRouter({
     /** 可选学生清单（职员范围内，供档案页选择器用）。 */
-    students: authedQuery.query(async ({ ctx }) => {
+    students: intentionSvcQuery.query(async ({ ctx }) => {
       requireStaff(ctx);
       const db = getDb();
       const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
@@ -1081,7 +1082,7 @@ export const schoolRouter = createRouter({
     }),
 
     /** 学生完整档案（读时聚合：测评+成绩+预警+指导记录），附校验码可导出校验。 */
-    portfolio: authedQuery
+    portfolio: intentionSvcQuery
       .input(z.object({ studentId: z.number().int() }))
       .query(async ({ ctx, input }) => {
         requireStaff(ctx);
