@@ -2,6 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { Building2, Plus, Power, KeyRound, PencilLine, X } from "lucide-react";
 import { INVITE_ASSESS_KINDS } from "@contracts/invite";
+import { ORG_EDITIONS, ORG_SERVICES } from "@contracts/edition";
 
 type OrgRow = {
   id: number;
@@ -11,8 +12,9 @@ type OrgRow = {
   portalHost: string | null;
   portalFooter: string;
   active: boolean;
+  edition: "school" | "org";
   createdAt: Date;
-  settings?: { assess?: { kinds?: string[] } } | null;
+  settings?: { assess?: { kinds?: string[] }; services?: Record<string, boolean> } | null;
   studentCount: number;
   tutorCount: number;
   adminCount: number;
@@ -59,6 +61,10 @@ export default function OrgAdminTab() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[15px] font-bold text-olive">{o.brandName}</span>
+                    {/* v227：版本标识 */}
+                    <span className={`chip !py-0.5 !text-[10.5px] ${o.edition === "school" ? "bg-butter-pale text-olive" : "bg-lime-pale text-olive"}`}>
+                      {o.edition === "school" ? "校园版" : "机构版"}
+                    </span>
                     {!o.active && <span className="chip !py-0.5 !text-[10.5px] text-terra">已停用</span>}
                   </div>
                   <div className="mt-0.5 text-[12px] text-olive-mute">{o.name}</div>
@@ -91,9 +97,9 @@ export default function OrgAdminTab() {
                 <span className="mono ml-2 text-[11px]">
                   最近登录 {o.admin ? new Date(o.admin.lastSignInAt).toLocaleDateString("zh-CN") : "—"}
                 </span>
-                {/* v224：校园版开放测评配置概览 */}
+                {/* v224/v227：开放测评配置概览 */}
                 <span className="ml-3 inline-flex items-center gap-1 rounded-full bg-lime-pale px-2 py-0.5 text-[11px] text-olive">
-                  校园版开放测评：{openAssessText(o.settings)}
+                  开放测评：{openAssessText(o.settings)}
                 </span>
               </div>
             </div>
@@ -140,7 +146,7 @@ function SetActiveButton({ org }: { org: OrgRow }) {
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-cream p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-cream p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-[17px] font-bold text-olive">{title}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-olive-mute hover:bg-butter-pale hover:text-brand">
@@ -156,6 +162,78 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 const inputCls =
   "w-full rounded-xl border border-border bg-cream px-3.5 py-2.5 text-[14px] text-olive outline-none placeholder:text-olive-mute/60 focus:border-lime";
 
+/* ---------- v227 共享选择器：版本二选一 / 功能包勾选 / 开放测评勾选 ---------- */
+
+function EditionPicker({ value, onChange }: { value: "school" | "org"; onChange: (e: "school" | "org") => void }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[12.5px] font-semibold text-olive">系统版本（开通后整套后台与测评登录页按版本呈现）</label>
+      <div className="grid grid-cols-2 gap-2">
+        {ORG_EDITIONS.map((e) => (
+          <button
+            key={e.key}
+            type="button"
+            onClick={() => onChange(e.key)}
+            className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
+              value === e.key ? "border-brand bg-lime-pale" : "border-border bg-cream hover:border-lime"
+            }`}
+          >
+            <div className={`text-[13.5px] font-bold ${value === e.key ? "text-brand" : "text-olive"}`}>{e.label}</div>
+            <div className="mt-0.5 text-[11px] leading-relaxed text-olive-mute">{e.desc}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ServiceChecklist({ offKeys, onToggle }: { offKeys: string[]; onToggle: (key: string) => void }) {
+  return (
+    <div className="rounded-xl border border-border bg-cream p-3.5">
+      <div className="text-[12.5px] font-semibold text-olive">功能权限（全部默认开启，取消勾选 = 关闭该功能）</div>
+      <p className="mt-0.5 text-[11.5px] text-olive-mute">校园版建议保持全开；关闭后该机构立即失去对应入口与能力，可随时再开。</p>
+      <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+        {ORG_SERVICES.map((s) => (
+          <label key={s.key} className="flex cursor-pointer items-start gap-1.5 rounded-lg px-2 py-1.5 text-[12px] text-olive hover:bg-butter-pale/60">
+            <input
+              type="checkbox"
+              checked={!offKeys.includes(s.key)}
+              onChange={() => onToggle(s.key)}
+              className="mt-0.5 accent-[#0E7A5F]"
+            />
+            <span>
+              <span className="block font-medium">{s.label}</span>
+              <span className="block text-[10.5px] leading-snug text-olive-mute">{s.desc}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AssessKindPicker({ allOpen, onAllOpen, openKinds, onToggle }: { allOpen: boolean; onAllOpen: (v: boolean) => void; openKinds: string[]; onToggle: (key: string) => void }) {
+  return (
+    <div className="rounded-xl border border-border bg-cream p-3.5">
+      <label className="flex cursor-pointer items-center gap-2 text-[12.5px] font-semibold text-olive">
+        <input type="checkbox" checked={allOpen} onChange={(e) => onAllOpen(e.target.checked)} className="accent-[#0E7A5F]" />
+        开放全部测评
+      </label>
+      <p className="mt-1 text-[11.5px] text-olive-mute">勾上 = 该机构测评中心可见并可推送全部测评；不勾则只开放下面勾选的测评。</p>
+      {!allOpen && (
+        <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+          {INVITE_ASSESS_KINDS.map((k) => (
+            <label key={k.key} className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] text-olive hover:bg-butter-pale/60">
+              <input type="checkbox" checked={openKinds.includes(k.key)} onChange={() => onToggle(k.key)} className="accent-[#0E7A5F]" />
+              {k.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CreateOrgModal({ onClose }: { onClose: () => void }) {
   const utils = trpc.useUtils();
   const [name, setName] = useState("");
@@ -164,6 +242,11 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
   const [adminName, setAdminName] = useState("");
   const [adminPhone, setAdminPhone] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+  /* v227：版本二选一（默认机构版）+ 功能包（默认全开，记录关闭项）+ 开放测评（默认全选） */
+  const [edition, setEdition] = useState<"school" | "org">("org");
+  const [svcOff, setSvcOff] = useState<string[]>([]);
+  const [allOpen, setAllOpen] = useState(true);
+  const [openKinds, setOpenKinds] = useState<string[]>([]);
   const create = trpc.org.create.useMutation({
     onSuccess: async () => {
       await utils.org.list.invalidate();
@@ -174,6 +257,7 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="开通机构" onClose={onClose}>
       <div className="space-y-3">
+        <EditionPicker value={edition} onChange={setEdition} />
         <div>
           <label className="mb-1 block text-[12.5px] font-semibold text-olive">机构全称</label>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="如：东莞上上升学教育咨询有限公司" />
@@ -187,6 +271,16 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
           <label className="mb-1 block text-[12.5px] font-semibold text-olive">品牌 Logo URL（可选）</label>
           <input className={inputCls} value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" />
         </div>
+        <ServiceChecklist
+          offKeys={svcOff}
+          onToggle={(key) => setSvcOff((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]))}
+        />
+        <AssessKindPicker
+          allOpen={allOpen}
+          onAllOpen={setAllOpen}
+          openKinds={openKinds}
+          onToggle={(key) => setOpenKinds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]))}
+        />
         <div className="border-t border-border pt-3">
           <div className="mb-2 text-[12.5px] font-semibold text-olive">机构管理员账号</div>
           <div className="space-y-3">
@@ -198,11 +292,23 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
         </div>
         {create.error && <p className="text-[12.5px] text-terra">{create.error.message}</p>}
         <button
-          onClick={() => create.mutate({ name, brandName, logoUrl, adminName, adminPhone, adminPassword })}
-          disabled={create.isPending}
+          onClick={() =>
+            create.mutate({
+              name,
+              brandName,
+              logoUrl,
+              adminName,
+              adminPhone,
+              adminPassword,
+              edition,
+              services: Object.fromEntries(ORG_SERVICES.map((s) => [s.key, !svcOff.includes(s.key)])),
+              assessKinds: allOpen ? ["all"] : openKinds,
+            })
+          }
+          disabled={create.isPending || (!allOpen && openKinds.length === 0)}
           className="w-full rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
         >
-          {create.isPending ? "开通中…" : "开通机构系统"}
+          {create.isPending ? "开通中…" : `开通${edition === "school" ? "校园版" : "机构版"}系统`}
         </button>
       </div>
     </Modal>
@@ -217,6 +323,12 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
   /* v224：专属入口品牌化 */
   const [portalHost, setPortalHost] = useState(org.portalHost ?? "");
   const [portalFooter, setPortalFooter] = useState(org.portalFooter ?? "上上升学");
+  /* v227：版本 + 功能包（默认全开，记录关闭项） */
+  const [edition, setEdition] = useState<"school" | "org">(org.edition === "school" ? "school" : "org");
+  const [svcOff, setSvcOff] = useState<string[]>(() => {
+    const stored = org.settings?.services ?? {};
+    return ORG_SERVICES.filter((s) => stored[s.key] === false).map((s) => s.key);
+  });
   /* v224（测评中心）：校园版开放测评——null=未配置（全部开放）；数组=仅开放勾选项 */
   const savedKinds = org.settings?.assess?.kinds;
   const [allOpen, setAllOpen] = useState(!savedKinds || savedKinds.includes("all"));
@@ -228,12 +340,10 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
     },
   });
 
-  const toggleKind = (key: string) =>
-    setOpenKinds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
-
   return (
-    <Modal title={`编辑品牌 · ${org.brandName}`} onClose={onClose}>
+    <Modal title={`编辑机构 · ${org.brandName}`} onClose={onClose}>
       <div className="space-y-3">
+        <EditionPicker value={edition} onChange={setEdition} />
         <div>
           <label className="mb-1 block text-[12.5px] font-semibold text-olive">机构全称</label>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
@@ -260,24 +370,16 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
           </div>
         </div>
 
-        {/* v224：校园版开放测评配置 */}
-        <div className="rounded-xl border border-border bg-cream p-3.5">
-          <label className="flex cursor-pointer items-center gap-2 text-[12.5px] font-semibold text-olive">
-            <input type="checkbox" checked={allOpen} onChange={(e) => setAllOpen(e.target.checked)} className="accent-[#0E7A5F]" />
-            开放全部测评
-          </label>
-          <p className="mt-1 text-[11.5px] text-olive-mute">勾上 = 该机构测评中心可见并可推送全部测评；不勾则只开放下面勾选的测评。</p>
-          {!allOpen && (
-            <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-              {INVITE_ASSESS_KINDS.map((k) => (
-                <label key={k.key} className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] text-olive hover:bg-butter-pale/60">
-                  <input type="checkbox" checked={openKinds.includes(k.key)} onChange={() => toggleKind(k.key)} className="accent-[#0E7A5F]" />
-                  {k.label}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+        <ServiceChecklist
+          offKeys={svcOff}
+          onToggle={(key) => setSvcOff((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]))}
+        />
+        <AssessKindPicker
+          allOpen={allOpen}
+          onAllOpen={setAllOpen}
+          openKinds={openKinds}
+          onToggle={(key) => setOpenKinds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]))}
+        />
         {update.error && <p className="text-[12.5px] text-terra">{update.error.message}</p>}
         <button
           onClick={() =>
@@ -288,6 +390,8 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
               logoUrl,
               portalHost: portalHost.trim() || null,
               portalFooter: portalFooter.trim() || null,
+              edition,
+              services: Object.fromEntries(ORG_SERVICES.map((s) => [s.key, !svcOff.includes(s.key)])),
               assessKinds: allOpen ? ["all"] : openKinds,
             })
           }

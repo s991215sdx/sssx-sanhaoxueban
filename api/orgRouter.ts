@@ -1,10 +1,12 @@
 import { and, eq, sql } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
 import { createRouter, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { attempts, errorLogs, moodEntries, organizations, previewSessions, studentProfile, users } from "@db/schema";
+import { attempts, errorLogs, inviteChannels, moodEntries, organizations, previewSessions, studentProfile, users } from "@db/schema";
 import { hashPassword } from "./auth-router";
 import { isPlatformAdmin } from "./tenant";
 import { normalizeAssessKinds } from "@contracts/invite";
+import { normalizeEdition, normalizeServices } from "@contracts/edition";
 
 /**
  * V59 SaaS 总系统：平台超管（role=admin 且 orgId IS NULL）专用——
@@ -12,6 +14,15 @@ import { normalizeAssessKinds } from "@contracts/invite";
  */
 
 const PHONE_RE = /^1[3-9]\d{9}$/;
+
+/* v227：校园版机构自动开通的校园渠道码（字母表与 inviteRouter 一致：去掉 0/o、1/l/i） */
+const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+function newInviteCode(): string {
+  const bytes = randomBytes(10);
+  let out = "";
+  for (const b of bytes) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
+  return out;
+}
 
 function requirePlatformAdmin(user: Pick<typeof users.$inferSelect, "role" | "orgId">): void {
   if (!isPlatformAdmin(user)) throw new Error("仅平台超管可访问总系统");
@@ -95,8 +106,10 @@ export const orgRouter = createRouter({
   }),
 
   /**
-   * 开通机构：建机构（名称/商标/Logo）+ 机构管理员账号（手机号+密码）。
+   * 开通机构：建机构（名称/商标/Logo/版本/功能包）+ 机构管理员账号（手机号+密码）。
    * 机构 admin 登录后进后台就是一套完整独立的三好学伴（功能与总系统一致）。
+   * v227：edition 二选一（school=校园版/org=机构版）；services 功能开关（缺省=全部开启）；
+   *       assessKinds 开放测评（["all"] 或缺省=全部开放）；校园版自动附带一条校园注册渠道。
    */
   create: adminQuery
     .input(
@@ -108,6 +121,12 @@ export const orgRouter = createRouter({
           adminPhone: string;
           adminPassword: string;
           adminName?: string;
+          /** v227：school | org；缺省 org */
+          edition?: string;
+          /** v227：功能开关 { key: boolean } 或开启项 key 数组；缺省=全部开启 */
+          services?: unknown;
+          /** v227：开放测评 kind 数组或 ["all"]；缺省/null=全部开放 */
+          assessKinds?: unknown;
         },
     )
     .mutation(async ({ ctx, input }) => {
@@ -123,9 +142,32 @@ export const orgRouter = createRouter({
       if (brandName.length < 2 || brandName.length > 128) throw new Error("品牌名（商标）2～128 个字");
       if (!PHONE_RE.test(phone)) throw new Error("管理员手机号格式不对");
       if (password.length < 6 || password.length > 64) throw new Error("管理员密码需要 6～64 个字符");
+      const edition = normalizeEdition(input.edition) ?? "org";
+      const services = normalizeServices(input.services);
+      const assessKinds = input.assessKinds === undefined ? null : normalizeAssessKinds(input.assessKinds);
+      if (input.assessKinds !== undefined && !assessKinds) throw new Error("开放测评格式不对（须为测评 kind 数组或 all）");
 
-      const [{ id }] = await db.insert(organizations).values({ name, brandName, logoUrl }).$returningId();
+      const settings = {
+        ...(services ? { services } : {}),
+        ...(assessKinds ? { assess: { kinds: assessKinds } } : {}),
+      };
+      const [{ id }] = await db
+        .insert(organizations)
+        .values({ name, brandName, logoUrl, edition, settings: Object.keys(settings).length ? settings : null })
+        .$returningId();
       const orgId = Number(id);
+      /* v227：校园版自动附带一条校园注册渠道（班级/校园报告封面等学生侧流程依赖渠道级 campus 标识） */
+      if (edition === "school") {
+        await db.insert(inviteChannels).values({
+          code: newInviteCode(),
+          name: `${brandName}·校园入口`,
+          kind: "校园",
+          orgId,
+          createdBy: ctx.user.id,
+          assessmentAccess: true,
+          campus: true,
+        });
+      }
       /* v177：一个手机号可担任多个机构的超级管理员。已存在该手机号的账号时，
          本机构管理员用带机构后缀的 unionId（users.unionId 全局唯一），登录按手机号+密码匹配。 */
       const dup = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
@@ -141,7 +183,8 @@ export const orgRouter = createRouter({
       return { ok: true as const, org: org ? await orgRow(db, org) : null };
     }),
 
-  /** 编辑机构资料（名称/商标/Logo/专属入口品牌化 v224）+ v224 校园版开放测评配置（assessKinds：kind 数组或 ["all"]；传 null 清除限制=全部开放）。 */
+  /** 编辑机构资料（名称/商标/Logo/专属入口品牌化 v224）+ v224 校园版开放测评配置（assessKinds：kind 数组或 ["all"]；传 null 清除限制=全部开放）
+   *  + v227 版本（edition）与功能权限包（services：{ key: boolean }；传 null 恢复默认全开）。 */
   update: adminQuery
     .input(
       (v: unknown) =>
@@ -153,6 +196,10 @@ export const orgRouter = createRouter({
           portalHost?: string | null;
           portalFooter?: string | null;
           assessKinds?: unknown;
+          /** v227：school | org；传 null 不修改 */
+          edition?: string | null;
+          /** v227：功能开关 { key: boolean }；传 null 清除配置=恢复默认全开 */
+          services?: unknown;
         },
     )
     .mutation(async ({ ctx, input }) => {
@@ -202,6 +249,26 @@ export const orgRouter = createRouter({
           const kinds = normalizeAssessKinds(input.assessKinds);
           if (!kinds) throw new Error("开放测评格式不对（须为测评 kind 数组或 all）");
           patch.settings = { ...(prevSettings ?? {}), assess: { kinds } };
+        }
+      }
+      /* v227：版本切换 */
+      if (input.edition != null) {
+        const edition = normalizeEdition(input.edition);
+        if (!edition) throw new Error("版本不对（school=校园版 / org=机构版）");
+        patch.edition = edition;
+      }
+      /* v227：功能权限包——写入 settings.services；null=清除配置（恢复默认全开） */
+      if (input.services !== undefined) {
+        const prevSettings = (patch.settings ?? org.settings ?? null) as
+          | { xuanke?: { scoreWeight?: number }; assess?: { kinds?: string[] }; services?: Record<string, boolean> }
+          | null;
+        if (input.services === null) {
+          const { services: _drop, ...rest } = prevSettings ?? {};
+          patch.settings = Object.keys(rest).length ? rest : null;
+        } else {
+          const services = normalizeServices(input.services);
+          if (!services) throw new Error("功能开关格式不对（须为 { 功能key: 布尔 } 或功能key数组）");
+          patch.settings = { ...(prevSettings ?? {}), services };
         }
       }
       if (Object.keys(patch).length > 0) {

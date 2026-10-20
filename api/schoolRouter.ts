@@ -17,6 +17,8 @@ import { isPlatformAdmin } from "./tenant";
 import type { Subject4dResult } from "@contracts/subject4d";
 import { defaultFullScore } from "@contracts/academics";
 import { normalizeAssessKinds, INVITE_ASSESS_KINDS } from "@contracts/invite";
+import { resolveServices } from "@contracts/edition";
+import type { OrgServices } from "@contracts/edition";
 import {
   users,
   studentProfile,
@@ -294,7 +296,7 @@ function checksum(x: unknown): string {
 /* ================================================ Router ================================================ */
 
 export const schoolRouter = createRouter({
-  /** 校园上下文：管理端 tab 显隐 + 学生端入口。 */
+  /** 校园上下文：管理端 tab 显隐 + 学生端入口。v227：职员侧附带机构版本(edition)与功能权限包(services/assessKinds)——机构管理员只读视图用，修改权在平台超管。 */
   context: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     const role = ctx.user.role;
@@ -302,15 +304,29 @@ export const schoolRouter = createRouter({
       const campus = await staffCampusContext(db, ctx.user.orgId ?? null);
       let orgName: string | null = null;
       let logoUrl: string | null = null;
+      let edition: "school" | "org" = campus ? "school" : "org";
+      let services: ReturnType<typeof resolveServices> | null = null;
+      let assessKinds: string[] | null = null;
       if (ctx.user.orgId != null) {
-        const [org] = await db.select({ name: organizations.name, brandName: organizations.brandName, logoUrl: organizations.logoUrl }).from(organizations).where(eq(organizations.id, ctx.user.orgId)).limit(1);
+        const [org] = await db
+          .select({ name: organizations.name, brandName: organizations.brandName, logoUrl: organizations.logoUrl, edition: organizations.edition, settings: organizations.settings })
+          .from(organizations)
+          .where(eq(organizations.id, ctx.user.orgId))
+          .limit(1);
         orgName = org?.brandName || org?.name || null;
         logoUrl = org?.logoUrl ?? null;
+        if (org) {
+          edition = org.edition === "school" ? "school" : "org";
+          const stored = (org.settings ?? null) as { services?: Partial<OrgServices> } | null;
+          services = resolveServices(edition, stored?.services);
+          const kinds = (org.settings as { assess?: { kinds?: string[] } } | null)?.assess?.kinds;
+          assessKinds = kinds ?? null;
+        }
       }
-      return { role, campus, orgId: ctx.user.orgId ?? null, orgName, logoUrl };
+      return { role, campus, orgId: ctx.user.orgId ?? null, orgName, logoUrl, edition, services, assessKinds };
     }
     const mine = await myCampusInfo(db, ctx.user.id);
-    return { role, campus: mine.campus, orgId: mine.orgId, orgName: null, logoUrl: null };
+    return { role, campus: mine.campus, orgId: mine.orgId, orgName: null, logoUrl: null, edition: null, services: null, assessKinds: null };
   }),
 
   /* ------------------------------- 选科评分权重（v221：机构管理员可调，0-60%） ------------------------------- */
