@@ -89,7 +89,9 @@ describe("v229 功能权限服务端拦截", () => {
     need(school, 'it.key !== "library"', "控制台菜单过滤");
   });
 
-  it("版本号递增 v228", () => {
-    need(read("api/router.ts"), 'BUILD_TAG = "v228-', "BUILD_TAG 已升 v228");
+  it("版本号 ≥ v228（后续版本递增不追溯修改本断言）", () => {
+    const router = read("api/router.ts");
+    const m = router.match(/BUILD_TAG = "v(\d+)-/);
+    if (!m || Number(m[1]) < 228) throw new Error("BUILD_TAG 应不低于 v228");
   });
 });
