@@ -46,3 +46,4 @@ scripts/.*.cjs
 
 # 部署产物
 *.tgz
+v230-*.png
