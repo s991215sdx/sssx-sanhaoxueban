@@ -16,7 +16,7 @@ export default function BulkAssignTutors({
   tutorLabel = "伴学师",
 }: {
   studentIds: number[];
-  tutors: { id: number; name: string }[];
+  tutors: { id: number; name: string; orgName?: string | null }[];
   onDone: () => void;
   /** v220.2：角色称谓（学校版传「指导老师」，机构版默认「伴学师」） */
   tutorLabel?: string;
@@ -95,6 +95,10 @@ export default function BulkAssignTutors({
                           className="accent-[#52A965]"
                         />
                         <span className={on ? "font-semibold text-olive" : "text-olive-soft"}>{t.name}</span>
+                        {/* v230：平台超管跨机构选人时标注伴学师所属机构 */}
+                        {t.orgName && (
+                          <span className="rounded-full bg-lime-pale px-1.5 py-px text-[10.5px] text-olive-mute">{t.orgName}</span>
+                        )}
                       </label>
                       {on && (
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-6">

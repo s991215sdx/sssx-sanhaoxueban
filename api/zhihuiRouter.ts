@@ -8,7 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { sameOrg } from "./tenant";
+import { canAccessUser } from "./tenant";
 import { assessmentResults, studentExpectations, studentProfile, users } from "../db/schema";
 import { gdScores, majorLib, universityLib, careerLib } from "../db/schema";
 import { inviteChannels, inviteRegistrations, organizations } from "../db/schema";
@@ -16,7 +16,8 @@ import { like, or, asc, sql } from "drizzle-orm";
 import { orgXuankeWeights } from "./schoolRouter";
 
 /** 查看/代编他人数据须为伴学师或管理员；v179：且目标学员须在本机构内
- *  （平台超管 orgId=null 放行；机构管理员/伴学师跨机构一律拒绝）。 */
+ *  （平台超管 orgId=null 放行；机构管理员/伴学师跨机构一律拒绝）。
+ *  v230：伴学师对名下学员（student_tutor 分配记录，可跨机构——仅限平台超管建立的分配）放行。 */
 async function assertStaffIfOther(
   ctx: { user: { id: number; role: string; orgId: number | null } },
   studentId: number | undefined,
@@ -26,7 +27,7 @@ async function assertStaffIfOther(
       throw new TRPCError({ code: "FORBIDDEN", message: "无权查看其他学员的数据" });
     }
     const db = getDb();
-    if (!(await sameOrg(db, ctx.user, studentId))) {
+    if (!(await canAccessUser(db, ctx.user, studentId))) {
       throw new TRPCError({ code: "FORBIDDEN", message: "该学员不在你的机构内" });
     }
   }

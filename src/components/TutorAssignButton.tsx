@@ -17,8 +17,8 @@ export default function TutorAssignButton({
   tutorLabel = "伴学师",
 }: {
   studentUserId: number;
-  /** 全部伴学师选项 */
-  tutors: { id: number; name: string }[];
+  /** 全部伴学师选项（orgName：平台超管跨机构选人时标注所属机构） */
+  tutors: { id: number; name: string; orgName?: string | null }[];
   /** 当前已分配的伴学师（含报告权限与有效期） */
   assigned: { id: number; name: string; reportAccess?: boolean; reportAccessExpiresAt?: Date | string | null }[];
   /** v220.2：角色称谓（学校版传「指导老师」，机构版默认「伴学师」） */
@@ -145,6 +145,9 @@ export default function TutorAssignButton({
                         className="accent-[#52A965]"
                       />
                       <span className={on ? "font-semibold text-olive" : "text-olive-soft"}>{t.name}</span>
+                      {t.orgName && (
+                        <span className="rounded-full bg-lime-pale px-1.5 py-px text-[10.5px] text-olive-mute">{t.orgName}</span>
+                      )}
                     </label>
                     {on && (
                       <span className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-6">

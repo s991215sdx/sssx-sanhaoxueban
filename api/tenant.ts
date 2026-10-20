@@ -1,5 +1,5 @@
-import { eq, isNull, or } from "drizzle-orm";
-import { users, type User } from "@db/schema";
+import { and, eq, isNull, or } from "drizzle-orm";
+import { users, studentTutor, type User } from "@db/schema";
 import { getDb } from "./queries/connection";
 
 /**
@@ -37,6 +37,25 @@ export async function sameOrg(db: ReturnType<typeof getDb>, me: Pick<User, "orgI
   if (me.orgId == null) return true;
   const t = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, targetUserId)).limit(1))[0];
   return !!t && (t.orgId === me.orgId || t.orgId == null);
+}
+
+/**
+ * v230：目标用户是否可访问——sameOrg 的超集：
+ * 平台超管放行；同机构放行；me→target 存在 student_tutor 分配记录也放行。
+ * 跨机构分配记录只能由平台超管建立（机构管理员建分配仍走 sameOrg 双向校验），
+ * 因此机构隔离不被破坏——这是「平台超管把任何学校/机构的学员分配给任何伴学师」的配套读取口径。
+ * 用于跨用户数据读取点（报告数据、期望信息等）。
+ */
+export async function canAccessUser(db: ReturnType<typeof getDb>, me: Pick<User, "id" | "orgId">, targetUserId: number): Promise<boolean> {
+  if (await sameOrg(db, me, targetUserId)) return true;
+  const link = (
+    await db
+      .select({ id: studentTutor.id })
+      .from(studentTutor)
+      .where(and(eq(studentTutor.tutorUserId, me.id), eq(studentTutor.studentUserId, targetUserId)))
+      .limit(1)
+  )[0];
+  return !!link;
 }
 
 /**

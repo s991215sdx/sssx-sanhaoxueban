@@ -35,9 +35,10 @@ describe("v93/v190 平台直客（org_id NULL）可见性", () => {
     need(src, "orgScope", "orgScope helper 存在");
   });
 
-  it("isMyStudent：一方 org 为 NULL 时跳过机构一致性，双方异机构仍隔离", () => {
+  it("isMyStudent：关系命中即认（v230——跨机构分配仅限平台超管建立，隔离不被破坏）", () => {
     const src = read("api/tutorAccess.ts");
-    need(src, "meOrg != null && targetOrg != null && meOrg !== targetOrg", "双非空异机构才拒绝");
+    need(src, "跨机构分配记录同样生效", "跨机构分配生效注释");
+    if (src.includes("meOrg !== targetOrg")) throw new Error("v230 应移除双非空异机构的一律拒绝");
   });
 
   it("报告页桌面端整体放大（zoom）仍在", () => {

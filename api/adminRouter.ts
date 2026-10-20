@@ -102,6 +102,9 @@ export const adminRouter = createRouter({
     const profiles = await db.select().from(studentProfile);
     const { listStudentTutorLinks } = await import("./tutorAccess");
     const links = await listStudentTutorLinks(db);
+    /* v230：附带伴学师所属机构名——平台超管跨机构选人时可区分 */
+    const orgRows = await db.select({ id: organizations.id, brandName: organizations.brandName, name: organizations.name }).from(organizations);
+    const orgNameMap = new Map(orgRows.map((o) => [o.id, o.brandName || o.name]));
     const attRows = await db
       .select({ userId: attempts.userId, c: sql<number>`count(*)` })
       .from(attempts)
@@ -119,6 +122,8 @@ export const adminRouter = createRouter({
         lastSignInAt: t.lastSignInAt,
         /* v170：其邀请二维码注册的新学员是否默认可看测评报告 */
         inviteReportDefault: t.inviteReportDefault,
+        /* v230：所属机构名（平台超管跨机构分配选人用） */
+        orgName: t.orgId != null ? (orgNameMap.get(t.orgId) ?? null) : null,
         studentCount: mine.length,
         students: mine.map((p) => ({ userId: p.userId, name: p.name, grade: p.grade })),
         totalAttempts: mine.reduce((s, p) => s + (attMap.get(p.userId) ?? 0), 0),
