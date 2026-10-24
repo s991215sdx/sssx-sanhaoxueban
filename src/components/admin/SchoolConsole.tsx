@@ -3,26 +3,13 @@
  * 版式对齐学校版策划效果图：顶部墨绿品牌条 + 左侧分组导航 + 白卡片内容区。
  * 约定：粤华学校版不出现「伴学师」，统一称「指导老师」；聚合分布不点名，名单按职员权限下钻。
  */
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useSearchParams } from "react-router";
 import {
-  ClipboardList,
-  Gauge,
-  BarChart3,
-  FolderHeart,
-  Users,
-  UserCog,
-  AlertTriangle,
-  QrCode,
-  Network,
   RefreshCw,
   Printer,
   BellRing,
   GraduationCap,
-  PieChart,
-  BookOpen,
-  LayoutGrid,
-  BadgeCheck,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import StudentsTab from "./StudentsTab";
@@ -30,7 +17,8 @@ import TutorsTab from "./TutorsTab";
 import SelectionStats from "./SelectionStats";
 import AssessCenter from "./AssessCenter";
 import InviteChannelsTab from "./InviteChannelsTab";
-import Library from "@/pages/Library";
+/* v232：Library 懒加载，避免被打进后台主 chunk */
+const Library = lazy(() => import("@/pages/Library"));
 import OrgFeaturesCard from "./OrgFeaturesCard";
 
 /* ---------------------------------- 设计令牌（对齐效果图） ---------------------------------- */
@@ -46,59 +34,10 @@ export const G = {
   danger: "#C0523C",
 };
 
-type ItemKey = "assess" | "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users" | "library" | "features";
-
-export type SchoolItemKey = ItemKey;
-
-const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: typeof Gauge; jiaowu?: boolean }[] }[] = [
-  {
-    label: "测评管理",
-    items: [
-      { key: "assess", label: "测评中心", icon: LayoutGrid },
-      { key: "tasks", label: "施测任务", icon: ClipboardList },
-      { key: "progress", label: "进度看板", icon: Gauge },
-    ],
-  },
-  {
-    label: "数据统计",
-    items: [
-      { key: "intention", label: "选科意向分析", icon: BarChart3 },
-      { key: "selection", label: "选科统计分析", icon: PieChart },
-      { key: "archive", label: "成长档案", icon: FolderHeart },
-    ],
-  },
-  {
-    label: "学生管理",
-    items: [
-      { key: "students", label: "学员管理", icon: Users, jiaowu: true },
-      { key: "teachers", label: "指导老师", icon: UserCog },
-    ],
-  },
-  {
-    label: "学校管理",
-    items: [
-      { key: "warnings", label: "预警中心", icon: AlertTriangle },
-      { key: "invites", label: "注册邀请", icon: QrCode },
-      { key: "users", label: "组织架构", icon: Network },
-      { key: "features", label: "版本与功能", icon: BadgeCheck },
-    ],
-  },
-  {
-    label: "教学资源",
-    items: [{ key: "library", label: "资料库", icon: BookOpen }],
-  },
-];
-
-/* v220.3：教务可见项（学校版教务：看统计/预警/意向/催办/档案 + 学员分配台） */
-const JIAOWU_KEYS: SchoolItemKey[] = ["assess", "tasks", "progress", "intention", "selection", "archive", "warnings", "students"];
-
-/** v220.3：供外层侧边栏（Layout）渲染学校版菜单；jiaowu=只返回教务可见项 */
-export function visibleSchoolGroups(jiaowu: boolean) {
-  return GROUPS.map((g) => ({
-    ...g,
-    items: g.items.filter((it) => (jiaowu ? JIAOWU_KEYS.includes(it.key) : true)),
-  })).filter((g) => g.items.length);
-}
+/* v232：菜单数据/类型已抽到 schoolNav.ts（Layout 首屏依赖此处，避免整个后台被打进入口 chunk） */
+import { visibleSchoolGroups, type ItemKey, type SchoolItemKey } from "./schoolNav";
+export { visibleSchoolGroups } from "./schoolNav";
+export type { SchoolItemKey } from "./schoolNav";
 
 const KIND_LABEL: Record<string, string> = {
   subject4d: "学科四维",
@@ -952,7 +891,11 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
             {item === "invites" && <InviteChannelsTab />}
             {item === "users" && <UsersSection />}
             {item === "features" && <OrgFeaturesCard />}
-            {item === "library" && <Library />}
+            {item === "library" && (
+              <Suspense fallback={<div className="py-10 text-center text-sm text-[#7A8A83]">资料库加载中…</div>}>
+                <Library />
+              </Suspense>
+            )}
           </div>
         </main>
       </div>

@@ -62,10 +62,10 @@ const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
     await page.locator('input:not([type="checkbox"])').last().fill('测试伴学师');
     await page.waitForTimeout(2000);
     const modal = await page.locator('body').innerText();
-    const found = ['测试伴学师1', '测试伴学师2', '测试伴学师5'].map(n => `${n}:${modal.includes(n)}`);
+    const found = ['测试伴学师一', '测试伴学师二', '测试伴学师五'].map(n => `${n}:${modal.includes(n)}`);
     console.log('[3] 弹窗搜索结果:', found.join(', '));
     // 选第一个并保存
-    const pick = page.getByText('测试伴学师1', { exact: false }).first();
+    const pick = page.getByText('测试伴学师一', { exact: false }).first();
     if (await pick.count() > 0) {
       await pick.click().catch(() => {});
       await page.waitForTimeout(500);

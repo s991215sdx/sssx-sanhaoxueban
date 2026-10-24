@@ -36,8 +36,10 @@ describe("v223 测评中心（目录 + 组选推送）", () => {
   });
 
   it("前端：侧栏入口 + 目录（组合/单项/效果图/详情）+ 推送面板", () => {
+    // v232：菜单数据抽到 schoolNav.ts，页面标题仍在 SchoolConsole
+    const navSrc = read("src/components/admin/schoolNav.ts");
+    need(navSrc, '{ key: "assess", label: "测评中心"', "侧栏导航项");
     const consoleSrc = read("src/components/admin/SchoolConsole.tsx");
-    need(consoleSrc, '{ key: "assess", label: "测评中心"', "侧栏导航项");
     need(consoleSrc, "assess: { crumb", "页面标题");
     need(consoleSrc, "<AssessCenter", "组件挂载");
     const center = read("src/components/admin/AssessCenter.tsx");
