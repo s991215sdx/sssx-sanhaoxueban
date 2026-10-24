@@ -85,6 +85,17 @@ describe("v233 多元智能五项通用卷", () => {
       throw new Error("submit schema 仍限制 max(3)，第 5 选项会被拒");
   });
 
+  it("答题明细/打印答题卷特判「这题我不会」下标 4", () => {
+    const detail = readFileSync("src/components/companion/AnswerDetail.tsx", "utf-8");
+    if (!/picked === 4/.test(detail)) throw new Error("AnswerDetail 未特判不会下标");
+    if (!/这题我不会/.test(detail)) throw new Error("AnswerDetail 缺不会标识文案");
+    const blocks = readFileSync("src/components/reports/answerBlocks.ts", "utf-8");
+    if (!/v === 4[\s\S]{0,120}这题我不会/.test(blocks)) throw new Error("answerBlocks 未特判不会下标");
+    // 不修复时旧逻辑会渲染 undefined/选 undefined：确保 letters 下标访问前有特判
+    if (/ans: v != null \? `\$\{letters\[v\]\}/.test(blocks) && !/if \(v === 4\)/.test(blocks))
+      throw new Error("answerBlocks 对下标 4 未拦截");
+  });
+
   it("前端「不会」选项弱化样式 + 提示文案", () => {
     const src = readFileSync("src/components/companion/Multi5Quiz.tsx", "utf-8");
     if (!/DONT_KNOW_IDX = 4/.test(src)) throw new Error("前端缺「不会」下标常量");
