@@ -56,6 +56,6 @@ describe("v176 多元智能五项学段分卷", () => {
   it("后端按通用版下发与计分（v233 起统一通用卷，历史学段卷仅还原旧结果）", () => {
     const src = readFileSync("api/profileRouter.ts", "utf-8");
     if (!/case "multi5": \{[\s\S]{0,300}MULTI5_COMMON_STAGE/.test(src)) throw new Error("questions 未按通用版下发");
-    if (!/scoreMulti5For\(stage, input\.answers\)/.test(src)) throw new Error("submit 未按通用版计分");
+    if (!/scoreMulti5For\(stage, input\.answers(, input\.times)?\)/.test(src)) throw new Error("submit 未按通用版计分");
   });
 });

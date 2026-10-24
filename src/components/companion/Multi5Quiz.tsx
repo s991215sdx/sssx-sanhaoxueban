@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useScrollToQuestion } from "@/lib/quizScroll";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,8 +23,15 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
   const [answers, setAnswers] = useDraftState<number[]>("multi5", "answers", []);
   // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
   const [resumed, setResumed] = useDraftResumed(user?.id, "multi5", "answers");
+  // v234：逐题作答计时（秒），换题/进题时重置；恢复进度前的题无计时按不扣时间分处理
+  const startRef = useRef(Date.now());
+  const timesRef = useRef<number[]>([]);
+  useEffect(() => {
+    startRef.current = Date.now();
+  }, [idx]);
   const resetAll = () => {
     clearQuizDraft(user?.id, "multi5");
+    timesRef.current = [];
     setIdx(0);
     setAnswers([]);
     setResumed(false);
@@ -42,6 +50,8 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
   const total = questions?.length ?? 0;
 
   const pick = (value: number) => {
+    // v234：记录本题作答秒数（恢复进度前未计时的题保持 undefined，按不扣时间分处理）
+    timesRef.current[idx] = Math.round(((Date.now() - startRef.current) / 1000) * 10) / 10;
     const next = [...answers];
     next[idx] = value;
     setAnswers(next);
@@ -49,7 +59,9 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
     if (idx + 1 < total) {
       setIdx(idx + 1);
     } else if (questions && next.length === total) {
-      submit.mutate({ kind: "multi5", answers: next } as any);
+      // 密集数组：无计时题补 0（≤30s 均为系数 1，不影响得分）
+      const times = questions.map((_, i) => timesRef.current[i] ?? 0);
+      submit.mutate({ kind: "multi5", answers: next, times } as any);
     }
   };
 
@@ -80,6 +92,13 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
             <div className="mt-0.5 text-[15px] font-bold text-olive">{MULTI5_DIM_LABEL[topKey]}</div>
           </div>
         </div>
+        {result.timeFactorUsed && (
+          <p className="mt-2.5 text-center text-[12px] text-olive-mute">
+            作答用时约 {Math.round((timesRef.current.reduce((s, t) => s + (t || 0), 0) / 60) * 10) / 10} 分钟
+            {result.avgSecPerQ != null ? ` · 答对题平均 ${result.avgSecPerQ} 秒/题` : ""}
+            ，速度已计入得分（30 秒内不扣分）
+          </p>
+        )}
         <div className="mx-auto mt-4 max-w-md space-y-2 text-left">
           {MULTI5_DIM_ORDER.map((k) => (
             <div key={k} className="flex items-center gap-3">
@@ -196,7 +215,7 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
               <ChevronLeft size={15} />
               上一题
             </button>
-            <span className="text-[12.5px] text-olive-mute">不会就选「这题我不会」，不算错也不扣分</span>
+            <span className="text-[12.5px] text-olive-mute">不会就选「这题我不会」；作答快慢会计入得分</span>
           </div>
 
           {submit.isPending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在生成你的结果…</p>}
