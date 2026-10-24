@@ -77,6 +77,14 @@ describe("v233 多元智能五项通用卷", () => {
     if (r.overall !== 100 || r.stage !== "初中") throw new Error("历史卷计分口径被改坏");
   });
 
+  it("后端 submit 入参 schema 放行下标 4、拦截 5", () => {
+    const src = readFileSync("api/profileRouter.ts", "utf-8");
+    if (!/kind: z\.literal\("multi5"\),[\s\S]{0,120}min\(0\)\.max\(4\)/.test(src))
+      throw new Error("submit schema 未放行「这题我不会」下标 4");
+    if (/kind: z\.literal\("multi5"\),[\s\S]{0,120}min\(0\)\.max\(3\)/.test(src))
+      throw new Error("submit schema 仍限制 max(3)，第 5 选项会被拒");
+  });
+
   it("前端「不会」选项弱化样式 + 提示文案", () => {
     const src = readFileSync("src/components/companion/Multi5Quiz.tsx", "utf-8");
     if (!/DONT_KNOW_IDX = 4/.test(src)) throw new Error("前端缺「不会」下标常量");
