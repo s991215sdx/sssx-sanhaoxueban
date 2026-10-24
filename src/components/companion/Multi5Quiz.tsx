@@ -7,7 +7,9 @@ import { MULTI5_DIM_ORDER, MULTI5_DIM_LABEL } from "@contracts/multi5";
 import type { Multi5Result } from "@contracts/multi5";
 import { ChevronLeft, Sparkles } from "lucide-react";
 
-const OPTION_LETTER = ["A", "B", "C", "D"] as const;
+const OPTION_LETTER = ["A", "B", "C", "D", ""] as const;
+/** v233：第 5 个选项是「这题我不会」（下标 4），不计对也不计错 */
+const DONT_KNOW_IDX = 4;
 
 /** 多元智能五项客观题测评（选做）：40 道单选题逐题作答，有唯一正确答案。 */
 export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => void; suite?: boolean }) {
@@ -152,7 +154,22 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
           <p className="mt-3 text-center text-[16.5px] font-medium leading-relaxed text-olive">{q.text}</p>
 
           <div className="mt-5 grid gap-2.5">
-            {q.options.map((opt, i) => (
+            {q.options.map((opt, i) =>
+              i === DONT_KNOW_IDX ? (
+                /* v233：「这题我不会」弱化样式，与作答选项区分 */
+                <button
+                  key={i}
+                  disabled={submit.isPending}
+                  onClick={() => pick(i)}
+                  className={`rounded-xl border border-dashed px-4 py-2.5 text-left text-[13px] transition-colors ${
+                    answers[idx] === i
+                      ? "border-[#C77F2A]/70 bg-butter-pale font-medium text-olive"
+                      : "border-border/70 bg-transparent text-olive-mute hover:border-[#C77F2A]/50 hover:text-olive"
+                  }`}
+                >
+                  😕 {opt}
+                </button>
+              ) : (
               <button
                 key={i}
                 disabled={submit.isPending}
@@ -166,7 +183,8 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
                 <span className="mono mr-2 text-[12px] font-bold text-olive-mute">{OPTION_LETTER[i]}</span>
                 {opt}
               </button>
-            ))}
+              )
+            )}
           </div>
 
           <div className="mt-5 flex items-center justify-between">
@@ -178,7 +196,7 @@ export default function Multi5Quiz({ onDone, suite = false }: { onDone: () => vo
               <ChevronLeft size={15} />
               上一题
             </button>
-            <span className="text-[12.5px] text-olive-mute">认真作答，题目有对错</span>
+            <span className="text-[12.5px] text-olive-mute">不会就选「这题我不会」，不算错也不扣分</span>
           </div>
 
           {submit.isPending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在生成你的结果…</p>}
