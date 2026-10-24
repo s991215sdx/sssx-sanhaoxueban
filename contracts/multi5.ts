@@ -39,16 +39,20 @@ export type Multi5PublicQuestion = Omit<Multi5Question, "answer" | "options"> & 
 };
 
 export type Multi5Result = {
-  /** 每维得分（该维正确数/题数*100，取整，0-100）。 */
+  /** 每维得分（该维正确数/题数*100，取整，0-100；v234 起答对题按时间系数加权）。 */
   dims: Record<Multi5Key, number>;
   /** 综合水平：五维均值（取整，0-100）。 */
   overall: number;
-  /** 细心指数：全卷答题正确率（取整，0-100）。 */
+  /** 细心指数：全卷答题正确率（取整，0-100；不受时间系数影响）。 */
   carefulIndex: number;
-  /** 每维答对数 / 题数明细。 */
-  perDim: { key: Multi5Key; correct: number; total: number; dontKnow?: number }[];
+  /** 每维答对数 / 题数明细（v234 起新增 weighted = 时间加权后的得分题数）。 */
+  perDim: { key: Multi5Key; correct: number; weighted?: number; total: number; dontKnow?: number }[];
   /** v176：施测学段版本（小学/初中/高中），旧结果无此字段视为初中版。 */
   stage?: string;
+  /** v234：是否启用了作答时间系数（有逐题计时数据才为 true，旧记录为 false）。 */
+  timeFactorUsed?: boolean;
+  /** v234：平均作答用时（秒/题，仅统计本次有计时记录的题）。 */
+  avgSecPerQ?: number;
 };
 
 export type Multi5Band = "优秀" | "良好" | "中等" | "待提升";
@@ -347,21 +351,39 @@ export const MULTI5_PER_DIM = 8;
 
 /* ---------------- 计分 ---------------- */
 
+/** v234：作答时间系数参数——30 秒内答对不扣时间分，30→120 秒线性降到 0.6，之后兜底 0.6。 */
+export const MULTI5_TIME_FULL_SEC = 30;
+export const MULTI5_TIME_MAX_SEC = 120;
+export const MULTI5_TIME_FLOOR = 0.6;
+
+/** 单题作答秒数 → 时间系数（1.0 ~ 0.6）。 */
+export function multi5TimeFactor(sec: number): number {
+  if (!Number.isFinite(sec) || sec <= MULTI5_TIME_FULL_SEC) return 1;
+  if (sec >= MULTI5_TIME_MAX_SEC) return MULTI5_TIME_FLOOR;
+  const t = (sec - MULTI5_TIME_FULL_SEC) / (MULTI5_TIME_MAX_SEC - MULTI5_TIME_FULL_SEC);
+  return Math.round((1 - t * (1 - MULTI5_TIME_FLOOR)) * 100) / 100;
+}
+
 /**
  * multi5 计分。answers[i]：第 i+1 题所选项下标（0-3 为作答，4=「这题我不会」）；长度须为 40。
  * - 选「这题我不会」不计对也不计错，该题从该维分母剔除（诚实作答不 punished，优于乱猜）；
- * - 维度得分 = 该维正确数 / 实际作答数 * 100（取整；全选不会的维度记 0 分）；
- * - 细心指数 = 实际作答题的正确率（取整）；
+ * - v234：传了 times（逐题作答秒数）时，答对题按时间系数加权（≤30s 不扣分，120s 及以上按 0.6），
+ *   维度得分 = Σ(答对×时间系数) / 实际作答数 * 100；无 times（旧记录）按系数 1 计，分数口径不变；
+ * - 细心指数只看对错、不受时间影响；
  * - 综合水平 = 五维均值（取整）。
  */
-export function scoreMulti5For(stage: string | null | undefined, answers: number[]): Multi5Result {
+export function scoreMulti5For(stage: string | null | undefined, answers: number[], times?: number[]): Multi5Result {
   const QUESTIONS = multi5QuestionsFor(stage);
   if (answers.length !== QUESTIONS.length) {
     throw new Error(`多元智能五项测评题数应为 ${QUESTIONS.length}，实际 ${answers.length}`);
   }
   const correct: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
+  const rawCount: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
   const total: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
   const dontKnow: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
+  let rawCorrect = 0; // 不受时间系数影响的纯正确数（细心指数用）
+  let timeSum = 0;
+  let timeCount = 0;
   answers.forEach((raw, i) => {
     if (!Number.isInteger(raw) || raw < 0 || raw > 4) {
       throw new Error(`第 ${i + 1} 题的选项应在 0-4 之间，实际 ${raw}`);
@@ -372,7 +394,17 @@ export function scoreMulti5For(stage: string | null | undefined, answers: number
       return;
     }
     total[q.dim] += 1;
-    if (raw === q.answer) correct[q.dim] += 1;
+    if (raw === q.answer) {
+      rawCorrect += 1;
+      rawCount[q.dim] += 1;
+      const sec = times?.[i];
+      const factor = sec != null && Number.isFinite(sec) ? multi5TimeFactor(sec) : 1;
+      correct[q.dim] += factor;
+      if (sec != null && Number.isFinite(sec) && sec > 0) {
+        timeSum += sec;
+        timeCount += 1;
+      }
+    }
   });
   const dims = MULTI5_DIM_ORDER.reduce((acc, key) => {
     acc[key] = total[key] === 0 ? 0 : Math.round((correct[key] / total[key]) * 100);
@@ -380,17 +412,26 @@ export function scoreMulti5For(stage: string | null | undefined, answers: number
   }, {} as Record<Multi5Key, number>);
   const overall = Math.round(MULTI5_DIM_ORDER.reduce((s, k) => s + dims[k], 0) / MULTI5_DIM_ORDER.length);
   const attempted = MULTI5_DIM_ORDER.reduce((s, k) => s + total[k], 0);
-  const carefulIndex = attempted === 0 ? 0 : Math.round(
-    (MULTI5_DIM_ORDER.reduce((s, k) => s + correct[k], 0) / attempted) * 100,
-  );
-  const perDim = MULTI5_DIM_ORDER.map((key) => ({ key, correct: correct[key], total: total[key], dontKnow: dontKnow[key] }));
+  const carefulIndex = attempted === 0 ? 0 : Math.round((rawCorrect / attempted) * 100);
+  const perDim = MULTI5_DIM_ORDER.map((key) => ({
+    key,
+    correct: rawCount[key],
+    weighted: Math.round(correct[key] * 100) / 100,
+    total: total[key],
+    dontKnow: dontKnow[key],
+  }));
   const stageLabel =
     stage === MULTI5_COMMON_STAGE
       ? MULTI5_COMMON_STAGE
       : (MULTI5_STAGES as readonly string[]).includes(stage ?? "")
         ? (stage as Multi5Stage)
         : "初中";
-  return { dims, overall, carefulIndex, perDim, stage: stageLabel };
+  const used = !!times && timeCount > 0;
+  return {
+    dims, overall, carefulIndex, perDim, stage: stageLabel,
+    timeFactorUsed: used,
+    avgSecPerQ: used ? Math.round((timeSum / timeCount) * 10) / 10 : undefined,
+  };
 }
 
 /** 兼容旧调用：默认初中版计分。 */

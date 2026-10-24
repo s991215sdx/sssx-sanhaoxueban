@@ -513,6 +513,8 @@ export const assessmentRouter = createRouter({
           kind: z.literal("multi5"),
           // v233：第 5 个选项「这题我不会」= 下标 4
           answers: z.array(z.number().int().min(0).max(4)).length(MULTI5_QUESTIONS.length),
+          // v234：逐题作答用时（秒），用于时间系数加权；旧客户端不传则不扣时间分
+          times: z.array(z.number().min(0).max(3600)).length(MULTI5_QUESTIONS.length).optional(),
         }),
         z.object({
           kind: z.literal("anchor"),
@@ -645,10 +647,11 @@ export const assessmentRouter = createRouter({
         outcome = { kind: "multi", result };
       } else if (input.kind === "multi5") {
         // v233：通用版卷统一计分；原始作答包一层版本存储（e3 的 { stage, ratings } 同款做法），供答题明细/打印还原对应题库
+        // v234：逐题作答秒数一并存入并参与计分（答对题按时间系数加权，无计时按系数 1）
         const stage = MULTI5_COMMON_STAGE;
-        const result: Multi5Result = scoreMulti5For(stage, input.answers);
+        const result: Multi5Result = scoreMulti5For(stage, input.answers, input.times);
         outcome = { kind: "multi5", result };
-        input = { ...input, answers: { stage, picks: input.answers } as unknown as number[] };
+        input = { ...input, answers: { stage, picks: input.answers, times: input.times } as unknown as number[] };
       } else if (input.kind === "anchor") {
         const result: AnchorResult = scoreAnchor(input.answers);
         outcome = { kind: "anchor", result };

@@ -99,6 +99,6 @@ describe("v233 多元智能五项通用卷", () => {
   it("前端「不会」选项弱化样式 + 提示文案", () => {
     const src = readFileSync("src/components/companion/Multi5Quiz.tsx", "utf-8");
     if (!/DONT_KNOW_IDX = 4/.test(src)) throw new Error("前端缺「不会」下标常量");
-    if (!/不算错也不扣分/.test(src)) throw new Error("前端缺「不会」提示文案");
+    if (!/这题我不会/.test(src)) throw new Error("前端缺「不会」提示文案");
   });
 });
