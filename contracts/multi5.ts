@@ -33,8 +33,10 @@ export type Multi5Question = {
   answer: 0 | 1 | 2 | 3;
 };
 
-/** 下发给客户端的题干（不含答案）。 */
-export type Multi5PublicQuestion = Omit<Multi5Question, "answer">;
+/** 下发给客户端的题干（不含答案；v233 起末尾附加「这题我不会」，共 5 个选项）。 */
+export type Multi5PublicQuestion = Omit<Multi5Question, "answer" | "options"> & {
+  options: [string, string, string, string, string];
+};
 
 export type Multi5Result = {
   /** 每维得分（该维正确数/题数*100，取整，0-100）。 */
@@ -44,7 +46,7 @@ export type Multi5Result = {
   /** 细心指数：全卷答题正确率（取整，0-100）。 */
   carefulIndex: number;
   /** 每维答对数 / 题数明细。 */
-  perDim: { key: Multi5Key; correct: number; total: number }[];
+  perDim: { key: Multi5Key; correct: number; total: number; dontKnow?: number }[];
   /** v176：施测学段版本（小学/初中/高中），旧结果无此字段视为初中版。 */
   stage?: string;
 };
@@ -249,14 +251,92 @@ const BANKS: Record<"小学" | "初中" | "高中", Record<Multi5Key, Multi5Bank
   高中: BANK_SENIOR,
 };
 
+/**
+ * v233 通用版题库：不依赖学科知识，以生活场景、图形规律、日常逻辑出题，
+ * 同一套题适用于各学段（难度梯度让不同水平学生都能被区分）。
+ * 已按学段分卷施测的历史结果仍用旧卷还原，见 multi5QuestionsFor 的 stage 分支。
+ */
+const BANK_COMMON: Record<Multi5Key, Multi5BankItem[]> = {
+  reasoning: [
+    { text: "找规律填数：1，3，5，7，（ ）", options: ["8", "9", "10", "11"], answer: 1 },
+    { text: "找规律填数：2，4，8，16，（ ）", options: ["24", "32", "20", "18"], answer: 1 },
+    { text: "找规律填数：1，2，4，7，11，（ ）", options: ["15", "16", "17", "14"], answer: 1 },
+    { text: "找规律填数：5，8，14，23，（ ）", options: ["32", "35", "38", "41"], answer: 1 },
+    { text: "已知「所有的花都有花瓣」，「这株植物有花瓣」，那么可以推出（ ）", options: ["这株植物是花", "这株植物不是花", "不能确定它是不是花", "所有的花瓣都属于花"], answer: 2 },
+    { text: "「如果今天下雨，小明就不去跑步。」已知小明今天去跑步了，那么今天（ ）", options: ["下雨了", "没下雨", "下了一小会儿雨", "无法确定"], answer: 1 },
+    { text: "甲、乙、丙三人比身高：甲比乙高，丙比乙矮。三人中最矮的是（ ）", options: ["甲", "乙", "丙", "无法确定"], answer: 2 },
+    { text: "「书」是用来「阅读」的，如同「画笔」是用来（ ）的", options: ["绘画", "调色", "收藏", "送礼"], answer: 0 },
+  ],
+  detail: [
+    { text: "下面哪一组数字与「4721」完全相同？", options: ["4721", "4712", "4271", "4127"], answer: 0 },
+    { text: "下面哪一组数字与「83947」完全相同？", options: ["83974", "89347", "83947", "83497"], answer: 2 },
+    { text: "在数字串「68586858」中，数字 8 出现了（ ）次", options: ["3 次", "4 次", "5 次", "6 次"], answer: 1 },
+    { text: "下面哪一组数字与「582094」完全相同？", options: ["582094", "528094", "580294", "582904"], answer: 0 },
+    { text: "在符号串「☆☆★☆☆」中，不一样的符号「★」排在第（ ）个", options: ["第 2 个", "第 3 个", "第 4 个", "第 5 个"], answer: 1 },
+    { text: "在数字串「377373」中，数字 3 出现了（ ）次", options: ["2 次", "3 次", "4 次", "5 次"], answer: 1 },
+    { text: "下列四组排列中，与其他三组规律不同的是（ ）", options: ["红蓝红蓝", "绿黄绿黄", "黑白白白", "紫橙紫橙"], answer: 2 },
+    { text: "「小明和小红一起去上学，路上又遇到了小方」这句话中，「小」字一共出现了（ ）次", options: ["3 次", "4 次", "5 次", "6 次"], answer: 0 },
+  ],
+  number: [
+    { text: "36 + 47 = （ ）", options: ["81", "82", "83", "84"], answer: 2 },
+    { text: "100 - 37 = （ ）", options: ["63", "73", "67", "53"], answer: 0 },
+    { text: "15 ÷ 3 = （ ）", options: ["3", "4", "5", "6"], answer: 2 },
+    { text: "18 × 6 = （ ）", options: ["98", "106", "108", "116"], answer: 2 },
+    { text: "买 3 支笔，每支 4 元，付了 20 元，应找回（ ）", options: ["8 元", "9 元", "10 元", "12 元"], answer: 0 },
+    { text: "一件商品 60 元，每件半价，买两件一共要（ ）", options: ["90 元", "60 元", "100 元", "120 元"], answer: 1 },
+    { text: "一杯果汁先喝掉一半，再喝掉剩下的一半，杯中还剩（ ）", options: ["1/2", "1/4", "1/8", "没有了"], answer: 1 },
+    { text: "把 28 颗糖平均分给 4 个小朋友，每人分到（ ）颗", options: ["6 颗", "7 颗", "8 颗", "9 颗"], answer: 1 },
+  ],
+  verbal: [
+    { text: "「高兴」的反义词是（ ）", options: ["难过", "开心", "兴奋", "平静"], answer: 0 },
+    { text: "「迫不及待」的意思是（ ）", options: ["等不及了", "很害怕", "非常高兴", "走不动了"], answer: 0 },
+    { text: "「商量」最接近的意思是（ ）", options: ["讨论", "命令", "宣布", "告别"], answer: 0 },
+    { text: "「一心一意」的意思是（ ）", options: ["专心致志", "粗心大意", "兴高采烈", "胆小害怕"], answer: 0 },
+    { text: "「迟到」的反义词是（ ）", options: ["早退", "准时", "请假", "缺席"], answer: 1 },
+    { text: "「谦虚」的意思是（ ）", options: ["骄傲", "不自满", "胆小", "冷淡"], answer: 1 },
+    { text: "「这件事说来话长，一言难尽」这句话表示（ ）", options: ["事情一句话就能说完", "事情较复杂，短时间说不清", "事情已经结束了", "说话的人不想讲"], answer: 1 },
+    { text: "下列词语中，与其他三个不同的是（ ）", options: ["美丽", "漂亮", "丑陋", "好看"], answer: 2 },
+  ],
+  spatial: [
+    { text: "你面向东方站立，你的背后是（ ）方", options: ["西", "南", "北", "东"], answer: 0 },
+    { text: "把一张正方形纸对折一次、再对折一次，展开后被折痕分成（ ）", options: ["2 份", "3 份", "4 份", "8 份"], answer: 2 },
+    { text: "一排 6 个苹果，从左边数第 3 个，从右边数是第（ ）个", options: ["第 3 个", "第 4 个", "第 5 个", "第 6 个"], answer: 1 },
+    { text: "一支箭头指向正上方，把它顺时针旋转 90° 后，箭头指向（ ）", options: ["左方", "右方", "上方", "下方"], answer: 3 },
+    { text: "你对着镜子举起右手，镜子里的人看起来举的是（ ）", options: ["右手", "左手", "两只手", "没有举"], answer: 1 },
+    { text: "一个圆柱形水杯，从正上方往下看，看到的形状是（ ）", options: ["圆形", "方形", "长方形", "三角形"], answer: 0 },
+    { text: "骰子相对两面的点数之和都是 7，如果朝上一面是 3 点，那么朝下的一面是（ ）", options: ["2 点", "3 点", "4 点", "5 点"], answer: 2 },
+    { text: "地图按「上北下南、左西右东」绘制，学校在家的右上方，那么学校在家的（ ）方向", options: ["东北", "东南", "西北", "西南"], answer: 0 },
+  ],
+};
+
 /** 多元智能五项施测学段。 */
 export const MULTI5_STAGES = ["小学", "初中", "高中"] as const;
 export type Multi5Stage = (typeof MULTI5_STAGES)[number];
 
-/** 按学段取题库（未知学段默认初中版，与原单卷一致）。 */
+/** v233 通用版标记：新施测一律使用通用卷，历史学段卷仅用于还原旧结果。 */
+export const MULTI5_COMMON_STAGE = "通用";
+
+/**
+ * 按学段取题库：v233 起 "通用" 走通用卷（新施测统一口径）；
+ * 小学/初中/高中仍返回旧卷（历史结果按作答时版本还原答题明细）。
+ */
 export function multi5QuestionsFor(stage: string | null | undefined): Multi5Question[] {
+  if (stage === MULTI5_COMMON_STAGE) return bankToQuestions(BANK_COMMON);
   const bank = BANKS[(stage as Multi5Stage) ?? "初中"] ?? BANK_JUNIOR;
+  return bankToQuestions(bank);
+}
+
+function bankToQuestions(bank: Record<Multi5Key, Multi5BankItem[]>): Multi5Question[] {
   return MULTI5_DIM_ORDER.flatMap((dim) => bank[dim].map((q) => ({ ...q, dim }))).map((q, i) => ({ ...q, no: i + 1 }));
+}
+
+/** 「这题我不会」选项文案（v233 起附加为每题第 5 个选项，下标 4）。 */
+export const MULTI5_DONT_KNOW = "这题我不会";
+
+/** 剔除答案并附加「这题我不会」选项后的公开题干（下发客户端用）。 */
+export function toMulti5Public(q: Multi5Question): Multi5PublicQuestion {
+  const { answer: _answer, ...rest } = q;
+  return { ...rest, options: [...rest.options, MULTI5_DONT_KNOW] as Multi5PublicQuestion["options"] };
 }
 
 /** 多元智能五项客观题库（初中版）：40 道单选题，每维 8 题，按维度分组排列。 */
@@ -268,9 +348,10 @@ export const MULTI5_PER_DIM = 8;
 /* ---------------- 计分 ---------------- */
 
 /**
- * multi5 计分。answers[i]：第 i+1 题所选项下标（0-3）；长度须为 40。
- * - 维度得分 = 该维正确数 / 题数 * 100（取整）；
- * - 细心指数 = 全卷正确率（取整）；
+ * multi5 计分。answers[i]：第 i+1 题所选项下标（0-3 为作答，4=「这题我不会」）；长度须为 40。
+ * - 选「这题我不会」不计对也不计错，该题从该维分母剔除（诚实作答不 punished，优于乱猜）；
+ * - 维度得分 = 该维正确数 / 实际作答数 * 100（取整；全选不会的维度记 0 分）；
+ * - 细心指数 = 实际作答题的正确率（取整）；
  * - 综合水平 = 五维均值（取整）。
  */
 export function scoreMulti5For(stage: string | null | undefined, answers: number[]): Multi5Result {
@@ -280,24 +361,35 @@ export function scoreMulti5For(stage: string | null | undefined, answers: number
   }
   const correct: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
   const total: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
+  const dontKnow: Record<Multi5Key, number> = { reasoning: 0, detail: 0, number: 0, verbal: 0, spatial: 0 };
   answers.forEach((raw, i) => {
-    if (!Number.isInteger(raw) || raw < 0 || raw > 3) {
-      throw new Error(`第 ${i + 1} 题的选项应在 0-3 之间，实际 ${raw}`);
+    if (!Number.isInteger(raw) || raw < 0 || raw > 4) {
+      throw new Error(`第 ${i + 1} 题的选项应在 0-4 之间，实际 ${raw}`);
     }
     const q = QUESTIONS[i];
+    if (raw === 4) {
+      dontKnow[q.dim] += 1;
+      return;
+    }
     total[q.dim] += 1;
     if (raw === q.answer) correct[q.dim] += 1;
   });
   const dims = MULTI5_DIM_ORDER.reduce((acc, key) => {
-    acc[key] = Math.round((correct[key] / total[key]) * 100);
+    acc[key] = total[key] === 0 ? 0 : Math.round((correct[key] / total[key]) * 100);
     return acc;
   }, {} as Record<Multi5Key, number>);
   const overall = Math.round(MULTI5_DIM_ORDER.reduce((s, k) => s + dims[k], 0) / MULTI5_DIM_ORDER.length);
-  const carefulIndex = Math.round(
-    (MULTI5_DIM_ORDER.reduce((s, k) => s + correct[k], 0) / QUESTIONS.length) * 100,
+  const attempted = MULTI5_DIM_ORDER.reduce((s, k) => s + total[k], 0);
+  const carefulIndex = attempted === 0 ? 0 : Math.round(
+    (MULTI5_DIM_ORDER.reduce((s, k) => s + correct[k], 0) / attempted) * 100,
   );
-  const perDim = MULTI5_DIM_ORDER.map((key) => ({ key, correct: correct[key], total: total[key] }));
-  const stageLabel = (MULTI5_STAGES as readonly string[]).includes(stage ?? "") ? (stage as Multi5Stage) : "初中";
+  const perDim = MULTI5_DIM_ORDER.map((key) => ({ key, correct: correct[key], total: total[key], dontKnow: dontKnow[key] }));
+  const stageLabel =
+    stage === MULTI5_COMMON_STAGE
+      ? MULTI5_COMMON_STAGE
+      : (MULTI5_STAGES as readonly string[]).includes(stage ?? "")
+        ? (stage as Multi5Stage)
+        : "初中";
   return { dims, overall, carefulIndex, perDim, stage: stageLabel };
 }
 

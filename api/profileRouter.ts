@@ -42,7 +42,7 @@ import {
 } from "@contracts/assessments";
 import { stageOfGrade } from "@contracts/constants";
 import { MULTI_RATINGS, scoreMulti, type MultiResult } from "@contracts/multi";
-import { MULTI5_QUESTIONS, multi5QuestionsFor, scoreMulti5For, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
+import { MULTI5_QUESTIONS, MULTI5_COMMON_STAGE, multi5QuestionsFor, scoreMulti5For, toMulti5Public, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
 import { ANCHOR_RATINGS, scoreAnchor, type AnchorResult } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS, scoreHolland, type HollandResult } from "@contracts/holland";
 import {
@@ -390,10 +390,13 @@ export const assessmentRouter = createRouter({
         case "multi":
           return { kind: "multi", ratings: MULTI_RATINGS };
         case "multi5": {
-          // v176：按学生学段下发对应难度版本（小学/初中/高中），客观题剔除答案字段，客户端不可见
-          const profile = await getProfile(ctx.user.id);
-          const stage = stageOfGrade(profile?.grade ?? "") ?? "初中";
-          return { kind: "multi5", stage, stageLabel: `${stage}版`, questions: multi5QuestionsFor(stage).map(({ answer: _answer, ...q }) => q) };
+          // v233：统一通用版卷（不依赖学科知识，各学段同卷通用）；客观题剔除答案并附加「这题我不会」选项
+          return {
+            kind: "multi5",
+            stage: MULTI5_COMMON_STAGE,
+            stageLabel: "通用版",
+            questions: multi5QuestionsFor(MULTI5_COMMON_STAGE).map(toMulti5Public),
+          };
         }
         case "anchor":
           return { kind: "anchor", ratings: ANCHOR_RATINGS };
@@ -640,10 +643,8 @@ export const assessmentRouter = createRouter({
         const result: MultiResult = scoreMulti(input.answers);
         outcome = { kind: "multi", result };
       } else if (input.kind === "multi5") {
-        // v176：按学生当前学段计分（与下发版本同一口径），结果带版本标记；
-        // 原始作答包一层学段存储（e3 的 { stage, ratings } 同款做法），供答题明细/打印还原对应题库
-        const profile = await getProfile(userId);
-        const stage = stageOfGrade(profile?.grade ?? "") ?? "初中";
+        // v233：通用版卷统一计分；原始作答包一层版本存储（e3 的 { stage, ratings } 同款做法），供答题明细/打印还原对应题库
+        const stage = MULTI5_COMMON_STAGE;
         const result: Multi5Result = scoreMulti5For(stage, input.answers);
         outcome = { kind: "multi5", result };
         input = { ...input, answers: { stage, picks: input.answers } as unknown as number[] };

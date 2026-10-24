@@ -53,9 +53,9 @@ describe("v176 多元智能五项学段分卷", () => {
     if (r.overall !== 100 || r.carefulIndex !== 100) throw new Error("全对未得满分");
     if (r.stage !== "小学") throw new Error("结果缺学段标记");
   });
-  it("后端按学段下发与计分", () => {
+  it("后端按通用版下发与计分（v233 起统一通用卷，历史学段卷仅还原旧结果）", () => {
     const src = readFileSync("api/profileRouter.ts", "utf-8");
-    if (!/case "multi5": \{[\s\S]{0,300}multi5QuestionsFor\(stage\)/.test(src)) throw new Error("questions 未按学段下发");
-    if (!/scoreMulti5For\(stage, input\.answers\)/.test(src)) throw new Error("submit 未按学段计分");
+    if (!/case "multi5": \{[\s\S]{0,300}MULTI5_COMMON_STAGE/.test(src)) throw new Error("questions 未按通用版下发");
+    if (!/scoreMulti5For\(stage, input\.answers\)/.test(src)) throw new Error("submit 未按通用版计分");
   });
 });
