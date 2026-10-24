@@ -511,7 +511,8 @@ export const assessmentRouter = createRouter({
         }),
         z.object({
           kind: z.literal("multi5"),
-          answers: z.array(z.number().int().min(0).max(3)).length(MULTI5_QUESTIONS.length),
+          // v233：第 5 个选项「这题我不会」= 下标 4
+          answers: z.array(z.number().int().min(0).max(4)).length(MULTI5_QUESTIONS.length),
         }),
         z.object({
           kind: z.literal("anchor"),
