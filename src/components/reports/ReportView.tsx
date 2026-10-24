@@ -3,7 +3,7 @@
  * 本组件不 import trpc——所有数据经 props 传入；viewer="tutor" 时隐藏「我的档案」tab、
  * 「成绩与目标」只读，且不渲染「返回测评中心」按钮。
  */
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { MBTI_REPORTS, DISC_REPORTS, buildCombinedReport, getDiscCombo, buildDiscComboBlend, DISC_ANIMAL } from "@/data/reports";
@@ -18,7 +18,10 @@ import { OliveStyle, ReportBrandCtx } from "@/components/reports/olive/OliveBook
 import { OliveMbti, OliveDisc, OliveHolland, OliveMulti5, OliveAnchor, OliveMentalV2 } from "@/components/reports/olive/OliveSingles";
 import { OliveE3, OliveGuidance, OliveParent } from "@/components/reports/olive/OliveBigs";
 import ScoreTrendChart from "@/components/reports/ScoreTrendChart";
-import { ZhihuiReportBody } from "@/pages/ZhihuiReport";
+/* v232：智慧报告体懒加载（粤华生涯规划场景），避免整页代码被拉进共享报告 chunk */
+const ZhihuiReportBody = lazy(() =>
+  import("@/pages/ZhihuiReport").then((m) => ({ default: m.ZhihuiReportBody }))
+);
 import { downloadReportPdf } from "@/lib/reportPdf";
 import { trpc } from "@/providers/trpc";
 import type { CombinedSection, CombinedReport } from "@/data/reports";
@@ -2875,7 +2878,9 @@ export default function ReportView({
       <div id="report-print-root" className="report-view-zoom space-y-4">
       {/* v180：选科及升学规划（高一）栏目——内嵌完整报告，与学生端一致，不再跳转独立页 */}
       {tab === "zhihui" && (
-        <ZhihuiReportBody studentId={viewer === "tutor" ? (studentUserId ?? undefined) : undefined} />
+        <Suspense fallback={<div className="py-10 text-center text-sm text-[#7A8A83]">报告加载中…</div>}>
+          <ZhihuiReportBody studentId={viewer === "tutor" ? (studentUserId ?? undefined) : undefined} />
+        </Suspense>
       )}
 
       {tab === "guidance" && (

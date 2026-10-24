@@ -3,24 +3,26 @@ import { Routes, Route, Navigate, useLocation } from "react-router";
 import { moduleForPath } from "@contracts/studentModules";
 import { isPlaceholderName } from "@contracts/constants";
 import Layout from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import PreviewList from "./pages/PreviewList";
-import PreviewSession from "./pages/PreviewSession";
-import Gaps from "./pages/Gaps";
-import Welcome from "./pages/Welcome";
-import Companion from "./pages/Companion";
-import Papers from "./pages/Papers";
-import Treehole from "./pages/Treehole";
 import Login from "./pages/Login";
-import InviteRegister from "./pages/InviteRegister";
-import SsoStudentView from "./pages/SsoStudentView";
-import Admin from "./pages/Admin";
-import Tutor from "./pages/Tutor";
-import Library from "./pages/Library";
-import RecycleBin from "./pages/RecycleBin";
 import { trpc } from "./providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import ProfileStage from "@/components/welcome/ProfileStage";
+
+/* v232 首屏提速：全部页面懒加载——首屏只带运行时+Layout+Login，其余路由按需下载 */
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const PreviewList = lazy(() => import("./pages/PreviewList"));
+const PreviewSession = lazy(() => import("./pages/PreviewSession"));
+const Gaps = lazy(() => import("./pages/Gaps"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const Companion = lazy(() => import("./pages/Companion"));
+const Papers = lazy(() => import("./pages/Papers"));
+const Treehole = lazy(() => import("./pages/Treehole"));
+const InviteRegister = lazy(() => import("./pages/InviteRegister"));
+const SsoStudentView = lazy(() => import("./pages/SsoStudentView"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Tutor = lazy(() => import("./pages/Tutor"));
+const Library = lazy(() => import("./pages/Library"));
+const RecycleBin = lazy(() => import("./pages/RecycleBin"));
+const ProfileStage = lazy(() => import("@/components/welcome/ProfileStage"));
 
 const Report = lazy(() => import("./pages/Report"));
 const ReportDetail = lazy(() => import("./pages/ReportDetail"));
@@ -143,15 +145,17 @@ export default function App() {
       {/* 登录页：公开 */}
       <Route path="/login" element={<Login />} />
       {/* 邀请注册落地页：公开（扫码直达，无需登录） */}
-      <Route path="/invite/:code" element={<InviteRegister />} />
+      <Route path="/invite/:code" element={<Suspense fallback={<PageSpinner />}><InviteRegister /></Suspense>} />
       {/* v158：一体通 SSO 免登只读视图：公开路由（ticket 兑换 10 分钟短会话，仅可读对应学员） */}
-      <Route path="/sso/view/:studentId" element={<SsoStudentView />} />
+      <Route path="/sso/view/:studentId" element={<Suspense fallback={<PageSpinner />}><SsoStudentView /></Suspense>} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}
       <Route
         path="/welcome"
         element={
           <AuthGate>
-            <Welcome />
+            <Suspense fallback={<FullScreenLoading text="正在准备引导…" />}>
+              <Welcome />
+            </Suspense>
           </AuthGate>
         }
       />

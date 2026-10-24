@@ -6,7 +6,7 @@ import { useSwipeBack } from "@/hooks/useSwipeBack";
 import UpdateToast from "@/components/UpdateToast";
 import BackBar from "@/components/BackBar";
 import { trpc } from "@/providers/trpc";
-import { visibleSchoolGroups, type SchoolItemKey } from "@/components/admin/SchoolConsole";
+import { visibleSchoolGroups, type SchoolItemKey } from "@/components/admin/schoolNav";
 
 /** 导航项所属学员端模块（测评中心恒可用；首页属 home，受限学员不显示）。 */
 const NAV = [
