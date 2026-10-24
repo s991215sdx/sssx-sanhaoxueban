@@ -360,6 +360,8 @@ function Multi5Detail({ answers }: { answers: number[] | { stage?: string; picks
       )}
       {QS.map((q, i) => {
         const picked = picks[i];
+        // v233：下标 4 = 「这题我不会」，不计对不计错，单独灰色标识
+        const dontKnow = picked === 4;
         const ok = picked === q.answer;
         return (
           <div
@@ -373,13 +375,19 @@ function Multi5Detail({ answers }: { answers: number[] | { stage?: string; picks
                 {MULTI5_DIM_LABEL[q.dim]}
               </span>
             </span>
-            <span
-              className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold ${
-                ok ? "bg-lime-pale text-olive" : "bg-terra/10 text-terra"
-              }`}
-            >
-              {picked != null ? `选 ${"ABCD"[picked]}` : "未答"} · {ok ? "对" : "错"}
-            </span>
+            {dontKnow ? (
+              <span className="shrink-0 rounded border border-dashed border-[#C77F2A]/50 px-1.5 py-0.5 text-[11px] font-medium text-olive-mute">
+                这题我不会
+              </span>
+            ) : (
+              <span
+                className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold ${
+                  ok ? "bg-lime-pale text-olive" : "bg-terra/10 text-terra"
+                }`}
+              >
+                {picked != null ? `选 ${"ABCD"[picked]}` : "未答"} · {ok ? "对" : "错"}
+              </span>
+            )}
           </div>
         );
       })}

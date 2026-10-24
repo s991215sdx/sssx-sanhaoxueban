@@ -276,6 +276,8 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
         rows: QS.map((q, i) => {
           const v = a[i];
           const letters = ["A", "B", "C", "D"];
+          // v233：下标 4 = 「这题我不会」，不计对不计错、不着红色
+          if (v === 4) return { no: q.no, text: q.text, ans: "这题我不会", bad: false };
           const ok = v === q.answer;
           return {
             no: q.no,

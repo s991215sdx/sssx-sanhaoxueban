@@ -1,0 +1,20 @@
+const { chromium } = require('playwright-core');
+const BASE = 'http://106.52.8.20:3001';
+const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
+(async () => {
+  const browser = await chromium.launch({ executablePath: EDGE, headless: true });
+  const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1800);
+  const inputs = page.locator('input');
+  await inputs.nth(0).fill('19900010001');
+  await inputs.nth(1).fill('Test1234');
+  await page.getByRole('button', { name: /进入三好学伴/ }).first().click();
+  await page.waitForTimeout(3500);
+  await page.locator('input:not([type="checkbox"])').first().fill('19911112222');
+  await page.waitForTimeout(2500);
+  const titles = await page.locator('button[title]').evaluateAll(els => els.map(e => e.title));
+  console.log('按钮titles:', JSON.stringify(titles));
+  await page.screenshot({ path: 'v233-admin-debug.png' });
+  await browser.close();
+})();
