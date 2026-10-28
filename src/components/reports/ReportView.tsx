@@ -115,6 +115,7 @@ import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
 import MentalDetail from "@/components/reports/MentalDetail";
+import FamilyReport from "@/components/reports/FamilyReport";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
 export type ReportAssessmentData = {
@@ -133,7 +134,7 @@ export type ReportAssessmentData = {
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
-type Tab = "combined" | "zhihui" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent";
+type Tab = "combined" | "zhihui" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent" | "family";
 
 /** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
 type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
@@ -145,6 +146,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "zhihui", label: "选科及升学规划（高一）" },
   { key: "guidance", label: "升学指导报告（全学段）" },
   { key: "parent", label: "家长认知冲突报告" },
+  { key: "family", label: "家庭教育报告" },
   { key: "e3", label: "学业诊断报告" },
   { key: "mbti", label: "MBTI 性格详版" },
   { key: "disc", label: "DISC 行为详版" },
@@ -2475,6 +2477,7 @@ export default function ReportView({
     if (tab === "subject") return !!data?.subject; // window.print 直接可用
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
     if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);
+    if (tab === "family") return !!(data as any)?.familyStudent || ((data as any)?.familyParents?.length ?? 0) > 0;
     return !!combined;
   }, [tab, data, combined, e3v37, discParents]);
 
@@ -2491,6 +2494,7 @@ export default function ReportView({
     mental: "心理健康评估报告",
     subject: "学科能力评估报告",
     discparent: "家长认知冲突报告（亲子对照与沟通建议）",
+    family: "家庭教育报告（五级台阶 · 亲子盲区）",
     parent: "家长认知冲突报告（亲子对照与沟通建议）",
     combined: "综合学习力报告",
     guidance: "升学指导综合报告",
@@ -3165,6 +3169,8 @@ export default function ReportView({
           )}
         </div>
       )}
+
+      {tab === "family" && <FamilyReport viewer={viewer} studentId={viewer === "tutor" ? studentUserId : undefined} />}
 
       {tab === "anchor" &&
         (!anchor ? (

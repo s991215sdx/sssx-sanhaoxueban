@@ -1,11 +1,12 @@
 import { scryptSync, timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
 import { hashPassword } from "./auth-router";
+import { getTutorReportAccess, isMyStudent } from "./tutorAccess";
 import {
   MBTI_QUESTIONS,
   DISC_QUESTIONS,
@@ -44,15 +45,25 @@ import { stageOfGrade } from "@contracts/constants";
 import { MULTI_RATINGS, scoreMulti, type MultiResult } from "@contracts/multi";
 import {
   FAMILY_STUDENT_CONDITION_REFS,
+  FAMILY_STUDENT_PACKS,
+  buildFamilyStudentProfile,
+  e3ScoresOf,
   itemsOf as familyStudentItems,
   type FamilyItem,
   type FamilyConditionRef,
+  type FamilyStudentAnswers,
+  type FamilyStudentProfile,
 } from "@contracts/familyStudent";
 import {
+  FAMILY_PARENT_PACKS,
   FAMILY_PARENT_SCENE_OPTIONS,
+  buildFamilyParentProfile,
   parentItemsOf,
+  type FamilyParentAnswers,
   type FamilyParentItem,
+  type FamilyParentProfile,
 } from "@contracts/familyParent";
+import { buildFamilyProfile, type FamilyProfile } from "@contracts/familyProfile";
 import { MULTI5_QUESTIONS, MULTI5_COMMON_STAGE, multi5QuestionsFor, scoreMulti5For, toMulti5Public, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
 import { ANCHOR_RATINGS, scoreAnchor, type AnchorResult } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS, scoreHolland, type HollandResult } from "@contracts/holland";
@@ -102,8 +113,41 @@ import {
 
 const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d", "familystudent", "familyparent"]);
 
-/** questions 接口返回：V3.7 学生卷题包。 */
-type E3V37QuestionSet = {
+/**
+ * 判定这份家庭卷属于完整版还是速测版。
+ *
+ * 不直接信客户端声明的 pack：完整版里少答几题时，按声明算会把没答的级判成「未测」，
+ * 按实际算能判成速测版，报告还能出。以「哪一版每一题都有作答」为准，声明只作优先参考。
+ */
+function familyPackOf(
+  items: Record<string, number>,
+  packs: Record<"standard" | "lite", string[]>,
+  declared?: "standard" | "lite",
+): "standard" | "lite" | null {
+  const complete = (p: "standard" | "lite") => packs[p].every((id) => items[id] != null);
+  if (declared && complete(declared)) return declared;
+  if (complete("standard")) return "standard";
+  if (complete("lite")) return "lite";
+  return null;
+}
+
+/** 取孩子最近一次 E3 V3.7 的 70 题原始作答（家庭包复用条件域的六个分值用）。 */
+async function latestE3Ratings(
+  db: ReturnType<typeof getDb>,
+  userId: number,
+): Promise<number[] | null> {
+  const [row] = await db
+    .select({ answers: assessmentResults.answers })
+    .from(assessmentResults)
+    .where(and(eq(assessmentResults.userId, userId), eq(assessmentResults.kind, "e3")))
+    .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
+    .limit(1);
+  const a = row?.answers as { ratings?: number[] } | null;
+  return a && Array.isArray(a.ratings) && a.ratings.length === E3V37_RATING_COUNT ? a.ratings : null;
+}
+
+
+/** questions 接口返回：V3.7 学生卷题包。 */type E3V37QuestionSet = {
   kind: "e3";
   stage: E3V37Stage;
   stageLabel: string;
@@ -206,7 +250,9 @@ type AssessmentSubmitOutcome =
   | { kind: "mental"; result: MentalV2Result }
   | { kind: "mentalsdq"; result: MentalSdqResult }
   | { kind: "mentalpa"; result: MentalPaResult }
-  | { kind: "scl90"; result: Scl90Result };
+  | { kind: "scl90"; result: Scl90Result }
+  | { kind: "familystudent"; result: FamilyStudentProfile }
+  | { kind: "familyparent"; result: FamilyParentProfile };
 
 /** 当前用户的档案；没有则返回 null（前端跳 /welcome）。 */
 async function getProfile(userId: number): Promise<StudentProfile | null> {
@@ -368,7 +414,7 @@ export const profileRouter = createRouter({
 export const assessmentRouter = createRouter({
   /** 题库（来自 contracts/assessments.ts，前端可预览）。E3 学生卷/家长卷为 V3.7。 */
   questions: authedQuery
-    .input(z.object({ kind: kindSchema }))
+    .input(z.object({ kind: kindSchema, pack: z.enum(["standard", "lite"]).optional() }))
     .query(
       async ({
         input,
@@ -385,7 +431,8 @@ export const assessmentRouter = createRouter({
           return { kind: "discparent", groups: DISC_PARENT_V2_GROUPS };
         case "familystudent": {
           // v235：学生侧家庭补充包（独立于 e3，14 道新题 + 6 条条件引用）
-          const pack = "standard" as const;
+          // v236：支持 pack=standard|lite（速测版 9 题），默认完整版
+          const pack = input.pack ?? "standard";
           return {
             kind: "familystudent",
             pack,
@@ -395,7 +442,7 @@ export const assessmentRouter = createRouter({
         }
         case "familyparent": {
           // v235：家长侧家庭卷（29 题：台阶/管教/情感对照/投入/自身/场景）
-          const pack = "standard" as const;
+          const pack = input.pack ?? "standard";
           return {
             kind: "familyparent",
             pack,
@@ -599,6 +646,28 @@ export const assessmentRouter = createRouter({
               return n != null && vals.length === n.length;
             }), { message: "学科或答案数量与题库不符" }),
         }),
+        z.object({
+          kind: z.literal("familystudent"),
+          // v235 学生侧家庭补充包：items 为 FS01—FS14 的作答（五点 1—5；FS09 为 0—10 打分）
+          // condition 是包内自带的六道条件题（答过 E3 的孩子不答这六题，改由后端按 srcNo 复用）
+          answers: z.object({
+            pack: z.enum(["standard", "lite"]).optional(),
+            items: z.record(z.string(), z.number().int().min(0).max(10)),
+            scene: z.string().max(16).nullable().optional(),
+            condition: z.record(z.string(), z.number().int().min(1).max(5)).optional(),
+          }),
+        }),
+        z.object({
+          kind: z.literal("familyparent"),
+          // v235 家长侧家庭卷：家长家庭卷多人可填，每次都存一条（同 discparent 的做法）
+          answers: z.object({
+            pack: z.enum(["standard", "lite"]).optional(),
+            respondent: z.enum(["dad", "mom", "other"]),
+            label: z.string().max(12).optional(),
+            items: z.record(z.string(), z.number().int().min(0).max(5)),
+            scene: z.string().max(16).nullable().optional(),
+          }),
+        }),
       ]),
     )
     .mutation(
@@ -726,6 +795,41 @@ export const assessmentRouter = createRouter({
         // V175 学科四维测评：四维计分 + 学科潜力指数
         const result: Subject4dResult = scoreSubject4d(input.answers);
         outcome = { kind: "subject4d", result };
+      } else if (input.kind === "familystudent") {
+        // v236：学生侧家庭补充包计分
+        // 条件域优先复用孩子最近一次 E3 的 6 个分值——做过诊断的孩子不重答这 6 题
+        const a = input.answers;
+        const pack = familyPackOf(a.items, FAMILY_STUDENT_PACKS, a.pack);
+        if (!pack) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
+        }
+        const ratings = await latestE3Ratings(db, userId);
+        const e3Scores = e3ScoresOf(ratings);
+        const payload: FamilyStudentAnswers = {
+          items: a.items,
+          scene: (a.scene ?? null) as FamilyStudentAnswers["scene"],
+          condition: a.condition,
+          e3Scores: Object.keys(e3Scores).length ? e3Scores : undefined,
+        };
+        const result = buildFamilyStudentProfile(payload);
+        outcome = { kind: "familystudent", result };
+        // 存库：pack 与原始分一并留下，答题明细/复算都要用
+        input = { ...input, answers: { ...a, pack } as unknown as typeof input.answers };
+      } else if (input.kind === "familyparent") {
+        // v236：家长侧家庭卷计分（同 discparent，多位家长各存一条）
+        const a = input.answers;
+        const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack);
+        if (!pack) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
+        }
+        const payload: FamilyParentAnswers = {
+          items: a.items,
+          scene: a.scene ?? null,
+          respondent: a.respondent,
+        };
+        const result = buildFamilyParentProfile(payload);
+        outcome = { kind: "familyparent", result };
+        input = { ...input, answers: { ...a, pack } as unknown as typeof input.answers };
       } else {
         const result: E3V37Result = scoreE3V37(input.answers);
         outcome = { kind: "e3", result };
@@ -761,9 +865,12 @@ export const assessmentRouter = createRouter({
           outcome.kind === "scl90" ||
           outcome.kind === "discparent" ||
           outcome.kind === "subject" ||
-          outcome.kind === "subject4d"
+          outcome.kind === "subject4d" ||
+          outcome.kind === "familystudent" ||
+          outcome.kind === "familyparent"
         ) {
-          // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（四套）、家长版 DISC 均为选做，不同步档案字段、不影响 onboarding
+          // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（四套）、家长版 DISC、
+          // 家庭关系测评（学生卷 / 家长卷）均为选做，不同步档案字段、不影响 onboarding
         } else {
           await db
             .update(studentProfile)
@@ -801,6 +908,10 @@ export const assessmentRouter = createRouter({
       e3parent?: E3V37ParentResult | E3V27ParentResult;
       /** 全部家长版 DISC 结果（可多人填写），按时间倒序。 */
       discParents: { label: string; result: DiscResult; createdAt: Date }[];
+      /** 最新一条学生侧家庭补充包结果（v236）。 */
+      familyStudent?: FamilyStudentProfile;
+      /** 全部家长侧家庭卷结果（爸爸/妈妈/其他可各填一份），按时间倒序。 */
+      familyParents: { label: string; respondent: string; result: FamilyParentProfile; createdAt: Date }[];
       multi?: MultiResult;
       multi5?: Multi5Result;
       anchor?: AnchorResult;
@@ -818,7 +929,7 @@ export const assessmentRouter = createRouter({
       /** 最新一条学科四维测评结果（V175 智慧生涯数据源）。 */
       subject4d?: Subject4dResult;
       raw: { kind: string; answers: unknown; createdAt: Date }[];
-    } = { raw: [], discParents: [] };
+    } = { raw: [], discParents: [], familyParents: [] };
     for (const row of rows) {
       if (row.kind === "discparent") {
         // 家长版 DISC 可多次/多人填写，全部收集
@@ -828,6 +939,24 @@ export const assessmentRouter = createRouter({
           result: row.result as unknown as DiscResult,
           createdAt: row.createdAt,
         });
+        latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
+        continue;
+      }
+      if (row.kind === "familyparent") {
+        // 家长侧家庭卷与 discparent 同理：可多人各填一份，全部收集
+        const a = row.answers as { label?: string; respondent?: string } | null;
+        latest.familyParents.push({
+          label: a && typeof a.label === "string" && a.label ? a.label : "家长",
+          respondent: a?.respondent ?? "other",
+          result: row.result as unknown as FamilyParentProfile,
+          createdAt: row.createdAt,
+        });
+        latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
+        continue;
+      }
+      if (row.kind === "familystudent") {
+        // 学生侧只留最新一份（rows 已按时间倒序）
+        if (!latest.familyStudent) latest.familyStudent = row.result as unknown as FamilyStudentProfile;
         latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
         continue;
       }
@@ -852,4 +981,83 @@ export const assessmentRouter = createRouter({
     }
     return latest;
   }),
+
+  /**
+   * v236 家庭教育测评聚合取数：台阶合并（取低）／盲区六对配对／加固-修复分支／场景比对。
+   *
+   * 报告层只认这一个接口：两边都没测就返回全空，测了一边就出单方判断（标 singleSide），
+   * 不在这里补任何默认值——报告宁可少一页，也不能拿默认数糊一页。
+   */
+  family: authedQuery
+    .input(z.object({ userId: z.number().int().positive().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+    const db = getDb();
+    /* 学生看自己；伴学师/管理员看学员时传 userId，要有该学员的报告查看权限 */
+    const userId = input?.userId ?? ctx.user.id;
+    if (userId !== ctx.user.id) {
+      const allowed =
+        ctx.user.role === "admin" ||
+        ((await isMyStudent(db, ctx.user.id, userId)) &&
+          (await getTutorReportAccess(db, ctx.user.id, userId)).allowed);
+      if (!allowed) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "没有查看该学员报告的权限" });
+      }
+    }
+    const rows = await db
+      .select({
+        kind: assessmentResults.kind,
+        result: assessmentResults.result,
+        answers: assessmentResults.answers,
+        createdAt: assessmentResults.createdAt,
+      })
+      .from(assessmentResults)
+      .where(
+        and(
+          eq(assessmentResults.userId, userId),
+          inArray(assessmentResults.kind, ["familystudent", "familyparent"]),
+        ),
+      )
+      .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
+
+    const sRow = rows.find((r) => r.kind === "familystudent") ?? null;
+    const sAnswers = sRow?.answers as { items?: Record<string, number>; pack?: string } | null;
+    const student = (sRow?.result ?? null) as FamilyStudentProfile | null;
+    const studentItems = sAnswers?.items ?? {};
+
+    const parents = rows
+      .filter((r) => r.kind === "familyparent")
+      .map((r) => {
+        const a = r.answers as { label?: string; respondent?: string; pack?: string } | null;
+        return {
+          label: a?.label ?? "家长",
+          respondent: (a?.respondent ?? "other") as "dad" | "mom" | "other",
+          pack: a?.pack === "lite" ? ("lite" as const) : ("standard" as const),
+          profile: r.result as unknown as FamilyParentProfile,
+          createdAt: r.createdAt,
+        };
+      });
+
+    const me = await getProfile(userId);
+    /* 寄宿家庭每周可相处时间本就少，台阶阈值整体放宽 0.4（见 contracts/familyProfile.ts） */
+    const boarding = me?.boarding === "board";
+    const parent = parents[0]?.profile ?? null;
+    const merged: FamilyProfile | null =
+      student && parent ? buildFamilyProfile({ student, parent, studentItems, boarding }) : null;
+
+    return {
+      student,
+      parent,
+      parents,
+      merged,
+      boarding,
+      studentPack: sAnswers?.pack === "lite" ? ("lite" as const) : ("standard" as const),
+      /** 报告缺哪一块：前端据此撤页或灰显，不拿默认值凑。 */
+      has: {
+        student: !!student,
+        parent: !!parent,
+        /** 两侧都答到才谈得上「对照」，单方只出自己那一侧。 */
+        pair: !!student && !!parent,
+      },
+    };
+    }),
 });

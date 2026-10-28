@@ -90,6 +90,8 @@ export const INVITE_ASSESS_KINDS = [
   { key: "mental", label: "心理健康筛查" },
   { key: "e3parent", label: "家长卷 · 家庭支持" },
   { key: "discparent", label: "家长 DISC（家庭版）" },
+  { key: "familystudent", label: "家庭关系测评 · 学生卷" },
+  { key: "familyparent", label: "家庭关系测评 · 家长卷" },
 ] as const;
 
 /** 校验并归一化测评种类数组：剔除未知 key、去重、限量；返回 null 表示非法输入。兼容 JSON 字符串。 */

@@ -37,6 +37,7 @@ export default function StudentDetailDrawer({
     multi5: "多元智能五项", anchor: "职业锚", holland: "霍兰德职业兴趣",
     mental: "心理健康·通用版", mentalsdq: "心理健康·学生版A(SDQ)", mentalpa: "心理健康·学生版B(PHQ-A)",
     scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", subject4d: "学科四维测评（三好生涯）", e3parent: "家长卷", discparent: "家长版 DISC",
+    familystudent: "家庭关系测评·学生卷", familyparent: "家庭关系测评·家长卷",
   };
   /** 宽屏模式：电脑上默认全屏打开报告，可一键还原为半屏抽屉（v182：默认全屏，看得更清楚）。 */
   const [wide, setWide] = useState(true);

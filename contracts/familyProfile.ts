@@ -18,7 +18,13 @@ import { FAMILY_MIRROR_PAIRS } from "./familyParent";
 /* 一、台阶合并                                                        */
 /* ------------------------------------------------------------------ */
 
-export type LadderBand = "断" | "勉强" | "通" | "稳";
+/**
+ * 台阶档位。
+ *
+ * 「未测」不是一种台阶状态，而是「这次没答到这一级」——速测版只问 L1/L2，
+ * L3—L5 就没有分。报告里必须显示成「未测」而不是「断」，否则等于凭空给人判了一刀。
+ */
+export type LadderBand = "断" | "勉强" | "通" | "稳" | "未测";
 
 /**
  * 单级判定（1—5 分）。
@@ -62,7 +68,7 @@ export function mergeLadder(
       level,
       student: s,
       parent: p,
-      band: ladderBand(low, offset),
+      band: low > 0 ? ladderBand(low, offset) : ("未测" as LadderBand),
       diverged: !singleSide && Math.abs(s - p) >= 1.5,
       singleSide,
     };
@@ -217,10 +223,12 @@ export function worstLevels(ladder: LadderMerge[]): LadderMerge[] {
 
 /** 台阶的一句话结论（给 PART01 标题用）。 */
 export function ladderHeadline(ladder: LadderMerge[]): string {
-  const broken = ladder.filter((l) => l.band === "断");
+  const answered = ladder.filter((l) => l.band !== "未测");
+  if (!answered.length) return "这次没有答到台阶题";
+  const broken = answered.filter((l) => l.band === "断");
   if (!broken.length) {
-    const shaky = ladder.filter((l) => l.band === "勉强");
-    return shaky.length ? `没有断掉的，${shaky[0].level} 这一级是勉强的` : "五级都是通的";
+    const shaky = answered.filter((l) => l.band === "勉强");
+    return shaky.length ? `没有断掉的，${shaky[0].level} 这一级是勉强的` : "答到的几级都是通的";
   }
   return `断在 ${broken.map((b) => b.level).join("、")}`;
 }

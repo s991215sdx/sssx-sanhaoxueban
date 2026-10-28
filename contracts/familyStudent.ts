@@ -107,6 +107,12 @@ export type FamilyConditionRef = {
   cell: "状态" | "关系" | "资源";
 };
 
+/** 学生侧五点量表选项（1—5），与家长卷 p5 同措辞，报告里两侧口径才可比。 */
+export const FAMILY_STUDENT_P5 = ["很不符合", "不太符合", "一般", "比较符合", "完全符合"];
+
+/** 0—10 打分题只给两端锚点，中间不写解读。 */
+export const FAMILY_STUDENT_RATING10_HINT = { low: "0 分 · 一点也不合格", high: "10 分 · 满分父母" };
+
 export const FAMILY_STUDENT_CONDITION_REFS: FamilyConditionRef[] = [
   { id: "FC01", srcNo: 50, cell: "状态", reverse: false, text: "我最近睡眠规律、能睡够" },
   { id: "FC02", srcNo: 54, cell: "状态", reverse: true, text: "我最近经常疲惫没精神，学习时提不起劲" },
@@ -119,6 +125,23 @@ export const FAMILY_STUDENT_CONDITION_REFS: FamilyConditionRef[] = [
 /* ------------------------------------------------------------------ */
 /* 三、组卷                                                            */
 /* ------------------------------------------------------------------ */
+
+/**
+ * 从 E3 的 70 题原始作答里取出家庭包要复用的 6 个分值。
+ *
+ * ratings 是「按题号顺序」的数组（下标 0 = 第 1 题），srcNo 从 1 起，
+ * 所以取下标 srcNo - 1。分数越界或非数字一律丢弃——宁可让报告标「缺数据」，
+ * 也不能把脏值当一个有效分数用。
+ */
+export function e3ScoresOf(ratings: readonly number[] | null | undefined): Partial<Record<number, number>> {
+  const out: Partial<Record<number, number>> = {};
+  if (!Array.isArray(ratings)) return out;
+  for (const ref of FAMILY_STUDENT_CONDITION_REFS) {
+    const v = ratings[ref.srcNo - 1];
+    if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 5) out[ref.srcNo] = v;
+  }
+  return out;
+}
 
 /** 快版：只保台阶前两级、看父母两项、安全感四题、场景一题 —— 9 题。 */
 const LITE_IDS = ["FS01", "FS02", "FS06", "FS09", "FS10", "FS11", "FS12", "FS13", "FS14"];
@@ -139,7 +162,7 @@ export function itemsOf(pack: FamilyPackId): FamilyItem[] {
 /* 四、计分                                                            */
 /* ------------------------------------------------------------------ */
 
-export type LadderBand = "断" | "勉强" | "通" | "稳";
+export type LadderBand = "断" | "勉强" | "通" | "稳" | "未测";
 export type ThreeBand = "低" | "中" | "高";
 
 /**
@@ -249,7 +272,7 @@ export function buildFamilyStudentProfile(a: FamilyStudentAnswers): FamilyStuden
   /* 台阶：五级各自一分，不合并 */
   const ladder = ["FS01", "FS02", "FS03", "FS04", "FS05"].map((id, i) => {
     const score = pick(id);
-    return { level: `L${i + 1}`, score, band: score ? ladderBand(score) : ("断" as LadderBand) };
+    return { level: `L${i + 1}`, score, band: score ? ladderBand(score) : ("未测" as LadderBand) };
   });
 
   /* 看父母：三项 + 打分折合，均分 */

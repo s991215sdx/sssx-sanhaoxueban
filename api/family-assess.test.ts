@@ -7,6 +7,8 @@
 import { describe, it, expect } from "vitest";
 import {
   FAMILY_STUDENT_ITEMS,
+  FAMILY_STUDENT_CONDITION_REFS,
+  e3ScoresOf,
   itemsOf,
   buildFamilyStudentProfile,
   FAMILY_STUDENT_PACKS,
@@ -188,5 +190,36 @@ describe("合并层", () => {
     expect(w.length).toBeLessThanOrEqual(5);
     expect(w.every((l) => l.band === "断" || l.band === "勉强")).toBe(true);
     expect(ladderHeadline(m)).toContain("断在");
+  });
+});
+
+describe("速测版与 E3 复用", () => {
+  const lite = buildFamilyStudentProfile({ items: { FS01: 3, FS02: 4 } });
+
+  it("速测版没答到的级别是「未测」，不是「断」", () => {
+    expect(lite.ladder[0].band).toBe("勉强"); // 3 分
+    expect(lite.ladder[2].band).toBe("未测"); // FS03 没答
+    const m = mergeLadder(lite.ladder, []);
+    expect(m[2].band).toBe("未测");
+    /* 未测不能混进「要修复」的清单，否则报告凭空给人判一刀 */
+    expect(worstLevels(m).some((l) => l.level === "L3")).toBe(false);
+  });
+
+  it("一级都没答时，台阶结论直说没答到，不硬下判断", () => {
+    expect(ladderHeadline(mergeLadder([], []))).toContain("没有答到");
+  });
+
+  it("E3 原始分按题号回填：srcNo 从 1 起，数组下标从 0 起", () => {
+    const ratings = Array.from({ length: 70 }, (_, i) => (i + 1 === 50 ? 2 : 3));
+    const got = e3ScoresOf(ratings);
+    expect(got[50]).toBe(2);
+    expect(got[57]).toBe(3);
+    expect(FAMILY_STUDENT_CONDITION_REFS.every((r) => got[r.srcNo] != null)).toBe(true);
+  });
+
+  it("E3 数据不合格时不硬凑分数，宁可缺", () => {
+    expect(e3ScoresOf(null)).toEqual({});
+    expect(e3ScoresOf([1, 2, 3])).toEqual({}); // 长度不对，没一道落到 50/54/57/58/64/65
+    expect(e3ScoresOf(Array.from({ length: 70 }, () => 0))).toEqual({}); // 0 分不是合法五点分
   });
 });
