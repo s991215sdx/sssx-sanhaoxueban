@@ -10,6 +10,7 @@ import { createElement as h } from "react";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router";
 import { FamilyReportBody } from "../src/components/reports/FamilyReport";
+import { nextOpenIndex } from "../src/lib/quizFlow";
 import { buildFamilyStudentProfile } from "@contracts/familyStudent";
 import { buildFamilyParentProfile } from "@contracts/familyParent";
 import { buildFamilyProfile } from "@contracts/familyProfile";
@@ -74,5 +75,28 @@ describe("v236 家庭教育报告渲染", () => {
     const solo = render(h(FamilyReportBody, { student, merged: null, hasParent: false }));
     expect(solo).toContain("五级台阶");
     expect(solo).not.toContain("不是同一件事");
+  });
+});
+
+describe("v236 答题跳题逻辑", () => {
+  it("逐题往后走，答完最后一题返回 -1（该提交了）", () => {
+    const total = 14;
+    const done = new Set<number>();
+    for (let i = 0; i < total; i++) {
+      /* 点第 i 题时，这一题必须算作已答——读上一帧 state 就会在这里卡住 */
+      const isDone = (k: number) => done.has(k) || k === i;
+      const next = nextOpenIndex(total, i + 1, isDone);
+      if (i < total - 1) expect(next).toBe(i + 1);
+      else expect(next).toBe(-1);
+      done.add(i);
+    }
+  });
+
+  it("跳过中间一题时，答完最后一题会绕回漏掉的那道", () => {
+    const total = 14;
+    /* 下标 3 没答，其余都答了；答完第 6 题后往后已无题可跳，应绕回 3 */
+    const done = new Set([0, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 13]);
+    const next = nextOpenIndex(total, 6, (k) => done.has(k) || k === 6);
+    expect(next).toBe(3);
   });
 });

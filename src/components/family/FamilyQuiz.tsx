@@ -21,6 +21,7 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { useScrollToQuestion } from "@/lib/quizScroll";
+import { nextOpenIndex } from "@/lib/quizFlow";
 import { ChevronLeft, Users, MessageSquare } from "lucide-react";
 import {
   FAMILY_STUDENT_P5,
@@ -158,18 +159,18 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
 
   const answered = (s: Step) => (s.scene ? scene != null : vals[s.id] !== undefined);
 
-  const firstOpen = (from: number) => {
-    for (let i = from; i < total; i++) if (!answered(steps[i])) return i;
-    for (let i = 0; i < total; i++) if (!answered(steps[i])) return i;
-    return -1;
-  };
-
-  const finish = () => {
+  /**
+   * 提交。
+   *
+   * 必须由调用方把「刚点的这一题」一起传进来：setState 是异步的，点完最后一题马上读
+   * vals/scene 读到的还是上一帧，会把最后一题丢掉、或者判定成「还没答」卡在原题上。
+   */
+  const submitAll = (allVals: Record<string, number>, allScene: string | null) => {
     const items: Record<string, number> = {};
     const condition: Record<string, number> = {};
     for (const s of steps) {
       if (s.scene) continue;
-      const v = vals[s.id];
+      const v = allVals[s.id];
       if (v === undefined) continue;
       if (s.id.startsWith("FC")) condition[s.id] = v;
       else items[s.id] = v;
@@ -177,7 +178,7 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
     if (kind === "familystudent") {
       submit.mutate({
         kind: "familystudent",
-        answers: { pack: "standard", items, scene, condition },
+        answers: { pack: "standard", items, scene: allScene, condition },
       } as never);
     } else {
       submit.mutate({
@@ -187,33 +188,26 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
           respondent: who?.respondent ?? "other",
           label: who?.label ?? "家长",
           items,
-          scene,
+          scene: allScene,
         },
       } as never);
     }
   };
 
   const pick = (s: Step, value: number | string) => {
-    if (s.scene) {
-      setScene(String(value));
-      setResumed(false);
-      goNext(s.id);
-      return;
-    }
-    setVals((v) => ({ ...v, [s.id]: Number(value) }));
+    const isScene = !!s.scene;
+    const nextVals = isScene ? vals : { ...vals, [s.id]: Number(value) };
+    const nextScene = isScene ? String(value) : scene;
+    if (isScene) setScene(nextScene);
+    else setVals(nextVals);
     setResumed(false);
-    goNext(s.id);
-  };
 
-  /** 当前题答完就往后走；全答完就提交。 */
-  const goNext = (id: string) => {
-    const cur = steps.findIndex((s) => s.id === id);
-    const next = firstOpen(cur + 1);
-    if (next < 0) {
-      finish();
-      return;
-    }
-    setIdx(next);
+    const isDone = (st: Step) =>
+      st.id === s.id ? true : st.scene ? nextScene != null : nextVals[st.id] !== undefined;
+    const cur = steps.findIndex((st) => st.id === s.id);
+    const next = nextOpenIndex(total, cur + 1, (i) => isDone(steps[i]));
+    if (next < 0) submitAll(nextVals, nextScene);
+    else setIdx(next);
   };
 
   const qRef = useScrollToQuestion(`${idx}-${total}`);
