@@ -42,6 +42,17 @@ import {
 } from "@contracts/assessments";
 import { stageOfGrade } from "@contracts/constants";
 import { MULTI_RATINGS, scoreMulti, type MultiResult } from "@contracts/multi";
+import {
+  FAMILY_STUDENT_CONDITION_REFS,
+  itemsOf as familyStudentItems,
+  type FamilyItem,
+  type FamilyConditionRef,
+} from "@contracts/familyStudent";
+import {
+  FAMILY_PARENT_SCENE_OPTIONS,
+  parentItemsOf,
+  type FamilyParentItem,
+} from "@contracts/familyParent";
 import { MULTI5_QUESTIONS, MULTI5_COMMON_STAGE, multi5QuestionsFor, scoreMulti5For, toMulti5Public, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
 import { ANCHOR_RATINGS, scoreAnchor, type AnchorResult } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS, scoreHolland, type HollandResult } from "@contracts/holland";
@@ -89,7 +100,7 @@ import {
   type Subject4dResult,
 } from "@contracts/subject4d";
 
-const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d"]);
+const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d", "familystudent", "familyparent"]);
 
 /** questions 接口返回：V3.7 学生卷题包。 */
 type E3V37QuestionSet = {
@@ -175,7 +186,9 @@ type AssessmentQuestions =
   | MentalQuestionSet
   | MentalPaQuestionSet
   | MentalSdqQuestionSet
-  | Scl90QuestionSet;
+  | Scl90QuestionSet
+  | { kind: "familystudent"; pack: "standard" | "lite"; items: FamilyItem[]; conditionRefs: FamilyConditionRef[] }
+  | { kind: "familyparent"; pack: "standard" | "lite"; items: FamilyParentItem[]; sceneOptions: typeof FAMILY_PARENT_SCENE_OPTIONS };
 
 /** submit 接口返回。 */
 type AssessmentSubmitOutcome =
@@ -370,6 +383,26 @@ export const assessmentRouter = createRouter({
         case "discparent":
           // 家长版 V2：家庭/亲子场景词组（维度映射与学生版逐组一致，计分复用 scoreDiscV2）
           return { kind: "discparent", groups: DISC_PARENT_V2_GROUPS };
+        case "familystudent": {
+          // v235：学生侧家庭补充包（独立于 e3，14 道新题 + 6 条条件引用）
+          const pack = "standard" as const;
+          return {
+            kind: "familystudent",
+            pack,
+            items: familyStudentItems(pack),
+            conditionRefs: FAMILY_STUDENT_CONDITION_REFS,
+          };
+        }
+        case "familyparent": {
+          // v235：家长侧家庭卷（29 题：台阶/管教/情感对照/投入/自身/场景）
+          const pack = "standard" as const;
+          return {
+            kind: "familyparent",
+            pack,
+            items: parentItemsOf(pack),
+            sceneOptions: FAMILY_PARENT_SCENE_OPTIONS,
+          };
+        }
         case "e3": {
           // V3.7：按学生学段下发对应版本（小学/初中/高中），默认初中版
           const profile = await getProfile(ctx.user.id);

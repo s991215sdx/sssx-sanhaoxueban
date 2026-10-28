@@ -17,6 +17,7 @@ export const JOURNAL_ENTRIES: { idx: number; when: number; tag: string }[] = [{"
 , {"idx": 40, "when": 1793078400000, "tag": "0040_campus_assess_push"}
 , {"idx": 41, "when": 1793116800000, "tag": "0041_portal_branding"}
 , {"idx": 42, "when": 1793203200000, "tag": "0042_org_edition"}
+, {"idx": 43, "when": 1793196825023, "tag": "0043_family_assess"}
 ];
 
 
@@ -67,4 +68,5 @@ export const MIGRATION_SQL: Record<string, string> = {
   "0040_campus_assess_push": "-- v223：测评中心批量推送——管理员组选测评推送给校园学生，留痕可审计\nCREATE TABLE `campus_assess_pushes` (\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `org_id` bigint unsigned,\n  `created_by` bigint unsigned NOT NULL,\n  `kinds` json NOT NULL,\n  `user_ids` json NOT NULL,\n  `user_count` int NOT NULL DEFAULT 0,\n  `note` varchar(200) NOT NULL DEFAULT '',\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `campus_assess_pushes_org_idx` (`org_id`)\n);\n",
   "0041_portal_branding": "-- v224：机构专属入口品牌化——按域名定制登录页 Logo 与底部署名\nALTER TABLE `organizations` ADD COLUMN `portal_host` varchar(128) NULL;\n--> statement-breakpoint\nALTER TABLE `organizations` ADD COLUMN `portal_footer` varchar(64) NOT NULL DEFAULT '上上升学';\n--> statement-breakpoint\nCREATE UNIQUE INDEX `organizations_portal_host_uidx` ON `organizations` (`portal_host`);\n",
   "0042_org_edition": "-- v227：机构版本——校园版(school)/机构版(org)，平台超管开通时二选一，决定后台形态/测评登录页/术语\n-- 1) 新增版本字段，存量默认机构版（纯加法，老代码无感）\nALTER TABLE `organizations` ADD COLUMN `edition` enum('school','org') NOT NULL DEFAULT 'org';\n--> statement-breakpoint\n-- 2) 存量回填：存在 campus=true 邀请渠道的机构 = 校园版（与现行「有无校园渠道」判定逐字节一致，粤华自动归位，零行为变化）\nUPDATE `organizations` SET `edition` = 'school' WHERE EXISTS (SELECT 1 FROM `invite_channels` c WHERE c.org_id = `organizations`.`id` AND c.campus = 1);\n",
+  "0043_family_assess": "-- v235：家庭教育测评独立题包\n-- 1) assessment_results.kind 增加两个枚举值：familystudent（学生侧补充题包）/ familyparent（家长侧家庭卷）\n--    独立于 e3 / e3parent，家庭包不复用学习力诊断的题号，改题互不影响\nALTER TABLE `assessment_results` MODIFY COLUMN `kind` enum('mbti','disc','e3','e3parent','multi','multi5','anchor','holland','mental','mentalsdq','mentalpa','scl90','discparent','subject','subject4d','familystudent','familyparent') NOT NULL;\n--> statement-breakpoint\n-- 2) 学员档案：走读 day / 寄宿 board\n--    寄宿家庭每周可相处时间本就更少，台阶判定阈值需整体下调 0.4 分（见 contracts/familyProfile.ts）\nALTER TABLE `student_profile` ADD COLUMN `boarding` varchar(16) NULL;\n",
 };
