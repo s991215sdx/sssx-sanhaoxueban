@@ -16,6 +16,7 @@ import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
 import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import SubjectQuiz from "@/components/companion/SubjectQuiz";
 import Subject4dQuiz from "@/components/companion/Subject4dQuiz";
+import FamilyQuiz from "@/components/family/FamilyQuiz";
 import CombinedSuite from "@/components/assessment/CombinedSuite";
 import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
@@ -23,7 +24,7 @@ import { isMentalV2 } from "@contracts/mentalHealth";
 import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
-type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d";
+type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
 
 type TestDef = {
   kind: TestKind;
@@ -80,6 +81,34 @@ const TESTS: TestDef[] = [
           ? `家长了解程度「${l.e3parent.unknownLevel}」· 观察差异 ${l.e3parent.blindSpots?.length ?? 0} 项`
           : "已升级 V3.7，请重新测评"
         : null,
+  },
+  {
+    kind: "familystudent",
+    name: "家庭关系测评 · 学生卷",
+    desc: "14 题约 3 分钟：五级台阶（你和爸妈之间哪一级走不通）、你怎么看爸妈、安全感、最容易吵的那件事 · 自己填 · 选做",
+    required: false,
+    tab: "family",
+    summary: (l) =>
+      l.familyStudent
+        ? (() => {
+            const bands = (l.familyStudent.ladder as { band: string }[]) ?? [];
+            const broken = bands.filter((b) => b.band === "断").length;
+            const shaky = bands.filter((b) => b.band === "勉强").length;
+            return `断 ${broken} 级 · 勉强 ${shaky} 级`;
+          })()
+        : null,
+  },
+  {
+    kind: "familyparent",
+    name: "家庭关系测评 · 家长卷",
+    desc: "29 题约 6 分钟：台阶、管教的要求与回应、猜孩子怎么看你们、家庭投入、家长自身状态 · 由家长填写，爸爸/妈妈可各填一份 · 选做",
+    required: false,
+    tab: "family",
+    summary: (l) => {
+      const n = (l.familyParents as unknown[] | undefined)?.length ?? 0;
+      return n > 0 ? `已填 ${n} 位家长` : null;
+    },
+    doneOf: (l) => ((l.familyParents as unknown[] | undefined)?.length ?? 0) > 0,
   },
   {
     kind: "multi5",
@@ -187,6 +216,7 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   if (kind === "e3parent") return <E3ParentQuiz onDone={onDone} />;
   if (kind === "multi5") return <Multi5Quiz onDone={onDone} />;
   if (kind === "discparent") return <DiscParentQuiz onDone={onDone} />;
+  if (kind === "familystudent" || kind === "familyparent") return <FamilyQuiz kind={kind} onDone={onDone} />;
   if (kind === "anchor") return <AnchorQuiz onDone={onDone} />;
   if (kind === "holland") return <HollandQuiz onDone={onDone} />;
   if (kind === "subject") return <SubjectQuiz onDone={onDone} />;

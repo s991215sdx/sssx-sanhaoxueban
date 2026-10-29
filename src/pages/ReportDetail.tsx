@@ -10,7 +10,7 @@ import type { ReportAssessmentData, ReportProfileInfo } from "@/components/repor
  *  其余报告需伴学师推送；未开放时可一键请伴学师推送。
  *  v80：扫码注册学员额外看「发码渠道」勾选的测评报告——
  *  管理员/伴学师发二维码时打开测评报告功能并选择报告种类，注册后即可直接查看。 */
-const OPEN_TABS = ["mbti", "disc", "parent", "discparent"];
+const OPEN_TABS = ["mbti", "disc", "parent", "discparent", "family"];
 
 export default function ReportDetail() {
   const { data, isLoading } = trpc.assessment.latest.useQuery();

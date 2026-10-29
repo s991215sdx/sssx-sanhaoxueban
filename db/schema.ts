@@ -169,6 +169,8 @@ export const studentProfile = mysqlTable("student_profile", {
     userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
   name: varchar("name", { length: 64 }).notNull().default("同学"),
   grade: varchar("grade", { length: 32 }).notNull().default("初一"),
+  /** v235 家庭测评：走读 day / 寄宿 board。寄宿家庭台阶判定阈值需下调 0.4 分 */
+  boarding: varchar("boarding", { length: 16 }),
   /** v191 校园模式注册：班级（如「高一(3)班」，校园渠道注册时必填） */
   className: varchar("class_name", { length: 32 }),
   school: varchar("school", { length: 128 }),
@@ -227,7 +229,7 @@ export type StudentTutor = typeof studentTutor.$inferSelect;
 export const assessmentResults = mysqlTable("assessment_results", {
   id: serial("id").primaryKey(),
     userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
-  kind: mysqlEnum("kind", ["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d"]).notNull(),
+  kind: mysqlEnum("kind", ["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d", "familystudent", "familyparent"]).notNull(),
   result: json("result").$type<Record<string, unknown>>().notNull(),
   /** 原始作答（题目选项/评分），供伴学师查看答题明细。 */
   answers: json("answers").$type<Record<string, unknown> | number[]>(),
