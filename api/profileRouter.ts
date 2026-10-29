@@ -123,8 +123,11 @@ function familyPackOf(
   items: Record<string, number>,
   packs: Record<"standard" | "lite", string[]>,
   declared?: "standard" | "lite",
+  // v236 修复：场景题（FS14/HP01）的答案走 scene 字段、不在 items 里，
+  // 不豁免的话 standard/lite 永远凑不齐，每份提交都会被误判「还有题没答完」
+  sceneIds: readonly string[] = [],
 ): "standard" | "lite" | null {
-  const complete = (p: "standard" | "lite") => packs[p].every((id) => items[id] != null);
+  const complete = (p: "standard" | "lite") => packs[p].every((id) => items[id] != null || sceneIds.includes(id));
   if (declared && complete(declared)) return declared;
   if (complete("standard")) return "standard";
   if (complete("lite")) return "lite";
@@ -799,7 +802,7 @@ export const assessmentRouter = createRouter({
         // v236：学生侧家庭补充包计分
         // 条件域优先复用孩子最近一次 E3 的 6 个分值——做过诊断的孩子不重答这 6 题
         const a = input.answers;
-        const pack = familyPackOf(a.items, FAMILY_STUDENT_PACKS, a.pack);
+        const pack = familyPackOf(a.items, FAMILY_STUDENT_PACKS, a.pack, ["FS14"]);
         if (!pack) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
         }
@@ -818,7 +821,7 @@ export const assessmentRouter = createRouter({
       } else if (input.kind === "familyparent") {
         // v236：家长侧家庭卷计分（同 discparent，多位家长各存一条）
         const a = input.answers;
-        const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack);
+        const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
         if (!pack) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
         }
