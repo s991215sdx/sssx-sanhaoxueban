@@ -14,7 +14,8 @@
 #   bash scripts/deploy-dual.sh              # 完整流程（含 check + test）
 #   bash scripts/deploy-dual.sh --skip-checks # 跳过三连，直接构建部署
 #
-# 账号：两台均为 tanghailing（不要用 root）；重启走 sudo systemctl restart sanhao
+# 账号：两台均为 tanghailing（不要用 root）；重启走 sudo -n /bin/systemctl restart sanhao
+# （sudoers 只放行 systemctl restart/status/is-active/is-enabled 这几个，chown 之类没有）
 # 环境变量 DEPLOY_KEY 可指定 SSH 私钥，默认 ~/.ssh/id_ed25519_tanghailing
 # =============================================================================
 set -euo pipefail
@@ -41,6 +42,37 @@ command -v pnpm >/dev/null || fail "本机未安装 pnpm"
 BUILD_TAG=$(grep -oE 'const BUILD_TAG = "[^"]+"' api/router.ts | cut -d'"' -f2)
 [ -n "$BUILD_TAG" ] || fail "api/router.ts 缺 BUILD_TAG"
 log "目标版本: $BUILD_TAG"
+
+# ---------- 0.5 迁移前预检：kind 枚举 ----------
+# 正式库里可能有开发期留下的历史枚举值；MODIFY COLUMN 会把迁移没列出的值静默删掉，
+# 存量记录对应的 kind 变成空字符串。所以先把「库里有」和「迁移要写」两个集合比一遍，
+# 不一致直接退出，不构建、不碰 dist。
+EXPECT_ENUM=$(grep -hoE "MODIFY COLUMN .kind. enum\([^)]*\)" db/migrations/*.sql 2>/dev/null \
+  | tail -1 | sed -E "s/.*enum\(//; s/\)//; s/'//g" || true)
+[ -n "$EXPECT_ENUM" ] || fail "没能从 db/migrations 解析出 kind enum 定义"
+
+preflight_enum() {
+  local host="$1" name="$2" coltype have want missing extra
+  log "预检 $name 的 assessment_results.kind…"
+  $SSH "$host" "mkdir -p \$HOME/.sanhao-deploy" >/dev/null
+  $SCP scripts/db-enum-check.cjs "$host:.sanhao-deploy/db-enum-check.cjs" >/dev/null
+  coltype=$($SSH "$host" "cd $APP_DIR && NODE_PATH=$APP_DIR/node_modules node \$HOME/.sanhao-deploy/db-enum-check.cjs assessment_results kind" 2>&1) \
+    || fail "$name 读不到 kind 列定义：$coltype"
+  case "$coltype" in
+    NOCOLUMN|"") fail "$name 查不到 assessment_results.kind" ;;
+  esac
+  have=$(echo "$coltype" | grep -oE "'[a-z0-9_]+'" | tr -d "'" | sort)
+  want=$(echo "$EXPECT_ENUM" | tr ',' '\n' | sort)
+  missing=$(comm -13 <(echo "$have") <(echo "$want") || true)
+  extra=$(comm -23 <(echo "$have") <(echo "$want") || true)
+  # missing 是本次要新增的值（正常）；extra 会被 MODIFY COLUMN 静默删掉，必须拦
+  [ -z "$missing" ] || log "  将新增枚举值：$(echo $missing)"
+  [ -z "$extra" ] || fail "$name 库里有、迁移没列出（会被 MODIFY 删掉）：$(echo $extra)"
+  log "  $name 枚举核对通过（迁移共 $(echo "$want" | wc -l | tr -d ' ') 个值）"
+}
+
+preflight_enum "$INTERNAL_HOST" "内部版"
+preflight_enum "$CHANNEL_HOST" "渠道版"
 
 # ---------- 1. 三连 + 构建 ----------
 if [ "$SKIP_CHECKS" = "0" ]; then
@@ -75,10 +107,10 @@ deploy_one() {
     ( pnpm --version >/dev/null 2>&1 || corepack enable >/dev/null 2>&1 || true )
     pnpm install --frozen-lockfile >/dev/null
     pnpm run build >/dev/null
-    sudo systemctl restart sanhao
+    sudo -n /bin/systemctl restart sanhao
     sleep 6
     curl -sf http://127.0.0.1:3000/api/trpc/ping | grep -q '\"ok\":true' \
-      || { echo '$name 本机探活失败'; sudo journalctl -u sanhao -n 15 --no-pager; exit 1; }
+      || { echo '$name 本机探活失败'; systemctl status sanhao --no-pager -n 15 || sudo -n journalctl -u sanhao -n 15 --no-pager || true; exit 1; }
     echo '$name 部署完成'" \
   || fail "$name 部署失败（旧版本仍在运行，dist 已备份）"
 }

@@ -35,17 +35,17 @@ WANT=$(echo "$EXPECT" | tr ',' '\n' | sort)
 MISSING=$(comm -13 <(echo "$HAVE") <(echo "$WANT") || true)
 EXTRA=$(comm -23 <(echo "$HAVE") <(echo "$WANT") || true)
 
+# MISSING = 迁移要新增的值，正常情况（每加一个测评就多一个）；只提示，不拦。
+# EXTRA   = 库里有、迁移没列出的值，MODIFY COLUMN 会把它静默删掉 —— 这个才必须拦。
 if [ -n "$MISSING" ]; then
-  echo "✘ 迁移要写入但库里没有的值：$(echo $MISSING)" >&2
-  echo "  说明 0043 的 ALTER 与真实库不一致（可能漏了历史 kind），先改迁移再部署。" >&2
-  exit 1
+  echo "  将新增枚举值：$(echo $MISSING)"
 fi
 if [ -n "$EXTRA" ]; then
-  echo "✘ 库里有、但 0043 的 ALTER 没列出的值：$(echo $EXTRA)" >&2
+  echo "✘ 库里有、但迁移的 ALTER 没列出的值：$(echo $EXTRA)" >&2
   echo "  MODIFY COLUMN 会把它删掉，历史数据会变成空值。先把它补进迁移再部署。" >&2
   exit 1
 fi
-echo "✔ 枚举与迁移一致（$(echo "$WANT" | wc -l | tr -d ' ') 个值）"
+echo "✔ 枚举核对通过（迁移共 $(echo "$WANT" | wc -l | tr -d ' ') 个值）"
 
 if [ "$MODE" = "check" ]; then
   exit 0
@@ -57,9 +57,11 @@ ts=$(date +%Y%m%d_%H%M%S)
 mkdir -p dist
 tar -xzf "$TARBALL" -C dist
 rm -f "$TARBALL"
-# 以 tanghailing 解出来的文件属主是 tanghailing，服务以 sanhao 跑，改回去免得读不到
-sudo chown -R sanhao:sanhao dist
-sudo systemctl restart "$SERVICE"
+# 服务以 sanhao 运行，tanghailing 解出来的文件要保证可读（644/755 本身就够）。
+# sudoers 只放行 systemctl，chown 不在名单里，所以走 chmod 兜底，不改属主。
+chmod -R u+rwX,go+rX dist
+# -n：非交互环境下 sudo 若需密码会直接失败，不会挂着等输入
+sudo -n /bin/systemctl restart "$SERVICE"
 sleep 5
 systemctl is-active "$SERVICE"
 
