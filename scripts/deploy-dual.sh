@@ -14,17 +14,18 @@
 #   bash scripts/deploy-dual.sh              # 完整流程（含 check + test）
 #   bash scripts/deploy-dual.sh --skip-checks # 跳过三连，直接构建部署
 #
-# 环境变量 DEPLOY_KEY 可指定 SSH 私钥，默认 ~/.ssh/id_ed25519_sdx
+# 账号：两台均为 tanghailing（不要用 root）；重启走 sudo systemctl restart sanhao
+# 环境变量 DEPLOY_KEY 可指定 SSH 私钥，默认 ~/.ssh/id_ed25519_tanghailing
 # =============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-INTERNAL_HOST="root@106.52.8.20"
-CHANNEL_HOST="root@114.132.171.31"
+INTERNAL_HOST="tanghailing@106.52.8.20"
+CHANNEL_HOST="tanghailing@114.132.171.31"
 APP_DIR="/www/wwwroot/sanhao"
 INTERNAL_URL="https://sanhao.sssx.club"
 CHANNEL_IP="114.132.171.31"
-SSH_KEY="${DEPLOY_KEY:-$HOME/.ssh/id_ed25519_sdx}"
+SSH_KEY="${DEPLOY_KEY:-$HOME/.ssh/id_ed25519_tanghailing}"
 SSH="ssh -i $SSH_KEY -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
 SCP="scp -i $SSH_KEY -o ConnectTimeout=15 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
 
@@ -74,10 +75,10 @@ deploy_one() {
     ( pnpm --version >/dev/null 2>&1 || corepack enable >/dev/null 2>&1 || true )
     pnpm install --frozen-lockfile >/dev/null
     pnpm run build >/dev/null
-    systemctl restart sanhao.service
+    sudo systemctl restart sanhao
     sleep 6
     curl -sf http://127.0.0.1:3000/api/trpc/ping | grep -q '\"ok\":true' \
-      || { echo '$name 本机探活失败'; journalctl -u sanhao.service -n 15 --no-pager; exit 1; }
+      || { echo '$name 本机探活失败'; sudo journalctl -u sanhao -n 15 --no-pager; exit 1; }
     echo '$name 部署完成'" \
   || fail "$name 部署失败（旧版本仍在运行，dist 已备份）"
 }

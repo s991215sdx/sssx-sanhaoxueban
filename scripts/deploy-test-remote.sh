@@ -5,7 +5,9 @@
 #   MODE=check  只核对枚举，不动任何东西
 #   MODE=apply  核对通过后切换 dist、重启、验证迁移落库
 #
-# 环境变量 EXPECT_ENUM：0043 迁移要写入的完整值集（逗号分隔，不带引号）
+# 环境变量 EXPECT_ENUM：迁移要写入的完整值集（逗号分隔，不带引号），由本地脚本解析迁移得到
+#
+# 账号：tanghailing，重启走 sudo；dist 解包后要 chown 回 sanhao（服务以 sanhao 运行）
 # =============================================================================
 set -euo pipefail
 
@@ -14,11 +16,11 @@ SERVICE=sanhao-test
 PORT=3001
 MODE="${MODE:-check}"
 EXPECT="${EXPECT_ENUM:?EXPECT_ENUM 未传}"
-TARBALL=/tmp/sanhao-test-dist.tgz
+TARBALL="$HOME/.sanhao-deploy/dist.tgz"
 
 cd "$APP_DIR"
 
-TYPE=$(NODE_PATH="$APP_DIR/node_modules" node /tmp/db-enum-check.cjs assessment_results kind)
+TYPE=$(NODE_PATH="$APP_DIR/node_modules" node "$HOME/.sanhao-deploy/db-enum-check.cjs" assessment_results kind)
 echo "当前 assessment_results.kind 定义：$TYPE"
 
 case "$TYPE" in
@@ -51,16 +53,18 @@ fi
 
 echo "→ 切换 dist 并重启（重启时会自动执行 0043 迁移）"
 ts=$(date +%Y%m%d_%H%M%S)
-[ -d dist ] && mv dist "dist.v236bak_$ts"
+[ -d dist ] && mv dist "dist.bak_$ts"
 mkdir -p dist
 tar -xzf "$TARBALL" -C dist
 rm -f "$TARBALL"
-systemctl restart "$SERVICE"
+# 以 tanghailing 解出来的文件属主是 tanghailing，服务以 sanhao 跑，改回去免得读不到
+sudo chown -R sanhao:sanhao dist
+sudo systemctl restart "$SERVICE"
 sleep 5
 systemctl is-active "$SERVICE"
 
 echo "→ 探活"
-curl -sf "http://127.0.0.1:$PORT/api/trpc/ping" || { echo "✘ 探活失败，看日志：journalctl -u $SERVICE -n 40 --no-pager" >&2; exit 1; }
+curl -sf "http://127.0.0.1:$PORT/api/trpc/ping" || { echo "✘ 探活失败，看日志：sudo journalctl -u $SERVICE -n 40 --no-pager" >&2; exit 1; }
 echo ""
 
 echo "→ 验证迁移已落库"
