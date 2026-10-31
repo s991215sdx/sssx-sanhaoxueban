@@ -44,6 +44,9 @@ import {
 
 type Kind = "familystudent" | "familyparent";
 
+/** 家长卷填卷人。服务端同样只认这三个值（submit 与 submitFamilyParent 的 zod 一致）。 */
+export type ParentRespondent = "dad" | "mom" | "other";
+
 type Opt = { value: number; label: string };
 
 type Step = {
@@ -85,7 +88,11 @@ export default function FamilyQuiz({
   guestCode,
 }: {
   kind: Kind;
-  onDone: () => void;
+  /**
+   * 家长卷会把「刚填的是哪位」一并带出：扫码页要靠它当场标出自己那份已提交，
+   * 否则 refetch 回来之前，家长刚交完就看到自己那格还是「还没填」。
+   */
+  onDone: (respondent?: ParentRespondent) => void;
   /** v238：家长扫孩子的码时不登录，题目与提交都走公开接口，答案落到码对应的孩子名下。 */
   guestCode?: string;
 }) {
@@ -271,6 +278,7 @@ export default function FamilyQuiz({
             <ParentResult
               r={r as FamilyParentProfile}
               who={who?.label ?? "家长"}
+              respondent={who?.respondent ?? "other"}
               onDone={onDone}
               guest={isGuest}
             />
@@ -342,7 +350,7 @@ export default function FamilyQuiz({
               {kind === "familystudent" ? "14 道题约 3 分钟" : "29 道题约 6 分钟"} · 没有对错，按真实情况选
             </p>
           </div>
-          <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
+          <button onClick={() => onDone()} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
             先不测了
           </button>
         </div>
@@ -525,12 +533,15 @@ function StudentResult({
 function ParentResult({
   r,
   who,
+  respondent,
   onDone,
   guest,
 }: {
   r: FamilyParentProfile;
   who: string;
-  onDone: () => void;
+  /** 交给调用方：扫码页据此立刻把「自己那一格」标成已填 */
+  respondent: ParentRespondent;
+  onDone: (respondent?: ParentRespondent) => void;
   /** 扫码填的家长：没有账号，答案已落到孩子名下，不需要再做什么 */
   guest?: boolean;
 }) {
@@ -567,8 +578,8 @@ function ParentResult({
           : "孩子那份答完之后，报告会告诉你：你以为他怎么看你们，和他实际答的，差在哪几项。"}
       </p>
 
-      <button onClick={onDone} className="mt-5 w-full rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream hover:bg-lime">
-        {guest ? "填完了，关掉就好" : "完成，返回"}
+      <button onClick={() => onDone(respondent)} className="mt-5 w-full rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream hover:bg-lime">
+        {guest ? "完成" : "完成，返回"}
       </button>
     </>
   );

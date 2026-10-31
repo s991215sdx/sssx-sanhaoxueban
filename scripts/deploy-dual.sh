@@ -74,6 +74,18 @@ preflight_enum() {
 preflight_enum "$INTERNAL_HOST" "内部版"
 preflight_enum "$CHANNEL_HOST" "渠道版"
 
+# ---------- 0.6 本次迁移新增的列 ----------
+# ADD COLUMN 也走启动时自动迁移，但 ping 只证明进程活着。新代码 SELECT 一个不存在的列，
+# 接口会整片报错（学生端白屏），脚本却以为成功——所以把最后一条 ADD COLUMN 读出来，部署后核对。
+LAST_ADD=$(grep -hoE "ALTER TABLE \`[a-z_]+\` ADD COLUMN \`[a-z_]+\`" db/migrations/*.sql 2>/dev/null | tail -1 || true)
+NEW_TABLE=$(echo "$LAST_ADD" | sed -E 's/.*TABLE `([a-z_]+)`.*/\1/')
+NEW_COL=$(echo "$LAST_ADD" | sed -E 's/.*ADD COLUMN `([a-z_]+)`.*/\1/')
+if [ -n "$NEW_TABLE" ] && [ -n "$NEW_COL" ]; then
+  log "本次迁移新增列: $NEW_TABLE.$NEW_COL（部署后核对是否落库）"
+else
+  log "本次迁移没有新增列，跳过列核对"
+fi
+
 # ---------- 1. 三连 + 构建 ----------
 if [ "$SKIP_CHECKS" = "0" ]; then
   log "① pnpm run check"
@@ -121,8 +133,21 @@ deploy_one() {
     sleep 6
     curl -sf http://127.0.0.1:3000/api/trpc/ping | grep -q '\"ok\":true' \
       || { echo '$name 本机探活失败'; systemctl status sanhao --no-pager -n 15 || true; exit 1; }
+    ready=0
+    for i in 1 2 3 4 5 6 7 8; do
+      if curl -sf http://127.0.0.1:3000/api/trpc/dbHealth | grep -q '\"ready\":true'; then ready=1; break; fi
+      sleep 4
+    done
+    [ \"\$ready\" = 1 ] || { echo '$name 数据库初始化未就绪（迁移可能失败）：'; curl -s http://127.0.0.1:3000/api/trpc/dbHealth; echo; exit 1; }
     echo '$name 部署完成（旧产物在 dist.bak_'\$ts'）'" \
   || fail "$name 部署失败，按上面提示处理（旧 dist 已备份为 dist.bak_*）"
+
+  # 迁移的 DDL 由服务启动时执行，探活成功不代表列已经加上：单独核对一次
+  if [ -n "${NEW_TABLE:-}" ] && [ -n "${NEW_COL:-}" ]; then
+    $SCP scripts/db-column-check.cjs "$host:.sanhao-deploy/db-column-check.cjs" >/dev/null
+    $SSH "$host" "cd $APP_DIR && NODE_PATH=$APP_DIR/node_modules node \$HOME/.sanhao-deploy/db-column-check.cjs $NEW_TABLE $NEW_COL" \
+      || fail "$name 迁移未落库：$NEW_TABLE.$NEW_COL 不存在，线上会因缺列报错，立即回滚 dist.bak_* 排查"
+  fi
 }
 
 deploy_one "$INTERNAL_HOST" "内部版"

@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useParams } from "react-router";
 import { AlertCircle, Check, HeartHandshake } from "lucide-react";
 import { trpc } from "@/providers/trpc";
-import FamilyQuiz from "@/components/family/FamilyQuiz";
+import FamilyQuiz, { type ParentRespondent } from "@/components/family/FamilyQuiz";
 import { normalizeFamilyCode } from "@contracts/familyCode";
 
 export default function FamilyJoin() {
@@ -20,6 +20,8 @@ export default function FamilyJoin() {
   const utils = trpc.useUtils();
   const info = trpc.assessment.familyCodeInfo.useQuery({ code: normalized }, { retry: false });
   const [finished, setFinished] = useState(false);
+  /* 刚提交的是哪位：refetch 回来之前先本地标上，不然家长交完就看到自己那格「还没填」 */
+  const [sentBy, setSentBy] = useState<ParentRespondent | null>(null);
 
   if (info.isLoading) {
     return (
@@ -45,36 +47,47 @@ export default function FamilyJoin() {
   }
 
   const { childAlias, grade, filled } = info.data;
-  const hasDad = filled.some((p) => p.respondent === "dad");
-  const hasMom = filled.some((p) => p.respondent === "mom");
+  /* 「其他家人」可能有爷爷、姑姑，称谓以自己填的为准；没填过就只列爸爸、妈妈两格 */
+  const otherLabels = filled.filter((p) => p.respondent === "other").map((p) => p.label || "其他家人");
+  const rows = [
+    { key: "dad", label: "爸爸", done: filled.some((p) => p.respondent === "dad") || sentBy === "dad" },
+    { key: "mom", label: "妈妈", done: filled.some((p) => p.respondent === "mom") || sentBy === "mom" },
+    ...(otherLabels.length > 0 || sentBy === "other"
+      ? [{ key: "other", label: otherLabels[0] ?? "其他家人", done: true }]
+      : []),
+  ];
 
   if (finished) {
+    /* 点「先不测了」也会走到这一屏：没交上就不能说「收到了」，否则家长以为填完了、其实一条没落库 */
+    const submitted = sentBy != null;
     return (
       <div className="flex min-h-screen flex-col items-center bg-cream px-4 py-10">
         <div className="w-full max-w-md">
           <div className="paper-card p-7 text-center">
-            <Check className="mx-auto text-[#2F7A41]" size={36} />
-            <h1 className="mt-3 text-[19px] font-bold text-olive">这一份收到了</h1>
+            <Check className={`mx-auto ${submitted ? "text-[#2F7A41]" : "text-olive-mute"}`} size={36} />
+            <h1 className="mt-3 text-[19px] font-bold text-olive">
+              {submitted ? "这一份收到了" : "这次先不填也没关系"}
+            </h1>
             <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
-              答案已经交到 {childAlias} 的账号里。另一位家长可以扫同一张码接着填——
-              两个人分开填，报告里才能看出你俩本身哪里说得不一样。
+              {submitted
+                ? `答案已经交到 ${childAlias} 的账号里。另一位家长可以扫同一张码接着填——两个人分开填，报告里才能看出你俩本身哪里说得不一样。`
+                : `刚才那份没有交上去，所以什么都没记录。这张码一直有效，等你有空再扫一次，从头填也可以。`}
             </p>
-            <div className="mt-4 flex justify-center gap-2">
-              {[
-                { label: "爸爸", done: hasDad },
-                { label: "妈妈", done: hasMom },
-              ].map((p) => (
-                <span
-                  key={p.label}
-                  className={`rounded-full px-3 py-1 text-[12.5px] font-semibold ${
-                    p.done ? "bg-lime-pale text-olive" : "border border-dashed border-border text-olive-mute"
-                  }`}
-                >
-                  {p.label}
-                  {p.done ? " 已填" : " 还没填"}
-                </span>
-              ))}
-            </div>
+            {submitted && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {rows.map((p) => (
+                  <span
+                    key={p.key}
+                    className={`rounded-full px-3 py-1 text-[12.5px] font-semibold ${
+                      p.done ? "bg-lime-pale text-olive" : "border border-dashed border-border text-olive-mute"
+                    }`}
+                  >
+                    {p.label}
+                    {p.done ? " 已填" : " 还没填"}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <p className="mt-6 text-center mono text-[10.5px] tracking-wider text-olive-mute/70">好好学习 · 天天向上</p>
         </div>
@@ -101,7 +114,8 @@ export default function FamilyJoin() {
         <FamilyQuiz
           kind="familyparent"
           guestCode={normalized}
-          onDone={() => {
+          onDone={(who) => {
+            setSentBy(who ?? null);
             setFinished(true);
             void utils.assessment.familyCodeInfo.invalidate();
           }}
