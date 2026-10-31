@@ -16,21 +16,33 @@ const LABELS = ["爸爸", "妈妈", "爷爷", "奶奶", "其他家人"] as const
  * 维度映射与学生版逐组一致（scoreDiscV2 计分），保证亲子对照同尺可比。
  * 开始前先选家长身份（多位家长可各测一次，结果与孩子校园 DISC 做冲突对照分析）。
  */
-export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
+export default function DiscParentQuiz({
+  onDone,
+  guestCode,
+}: {
+  onDone: () => void;
+  /** v239：家长扫码填（/p/<码>）。没有账号态，题目与提交都走公开接口，答案落到码对应的孩子名下。 */
+  guestCode?: string;
+}) {
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "discparent" } as never);
+  const authed = trpc.assessment.questions.useQuery({ kind: "discparent" } as never, { enabled: !guestCode });
+  const guest = trpc.assessment.passPaper.useQuery({ code: guestCode ?? "" }, { enabled: !!guestCode });
+  const data = guestCode ? guest.data : authed.data;
+  const isLoading = guestCode ? guest.isLoading : authed.isLoading;
+  /* 草稿按人或按码分开：同一台手机上，爸爸填一半、妈妈接着扫码，不该看到爸爸的进度 */
+  const draftId = guestCode ? `${DRAFT}.${guestCode}` : DRAFT;
 
   // 作答进度挂草稿：误退出/刷新后回来接着答
-  const [label, setLabel] = useDraftState<string>(DRAFT, "label", "");
-  const [customLabel, setCustomLabel] = useDraftState<string>(DRAFT, "customLabel", "");
-  const [idx, setIdx] = useDraftState<number>(DRAFT, "idx", 0);
-  const [most, setMost] = useDraftState<number[]>(DRAFT, "most", []);
-  const [least, setLeast] = useDraftState<number[]>(DRAFT, "least", []);
+  const [label, setLabel] = useDraftState<string>(draftId, "label", "");
+  const [customLabel, setCustomLabel] = useDraftState<string>(draftId, "customLabel", "");
+  const [idx, setIdx] = useDraftState<number>(draftId, "idx", 0);
+  const [most, setMost] = useDraftState<number[]>(draftId, "most", []);
+  const [least, setLeast] = useDraftState<number[]>(draftId, "least", []);
   // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
-  const [resumed, setResumed] = useDraftResumed(user?.id, DRAFT, "most");
+  const [resumed, setResumed] = useDraftResumed(user?.id, draftId, "most");
   const resetAll = () => {
-    clearQuizDraft(user?.id, DRAFT);
+    clearQuizDraft(user?.id, draftId);
     setLabel("");
     setCustomLabel("");
     setIdx(0);
@@ -39,12 +51,22 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
     setResumed(false);
   };
 
-  const submit = trpc.assessment.submit.useMutation({
+  const authedSubmit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft(user?.id, DRAFT); // 提交成功，草稿使命完成（状态保留供成功卡展示）
+      clearQuizDraft(user?.id, draftId); // 提交成功，草稿使命完成（状态保留供成功卡展示）
       void utils.assessment.latest.invalidate();
     },
   });
+  const passSubmit = trpc.assessment.submitByPass.useMutation({
+    onSuccess: () => clearQuizDraft(user?.id, draftId),
+  });
+  /* 两条路的返回形状对齐（kind + result），下面只写一次结果卡 */
+  const submitData = (guestCode ? passSubmit.data : authedSubmit.data) as
+    | { kind?: string; result?: { primary?: string } }
+    | undefined;
+  const submitted = guestCode ? passSubmit.isSuccess : authedSubmit.isSuccess;
+  const submitting = guestCode ? passSubmit.isPending : authedSubmit.isPending;
+  const submitFailed = guestCode ? passSubmit.isError : authedSubmit.isError;
 
   const groups: DiscWordGroup[] =
     (data as { groups?: DiscWordGroup[] } | undefined)?.groups ?? DISC_PARENT_V2_GROUPS;
@@ -70,7 +92,9 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
       return;
     }
     setSubmitHint(null);
-    submit.mutate({ kind: "discparent", answers: { label: finalLabel, answers: { most: m, least: l } } } as never);
+    const payload = { kind: "discparent" as const, answers: { label: finalLabel, answers: { most: m, least: l } } };
+    if (guestCode) passSubmit.mutate({ code: guestCode, input: payload } as never);
+    else authedSubmit.mutate(payload as never);
   };
 
   /* v70：先清 pending 定时器再决定重挂——260ms 内取消选择不再留下"没选满却照跳"的洞。
@@ -106,8 +130,8 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
   };
 
   /* ------- 结果卡 ------- */
-  if (submit.isSuccess && (submit.data as { kind?: string }).kind === "discparent") {
-    const result = (submit.data as { result?: { primary?: string } }).result;
+  if (submitted && submitData?.kind === "discparent") {
+    const result = submitData.result;
     return (
       <div className="mx-auto max-w-3xl">
         <div className="paper-card p-6 text-center">
@@ -122,7 +146,7 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
           <div className="mt-6 grid gap-2 sm:grid-cols-2">
             <button
               onClick={() => {
-                submit.reset(); // 退出成功态，回到身份选择
+                (guestCode ? passSubmit : authedSubmit).reset(); // 退出成功态，回到身份选择
                 resetAll();
               }}
               className="rounded-xl border border-border bg-cream-card py-3 text-[15px] font-semibold text-olive transition-colors hover:border-[#E3B53A]/60"
@@ -244,11 +268,11 @@ export default function DiscParentQuiz({ onDone }: { onDone: () => void }) {
               setSubmitHint(null);
               setIdx((i) => Math.max(0, i - 1));
             }}
-            pending={submit.isPending}
-            error={submit.isError}
+            pending={submitting}
+            error={submitFailed}
             showSubmit={idx === total - 1}
             onSubmit={() => finish(most, least)}
-            submitPending={submit.isPending}
+            submitPending={submitting}
             submitHint={submitHint}
           />
         )}

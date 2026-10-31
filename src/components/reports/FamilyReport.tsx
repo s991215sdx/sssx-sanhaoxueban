@@ -12,6 +12,9 @@
 import { Link } from "react-router";
 import type { ReactNode } from "react";
 import { trpc } from "@/providers/trpc";
+import { useAssessmentPass } from "@/components/coach/passRequest";
+import FamilyKit from "@/components/family/FamilyKit";
+import { buildFamilyKit } from "@contracts/familyKit";
 import type { LadderMerge, FamilyProfile } from "@contracts/familyProfile";
 import type { FamilyStudentProfile } from "@contracts/familyStudent";
 
@@ -66,17 +69,34 @@ export default function FamilyReport({
           这份报告需要两份问卷：孩子一份（学生卷 14 题），家长一份（家长卷 29 题）。
           两边都答完，才能看出「你以为的」和「他实际答的」差在哪里。
         </p>
-        <Link
-          to={viewer === "student" ? "/assessments?start=familystudent" : "/assessments"}
-          className="mt-4 inline-block rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream no-underline hover:bg-lime"
-        >
-          去做家庭关系测评
-        </Link>
+        {viewer === "tutor" ? (
+          <>
+            {/* 伴学师点这里不是「我要去答」，而是「把卷递出去」：出码，孩子或家长扫 */}
+            <PassStartButton />
+            <p className="mt-2 text-[11.5px] leading-relaxed text-olive-mute">
+              孩子扫：用他自己的账号答完，直接进这份报告。家长扫：不用注册，答案落到这个孩子名下。
+            </p>
+          </>
+        ) : (
+          <Link
+            to="/assessments?start=familystudent"
+            className="mt-4 inline-block rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream no-underline hover:bg-lime"
+          >
+            去做家庭关系测评
+          </Link>
+        )}
       </div>
     );
   }
 
-  return <FamilyReportBody student={student} merged={data?.merged ?? null} hasParent={hasParent} />;
+  return (
+    <FamilyReportBody
+      student={student}
+      merged={data?.merged ?? null}
+      hasParent={hasParent}
+      parentCount={data?.parents?.length ?? 0}
+    />
+  );
 }
 
 /**
@@ -87,11 +107,16 @@ export function FamilyReportBody({
   student,
   merged,
   hasParent,
+  parentCount,
 }: {
   student: FamilyStudentProfile | null;
   merged: FamilyProfile | null;
   hasParent: boolean;
+  /** 收到几份家长卷（爸爸、妈妈各一份则为 2）：锦囊的「父母版」靠这个判断够不够 */
+  parentCount?: number;
 }) {
+  /* 锦囊是纯函数产物：同一份作答永远得到同一份锦囊，不需要额外取数，也不会两边说法不一致 */
+  const kit = buildFamilyKit({ merged, student, hasParent, parentCount: parentCount ?? (hasParent ? 1 : 0) });
   return (
     <div className="space-y-4">
       <Conclusion merged={merged} student={student} hasParent={hasParent} />
@@ -100,11 +125,25 @@ export function FamilyReportBody({
       {student && <Security student={student} />}
       <Scene merged={merged} hasParent={hasParent} />
       <NextSteps merged={merged} student={student} />
+      <FamilyKit parts={kit} />
       <p className="px-1 text-[11.5px] leading-relaxed text-olive-mute">
         这份报告只描述「现在这段关系的样子」，不评价任何一方。台阶与盲区的数字来自本次作答，
         孩子给父母的 0—10 打分不对家长展示，仅咨询师可见。
       </p>
     </div>
+  );
+}
+
+/** 伴学师视角的「去做家庭关系测评」：出码，而不是把人送去孩子的页面。 */
+function PassStartButton() {
+  const openPass = useAssessmentPass();
+  return (
+    <button
+      onClick={() => openPass?.("familystudent")}
+      className="mt-4 inline-block rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream hover:bg-lime"
+    >
+      去做家庭关系测评
+    </button>
   );
 }
 

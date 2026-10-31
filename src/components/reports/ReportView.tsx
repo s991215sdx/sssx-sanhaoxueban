@@ -116,6 +116,8 @@ import HollandDetail from "@/components/reports/HollandDetail";
 import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
 import MentalDetail from "@/components/reports/MentalDetail";
 import FamilyReport from "@/components/reports/FamilyReport";
+import { AssessmentPassProvider } from "@/components/coach/AssessmentPassDialog";
+import { useAssessmentPass } from "@/components/coach/passRequest";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
 export type ReportAssessmentData = {
@@ -1191,6 +1193,9 @@ function MbtiDetail({ result, onGoCombined }: { result: MbtiResult; onGoCombined
 }
 
 function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "I" | "S" | "C"; dims: Record<"D" | "I" | "S" | "C", number>; version?: 2; onGoCombined: () => void }) {
+  const navigate = useNavigate();
+  /* 重测按钮同样走「出码」：伴学师点它是要让孩子重测，不是自己去测 */
+  const openPass = useAssessmentPass();
   const report = DISC_REPORTS[primary];
   const combo = getDiscCombo(dims);
   const blend = buildDiscComboBlend(combo);
@@ -1208,12 +1213,12 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
             </span>
           )}
           {version !== 2 && (
-            <a
-              href="/assessments?start=disc"
+            <button
+              onClick={() => (openPass ? openPass("disc") : navigate("/assessments?start=disc"))}
               className="rounded-full border border-butter bg-butter/25 px-2.5 py-0.5 text-[11.5px] font-semibold text-olive-soft hover:border-[#E3B53A]/60"
             >
               旧版题目 · 已升级为更准的「最像/最不像」版，点这里重测 →
-            </a>
+            </button>
           )}
         </div>
         <p className="mt-1.5 text-[14px] text-olive-soft">
@@ -2299,13 +2304,7 @@ function MentalBar({ mental }: { mental: MentalResult }) {
 }
 
 /** 报告视图：学生端（/report-detail）与伴学师端共用。数据全部经 props 传入，本组件不发起任何 trpc 请求。 */
-export default function ReportView({
-  data,
-  profile,
-  viewer,
-  onEditAcademics,
-  studentUserId,
-}: {
+type ReportViewProps = {
   data: ReportAssessmentData | undefined;
   profile?: ReportProfileInfo;
   viewer: "student" | "tutor";
@@ -2315,8 +2314,36 @@ export default function ReportView({
   subject4d?: unknown;
   /** v176：伴学师查看学员时的学员 userId（选科及升学规划报告栏目直达完整页用） */
   studentUserId?: number;
-}) {
+};
+
+/**
+ * v239：伴学师看学员报告时，任何「去做测评」都改成出码。
+ *
+ * 原来这些按钮直接跳 /assessments——那是孩子的页面，伴学师的角色门禁会把他弹回工作台，
+ * 现场看起来就是「点了没反应」。码才是这一段真正需要的东西：把卷递到孩子或家长手上。
+ * 学生端不进这层，行为一字不变。
+ */
+export default function ReportView(props: ReportViewProps) {
+  if (props.viewer === "tutor" && props.studentUserId != null) {
+    return (
+      <AssessmentPassProvider studentId={props.studentUserId}>
+        <ReportViewInner {...props} />
+      </AssessmentPassProvider>
+    );
+  }
+  return <ReportViewInner {...props} />;
+}
+
+function ReportViewInner({
+  data,
+  profile,
+  viewer,
+  onEditAcademics,
+  studentUserId,
+}: ReportViewProps) {
   const navigate = useNavigate();
+  /* 有这层 Provider（= 伴学师看学员）时，receive 到的是「出码」；学生端为 null，还是老样子跳页 */
+  const openPass = useAssessmentPass();
   const [params, setParams] = useSearchParams();
   const tab: Tab = (params.get("tab") as Tab) || "combined";
   /* V79：我的档案/成绩与目标移出栏目框（学生端置顶「基本信息」区）；伴学师端保留「成绩与目标」栏目 */
@@ -2448,7 +2475,8 @@ export default function ReportView({
    */
   const reveal = (t: RevealTarget) => {
     if (t.kind === "assess") {
-      navigate(`/assessments?start=${t.start}`);
+      if (openPass) openPass(t.start);
+      else navigate(`/assessments?start=${t.start}`);
       return;
     }
     if (viewer === "tutor") onEditAcademics?.();
@@ -3315,7 +3343,7 @@ export default function ReportView({
                   <div className="paper-card border-butter bg-butter/20 p-4">
                     <p className="text-[12.5px] leading-relaxed text-olive">
                       你上次完成的是旧版十因子筛查（通用版前身）。现在有新版可用：<b>学生版 A（SDQ）</b>、<b>学生版 B（PHQ-A + GAD-7）</b>、<b>深度评估（SCL-90）</b>或<b>通用版（PHQ-9 + GAD-7）</b>——旧结果保留可查，
-                      <button className="font-bold underline" onClick={() => navigate("/assessments?start=mental")}>点这里测通用版 →</button>
+                      <button className="font-bold underline" onClick={() => (openPass ? openPass("mental") : navigate("/assessments?start=mental"))}>点这里测通用版 →</button>
                     </p>
                   </div>
                   <MentalDetail result={mental} />
@@ -4064,12 +4092,15 @@ function VerSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => vo
 
 function MissingCard({ text, actionText, to }: { text: string; actionText?: string; to?: string }) {
   const navigate = useNavigate();
+  /* 伴学师视角下这里改成出码：他点的是「让孩子答」，不是「我要去答」 */
+  const openPass = useAssessmentPass();
+  const start = to?.match(/[?&]start=([a-z0-9]+)/)?.[1];
   return (
     <div className="paper-card p-5">
       <h3 className="font-bold text-olive">内容还差一点点</h3>
       <p className="mt-2 text-[13.5px] leading-relaxed text-olive-mute">{text}</p>
       <button
-        onClick={() => navigate(to ?? "/assessments")}
+        onClick={() => (openPass && start ? openPass(start) : navigate(to ?? "/assessments"))}
         className="mt-3 rounded-xl bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
       >
         {actionText ?? "去测评 →"}

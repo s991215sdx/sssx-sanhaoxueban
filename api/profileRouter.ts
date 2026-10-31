@@ -2,10 +2,11 @@ import { scryptSync, timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
-import { createRouter, authedQuery, publicQuery } from "./middleware";
+import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
-import { hashPassword } from "./auth-router";
+import { hashPassword, setSessionCookie } from "./auth-router";
+import { signSessionToken } from "./kimi/session";
 import { getTutorReportAccess, isMyStudent } from "./tutorAccess";
 import {
   MBTI_QUESTIONS,
@@ -70,6 +71,14 @@ import {
   normalizeFamilyCode,
 } from "@contracts/familyCode";
 import { decodeFamilyCode, encodeFamilyCode } from "./familyCode";
+import { decodePassCode, encodePassCode } from "./passCode";
+import {
+  PASS_SESSION_MINUTES,
+  isParentPass,
+  passDefOf,
+  passExpiresAt,
+  passPath,
+} from "@contracts/passCode";
 import { env } from "./lib/env";
 import { MULTI5_QUESTIONS, MULTI5_COMMON_STAGE, multi5QuestionsFor, scoreMulti5For, toMulti5Public, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
 import { ANCHOR_RATINGS, scoreAnchor, type AnchorResult } from "@contracts/careerAnchor";
@@ -469,130 +478,358 @@ export const profileRouter = createRouter({
   }),
 });
 
-export const assessmentRouter = createRouter({
-  /** 题库（来自 contracts/assessments.ts，前端可预览）。E3 学生卷/家长卷为 V3.7。 */
-  questions: authedQuery
-    .input(z.object({ kind: kindSchema, pack: z.enum(["standard", "lite"]).optional() }))
-    .query(
-      async ({
-        input,
-        ctx,
-      }): Promise<AssessmentQuestions> => {
-      switch (input.kind) {
-        case "mbti":
-          return { kind: "mbti", questions: MBTI_QUESTIONS };
-        case "disc":
-          // V2 强迫选择：24 组四词（最像/最不像）
-          return { kind: "disc", groups: DISC_V2_GROUPS };
-        case "discparent":
-          // 家长版 V2：家庭/亲子场景词组（维度映射与学生版逐组一致，计分复用 scoreDiscV2）
-          return { kind: "discparent", groups: DISC_PARENT_V2_GROUPS };
-        case "familystudent": {
-          // v235：学生侧家庭补充包（独立于 e3，14 道新题 + 6 条条件引用）
-          // v236：支持 pack=standard|lite（速测版 9 题），默认完整版
-          const pack = input.pack ?? "standard";
-          return {
-            kind: "familystudent",
-            pack,
-            items: familyStudentItems(pack),
-            conditionRefs: FAMILY_STUDENT_CONDITION_REFS,
-          };
-        }
-        case "familyparent": {
-          // v235：家长侧家庭卷（29 题：台阶/管教/情感对照/投入/自身/场景）
-          const pack = input.pack ?? "standard";
-          return {
-            kind: "familyparent",
-            pack,
-            items: parentItemsOf(pack),
-            sceneOptions: FAMILY_PARENT_SCENE_OPTIONS,
-          };
-        }
-        case "e3": {
-          // V3.7：按学生学段下发对应版本（小学/初中/高中），默认初中版
-          const profile = await getProfile(ctx.user.id);
-          const stage: E3V37Stage = e3StageOf(stageOfGrade(profile?.grade ?? ""));
-          return {
-            kind: "e3",
-            stage,
-            stageLabel: E3V37_STAGE_LABEL[stage],
-            ratings: E3V37_QUESTIONS[stage],
-            motivationOptions: E3V37_MOTIVATION_OPTIONS,
-            scanSubjects: E3V37_SCAN_SUBJECTS[stage],
-            lossReasons: E3V37_LOSS_REASONS,
-            scoreTrends: E3V37_SCORE_TRENDS,
-            lifeEvents: E3V37_LIFE_EVENTS[stage],
-            openQuestions: E3V37_OPEN_QUESTIONS,
-          };
-        }
-        case "multi":
-          return { kind: "multi", ratings: MULTI_RATINGS };
-        case "multi5": {
-          // v233：统一通用版卷（不依赖学科知识，各学段同卷通用）；客观题剔除答案并附加「这题我不会」选项
-          return {
-            kind: "multi5",
-            stage: MULTI5_COMMON_STAGE,
-            stageLabel: "通用版",
-            questions: multi5QuestionsFor(MULTI5_COMMON_STAGE).map(toMulti5Public),
-          };
-        }
-        case "anchor":
-          return { kind: "anchor", ratings: ANCHOR_RATINGS };
-        case "holland":
-          return { kind: "holland", ratings: HOLLAND_RATINGS };
-        case "subject":
-          // 学科能力测评：9 科自评题库（学生端自选科目作答）
-          return { kind: "subject", bank: SUBJECT_BANK };
-        case "subject4d":
-          // V175 学科四维测评：9 科 × 4 维 × 3 题李克特量表（智慧生涯报告数据源）
-          return {
-            kind: "subject4d",
-            subjects: SUBJECT4D_SUBJECTS,
-            dims: SUBJECT4D_DIMS,
-            dimLabel: SUBJECT4D_DIM_LABEL,
-            options: SUBJECT4D_OPTIONS,
-            bank: SUBJECT4D_BANK,
-          };
-        case "mental":
-          // 通用版：PHQ-9 + GAD-7 两段式量表（国际通用筛查工具）
-          return { kind: "mental", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_V2_SECTIONS };
-        case "mentalpa":
-          // 学生版 B：PHQ-A + GAD-7 学生化措辞（结构同通用版）
-          return { kind: "mentalpa", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_PA_SECTIONS };
-        case "mentalsdq":
-          // 学生版 A：SDQ 学生自评（25 题 + 1 条安全预警题，平铺）
-          return { kind: "mentalsdq", intro: MENTAL_SDQ_INTRO, options: MENTAL_SDQ_OPTIONS, questions: MENTAL_SDQ_QUESTIONS };
-        case "scl90":
-          // 深度评估：SCL-90 症状自评（90 题，5 级评分）
-          return { kind: "scl90", intro: MENTAL_SCL90_INTRO, options: SCL90_OPTIONS, questions: SCL90_QUESTIONS };
-        case "e3parent": {
-          // V3.7 家长卷：三版一致；studentDone 标记孩子是否已完成 e3 诊断（决定能否生成认知对照）
-          const db = getDb();
-          const e3row = await db
-            .select({ answers: assessmentResults.answers })
-            .from(assessmentResults)
-            .where(eq(assessmentResults.userId, ctx.user.id))
-            .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
-          const studentDone = e3row.some((r) => {
-            const a = r.answers as { stage?: string } | null;
-            return !!a && typeof a === "object" && typeof a.stage === "string";
+/**
+ * 题库装配。学生端 questions 与扫码页 passPaper 共用这一套——
+ * 两处各写一份的话，扫码来的孩子和登录进来的孩子在同一个「家庭卷」上会看到不同题目，
+ * 而这种错在测试里看不出来，只会被现场的那位家长撞见。
+ */
+async function paperFor(
+  userId: number,
+  kind: (typeof kindSchema)["_output"],
+  pack?: "standard" | "lite",
+): Promise<AssessmentQuestions> {
+  switch (kind) {
+    case "mbti":
+      return { kind: "mbti", questions: MBTI_QUESTIONS };
+    case "disc":
+      // V2 强迫选择：24 组四词（最像/最不像）
+      return { kind: "disc", groups: DISC_V2_GROUPS };
+    case "discparent":
+      // 家长版 V2：家庭/亲子场景词组（维度映射与学生版逐组一致，计分复用 scoreDiscV2）
+      return { kind: "discparent", groups: DISC_PARENT_V2_GROUPS };
+    case "familystudent": {
+      // v235：学生侧家庭补充包（独立于 e3，14 道新题 + 6 条条件引用）
+      // v236：支持 pack=standard|lite（速测版 9 题），默认完整版
+      const chosen = pack ?? "standard";
+      return {
+        kind: "familystudent",
+        pack: chosen,
+        items: familyStudentItems(chosen),
+        conditionRefs: FAMILY_STUDENT_CONDITION_REFS,
+      };
+    }
+    case "familyparent": {
+      // v235：家长侧家庭卷（29 题：台阶/管教/情感对照/投入/自身/场景）
+      const chosen = pack ?? "standard";
+      return {
+        kind: "familyparent",
+        pack: chosen,
+        items: parentItemsOf(chosen),
+        sceneOptions: FAMILY_PARENT_SCENE_OPTIONS,
+      };
+    }
+    case "e3": {
+      // V3.7：按学生学段下发对应版本（小学/初中/高中），默认初中版
+      const profile = await getProfile(userId);
+      const stage: E3V37Stage = e3StageOf(stageOfGrade(profile?.grade ?? ""));
+      return {
+        kind: "e3",
+        stage,
+        stageLabel: E3V37_STAGE_LABEL[stage],
+        ratings: E3V37_QUESTIONS[stage],
+        motivationOptions: E3V37_MOTIVATION_OPTIONS,
+        scanSubjects: E3V37_SCAN_SUBJECTS[stage],
+        lossReasons: E3V37_LOSS_REASONS,
+        scoreTrends: E3V37_SCORE_TRENDS,
+        lifeEvents: E3V37_LIFE_EVENTS[stage],
+        openQuestions: E3V37_OPEN_QUESTIONS,
+      };
+    }
+    case "multi":
+      return { kind: "multi", ratings: MULTI_RATINGS };
+    case "multi5": {
+      // v233：统一通用版卷（不依赖学科知识，各学段同卷通用）；客观题剔除答案并附加「这题我不会」选项
+      return {
+        kind: "multi5",
+        stage: MULTI5_COMMON_STAGE,
+        stageLabel: "通用版",
+        questions: multi5QuestionsFor(MULTI5_COMMON_STAGE).map(toMulti5Public),
+      };
+    }
+    case "anchor":
+      return { kind: "anchor", ratings: ANCHOR_RATINGS };
+    case "holland":
+      return { kind: "holland", ratings: HOLLAND_RATINGS };
+    case "subject":
+      // 学科能力测评：9 科自评题库（学生端自选科目作答）
+      return { kind: "subject", bank: SUBJECT_BANK };
+    case "subject4d":
+      // V175 学科四维测评：9 科 × 4 维 × 3 题李克特量表（智慧生涯报告数据源）
+      return {
+        kind: "subject4d",
+        subjects: SUBJECT4D_SUBJECTS,
+        dims: SUBJECT4D_DIMS,
+        dimLabel: SUBJECT4D_DIM_LABEL,
+        options: SUBJECT4D_OPTIONS,
+        bank: SUBJECT4D_BANK,
+      };
+    case "mental":
+      // 通用版：PHQ-9 + GAD-7 两段式量表（国际通用筛查工具）
+      return { kind: "mental", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_V2_SECTIONS };
+    case "mentalpa":
+      // 学生版 B：PHQ-A + GAD-7 学生化措辞（结构同通用版）
+      return { kind: "mentalpa", intro: MENTAL_V2_INTRO, options: MENTAL_V2_OPTIONS, sections: MENTAL_PA_SECTIONS };
+    case "mentalsdq":
+      // 学生版 A：SDQ 学生自评（25 题 + 1 条安全预警题，平铺）
+      return { kind: "mentalsdq", intro: MENTAL_SDQ_INTRO, options: MENTAL_SDQ_OPTIONS, questions: MENTAL_SDQ_QUESTIONS };
+    case "scl90":
+      // 深度评估：SCL-90 症状自评（90 题，5 级评分）
+      return { kind: "scl90", intro: MENTAL_SCL90_INTRO, options: SCL90_OPTIONS, questions: SCL90_QUESTIONS };
+    case "e3parent": {
+      // V3.7 家长卷：三版一致；studentDone 标记孩子是否已完成 e3 诊断（决定能否生成认知对照）
+      const db = getDb();
+      const e3row = await db
+        .select({ answers: assessmentResults.answers })
+        .from(assessmentResults)
+        .where(eq(assessmentResults.userId, userId))
+        .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
+      const studentDone = e3row.some((r) => {
+        const a = r.answers as { stage?: string } | null;
+        return !!a && typeof a === "object" && typeof a.stage === "string";
+      });
+      return {
+        kind: "e3parent",
+        studentDone,
+        familyQuestions: E3V37P_FAMILY_QUESTIONS,
+        condObserve: E3V37P_COND_OBSERVE,
+        mirrorQuestions: E3V37P_MIRROR_QUESTIONS,
+      };
+    }
+  }
+}
+
+/**
+ * 计分 → 写 assessmentResults → 同步档案；三项都齐则 onboarded。
+ *
+ * 学生端 submit 与扫码页 submitByPass 共用这一份：扫码交上来的答卷和登录交上来的
+ * 必须在库里长得一模一样，否则「扫码那份」会在报告里缺字段，而报告往往是最后才被打开的东西，
+ * 到那时已经没人记得它是扫码来的。
+ */
+async function applySubmission(
+  userId: number,
+  input: AssessmentSubmitInput,
+  opts?: { via?: "pass" },
+): Promise<AssessmentSubmitOutcome> {
+  const db = getDb();
+
+
+  /* v220 学校版心理测评合规：校园生每学年（9月1日起算）每套心理量表仅测一次，
+   * 防止重复筛查刷数据；复测需求由老师线下评估后处理。 */
+  if (input.kind === "mental" || input.kind === "mentalsdq" || input.kind === "mentalpa" || input.kind === "scl90") {
+    const [reg] = await db
+      .select({ channelId: inviteRegistrations.channelId })
+      .from(inviteRegistrations)
+      .where(eq(inviteRegistrations.userId, userId))
+      .orderBy(desc(inviteRegistrations.id))
+      .limit(1);
+    if (reg) {
+      const [ch] = await db
+        .select({ campus: inviteChannels.campus })
+        .from(inviteChannels)
+        .where(eq(inviteChannels.id, reg.channelId))
+        .limit(1);
+      if (ch?.campus) {
+        const now = new Date();
+        const y = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+        const yearStart = new Date(y, 8, 1); // 本学年 9月1日
+        const prev = await db
+          .select({ id: assessmentResults.id })
+          .from(assessmentResults)
+          .where(
+            and(
+              eq(assessmentResults.userId, userId),
+              eq(assessmentResults.kind, input.kind),
+              gte(assessmentResults.createdAt, yearStart),
+            ),
+          )
+          .limit(1);
+        if (prev.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "本学年已完成该心理筛查（每学年一次）。如确需复测，请联系老师评估后处理。",
           });
-          return {
-            kind: "e3parent",
-            studentDone,
-            familyQuestions: E3V37P_FAMILY_QUESTIONS,
-            condObserve: E3V37P_COND_OBSERVE,
-            mirrorQuestions: E3V37P_MIRROR_QUESTIONS,
-          };
         }
       }
-      },
-    ),
+    }
+  }
 
-  /** 提交测评：计分 → 写 assessmentResults → 同步 studentProfile；三项都完成则 onboarded=true。 */
-  submit: authedQuery
-    .input(
-      z.discriminatedUnion("kind", [
+  let outcome: AssessmentSubmitOutcome;
+  let mergedSubjectAnswers: Record<string, number[]> | undefined; /* v81 学科累计作答（存库用） */
+  if (input.kind === "e3parent") {
+    // 取孩子最近一次 e3 原始作答，计算家长认知对照；仅 V3.7（70 题）作答参与对照，否则传 null
+    const [e3row] = await db
+      .select({ answers: assessmentResults.answers })
+      .from(assessmentResults)
+      .where(and(eq(assessmentResults.userId, userId), eq(assessmentResults.kind, "e3")))
+      .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
+      .limit(1);
+    const ea = e3row?.answers as { stage?: E3V37Stage; ratings?: number[] } | null;
+    const ratings = ea && Array.isArray(ea.ratings) && ea.ratings.length === E3V37_RATING_COUNT ? ea.ratings : null;
+    const stage = ratings && ea && typeof ea === "object" && (ea.stage === "primary" || ea.stage === "junior" || ea.stage === "senior") ? ea.stage : null;
+    const result: E3V37ParentResult = scoreE3V37Parent(input.answers, stage, ratings);
+    outcome = { kind: "e3parent", result };
+  } else if (input.kind === "discparent") {
+    // 家长版 DISC：V2 用词组维度映射计分；旧版数组作答兼容；存整条 {label, answers}，不同步 profile.disc
+    const a = input.answers.answers;
+    const result: DiscResult = Array.isArray(a) ? scoreDisc(a) : scoreDiscV2(a, DISC_PARENT_V2_GROUPS);
+    outcome = { kind: "discparent", result };
+  } else if (input.kind === "mbti") {
+    const result: MbtiResult = scoreMbti(input.answers);
+    outcome = { kind: "mbti", result };
+  } else if (input.kind === "disc") {
+    const result: DiscResult = Array.isArray(input.answers) ? scoreDisc(input.answers) : scoreDiscV2(input.answers);
+    outcome = { kind: "disc", result };
+  } else if (input.kind === "multi") {
+    const result: MultiResult = scoreMulti(input.answers);
+    outcome = { kind: "multi", result };
+  } else if (input.kind === "multi5") {
+    // v233：通用版卷统一计分；原始作答包一层版本存储（e3 的 { stage, ratings } 同款做法），供答题明细/打印还原对应题库
+    // v234：逐题作答秒数一并存入并参与计分（答对题按时间系数加权，无计时按系数 1）
+    const stage = MULTI5_COMMON_STAGE;
+    const result: Multi5Result = scoreMulti5For(stage, input.answers, input.times);
+    outcome = { kind: "multi5", result };
+    input = { ...input, answers: { stage, picks: input.answers, times: input.times } as unknown as number[] };
+  } else if (input.kind === "anchor") {
+    const result: AnchorResult = scoreAnchor(input.answers);
+    outcome = { kind: "anchor", result };
+  } else if (input.kind === "holland") {
+    const result: HollandResult = scoreHolland(input.answers);
+    outcome = { kind: "holland", result };
+  } else if (input.kind === "mental") {
+    // 通用版：PHQ-9 + GAD-7 计分（0-3 × 16 题）
+    const result: MentalV2Result = scoreMental(input.answers);
+    outcome = { kind: "mental", result };
+  } else if (input.kind === "mentalpa") {
+    // 学生版 B：PHQ-A + GAD-7 学生化（算法同通用版）
+    const result: MentalPaResult = scoreMentalPa(input.answers);
+    outcome = { kind: "mentalpa", result };
+  } else if (input.kind === "mentalsdq") {
+    // 学生版 A：SDQ 学生自评（0-2 × 26 题，末题为安全预警不计分）
+    const result: MentalSdqResult = scoreMentalSdq(input.answers);
+    outcome = { kind: "mentalsdq", result };
+  } else if (input.kind === "scl90") {
+    // 深度评估 SCL-90：90 题 1-5 级评分，10 因子 + 中国常模筛选口径
+    const result: Scl90Result = scoreScl90(input.answers);
+    outcome = { kind: "scl90", result };
+  } else if (input.kind === "subject") {
+    // 学科能力测评：9 科听懂/记住/运用(+特定)环节自评
+    // v81 累计口径：与上一次学科作答合并（新测的同科目覆盖、未测的保留），
+    // 避免「再测一科就把之前测过的覆盖没了」——支持分次测完 9 科
+    const [prevRow] = await db
+      .select({ answers: assessmentResults.answers })
+      .from(assessmentResults)
+      .where(and(eq(assessmentResults.userId, userId), eq(assessmentResults.kind, "subject")))
+      .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
+      .limit(1);
+    const prev = (prevRow?.answers ?? null) as Record<string, number[]> | null;
+    const merged = mergeSubjectAnswers(prev, input.answers);
+    mergedSubjectAnswers = merged;
+    const result: SubjectAssessmentResult = scoreSubjectAssessment(merged);
+    outcome = { kind: "subject", result };
+  } else if (input.kind === "subject4d") {
+    // V175 学科四维测评：四维计分 + 学科潜力指数
+    const result: Subject4dResult = scoreSubject4d(input.answers);
+    outcome = { kind: "subject4d", result };
+  } else if (input.kind === "familystudent") {
+    // v236：学生侧家庭补充包计分
+    // 条件域优先复用孩子最近一次 E3 的 6 个分值——做过诊断的孩子不重答这 6 题
+    const a = input.answers;
+    const pack = familyPackOf(a.items, FAMILY_STUDENT_PACKS, a.pack, ["FS14"]);
+    if (!pack) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
+    }
+    const ratings = await latestE3Ratings(db, userId);
+    const e3Scores = e3ScoresOf(ratings);
+    const payload: FamilyStudentAnswers = {
+      items: a.items,
+      scene: (a.scene ?? null) as FamilyStudentAnswers["scene"],
+      condition: a.condition,
+      e3Scores: Object.keys(e3Scores).length ? e3Scores : undefined,
+    };
+    const result = buildFamilyStudentProfile(payload);
+    outcome = { kind: "familystudent", result };
+    // 存库：pack 与原始分一并留下，答题明细/复算都要用
+    input = { ...input, answers: { ...a, pack } as unknown as typeof input.answers };
+  } else if (input.kind === "familyparent") {
+    // v236：家长侧家庭卷计分（同 discparent，多位家长各存一条）
+    const a = input.answers;
+    const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
+    if (!pack) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
+    }
+    const payload: FamilyParentAnswers = {
+      items: a.items,
+      scene: a.scene ?? null,
+      respondent: a.respondent,
+    };
+    const result = buildFamilyParentProfile(payload);
+    outcome = { kind: "familyparent", result };
+    input = { ...input, answers: { ...a, pack } as unknown as typeof input.answers };
+  } else {
+    const result: E3V37Result = scoreE3V37(input.answers);
+    outcome = { kind: "e3", result };
+  }
+
+  // 存结果 + 原始作答（伴学师可查看答题明细）；学科测评存累计合并后的作答
+  const rawAnswers = (outcome.kind === "subject" ? mergedSubjectAnswers : input.answers) as unknown;
+  await db.insert(assessmentResults).values({
+    userId,
+    kind: outcome.kind,
+    result: outcome.result as unknown as Record<string, unknown>,
+    /* via=pass：扫码交来的答卷要能一眼认出来——计算机构建报告时不必区分，
+       但排查「这份是谁填的」时，唯一能问的就是这一笔标记 */
+    answers: (opts?.via ? { ...(rawAnswers as object), via: opts.via } : rawAnswers) as unknown as number[],
+  });
+
+  // 同步到档案对应字段；没有档案则先建一条默认档案
+  let profile = await getProfile(userId);
+  if (!profile) {
+    const [{ id }] = await db.insert(studentProfile).values({ userId }).$returningId();
+    profile = (await db.query.studentProfile.findFirst({ where: eq(studentProfile.id, id) })) ?? null;
+  }
+  if (profile) {
+    if (outcome.kind === "mbti") {
+      await db.update(studentProfile).set({ mbti: outcome.result.type }).where(eq(studentProfile.id, profile.id));
+    } else if (outcome.kind === "disc") {
+      await db.update(studentProfile).set({ disc: outcome.result.primary }).where(eq(studentProfile.id, profile.id));
+    } else if (
+      outcome.kind === "multi" ||
+      outcome.kind === "multi5" ||
+      outcome.kind === "anchor" ||
+      outcome.kind === "holland" ||
+      outcome.kind === "mental" ||
+      outcome.kind === "mentalsdq" ||
+      outcome.kind === "mentalpa" ||
+      outcome.kind === "scl90" ||
+      outcome.kind === "discparent" ||
+      outcome.kind === "subject" ||
+      outcome.kind === "subject4d" ||
+      outcome.kind === "familystudent" ||
+      outcome.kind === "familyparent"
+    ) {
+      // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（四套）、家长版 DISC、
+      // 家庭关系测评（学生卷 / 家长卷）均为选做，不同步档案字段、不影响 onboarding
+    } else {
+      await db
+        .update(studentProfile)
+        .set({ diagnosis: outcome.result as unknown as Record<string, unknown> })
+        .where(eq(studentProfile.id, profile.id));
+    }
+    // 三项测评都有记录 → 完成 onboarding
+    const done = await db
+      .select({ kind: assessmentResults.kind })
+      .from(assessmentResults)
+      .where(eq(assessmentResults.userId, userId));
+    const kinds = new Set(done.map((r) => r.kind));
+    if (kinds.has("mbti") && kinds.has("disc") && kinds.has("e3")) {
+      await db.update(studentProfile).set({ onboarded: true }).where(eq(studentProfile.id, profile.id));
+    }
+  }
+  return outcome;
+  return outcome;
+}
+
+const submitInputSchema = z.discriminatedUnion("kind", [
         z.object({
           kind: z.literal("mbti"),
           answers: z.array(z.union([z.literal(0), z.literal(1)])).length(MBTI_QUESTIONS.length),
@@ -726,227 +963,203 @@ export const assessmentRouter = createRouter({
             scene: z.string().max(16).nullable().optional(),
           }),
         }),
-      ]),
-    )
-    .mutation(
-      async ({
-        input,
-        ctx,
-      }): Promise<AssessmentSubmitOutcome> => {
-      const userId = ctx.user.id;
+      ]);
+type AssessmentSubmitInput = z.infer<typeof submitInputSchema>;
+
+
+/* ---------------------- v239 测评码：伴学师出码，孩子 / 家长扫码当场作答 ---------------------- */
+
+/** 出码 / 扫码都要先确认「这个孩子还在、还是学员」——码里只有编号，人不在了码就没意义。 */
+async function loadPassStudent(
+  db: ReturnType<typeof getDb>,
+  userId: number,
+): Promise<{ name: string; grade: string } | null> {
+  const [row] = await db
+    .select({
+      name: users.name,
+      role: users.role,
+      deletedAt: users.deletedAt,
+      grade: studentProfile.grade,
+    })
+    .from(users)
+    .leftJoin(studentProfile, eq(studentProfile.userId, users.id))
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!row || row.deletedAt || row.role !== "user") return null;
+  return { name: row.name ?? "", grade: row.grade ?? "" };
+}
+
+/**
+ * 这张码上已经收到几份。家长卷允许爸爸、妈妈各交一份，所以数的是「人」不是「条」——
+ * 同一个人重填只算一位，否则妈妈改一遍答案，码上就变成「已收到 2 位」。
+ */
+async function passReceivedCount(
+  db: ReturnType<typeof getDb>,
+  userId: number,
+  kind: string,
+): Promise<number> {
+  if (kind === "familyparent") return (await familyParentRespondents(db, userId)).length;
+  const rows = await db
+    .select({ answers: assessmentResults.answers })
+    .from(assessmentResults)
+    .where(and(eq(assessmentResults.userId, userId), eq(assessmentResults.kind, kind as "e3parent")));
+  if (kind === "discparent") {
+    return new Set(rows.map((r) => (r.answers as { label?: string } | null)?.label || "家长")).size;
+  }
+  return rows.length;
+}
+
+/**
+ * 扫码换会话的限流。这张码能换到孩子的登录态，得有底线：
+ * 同一个 IP 十分钟最多换 20 次，正常现场一个人扫一次，撞不到这个数。
+ */
+const redeemHits = new Map<string, { count: number; resetAt: number }>();
+function guardRedeem(req: Request) {
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim() || "unknown";
+  const now = Date.now();
+  const rec = redeemHits.get(ip);
+  if (rec && now < rec.resetAt) {
+    if (rec.count >= 20) {
+      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "扫码太频繁了，过十分钟再试" });
+    }
+    rec.count++;
+    return;
+  }
+  redeemHits.set(ip, { count: 1, resetAt: now + 10 * 60 * 1000 });
+}
+
+export const assessmentRouter = createRouter({
+  /** 题库（来自 contracts/assessments.ts，前端可预览）。E3 学生卷/家长卷为 V3.7。 */
+  questions: authedQuery
+    .input(z.object({ kind: kindSchema, pack: z.enum(["standard", "lite"]).optional() }))
+    .query(({ input, ctx }) => paperFor(ctx.user.id, input.kind, input.pack)),
+
+  /** 提交测评：计分 → 写 assessmentResults → 同步 studentProfile；三项都完成则 onboarded=true。 */
+  submit: authedQuery
+    .input(submitInputSchema)
+    .mutation(({ input, ctx }) => applySubmission(ctx.user.id, input)),
+
+  /* ---------------------- v239 测评码（扫码作答） ---------------------- */
+
+  /**
+   * 伴学师端：给某个学员出这张码。
+   *
+   * 只校验「这个学员归我」，不校验测评套餐——套餐管的是孩子自己登进来能看到什么；
+   * 这张码是伴学师当面递出去的，孩子本来就该能答，否则现场还得回去改套餐。
+   */
+  passCode: tutorQuery
+    .input(z.object({ userId: z.number().int().positive(), kind: z.string().max(24) }))
+    .query(async ({ input, ctx }) => {
       const db = getDb();
-
-      /* v220 学校版心理测评合规：校园生每学年（9月1日起算）每套心理量表仅测一次，
-       * 防止重复筛查刷数据；复测需求由老师线下评估后处理。 */
-      if (input.kind === "mental" || input.kind === "mentalsdq" || input.kind === "mentalpa" || input.kind === "scl90") {
-        const [reg] = await db
-          .select({ channelId: inviteRegistrations.channelId })
-          .from(inviteRegistrations)
-          .where(eq(inviteRegistrations.userId, userId))
-          .orderBy(desc(inviteRegistrations.id))
-          .limit(1);
-        if (reg) {
-          const [ch] = await db
-            .select({ campus: inviteChannels.campus })
-            .from(inviteChannels)
-            .where(eq(inviteChannels.id, reg.channelId))
-            .limit(1);
-          if (ch?.campus) {
-            const now = new Date();
-            const y = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
-            const yearStart = new Date(y, 8, 1); // 本学年 9月1日
-            const prev = await db
-              .select({ id: assessmentResults.id })
-              .from(assessmentResults)
-              .where(
-                and(
-                  eq(assessmentResults.userId, userId),
-                  eq(assessmentResults.kind, input.kind),
-                  gte(assessmentResults.createdAt, yearStart),
-                ),
-              )
-              .limit(1);
-            if (prev.length) {
-              throw new TRPCError({
-                code: "BAD_REQUEST",
-                message: "本学年已完成该心理筛查（每学年一次）。如确需复测，请联系老师评估后处理。",
-              });
-            }
-          }
-        }
+      const def = passDefOf(input.kind);
+      if (!def) throw new TRPCError({ code: "BAD_REQUEST", message: "这项测评没有二维码" });
+      if (ctx.user.role !== "admin" && !(await isMyStudent(db, ctx.user.id, input.userId))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "这不是你名下的学员" });
       }
-
-      let outcome: AssessmentSubmitOutcome;
-      let mergedSubjectAnswers: Record<string, number[]> | undefined; /* v81 学科累计作答（存库用） */
-      if (input.kind === "e3parent") {
-        // 取孩子最近一次 e3 原始作答，计算家长认知对照；仅 V3.7（70 题）作答参与对照，否则传 null
-        const [e3row] = await db
-          .select({ answers: assessmentResults.answers })
-          .from(assessmentResults)
-          .where(and(eq(assessmentResults.userId, userId), eq(assessmentResults.kind, "e3")))
-          .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
-          .limit(1);
-        const ea = e3row?.answers as { stage?: E3V37Stage; ratings?: number[] } | null;
-        const ratings = ea && Array.isArray(ea.ratings) && ea.ratings.length === E3V37_RATING_COUNT ? ea.ratings : null;
-        const stage = ratings && ea && typeof ea === "object" && (ea.stage === "primary" || ea.stage === "junior" || ea.stage === "senior") ? ea.stage : null;
-        const result: E3V37ParentResult = scoreE3V37Parent(input.answers, stage, ratings);
-        outcome = { kind: "e3parent", result };
-      } else if (input.kind === "discparent") {
-        // 家长版 DISC：V2 用词组维度映射计分；旧版数组作答兼容；存整条 {label, answers}，不同步 profile.disc
-        const a = input.answers.answers;
-        const result: DiscResult = Array.isArray(a) ? scoreDisc(a) : scoreDiscV2(a, DISC_PARENT_V2_GROUPS);
-        outcome = { kind: "discparent", result };
-      } else if (input.kind === "mbti") {
-        const result: MbtiResult = scoreMbti(input.answers);
-        outcome = { kind: "mbti", result };
-      } else if (input.kind === "disc") {
-        const result: DiscResult = Array.isArray(input.answers) ? scoreDisc(input.answers) : scoreDiscV2(input.answers);
-        outcome = { kind: "disc", result };
-      } else if (input.kind === "multi") {
-        const result: MultiResult = scoreMulti(input.answers);
-        outcome = { kind: "multi", result };
-      } else if (input.kind === "multi5") {
-        // v233：通用版卷统一计分；原始作答包一层版本存储（e3 的 { stage, ratings } 同款做法），供答题明细/打印还原对应题库
-        // v234：逐题作答秒数一并存入并参与计分（答对题按时间系数加权，无计时按系数 1）
-        const stage = MULTI5_COMMON_STAGE;
-        const result: Multi5Result = scoreMulti5For(stage, input.answers, input.times);
-        outcome = { kind: "multi5", result };
-        input = { ...input, answers: { stage, picks: input.answers, times: input.times } as unknown as number[] };
-      } else if (input.kind === "anchor") {
-        const result: AnchorResult = scoreAnchor(input.answers);
-        outcome = { kind: "anchor", result };
-      } else if (input.kind === "holland") {
-        const result: HollandResult = scoreHolland(input.answers);
-        outcome = { kind: "holland", result };
-      } else if (input.kind === "mental") {
-        // 通用版：PHQ-9 + GAD-7 计分（0-3 × 16 题）
-        const result: MentalV2Result = scoreMental(input.answers);
-        outcome = { kind: "mental", result };
-      } else if (input.kind === "mentalpa") {
-        // 学生版 B：PHQ-A + GAD-7 学生化（算法同通用版）
-        const result: MentalPaResult = scoreMentalPa(input.answers);
-        outcome = { kind: "mentalpa", result };
-      } else if (input.kind === "mentalsdq") {
-        // 学生版 A：SDQ 学生自评（0-2 × 26 题，末题为安全预警不计分）
-        const result: MentalSdqResult = scoreMentalSdq(input.answers);
-        outcome = { kind: "mentalsdq", result };
-      } else if (input.kind === "scl90") {
-        // 深度评估 SCL-90：90 题 1-5 级评分，10 因子 + 中国常模筛选口径
-        const result: Scl90Result = scoreScl90(input.answers);
-        outcome = { kind: "scl90", result };
-      } else if (input.kind === "subject") {
-        // 学科能力测评：9 科听懂/记住/运用(+特定)环节自评
-        // v81 累计口径：与上一次学科作答合并（新测的同科目覆盖、未测的保留），
-        // 避免「再测一科就把之前测过的覆盖没了」——支持分次测完 9 科
-        const [prevRow] = await db
-          .select({ answers: assessmentResults.answers })
-          .from(assessmentResults)
-          .where(and(eq(assessmentResults.userId, userId), eq(assessmentResults.kind, "subject")))
-          .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
-          .limit(1);
-        const prev = (prevRow?.answers ?? null) as Record<string, number[]> | null;
-        const merged = mergeSubjectAnswers(prev, input.answers);
-        mergedSubjectAnswers = merged;
-        const result: SubjectAssessmentResult = scoreSubjectAssessment(merged);
-        outcome = { kind: "subject", result };
-      } else if (input.kind === "subject4d") {
-        // V175 学科四维测评：四维计分 + 学科潜力指数
-        const result: Subject4dResult = scoreSubject4d(input.answers);
-        outcome = { kind: "subject4d", result };
-      } else if (input.kind === "familystudent") {
-        // v236：学生侧家庭补充包计分
-        // 条件域优先复用孩子最近一次 E3 的 6 个分值——做过诊断的孩子不重答这 6 题
-        const a = input.answers;
-        const pack = familyPackOf(a.items, FAMILY_STUDENT_PACKS, a.pack, ["FS14"]);
-        if (!pack) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
-        }
-        const ratings = await latestE3Ratings(db, userId);
-        const e3Scores = e3ScoresOf(ratings);
-        const payload: FamilyStudentAnswers = {
-          items: a.items,
-          scene: (a.scene ?? null) as FamilyStudentAnswers["scene"],
-          condition: a.condition,
-          e3Scores: Object.keys(e3Scores).length ? e3Scores : undefined,
-        };
-        const result = buildFamilyStudentProfile(payload);
-        outcome = { kind: "familystudent", result };
-        // 存库：pack 与原始分一并留下，答题明细/复算都要用
-        input = { ...input, answers: { ...a, pack } as unknown as typeof input.answers };
-      } else if (input.kind === "familyparent") {
-        // v236：家长侧家庭卷计分（同 discparent，多位家长各存一条）
-        const a = input.answers;
-        const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
-        if (!pack) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
-        }
-        const payload: FamilyParentAnswers = {
-          items: a.items,
-          scene: a.scene ?? null,
-          respondent: a.respondent,
-        };
-        const result = buildFamilyParentProfile(payload);
-        outcome = { kind: "familyparent", result };
-        input = { ...input, answers: { ...a, pack } as unknown as typeof input.answers };
-      } else {
-        const result: E3V37Result = scoreE3V37(input.answers);
-        outcome = { kind: "e3", result };
-      }
-
-      // 存结果 + 原始作答（伴学师可查看答题明细）；学科测评存累计合并后的作答
-      await db.insert(assessmentResults).values({
-        userId,
-        kind: outcome.kind,
-        result: outcome.result as unknown as Record<string, unknown>,
-        answers: (outcome.kind === "subject" ? mergedSubjectAnswers : input.answers) as unknown as number[],
-      });
-
-      // 同步到档案对应字段；没有档案则先建一条默认档案
-      let profile = await getProfile(userId);
-      if (!profile) {
-        const [{ id }] = await db.insert(studentProfile).values({ userId }).$returningId();
-        profile = (await db.query.studentProfile.findFirst({ where: eq(studentProfile.id, id) })) ?? null;
-      }
-      if (profile) {
-        if (outcome.kind === "mbti") {
-          await db.update(studentProfile).set({ mbti: outcome.result.type }).where(eq(studentProfile.id, profile.id));
-        } else if (outcome.kind === "disc") {
-          await db.update(studentProfile).set({ disc: outcome.result.primary }).where(eq(studentProfile.id, profile.id));
-        } else if (
-          outcome.kind === "multi" ||
-          outcome.kind === "multi5" ||
-          outcome.kind === "anchor" ||
-          outcome.kind === "holland" ||
-          outcome.kind === "mental" ||
-          outcome.kind === "mentalsdq" ||
-          outcome.kind === "mentalpa" ||
-          outcome.kind === "scl90" ||
-          outcome.kind === "discparent" ||
-          outcome.kind === "subject" ||
-          outcome.kind === "subject4d" ||
-          outcome.kind === "familystudent" ||
-          outcome.kind === "familyparent"
-        ) {
-          // 多元智能（自评版 / 五项客观题）与职业锚、霍兰德、心理健康（四套）、家长版 DISC、
-          // 家庭关系测评（学生卷 / 家长卷）均为选做，不同步档案字段、不影响 onboarding
-        } else {
-          await db
-            .update(studentProfile)
-            .set({ diagnosis: outcome.result as unknown as Record<string, unknown> })
-            .where(eq(studentProfile.id, profile.id));
-        }
-        // 三项测评都有记录 → 完成 onboarding
-        const done = await db
-          .select({ kind: assessmentResults.kind })
-          .from(assessmentResults)
-          .where(eq(assessmentResults.userId, userId));
-        const kinds = new Set(done.map((r) => r.kind));
-        if (kinds.has("mbti") && kinds.has("disc") && kinds.has("e3")) {
-          await db.update(studentProfile).set({ onboarded: true }).where(eq(studentProfile.id, profile.id));
-        }
-      }
-      return outcome;
+      const stu = await loadPassStudent(db, input.userId);
+      if (!stu) throw new TRPCError({ code: "NOT_FOUND", message: "这个学员不在了，码出不了" });
+      const made = encodePassCode(input.userId, def.kind, env.appSecret);
+      if (!made) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "出码失败，再点一次" });
+      return {
+        code: made.code,
+        path: passPath(made.code),
+        /** 过期时刻：页面据此写「今天 18:00 前有效」，伴学师心里有数 */
+        expiresAt: new Date(made.expiresAt).toISOString(),
+        childAlias: familyChildAlias(stu.name),
+        grade: stu.grade,
+        def,
+        received: await passReceivedCount(db, input.userId, def.kind),
+      };
     }),
+
+  /**
+   * 扫码页（公开）：这张码是哪个孩子、哪份测评、已经收到几份。
+   * 与家庭码同一口径：只回「X同学 + 年级」，不回全名、不回任何测评结果。
+   */
+  passInfo: publicQuery.input(z.object({ code: z.string().max(48) })).query(async ({ input }) => {
+    const db = getDb();
+    const hit = decodePassCode(input.code, env.appSecret);
+    if (!hit) return { ok: false as const };
+    const stu = await loadPassStudent(db, hit.userId);
+    if (!stu) return { ok: false as const };
+    const def = passDefOf(hit.kind);
+    if (!def) return { ok: false as const };
+    return {
+      ok: true as const,
+      kind: def.kind,
+      def,
+      childAlias: familyChildAlias(stu.name),
+      grade: stu.grade,
+      received: await passReceivedCount(db, hit.userId, def.kind),
+      expiresAt: new Date(passExpiresAt(hit.slot)).toISOString(),
+    };
+  }),
+
+  /** 扫码页（公开）：家长卷题目。与登录态 questions 同一套装配，免得两边题目对不上。 */
+  passPaper: publicQuery.input(z.object({ code: z.string().max(48) })).query(async ({ input }) => {
+    const hit = decodePassCode(input.code, env.appSecret);
+    if (!hit) throw new TRPCError({ code: "BAD_REQUEST", message: "这张码不能用了，让伴学师重新出一张" });
+    return paperFor(hit.userId, hit.kind, "standard");
+  }),
+
+  /**
+   * 扫码页（公开）：家长提交。
+   *
+   * 只放三种家长卷进来。孩子本人那几份（学习力、心理筛查…）不接受匿名提交——
+   * 一张被转发出去的码不该能改写孩子的诊断结论；孩子那份走 redeemPass 换自己的会话。
+   */
+  submitByPass: publicQuery
+    .input(z.object({ code: z.string().max(48), input: submitInputSchema }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const hit = decodePassCode(input.code, env.appSecret);
+      if (!hit) throw new TRPCError({ code: "BAD_REQUEST", message: "这张码不能用了，让伴学师重新出一张" });
+      if (!isParentPass(hit.kind)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "这份测评要以孩子本人的身份作答" });
+      }
+      if (input.input.kind !== hit.kind) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "这张码对应的是另一份问卷" });
+      }
+      const stu = await loadPassStudent(db, hit.userId);
+      if (!stu) throw new TRPCError({ code: "BAD_REQUEST", message: "这张码不能用了" });
+      const out = await applySubmission(hit.userId, input.input, { via: "pass" });
+      /* 回传 result 与登录提交同形：家长当场就该看到自己那份的结论，不用等报告 */
+      return {
+        ok: true as const,
+        kind: out.kind,
+        result: out.result as unknown,
+        received: await passReceivedCount(db, hit.userId, hit.kind),
+      };
+    }),
+
+  /**
+   * 扫码页（公开）：孩子本人扫码 → 换成 2 小时短会话，之后走完整的学生端。
+   *
+   * 为什么给会话而不是就地答题：孩子那份卷要读写档案、要出现在报告与练习里，
+   * 就地匿名答题等于把同一套流程写两遍，第二遍一定会走样。
+   * 会话只有 2 小时、只由一张当面递出的码换来，且不支持给家长用。
+   */
+  redeemPass: publicQuery.input(z.object({ code: z.string().max(48) })).mutation(async ({ input, ctx }) => {
+    guardRedeem(ctx.req);
+    const db = getDb();
+    const hit = decodePassCode(input.code, env.appSecret);
+    if (!hit) throw new TRPCError({ code: "BAD_REQUEST", message: "这张码不能用了，让伴学师重新出一张" });
+    if (isParentPass(hit.kind)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "这是给家长填的，页面上直接就能答" });
+    }
+    const stu = await loadPassStudent(db, hit.userId);
+    if (!stu) throw new TRPCError({ code: "BAD_REQUEST", message: "这张码不能用了" });
+    const [u] = await db
+      .select({ unionId: users.unionId })
+      .from(users)
+      .where(eq(users.id, hit.userId))
+      .limit(1);
+    if (!u?.unionId) throw new TRPCError({ code: "BAD_REQUEST", message: "这个账号还不能扫码登录" });
+    const token = await signSessionToken({ unionId: u.unionId, clientId: env.appId });
+    setSessionCookie(ctx, token, PASS_SESSION_MINUTES * 60 * 1000);
+    await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, hit.userId));
+    return { ok: true as const, start: hit.kind };
+  }),
 
   /** 各测评最新一条结果（含原始作答 raw，供答题明细展示）。 */
   latest: authedQuery.query(async ({ ctx }) => {
