@@ -323,7 +323,7 @@ export default function FamilyQuiz({
             ))}
           </div>
           <p className="mt-4 text-[12px] leading-relaxed text-olive-mute">
-            爸爸、妈妈可以各填一份，报告里分开放；两份都填，能看出父母之间本身的一致程度。
+            爸爸、妈妈可以各填一份，各自的答案分开存、标着是谁填的。
           </p>
         </div>
       </div>
@@ -574,7 +574,7 @@ function ParentResult({
 
       <p className="mt-4 rounded-xl border border-dashed border-olive/20 bg-cream/60 px-3 py-2.5 text-[12.5px] leading-relaxed text-olive-mute">
         {guest
-          ? "答案已经交到孩子的账号里了，不需要再做什么。另一位家长可以扫同一张码接着填——两份都填，报告里能看出父母之间本身的一致程度。"
+          ? "答案已经交到孩子的账号里了，不需要再做什么。另一位家长可以扫同一张码接着填，各自的答案分开存，报告里标着是谁填的。"
           : "孩子那份答完之后，报告会告诉你：你以为他怎么看你们，和他实际答的，差在哪几项。"}
       </p>
 

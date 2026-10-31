@@ -90,6 +90,9 @@ export function buildFamilyKit({
   const level = pickLevel(merged?.ladder);
   const levelName = level ? `${level.level}「${LEVEL_TEXT[level.level]}」` : null;
   const blind = pickBlind(merged);
+  /* 「没有偏差」和「没有可对照的数据」是两件事：速测版家长卷不含情感对照六题，
+     这类情况下报告里六项是空的，不能顺口说成「你看得还算准」。 */
+  const blindCount = merged?.blind.length ?? 0;
   const sceneKey = merged?.scene.student ?? student?.scene ?? null;
   const sceneName = sceneKey ? SCENE_TEXT[sceneKey] ?? sceneKey : null;
   const mismatch = !!merged?.scene.parent && !merged.scene.match;
@@ -167,7 +170,9 @@ export function buildFamilyKit({
                   ? "你以为他更愿意、更靠近，实际不是。这不代表他不在乎你，代表他把这件事收了回去。"
                   : "他比你估的更靠你。这类偏差最容易被漏掉：你以为他不需要，其实他在等一个回应。"
               }`
-            : "这次六项对照没有明显偏差，说明你平时看得还算准。那就把力气放在做法上，而不是判断上。",
+            : blindCount > 0
+              ? "这次六项对照都在 1.5 分以内，说明你平时看得还算准。那就把力气放在做法上，而不是判断上。"
+              : "这次没有可对照的六项——情感对照那一段没答到（速测版不含这六题），或者孩子那份还没交。这一块先不下结论。",
           levelName
             ? `台阶上最要紧的是 ${levelName}。剩下的四级先别动——一次改五件事，等于一件都没改。`
             : "台阶这一块这次答得不全，先不下结论。",
@@ -312,5 +317,8 @@ export function buildFamilyKit({
     missing: student ? undefined : "孩子那份还没答，这一版还出不来。",
   };
 
-  return [studentPart, parentPart, parentsPart, childrenPart];
+  /* 出不来就明说出不来：入口卡上写「孩子那份还没答」，比写一句通用建议诚实得多 */
+  return [studentPart, parentPart, parentsPart, childrenPart].map((p) =>
+    p.ready || !p.missing ? p : { ...p, headline: p.missing },
+  );
 }

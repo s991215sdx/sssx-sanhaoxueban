@@ -116,13 +116,14 @@ export function AssessmentPassDialog({
         )}
 
         <div className="mt-4 flex justify-center">
-          <div className="w-[210px] rounded-xl border border-border bg-white p-3">
-            {isLoading || !qrReady ? (
-              <div className="flex h-[186px] items-center justify-center">
+          {/* canvas 必须一直挂在 DOM 里：条件渲染会让「数据到了 → canvas 才挂载」与
+              「url 变了 → 才画」错开一拍，结果永远停在加载态 */}
+          <div className="relative w-[210px] rounded-xl border border-border bg-white p-3">
+            <canvas ref={canvasRef} className={`h-auto w-full ${qrReady ? "" : "opacity-0"}`} />
+            {(isLoading || !qrReady) && (
+              <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
               </div>
-            ) : (
-              <canvas ref={canvasRef} className="h-auto w-full" />
             )}
           </div>
         </div>
