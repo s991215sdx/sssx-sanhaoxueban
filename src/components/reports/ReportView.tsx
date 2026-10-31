@@ -116,6 +116,7 @@ import HollandDetail from "@/components/reports/HollandDetail";
 import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
 import MentalDetail from "@/components/reports/MentalDetail";
 import FamilyReport from "@/components/reports/FamilyReport";
+import FamilyCommKit from "@/components/reports/FamilyCommKit";
 import { AssessmentPassProvider } from "@/components/coach/AssessmentPassDialog";
 import { useAssessmentPass } from "@/components/coach/passRequest";
 
@@ -136,7 +137,7 @@ export type ReportAssessmentData = {
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
-type Tab = "combined" | "zhihui" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent" | "family";
+type Tab = "combined" | "zhihui" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent" | "family" | "commkit";
 
 /** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
 type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
@@ -149,6 +150,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "guidance", label: "升学指导报告（全学段）" },
   { key: "parent", label: "家长认知冲突报告" },
   { key: "family", label: "家庭教育报告" },
+  { key: "commkit", label: "家庭沟通锦囊" },
   { key: "e3", label: "学业诊断报告" },
   { key: "mbti", label: "MBTI 性格详版" },
   { key: "disc", label: "DISC 行为详版" },
@@ -2506,6 +2508,8 @@ function ReportViewInner({
     if (tab === "anchor" || tab === "holland") return !!(data as any)?.[tab];
     if (tab === "mental") return !!(data?.mental || data?.mentalSdq || data?.mentalPa || data?.mentalScl90);
     if (tab === "family") return !!(data as any)?.familyStudent || ((data as any)?.familyParents?.length ?? 0) > 0;
+    /* 锦囊只要有孩子或家长的 DISC 就能出（四本里至少一本可用），不必等全套齐 */
+    if (tab === "commkit") return !!data?.disc || discParents.length > 0;
     return !!combined;
   }, [tab, data, combined, e3v37, discParents]);
 
@@ -2523,6 +2527,7 @@ function ReportViewInner({
     subject: "学科能力评估报告",
     discparent: "家长认知冲突报告（亲子对照与沟通建议）",
     family: "家庭教育报告（五级台阶 · 亲子盲区）",
+    commkit: "家庭沟通锦囊（三人版 · 学生版 · 个人版）",
     parent: "家长认知冲突报告（亲子对照与沟通建议）",
     combined: "综合学习力报告",
     guidance: "升学指导综合报告",
@@ -3199,6 +3204,7 @@ function ReportViewInner({
       )}
 
       {tab === "family" && <FamilyReport viewer={viewer} studentId={viewer === "tutor" ? studentUserId : undefined} />}
+      {tab === "commkit" && <FamilyCommKit disc={disc} discParents={discParents} viewer={viewer} profile={profile} />}
 
       {tab === "anchor" &&
         (!anchor ? (

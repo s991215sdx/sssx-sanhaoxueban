@@ -9,12 +9,10 @@
  * 2. 不贴类型名：不写「专制型」「权威型」，只写要求与回应两个分，以及那句人话。
  * 3. 0—10 打分只给咨询师看：报告里不印孩子给父母的分数。
  */
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import type { ReactNode } from "react";
 import { trpc } from "@/providers/trpc";
 import { useAssessmentPass } from "@/components/coach/passRequest";
-import FamilyKit from "@/components/family/FamilyKit";
-import { buildFamilyKit } from "@contracts/familyKit";
 import type { LadderMerge, FamilyProfile } from "@contracts/familyProfile";
 import type { FamilyStudentProfile } from "@contracts/familyStudent";
 
@@ -115,8 +113,7 @@ export function FamilyReportBody({
   /** 收到几份家长卷（爸爸、妈妈各一份则为 2）：锦囊的「父母版」靠这个判断够不够 */
   parentCount?: number;
 }) {
-  /* 锦囊是纯函数产物：同一份作答永远得到同一份锦囊，不需要额外取数，也不会两边说法不一致 */
-  const kit = buildFamilyKit({ merged, student, hasParent, parentCount: parentCount ?? (hasParent ? 1 : 0) });
+  void parentCount;
   return (
     <div className="space-y-4">
       <Conclusion merged={merged} student={student} hasParent={hasParent} />
@@ -125,12 +122,42 @@ export function FamilyReportBody({
       {student && <Security student={student} />}
       <Scene merged={merged} hasParent={hasParent} />
       <NextSteps merged={merged} student={student} />
-      <FamilyKit parts={kit} />
+      <CommKitEntry />
       <p className="px-1 text-[11.5px] leading-relaxed text-olive-mute">
         这份报告只描述「现在这段关系的样子」，不评价任何一方。台阶与盲区的数字来自本次作答，
         孩子给父母的 0—10 打分不对家长展示，仅咨询师可见。
       </p>
     </div>
+  );
+}
+
+/**
+ * 沟通锦囊已独立成一份报告（v240），和本报告并列。
+ * 这里只留一个入口：诊断说「哪一级走不通」，锦囊说「第一句话怎么说」——
+ * 两件事分开写，才不会在同一页里出现两种口径。
+ */
+function CommKitEntry() {
+  const navigate = useNavigate();
+  const loc = useLocation();
+  return (
+    <section className="paper-card p-5">
+      <h3 className="text-[16px] font-bold text-olive">下一步：第一句话怎么说</h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-olive-soft">
+        这一份讲的是「现在这段关系是什么样」。真要开口，去看《家庭沟通锦囊》——
+        它按每个人 DISC 的主导与副维写，分三人版、学生版、学生个人版、家长个人版四本，
+        每一句都能照着念。
+      </p>
+      <button
+        onClick={() => {
+          const q = new URLSearchParams(loc.search);
+          q.set("tab", "commkit");
+          navigate(`${loc.pathname}?${q.toString()}`);
+        }}
+        className="mt-3 rounded-xl bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime"
+      >
+        去看家庭沟通锦囊
+      </button>
+    </section>
   );
 }
 
