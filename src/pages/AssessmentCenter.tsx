@@ -17,11 +17,12 @@ import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import SubjectQuiz from "@/components/companion/SubjectQuiz";
 import Subject4dQuiz from "@/components/companion/Subject4dQuiz";
 import FamilyQuiz from "@/components/family/FamilyQuiz";
+import FamilySuite from "@/components/family/FamilySuite";
 import CombinedSuite from "@/components/assessment/CombinedSuite";
 import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer } from "lucide-react";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer, Users } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
 type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
@@ -329,6 +330,8 @@ export default function AssessmentCenter() {
   const [suiteOpen, setSuiteOpen] = useState(false);
   // v181：选科及升学规划测评（一条龙向导）
   const [zhihuiOpen, setZhihuiOpen] = useState(false);
+  /* v238：家庭教育测评（孩子 + 爸妈扫码） */
+  const [familyOpen, setFamilyOpen] = useState(false);
   // v82：注册二维码「测评套餐」——渠道绑定的测评种类 + 伴学师额外推送的种类
   const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
   const { data: profile } = trpc.profile.get.useQuery();
@@ -404,6 +407,9 @@ export default function AssessmentCenter() {
   if (zhihuiOpen) {
     return <ZhihuiSuite onExit={() => setZhihuiOpen(false)} />;
   }
+  if (familyOpen) {
+    return <FamilySuite onExit={() => setFamilyOpen(false)} />;
+  }
 
   /* v181e：两个推荐入口受渠道套餐全量权限控制——
      套餐完整包含该向导全部测评时才对注册学员显示；否则页面只展示套餐内的测评列表。
@@ -413,6 +419,10 @@ export default function AssessmentCenter() {
   const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
   /* v194：选科组合门槛 = 学科四维 + 霍兰德（核心两项；职业锚/多元智能为可选增量，校园渠道可不含） */
   const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland"].every((k) => visibleSet.has(k));
+  /* v238：家庭教育测评入口与前两个组合并列常驻。
+     只有校园渠道仍按套餐走——学校没安排家长问卷，不该被系统塞一份进去；
+     普通渠道与机构版一律显示，家长卷本身走公开页、不占学生测评名额。 */
+  const familySuiteVisible = !access?.campus || !visibleSet || visibleSet.has("familystudent");
   /* v191：学习力系列任一测评在套餐内 → 展示「综合学习力报告」入口；套餐不含学习力（如校园选科版）则隐藏，避免引导做未开放测评 */
   const suiteGranted = !visibleSet || ["mbti", "disc", "e3"].some((k) => visibleSet.has(k));
 
@@ -508,6 +518,33 @@ export default function AssessmentCenter() {
               )}
             </div>
           )}
+          {/* v238：家庭教育测评——和前两个组合并列的第三个入口。
+              它跟另外两个不一样的地方是「要家长配合」，所以标题上直接写出来，不让人点进去才发现。 */}
+          {familySuiteVisible && (
+            <button
+              onClick={() => setFamilyOpen(true)}
+              className="paper-card accent-l flex w-full items-center gap-4 border-[#0C7064]/25 bg-gradient-to-r from-mint-pale/40 to-cream p-5 text-left shadow-sm hover:from-mint-pale/70"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0C7064] text-cream">
+                <Users size={24} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[17px] font-bold text-olive">家庭教育测评</h3>
+                  <span className="rounded-full border border-[#0C7064]/30 bg-cream px-2 py-px text-[10.5px] font-semibold text-[#0C7064]">
+                    家长一起做
+                  </span>
+                </span>
+                <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                  你答 14 题、爸妈各答 29 题：五级台阶断在哪一级、六项认知盲区、九十天怎么改。
+                  爸妈扫同一张码，都填到你这个孩子名下，不用注册。
+                </p>
+              </span>
+              <span className="shrink-0 rounded-xl bg-[#0C7064] px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+                开始 →
+              </span>
+            </button>
+          )}
           {/* 更多测评：点击平滑滚动到下方测评列表 */}
           <button
             onClick={() => document.getElementById("assessment-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -537,7 +574,7 @@ export default function AssessmentCenter() {
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
           {suiteVisible && zhihuiSuiteVisible
-            ? "推荐先完成上面两项测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；更多测评在下方列表里，按需要挑着做。"
+            ? "推荐先完成上面两个组合测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；家庭教育测评要家长配合，可以等爸妈有空时再做；更多测评在下方列表里，按需要挑着做。"
             : zhihuiSuiteVisible
               ? (() => {
                   /* v194：按渠道套餐动态列出流程（校园渠道无职业锚、含成绩步骤） */
@@ -548,8 +585,8 @@ export default function AssessmentCenter() {
                   return `推荐先完成上面的「选科及升学规划测评」：${items.join(" → ")}，全部完成自动生成你的选科及升学规划报告（选科组合、适合的专业与职业、升学路径规划）；更多测评在下方列表里，按需要挑着做。`;
                 })()
               : suiteVisible
-                ? "推荐先完成上面的「学习力测评」，做完即可生成你的综合学习力报告；更多测评在下方列表里，按需要挑着做。"
-                : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」两项推荐入口。"}
+                ? "推荐先完成上面的「学习力测评」，做完即可生成你的综合学习力报告；家庭教育测评要家长配合，可以等爸妈有空时再做；更多测评在下方列表里，按需要挑着做。"
+                : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」「家庭教育测评」三项推荐入口。"}
         </p>
       </div>
 

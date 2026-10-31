@@ -14,6 +14,9 @@
  *
  * 3. **不贴类型名**。结果卡只报「断/勉强/通/稳」与两个管教分，家长卷不写「专制型」这类标签——
  *    标签一贴上去，家长第一反应是辩解，不是改。
+ *
+ * v238：同一个组件也多跑一种「家长扫孩子的码」的情况。家长没有账号，题目走公开接口、
+ * 提交带码落到孩子名下；其余（题型、跳题、结果卡）完全一致，不做第二套。
  */
 import { useMemo } from "react";
 import { useNavigate } from "react-router";
@@ -23,6 +26,7 @@ import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft"
 import { useScrollToQuestion } from "@/lib/quizScroll";
 import { nextOpenIndex } from "@/lib/quizFlow";
 import { ChevronLeft, Users, MessageSquare } from "lucide-react";
+import FamilyCodeCard from "./FamilyCodeCard";
 import {
   FAMILY_STUDENT_P5,
   type FamilyItem,
@@ -75,12 +79,32 @@ function toOpts(labels: readonly string[], startAt = 1): Opt[] {
   return labels.map((label, i) => ({ value: i + startAt, label }));
 }
 
-export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () => void }) {
+export default function FamilyQuiz({
+  kind,
+  onDone,
+  guestCode,
+}: {
+  kind: Kind;
+  onDone: () => void;
+  /** v238：家长扫孩子的码时不登录，题目与提交都走公开接口，答案落到码对应的孩子名下。 */
+  guestCode?: string;
+}) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.assessment.questions.useQuery({ kind } as never);
-  const { data: latest } = trpc.assessment.latest.useQuery();
+  const isGuest = !!guestCode;
+
+  const { data: selfPaper, isLoading: selfLoading } = trpc.assessment.questions.useQuery(
+    { kind } as never,
+    { enabled: !isGuest },
+  );
+  const { data: guestPaper, isLoading: guestLoading } = trpc.assessment.familyParentPaper.useQuery(
+    undefined,
+    { enabled: isGuest },
+  );
+  const data = isGuest ? guestPaper : selfPaper;
+  const isLoading = isGuest ? guestLoading : selfLoading;
+  const { data: latest } = trpc.assessment.latest.useQuery(undefined, { enabled: !isGuest });
 
   /* 家长卷先确定填卷人：报告称谓、「谁说的」都要用 */
   const LABELS: { label: string; respondent: "dad" | "mom" | "other" }[] = [
@@ -88,16 +112,18 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
     { label: "妈妈", respondent: "mom" },
     { label: "其他家人", respondent: "other" },
   ];
+  /* 扫码填的草稿按码分开存：同一部手机先后给两个孩子填，进度不会串 */
+  const draftKind = isGuest ? `${kind}.guest.${guestCode}` : kind;
   const [who, setWho] = useDraftState<{ label: string; respondent: "dad" | "mom" | "other" } | null>(
-    kind,
+    draftKind,
     "who",
     null,
   );
 
-  const [idx, setIdx] = useDraftState<number>(kind, "idx", 0);
-  const [vals, setVals] = useDraftState<Record<string, number>>(kind, "vals", {});
-  const [scene, setScene] = useDraftState<string | null>(kind, "scene", null);
-  const [resumed, setResumed] = useDraftResumed(user?.id, kind, "vals");
+  const [idx, setIdx] = useDraftState<number>(draftKind, "idx", 0);
+  const [vals, setVals] = useDraftState<Record<string, number>>(draftKind, "vals", {});
+  const [scene, setScene] = useDraftState<string | null>(draftKind, "scene", null);
+  const [resumed, setResumed] = useDraftResumed(user?.id, draftKind, "vals");
 
   /* 做过 E3 V3.7（70 题）的孩子，六道条件题不重答——服务端按题号复用那六道的分 */
   const e3Ready = useMemo(() => {
@@ -148,8 +174,17 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
     },
   });
 
+  /* 家长扫码那条路：没有登录态，改走公开的 submitFamilyParent，答案落到码对应的孩子名下 */
+  const submitGuest = trpc.assessment.submitFamilyParent.useMutation({
+    onSuccess: () => clearQuizDraft(user?.id, draftKind),
+  });
+
+  const done = isGuest ? submitGuest.isSuccess : submit.isSuccess;
+  const pending = isGuest ? submitGuest.isPending : submit.isPending;
+  const error = isGuest ? submitGuest.error : submit.error;
+
   const resetAll = () => {
-    clearQuizDraft(user?.id, kind);
+    clearQuizDraft(user?.id, draftKind);
     setWho(null);
     setIdx(0);
     setVals({});
@@ -180,6 +215,17 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
         kind: "familystudent",
         answers: { pack: "standard", items, scene: allScene, condition },
       } as never);
+    } else if (isGuest) {
+      submitGuest.mutate({
+        code: guestCode!,
+        answers: {
+          pack: "standard",
+          respondent: who?.respondent ?? "other",
+          label: who?.label ?? "家长",
+          items,
+          scene: allScene,
+        },
+      });
     } else {
       submit.mutate({
         kind: "familyparent",
@@ -213,15 +259,21 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
   const qRef = useScrollToQuestion(`${idx}-${total}`);
 
   /* ---------------- 结果卡 ---------------- */
-  if (submit.isSuccess && (submit.data as { kind?: string }).kind === kind) {
-    const r = (submit.data as { result?: unknown }).result;
+  if (done) {
+    const payload = (isGuest ? submitGuest.data : submit.data) as { result?: unknown } | undefined;
+    const r = payload?.result;
     return (
       <div className="mx-auto max-w-3xl">
         <div className="paper-card p-6">
           {kind === "familystudent" ? (
             <StudentResult r={r as FamilyStudentProfile} onDone={onDone} onReport={() => navigate("/report-detail?tab=family")} />
           ) : (
-            <ParentResult r={r as FamilyParentProfile} who={who?.label ?? "家长"} onDone={onDone} />
+            <ParentResult
+              r={r as FamilyParentProfile}
+              who={who?.label ?? "家长"}
+              onDone={onDone}
+              guest={isGuest}
+            />
           )}
         </div>
       </div>
@@ -324,7 +376,7 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
               {Array.from({ length: 11 }, (_, v) => v).map((v) => (
                 <button
                   key={v}
-                  disabled={submit.isPending}
+                  disabled={pending}
                   onClick={() => pick(q, v)}
                   className={`rounded-xl border py-2.5 text-[14.5px] font-semibold transition-colors ${
                     vals[q.id] === v
@@ -343,7 +395,7 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
                 return (
                   <button
                     key={`${q.id}-${i}`}
-                    disabled={submit.isPending}
+                    disabled={pending}
                     onClick={() => pick(q, c.key)}
                     className={`rounded-xl border px-4 py-3 text-left text-[14.5px] leading-relaxed transition-colors ${
                       on
@@ -372,9 +424,9 @@ export default function FamilyQuiz({ kind, onDone }: { kind: Kind; onDone: () =>
             </span>
           </div>
 
-          {submit.isPending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在提交…</p>}
-          {submit.isError && (
-            <p className="mt-3 text-center text-[13px] text-terra">{submit.error?.message ?? "提交没成功，请再点一次最后一题的选项。"}</p>
+          {pending && <p className="mt-3 text-center text-[13px] text-olive-mute">正在提交…</p>}
+          {error && (
+            <p className="mt-3 text-center text-[13px] text-terra">{error.message ?? "提交没成功，请再点一次最后一题的选项。"}</p>
           )}
         </div>
       </div>
@@ -446,9 +498,14 @@ function StudentResult({
       </div>
 
       <p className="mt-4 rounded-xl border border-dashed border-olive/20 bg-cream/60 px-3 py-2.5 text-[12.5px] leading-relaxed text-olive-mute">
-        接下来请家长完成《家长卷》。两边都答完，报告里才会出现「你以为的 vs 他实际答的」对照——
+        接下来请爸妈完成《家长卷》。两边都答完，报告里才会出现「你以为的 vs 他实际答的」对照——
         盲区通常就出在这六项里。
       </p>
+
+      {/* v238：答完当场把码给出去——不然学生还得自己回测评中心找，多数就断了 */}
+      <div className="mt-3">
+        <FamilyCodeCard compact />
+      </div>
 
       <div className="mt-5 flex gap-3">
         <button
@@ -465,7 +522,18 @@ function StudentResult({
   );
 }
 
-function ParentResult({ r, who, onDone }: { r: FamilyParentProfile; who: string; onDone: () => void }) {
+function ParentResult({
+  r,
+  who,
+  onDone,
+  guest,
+}: {
+  r: FamilyParentProfile;
+  who: string;
+  onDone: () => void;
+  /** 扫码填的家长：没有账号，答案已落到孩子名下，不需要再做什么 */
+  guest?: boolean;
+}) {
   return (
     <>
       <div className="flex items-center gap-2">
@@ -494,11 +562,13 @@ function ParentResult({ r, who, onDone }: { r: FamilyParentProfile; who: string;
       </p>
 
       <p className="mt-4 rounded-xl border border-dashed border-olive/20 bg-cream/60 px-3 py-2.5 text-[12.5px] leading-relaxed text-olive-mute">
-        孩子那份答完之后，报告会告诉你：你以为他怎么看你们，和他实际答的，差在哪几项。
+        {guest
+          ? "答案已经交到孩子的账号里了，不需要再做什么。另一位家长可以扫同一张码接着填——两份都填，报告里能看出父母之间本身的一致程度。"
+          : "孩子那份答完之后，报告会告诉你：你以为他怎么看你们，和他实际答的，差在哪几项。"}
       </p>
 
       <button onClick={onDone} className="mt-5 w-full rounded-xl bg-brand py-3 text-[14px] font-semibold text-cream hover:bg-lime">
-        完成，返回
+        {guest ? "填完了，关掉就好" : "完成，返回"}
       </button>
     </>
   );

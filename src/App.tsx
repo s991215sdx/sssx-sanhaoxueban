@@ -17,6 +17,8 @@ const Companion = lazy(() => import("./pages/Companion"));
 const Papers = lazy(() => import("./pages/Papers"));
 const Treehole = lazy(() => import("./pages/Treehole"));
 const InviteRegister = lazy(() => import("./pages/InviteRegister"));
+/* v238：家长扫码填家长卷（公开，不需要账号） */
+const FamilyJoin = lazy(() => import("./pages/FamilyJoin"));
 const SsoStudentView = lazy(() => import("./pages/SsoStudentView"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Tutor = lazy(() => import("./pages/Tutor"));
@@ -146,6 +148,8 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       {/* 邀请注册落地页：公开（扫码直达，无需登录） */}
       <Route path="/invite/:code" element={<Suspense fallback={<PageSpinner />}><InviteRegister /></Suspense>} />
+      {/* v238 家庭码：父母扫同一个码填家长卷，答案落到同一个孩子名下（公开，免登录） */}
+      <Route path="/f/:code" element={<Suspense fallback={<PageSpinner />}><FamilyJoin /></Suspense>} />
       {/* v158：一体通 SSO 免登只读视图：公开路由（ticket 兑换 10 分钟短会话，仅可读对应学员） */}
       <Route path="/sso/view/:studentId" element={<Suspense fallback={<PageSpinner />}><SsoStudentView /></Suspense>} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}

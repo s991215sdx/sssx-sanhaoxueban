@@ -171,6 +171,9 @@ export const studentProfile = mysqlTable("student_profile", {
   grade: varchar("grade", { length: 32 }).notNull().default("初一"),
   /** v235 家庭测评：走读 day / 寄宿 board。寄宿家庭台阶判定阈值需下调 0.4 分 */
   boarding: varchar("boarding", { length: 16 }),
+  /** v238 家庭码版本：爸妈扫的那张码由「孩子编号 + 版本 + 签名」算出，版本存在这里。
+   *  换码 = 版本 +1，旧码立刻对不上，不用建表、也不动任何历史答卷。 */
+  familyCodeVer: int("family_code_ver").notNull().default(0),
   /** v191 校园模式注册：班级（如「高一(3)班」，校园渠道注册时必填） */
   className: varchar("class_name", { length: 32 }),
   school: varchar("school", { length: 128 }),
@@ -331,6 +334,7 @@ export const recordings = mysqlTable("recordings", {
 });
 
 export type Recording = typeof recordings.$inferSelect;
+
 
 /* ------------------------------ 引导学习会话（错题深练） ----------------------------- */
 

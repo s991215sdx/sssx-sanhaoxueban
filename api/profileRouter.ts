@@ -1,8 +1,8 @@
 import { scryptSync, timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
-import { createRouter, authedQuery } from "./middleware";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { createRouter, authedQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
 import { hashPassword } from "./auth-router";
@@ -64,6 +64,13 @@ import {
   type FamilyParentProfile,
 } from "@contracts/familyParent";
 import { buildFamilyProfile, type FamilyProfile } from "@contracts/familyProfile";
+import {
+  familyChildAlias,
+  latestPerRespondent,
+  normalizeFamilyCode,
+} from "@contracts/familyCode";
+import { decodeFamilyCode, encodeFamilyCode } from "./familyCode";
+import { env } from "./lib/env";
 import { MULTI5_QUESTIONS, MULTI5_COMMON_STAGE, multi5QuestionsFor, scoreMulti5For, toMulti5Public, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
 import { ANCHOR_RATINGS, scoreAnchor, type AnchorResult } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS, scoreHolland, type HollandResult } from "@contracts/holland";
@@ -149,6 +156,54 @@ async function latestE3Ratings(
   return a && Array.isArray(a.ratings) && a.ratings.length === E3V37_RATING_COUNT ? a.ratings : null;
 }
 
+
+/* ------------------------- v238 家庭码（父母扫同一个码） ------------------------- */
+
+/**
+ * 按码找到孩子。无效码、已停用码一律返回 null——调用方不该区分「不存在」和「已停用」，
+ * 否则拿一张旧码去试探就能问出「这个孩子存在过」。
+ */
+async function resolveFamilyCode(db: ReturnType<typeof getDb>, rawCode: string) {
+  const code = normalizeFamilyCode(rawCode);
+  const hit = decodeFamilyCode(code, env.appSecret);
+  if (!hit) return null;
+  const [student] = await db
+    .select({ name: studentProfile.name, grade: studentProfile.grade, ver: studentProfile.familyCodeVer })
+    .from(studentProfile)
+    .where(eq(studentProfile.userId, hit.userId))
+    .limit(1);
+  /* 版本对不上 = 这张码已经被「换码」作废，按无效码处理 */
+  if (!student || student.ver !== hit.ver) return null;
+  return {
+    studentUserId: hit.userId,
+    name: student.name,
+    grade: student.grade,
+    code,
+  };
+}
+
+/**
+ * 某学生名下已收到几份家长卷。同一位家长重填只算一份（取最新那条），
+ * 否则妈妈改一遍答案就会变成「已填 2 位家长」——报告里的对照也会拿错人。
+ */
+async function familyParentRespondents(db: ReturnType<typeof getDb>, studentUserId: number) {
+  const rows = await db
+    .select({ answers: assessmentResults.answers, createdAt: assessmentResults.createdAt })
+    .from(assessmentResults)
+    .where(
+      and(eq(assessmentResults.userId, studentUserId), eq(assessmentResults.kind, "familyparent")),
+    )
+    .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
+  const flat = rows.map((r) => {
+    const a = r.answers as { respondent?: string; label?: string } | null;
+    return {
+      respondent: (a?.respondent ?? "other") as "dad" | "mom" | "other",
+      label: a?.label ?? "家长",
+      createdAt: r.createdAt,
+    };
+  });
+  return latestPerRespondent(flat);
+}
 
 /** questions 接口返回：V3.7 学生卷题包。 */type E3V37QuestionSet = {
   kind: "e3";
@@ -1027,18 +1082,22 @@ export const assessmentRouter = createRouter({
     const student = (sRow?.result ?? null) as FamilyStudentProfile | null;
     const studentItems = sAnswers?.items ?? {};
 
-    const parents = rows
-      .filter((r) => r.kind === "familyparent")
-      .map((r) => {
-        const a = r.answers as { label?: string; respondent?: string; pack?: string } | null;
-        return {
-          label: a?.label ?? "家长",
-          respondent: (a?.respondent ?? "other") as "dad" | "mom" | "other",
-          pack: a?.pack === "lite" ? ("lite" as const) : ("standard" as const),
-          profile: r.result as unknown as FamilyParentProfile,
-          createdAt: r.createdAt,
-        };
-      });
+    /* 同一位家长重填只留最新一份：rows 已按时间倒序，按 respondent 去重即可。
+       不去重的话，妈妈改一遍答案就会变成「两位家长」，报告的对照也会拿错人。 */
+    const parents = latestPerRespondent(
+      rows
+        .filter((r) => r.kind === "familyparent")
+        .map((r) => {
+          const a = r.answers as { label?: string; respondent?: string; pack?: string } | null;
+          return {
+            label: a?.label ?? "家长",
+            respondent: (a?.respondent ?? "other") as "dad" | "mom" | "other",
+            pack: a?.pack === "lite" ? ("lite" as const) : ("standard" as const),
+            profile: r.result as unknown as FamilyParentProfile,
+            createdAt: r.createdAt,
+          };
+        }),
+    );
 
     const me = await getProfile(userId);
     /* 寄宿家庭每周可相处时间本就少，台阶阈值整体放宽 0.4（见 contracts/familyProfile.ts） */
@@ -1062,5 +1121,118 @@ export const assessmentRouter = createRouter({
         pair: !!student && !!parent,
       },
     };
+    }),
+
+  /* ---------------------- v238 家庭码：父母扫同一个码 ---------------------- */
+
+  /**
+   * 学生端：我的家庭码（没有就现建一张）。
+   *
+   * 一张码对应一个孩子，爸爸、妈妈各扫一次，答案都落到这里。家长不需要注册账号——
+   * 家长卷的结果本来就是孩子档案的一部分，多一个账号只是多一道门槛。
+   * 同时回传已经收到的家长卷（按填卷人去重），学生一眼能看到「妈妈还没填」。
+   */
+  familyCode: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const userId = ctx.user.id;
+    const me = await getProfile(userId);
+    const ver = me?.familyCodeVer ?? 0;
+    const parents = await familyParentRespondents(db, userId);
+    return {
+      code: encodeFamilyCode(userId, ver, env.appSecret),
+      parents,
+      /** 家长端路径：前端据此拼二维码（/f/<code>） */
+      fullName: ctx.user.name ?? "",
+    };
+  }),
+
+  /** 学生端：换一张码（码被转发到群里时用；旧码立即失效，已收到的答卷不受影响）。 */
+  rotateFamilyCode: authedQuery.mutation(async ({ ctx }) => {
+    const db = getDb();
+    const userId = ctx.user.id;
+    await db
+      .update(studentProfile)
+      .set({ familyCodeVer: sql`${studentProfile.familyCodeVer} + 1` })
+      .where(eq(studentProfile.userId, userId));
+    return { ok: true as const };
+  }),
+
+  /**
+   * 家长端（公开）：这张码是哪个孩子的。
+   *
+   * 只回「X同学 + 年级 + 已填几位家长」，不回全名、不回任何测评结果——
+   * 码可能被转发，能确认「是不是自家孩子」就够了。
+   */
+  familyCodeInfo: publicQuery
+    .input(z.object({ code: z.string().max(32) }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const target = await resolveFamilyCode(db, input.code);
+      if (!target) return { ok: false as const };
+      const parents = await familyParentRespondents(db, target.studentUserId);
+      return {
+        ok: true as const,
+        childAlias: familyChildAlias(target.name),
+        grade: target.grade,
+        filled: parents.map((p) => ({ respondent: p.respondent, label: p.label })),
+      };
+    }),
+
+  /** 家长端（公开）：家长卷题包。家长没有账号，走不了登录态的 questions 接口。 */
+  familyParentPaper: publicQuery.query(() => {
+    const pack = "standard" as const;
+    return {
+      kind: "familyparent" as const,
+      pack,
+      items: parentItemsOf(pack),
+      sceneOptions: FAMILY_PARENT_SCENE_OPTIONS,
+    };
+  }),
+
+  /**
+   * 家长端（公开）：按码提交家长卷。
+   *
+   * 三个约束：
+   *  1. 码必须有效——家长卷要落到孩子名下，落错人比不落更糟；
+   *  2. 同一位家长重填以最新一份为准（报告只取最新），历史答卷保留；
+   *  3. 不碰学生档案字段，也不改 onboarding——家长卷是选做的补充信息。
+   */
+  submitFamilyParent: publicQuery
+    .input(
+      z.object({
+        code: z.string().max(32),
+        answers: z.object({
+          pack: z.enum(["standard", "lite"]).optional(),
+          respondent: z.enum(["dad", "mom", "other"]),
+          label: z.string().max(12).optional(),
+          items: z.record(z.string(), z.number().int().min(0).max(5)),
+          scene: z.string().max(16).nullable().optional(),
+        }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const target = await resolveFamilyCode(db, input.code);
+      if (!target) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "这张码已失效，请让家人重新生成一张" });
+      }
+      const a = input.answers;
+      const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
+      if (!pack) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
+      }
+      const result = buildFamilyParentProfile({
+        items: a.items,
+        scene: a.scene ?? null,
+        respondent: a.respondent,
+      });
+      await db.insert(assessmentResults).values({
+        userId: target.studentUserId,
+        kind: "familyparent",
+        result: result as unknown as Record<string, unknown>,
+        /* via=code：区分「家长在孩子的账号里填」与「扫码填」，排查数据来源时用得上 */
+        answers: { ...a, pack, via: "code" } as unknown as number[],
+      });
+      return { kind: "familyparent" as const, result };
     }),
 });
