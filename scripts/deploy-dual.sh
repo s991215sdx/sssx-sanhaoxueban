@@ -85,34 +85,44 @@ log "③ pnpm run build"
 pnpm run build >/dev/null || fail "build 未通过"
 log "构建完成"
 
-# ---------- 2. 打包源码（不含 node_modules/.git/dist/.env）----------
-TARBALL="/tmp/sanhao-deploy-$$.tgz"
+# ---------- 2. 打包构建产物 ----------
+# 不在服务器上 pnpm install + build：
+#   服务器 pnpm 12 默认拒绝执行 esbuild 等包的构建脚本（ERR_PNPM_IGNORED_BUILDS），
+#   且 corepack 会临时联网下载 pnpm，生产机上这两件事都不可控。
+# 本地构建过一次，两台只传产物（5.5MB），切换窗口从十几分钟压到几秒。
+TARBALL="/tmp/sanhao-dist-$$.tgz"
 trap 'rm -f "$TARBALL"' EXIT
-tar --exclude=node_modules --exclude=.git --exclude=dist --exclude=.env \
-    --exclude=working\ files -czf "$TARBALL" .
-log "源码包: $(du -h "$TARBALL" | cut -f1)"
+tar -czf "$TARBALL" -C dist .
+log "产物包: $(du -h "$TARBALL" | cut -f1)"
 
 # ---------- 3. 部署到两台服务器 ----------
 deploy_one() {
   local host="$1" name="$2"
-  log "→ $name ($host) 上传中…"
-  $SCP "$TARBALL" "$host:/tmp/sanhao-deploy.tgz" >/dev/null
-  log "→ $name 远程安装/构建/重启…"
+  log "→ $name ($host) 上传产物…"
+  $SSH "$host" "mkdir -p \$HOME/.sanhao-deploy" >/dev/null
+  $SCP "$TARBALL" "$host:.sanhao-deploy/dist.tgz" >/dev/null
+
+  log "→ $name 切换 dist 并重启…"
+  # 先解到 dist.new 并校验完整，再 mv 换过去：
+  # 解包失败时线上 dist 原样不动，不会出现「新目录空着、服务起不来」。
   $SSH "$host" "set -e
+    cd $APP_DIR
     ts=\$(date +%Y%m%d_%H%M%S)
-    [ -d $APP_DIR/dist ] && cp -r $APP_DIR/dist $APP_DIR/dist.bak_\$ts
-    mkdir -p $APP_DIR && cd $APP_DIR
-    tar -xzf /tmp/sanhao-deploy.tgz && rm /tmp/sanhao-deploy.tgz
-    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-    ( pnpm --version >/dev/null 2>&1 || corepack enable >/dev/null 2>&1 || true )
-    pnpm install --frozen-lockfile >/dev/null
-    pnpm run build >/dev/null
+    rm -rf dist.new && mkdir -p dist.new
+    tar --no-same-owner --no-same-permissions -xzf \$HOME/.sanhao-deploy/dist.tgz -C dist.new 2>/dev/null || true
+    rm -f \$HOME/.sanhao-deploy/dist.tgz
+    [ -f dist.new/boot.js ] || { echo '$name 产物不完整：缺 boot.js'; exit 1; }
+    sz=\$(stat -c %s dist.new/boot.js)
+    [ \"\$sz\" -gt 4000000 ] || { echo '$name boot.js 只有 \$sz 字节，疑似解包不全'; exit 1; }
+    chmod -R u+rwX,go+rX dist.new
+    [ -d dist ] && mv dist dist.bak_\$ts
+    mv dist.new dist
     sudo -n /bin/systemctl restart sanhao
     sleep 6
     curl -sf http://127.0.0.1:3000/api/trpc/ping | grep -q '\"ok\":true' \
-      || { echo '$name 本机探活失败'; systemctl status sanhao --no-pager -n 15 || sudo -n journalctl -u sanhao -n 15 --no-pager || true; exit 1; }
-    echo '$name 部署完成'" \
-  || fail "$name 部署失败（旧版本仍在运行，dist 已备份）"
+      || { echo '$name 本机探活失败'; systemctl status sanhao --no-pager -n 15 || true; exit 1; }
+    echo '$name 部署完成（旧产物在 dist.bak_'\$ts'）'" \
+  || fail "$name 部署失败，按上面提示处理（旧 dist 已备份为 dist.bak_*）"
 }
 
 deploy_one "$INTERNAL_HOST" "内部版"
