@@ -4,9 +4,10 @@
  * 锁五件事：
  *  1. 分数口径：0—100 绝对分 = dims ÷ 满分 × 100，V2 满分 24、V1 满分 12。
  *     这一条错了，整本里每个数字都是错的，而家长第一眼就看数字。
- *  2. 四本永远都在，顺序固定（三人版 / 学生版 / 学生个人版 / 家长个人版）。
+ *  2. 四本永远都在，顺序固定（家长家庭综合版 / 学生家庭综合版 / 学生个人版 / 家长个人版），
+ *     每本都带封面，封面上的台词按「谁在看」分开写。
  *  3. 缺数据照实说缺什么，不拿通用建议把页面填满。
- *  4. 只有一位家长时降级成两人版，标题、家规条数都要跟着变。
+ *  4. 只有一位家长时降级成两人写法，徽章、家规条数都要跟着变。
  *  5. 十六格定位要落在正确的格子上——标错一格，整页建议就对着别人说了。
  */
 import { describe, expect, it } from "vitest";
@@ -51,23 +52,30 @@ describe("四本的组成", () => {
   it("四本永远都在，顺序固定", () => {
     const kit = buildCommKit({ disc: CHILD, parents: [{ label: "爸爸", result: DAD }] });
     expect(kit.books.map((b) => b.key)).toEqual(["trio", "student", "me", "parent"]);
-    expect(kit.books.map((b) => b.label)).toEqual(["两人版", "学生版", "学生个人版", "家长个人版"]);
+    expect(kit.books.map((b) => b.label)).toEqual([
+      "家长家庭综合版",
+      "学生家庭综合版",
+      "学生个人版",
+      "家长个人版",
+    ]);
   });
 
-  it("一位家长 + 孩子 = 两人版，标题与家规条数跟着降级", () => {
+  it("一位家长 + 孩子 = 两人写法，标题与家规条数跟着降级", () => {
     const kit = buildCommKit({ disc: CHILD, parents: [{ label: "爸爸", result: DAD }] });
     const trio = kit.books[0];
-    expect(trio.label).toBe("两人版");
+    expect(trio.label).toBe("家长家庭综合版");
+    /* 只剩一位家长时，徽章要照实标「两人」，不能还写三个人 */
+    expect(trio.cover?.badge).toContain("两人");
     expect(trio.title).toBe("家庭沟通锦囊");
     expect(trio.subtitle).toContain("一个大人一个孩子");
-    /* 两人版只留四条家规，不硬凑六条 */
+    /* 两人写法只留四条家规，不硬凑六条 */
     const rules = trio.sections.find((s) => s.title.includes("条规矩"))!;
     expect(rules.title).toContain("四");
     /* 没有「第三对」那一节 */
     expect(trio.sections.some((s) => s.title.includes("第三对"))).toBe(false);
   });
 
-  it("两位家长都在时是三人版，三对都写", () => {
+  it("两位家长都在时三对都写", () => {
     const kit = buildCommKit({
       disc: CHILD,
       parents: [
@@ -76,7 +84,9 @@ describe("四本的组成", () => {
       ],
     });
     const trio = kit.books[0];
-    expect(trio.label).toBe("三人版");
+    expect(trio.label).toBe("家长家庭综合版");
+    expect(trio.cover?.badge).toContain("家长家庭综合版");
+    expect(trio.cover?.badge).not.toContain("两人");
     expect(trio.sections.filter((s) => s.title.includes("对")).length).toBe(3);
     expect(kit.books.filter((b) => b.key === "parent").length).toBe(2);
   });
@@ -93,7 +103,7 @@ describe("缺数据不硬编", () => {
     }
   });
 
-  it("只有孩子时：个人版能出，三人版缺家长、学生版缺家长", () => {
+  it("只有孩子时：个人版能出，两本综合版都缺家长", () => {
     const kit = buildCommKit({ disc: CHILD });
     const byKey = Object.fromEntries(kit.books.map((b) => [b.key, b]));
     expect(byKey.me.ready).toBe(true);
@@ -139,7 +149,7 @@ describe("十六格定位", () => {
   });
 });
 
-describe("三人版的结构性判断", () => {
+describe("家长家庭综合版的结构性判断", () => {
   const trio = () =>
     buildCommKit({
       disc: CHILD,
@@ -171,6 +181,75 @@ describe("三人版的结构性判断", () => {
   });
 });
 
+describe("封面", () => {
+  const full = () =>
+    buildCommKit({
+      studentName: "小黄",
+      grade: "初三",
+      disc: CHILD,
+      parents: [
+        { label: "爸爸", result: DAD },
+        { label: "妈妈", result: MOM },
+      ],
+    });
+
+  it("能出的四本都有封面，徽章写清是哪一本、多少节", () => {
+    for (const b of full().books) {
+      expect(b.cover, b.key).toBeTruthy();
+      expect(b.cover!.badge).toContain(b.label);
+      expect(b.cover!.badge).toContain("节");
+      expect(b.cover!.lines).toHaveLength(2);
+      expect(b.cover!.eyebrow.length).toBeGreaterThan(5);
+      expect(b.cover!.footNote.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("家长家庭综合版封面：台词按各自的类型取，孩子那句不是家长的台词", () => {
+    const c = full().books[0].cover!;
+    expect(c.visual.t).toBe("say-cards");
+    if (c.visual.t !== "say-cards") return;
+    const child = c.visual.items.find((i) => i.name === "小黄")!;
+    const dad = c.visual.items.find((i) => i.name === "爸爸")!;
+    /* 孩子是 S：说「……哦，快了」；爸爸是 D：说「作业还没写完？」 */
+    expect(child.say).toContain("哦，快了");
+    expect(dad.say).toContain("作业还没写完");
+    expect(child.say).not.toBe(dad.say);
+    /* 三个人各一张卡，不能少人 */
+    expect(c.visual.items).toHaveLength(3);
+  });
+
+  it("学生家庭综合版封面：声音条按 D／I 高的那维，孩子写「你」", () => {
+    const c = full().books[1].cover!;
+    expect(c.visual.t).toBe("voice-bars");
+    if (c.visual.t !== "voice-bars") return;
+    expect(c.visual.rows.map((r) => r.name)).toEqual(["爸", "妈", "你"]);
+    /* 爸爸 D 88 最响；孩子 S 79 但 D／I 只有 42，不该排在前面 */
+    expect(c.visual.rows[0].value).toBeGreaterThan(c.visual.rows[2].value);
+    expect(c.visual.strong).toContain("把话拿回来");
+  });
+
+  it("个人版封面：四维从高到低，第一行标主导", () => {
+    for (const key of ["me", "parent"] as const) {
+      const b = full().books.find((x) => x.key === key)!;
+      const v = b.cover!.visual;
+      expect(v.t, key).toBe("dim-rank");
+      if (v.t !== "dim-rank") continue;
+      expect(v.rows).toHaveLength(4);
+      expect(v.rows[0].tag).toBe("主导");
+      const vals = v.rows.map((r) => r.value);
+      expect([...vals].sort((a, b) => b - a)).toEqual(vals);
+      expect(v.lines).toHaveLength(2);
+    }
+  });
+
+  it("缺数据的那本不出封面——封面只给能翻的册子", () => {
+    const kit = buildCommKit({ disc: CHILD });
+    const trio = kit.books.find((b) => b.key === "trio")!;
+    expect(trio.ready).toBe(false);
+    expect(trio.cover).toBeUndefined();
+  });
+});
+
 describe("渲染", () => {
   it("报告能渲染出四本切换、扉页与十六格标记，不报错", async () => {
     const { createElement: h } = await import("react");
@@ -193,7 +272,8 @@ describe("渲染", () => {
       ),
     );
     expect(html).toContain("家庭沟通锦囊");
-    expect(html).toContain("三人版");
+    expect(html).toContain("家长家庭综合版");
+    expect(html).toContain("学生家庭综合版");
     expect(html).toContain("学生个人版");
     expect(html).toContain("标色的那一格");
     expect(html).toContain("小黄");

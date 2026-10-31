@@ -144,8 +144,8 @@ function CommKitEntry() {
       <h3 className="text-[16px] font-bold text-olive">下一步：第一句话怎么说</h3>
       <p className="mt-2 text-[13px] leading-relaxed text-olive-soft">
         这一份讲的是「现在这段关系是什么样」。真要开口，去看《家庭沟通锦囊》——
-        它按每个人 DISC 的主导与副维写，分三人版、学生版、学生个人版、家长个人版四本，
-        每一句都能照着念。
+        它按每个人 DISC 的主导与副维写，分家长家庭综合版、学生家庭综合版、学生个人版、
+        家长个人版四本，各带封面、各能单独打印，每一句都能照着念。
       </p>
       <button
         onClick={() => {

@@ -6,9 +6,10 @@
  *  - 家庭教育认知报告：你和爸妈之间哪一级走不通（关系诊断，保守、不贴类型名）；
  *  - 家庭沟通锦囊：今晚回家第一句话说什么（行为读本，具体到能照念）。
  *
- * 四本对应四种「谁在看」：
- *  - trio    三人版（家长不足两位时自动降为两人版）：每人一张说明、每对一张应对、最后一张家规；
- *  - student 学生版《怎么跟我爸妈说话》：孩子视角，怎么把话拿回来；
+ * 四本对应四种「谁在看」，每本都有整页封面、都能单独打印：
+ *  - trio    家长家庭综合版《家庭沟通锦囊》：每位成员一张说明、每对一张应对、最后一张家规；
+ *            家长不足两位时自动降为「两人」写法，封面与徽章会照实标出来；
+ *  - student 学生家庭综合版《怎么跟我爸妈说话》：孩子视角，怎么把话拿回来；
  *  - me      学生个人版《我是哪一种人》：只讲孩子自己，不讲关系；
  *  - parent  家长个人版《我是哪一种家长》：只讲这一位家长，不讲孩子。
  *
@@ -38,7 +39,7 @@ export type KitBlock =
   | { t: "cards"; items: { title: string; sub?: string; rows: { k: string; v: string }[] }[] }
   /** 一个人四个维度（个人版） */
   | { t: "dim-bars"; rows: { label: string; value: number; tag?: string }[] }
-  /** 多人同维对比（三人版 / 两人版） */
+  /** 多人同维对比（家长家庭综合版） */
   | { t: "group-bars"; groups: { label: string; sub?: string; rows: { name: string; value: number }[] }[] }
   | { t: "quote"; text: string; sub?: string }
   /** 依据：这一节是怎么算出来的，小字放在节尾 */
@@ -47,6 +48,47 @@ export type KitBlock =
 export type KitSection = { no: string; title: string; lead?: string; blocks: KitBlock[] };
 
 export type KitBookKey = "trio" | "student" | "me" | "parent";
+
+/**
+ * 封面中部的主视觉：四本各不相同，但都只用已有数据，不引入新口径。
+ * 这一块是「翻开来之前先看一眼就懂」，不是正文——所以每本只有一种图。
+ */
+export type KitCoverVisual =
+  /** 家长家庭综合版：同一个晚上，每个人心里那句话 */
+  | {
+      t: "say-cards";
+      lead: string;
+      items: { name: string; type: DiscType; say: string; think: string; out: string }[];
+      note: { title: string; lines: string[] };
+    }
+  /** 学生家庭综合版：谁的声音最大 */
+  | {
+      t: "voice-bars";
+      lead: string;
+      rows: { name: string; value: number; tail: string }[];
+      lines: string[];
+      strong: string;
+    }
+  /** 个人版：四个维度从高到低 */
+  | {
+      t: "dim-rank";
+      lead: string;
+      rows: { d: DiscType; value: number; tag?: string }[];
+      lines: string[];
+    };
+
+/** 整页封面。打印时独占第一页，正文从第二页开始。 */
+export type KitCover = {
+  /** 标题上方那行英文小字 */
+  eyebrow: string;
+  /** 标题下的两行说明 */
+  lines: string[];
+  /** 徽章：栏目名 + 节数 */
+  badge: string;
+  visual: KitCoverVisual;
+  /** 页脚左边那句「这份材料不做什么」 */
+  footNote: string;
+};
 
 export type KitBook = {
   key: KitBookKey;
@@ -58,6 +100,8 @@ export type KitBook = {
   forWhom: string;
   /** 扉页三行说明：测了谁 / 怎么来的 / 先看哪 */
   meta: { k: string; v: string }[];
+  /** 封面；ready=false 时不出封面，所以可选 */
+  cover?: KitCover;
   sections: KitSection[];
   ready: boolean;
   /** ready=false 时照实写缺什么 */
@@ -68,7 +112,7 @@ export type KitMember = {
   key: string;
   /** 报告里怎么称呼：爸爸 / 妈妈 / 孩子（有名字时用名字） */
   name: string;
-  /** 学生版里怎么叫：你爸 / 你妈 / 你 */
+  /** 学生家庭综合版里怎么叫：你爸 / 你妈 / 你 */
   teenCall: string;
   kind: "student" | "parent";
   type: DiscType;
@@ -88,7 +132,7 @@ export type CommKitInput = {
 export type CommKitResult = {
   books: KitBook[];
   members: KitMember[];
-  /** 三人版实际标题：人数够两位家长才是「三人版」 */
+  /** 家长家庭综合版的写法：两位家长才写「三人」，一位就写「两人」 */
   trioTitle: string;
 };
 
@@ -105,6 +149,52 @@ const DIM_NAME: Record<DiscType, { name: string; verb: string; one: string }> = 
   S: { name: "稳健", verb: "慢、忍、不表态", one: "要安稳" },
   C: { name: "谨慎", verb: "细、准、要标准", one: "要标准" },
 };
+
+/* ------------------------------------------------------------------ */
+/* 封面素材                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 封面那排卡：同一个晚上八点半，作业没写完。
+ * 家长与孩子不是同一个镜头——家长在看「进度」，孩子在看「怎么躲过这一句」。
+ * 所以按角色分两张表：把家长的台词印给孩子看，一眼就露馅。
+ */
+const COVER_SCENE: Record<"student" | "parent", Record<DiscType, { say: string; think: string; out: string }>> = {
+  parent: {
+    D: { say: "「作业还没写完？」", think: "进度到期了", out: "出口变成了：问责" },
+    I: { say: "「别催他了，他累。」", think: "缓和一下", out: "出口变成了：拆台" },
+    S: { say: "「……先写吧，写完再说。」", think: "别吵起来", out: "出口变成了：拖" },
+    C: { say: "「计划表上写的是八点。」", think: "说好的没做到", out: "出口变成了：核对" },
+  },
+  student: {
+    D: { say: "「我自己知道，八点开始。」", think: "我有安排", out: "出口变成了：顶回去" },
+    I: { say: "「马上，就一会儿。」", think: "先躲过这一句", out: "出口变成了：绕" },
+    S: { say: "「……哦，快了。」", think: "两个人都惹不起", out: "出口变成了：拖" },
+    C: { say: "「还有两题，九点前给你看。」", think: "我有进度", out: "出口变成了：报进度" },
+  },
+};
+
+/** 封面条形图右侧那句话：谁的声音大，大在哪 */
+const VOICE_TAIL: Record<DiscType, string> = {
+  D: "一开口就是结论",
+  I: "会替你把话说完",
+  S: "刚开口就被接走",
+  C: "先问一句「写完了吗」",
+};
+
+/** 封面用的短句：不带术语，一眼能对上自己（正文里那套更长，别混用） */
+const DIM_COVER_LINE: Record<DiscType, { high: string; mid: string; low: string }> = {
+  D: { high: "你办事快、爱拍板", mid: "你能拍板，但不抢着拍", low: "你不喜欢指挥人，也不喜欢被指挥" },
+  I: { high: "你话说得开，气氛靠你带", mid: "你能聊，也能安静", low: "你熟了才放开，陌生场合先看" },
+  S: { high: "你先看别人的反应，再看自己的", mid: "你能等，但等不了太久", low: "你不太主动去猜别人的感受" },
+  C: { high: "你细节都记得，说得清才舒服", mid: "你在意清楚，但不至于抠细节", low: "你要结果，不太抠细节" },
+};
+
+function coverLine(d: DiscType, v: number, high = true): string {
+  const t = DIM_COVER_LINE[d];
+  if (high) return v >= 55 ? t.high : t.mid;
+  return v < 45 ? t.low : t.mid;
+}
 
 /** 0—100 绝对分：V2 满分 24（12 + 净分/2），V1 满分 12。 */
 function toScore100(dims: DiscDims, version?: 2): Score100 {
@@ -201,7 +291,7 @@ const FAMILY_TEXT: Record<DiscType, FamilyTypeText> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* 文案库 · 六件小事（三人版第 4 节 / 个人版第 2 节共用）                */
+/* 文案库 · 六件小事（家长家庭综合版第 4 节 / 个人版第 2 节共用）                */
 /* ------------------------------------------------------------------ */
 
 const SIX_SCENES = ["买东西", "吵架时", "压力大", "被批评", "表达关心", "最受不了"] as const;
@@ -412,7 +502,7 @@ type TeenTypeText = {
   urgent: string;
   /** 这样的时候，你听着像 */
   sounds: string;
-  /** 三个真实场景（学生版第 3/4 节的两段对照之外用） */
+  /** 三个真实场景（学生家庭综合版第 3/4 节的两段对照之外用） */
   keys: { says: string; heard: string; react: string }[];
   /** 怎么让他听进去（四要素 / 三动作） */
   openers: string[];
@@ -491,7 +581,7 @@ const TEEN_READ_PARENT: Record<DiscType, TeenTypeText> = {
 };
 
 /**
- * 学生版第 3/4 节：孩子对这位家长，在六个高频场景里该怎么说。
+ * 学生家庭综合版第 3/4 节：孩子对这位家长，在六个高频场景里该怎么说。
  * 注意与 PARENT_SCRIPT 分开——那一套是「家长对孩子说」，
  * 读者是孩子时不能直接搬过来，否则会出现「妈，我看你一直没动」这种错位。
  */
@@ -532,7 +622,7 @@ const TEEN_SCRIPT: Record<DiscType, TeenScriptRow[]> = {
   ],
 };
 
-/** 学生版第 1 节：孩子自己那一列要什么 */
+/** 学生家庭综合版第 1 节：孩子自己那一列要什么 */
 const TEEN_SELF_WANTS: Record<DiscType, string> = {
   D: "自己的决定权、别被拖着、别被当成小孩",
   I: "有人接话、别被冷落、说完了有人回应",
@@ -755,7 +845,7 @@ function fearLoop(members: { type: DiscType }[]): string {
   return `${head}放在一起看，会发现一件事：各自最怕的东西恰好互相触发——${parts.join("，")}；${tail}`;
 }
 
-/** 三人版第 10 节：每人最容易缺的那一步 */
+/** 家长家庭综合版第 10 节：每人最容易缺的那一步 */
 function missStep(t: DiscType): string {
   return t === "D"
     ? "跳过感受，直接给方案"
@@ -846,12 +936,12 @@ export function buildCommKit(input: CommKitInput): CommKitResult {
   return {
     books,
     members: [student, ...parents].filter(Boolean) as KitMember[],
-    trioTitle: parents.length >= 2 ? "三人版" : parents.length === 1 ? "两人版" : "家庭版",
+    trioTitle: "家长家庭综合版",
   };
 }
 
 /* ------------------------------------------------------------------ */
-/* 书一 · 三人版 / 两人版                                               */
+/* 书一 · 家长家庭综合版（两人时降级写法）                              */
 /* ------------------------------------------------------------------ */
 
 function buildTrio(student: KitMember | null, parents: KitMember[], grade?: string | null): KitBook {
@@ -862,7 +952,7 @@ function buildTrio(student: KitMember | null, parents: KitMember[], grade?: stri
   if (!student || parents.length === 0) {
     return {
       key: "trio",
-      label: parents.length >= 2 ? "三人版" : "家庭版",
+      label: "家长家庭综合版",
       title: "家庭沟通锦囊",
       subtitle: "每个人一张说明，每一对一张应对",
       forWhom: "全家一起看",
@@ -884,7 +974,7 @@ function buildTrio(student: KitMember | null, parents: KitMember[], grade?: stri
   const cTop = top("C");
 
   /* 三段都要过 55 才敢说「谁在定、谁在圆、谁在沉默」：
-     两人版里常见「D 最高只有 42」——这时写「妈妈拿着决定权」就是硬套。 */
+     两人写法里常见「D 最高只有 42」——这时写「妈妈拿着决定权」就是硬套。 */
   const dPart =
     dTop.score.D >= 55
       ? `${dTop.name}拿着决定权（D ${dTop.score.D}）`
@@ -1459,24 +1549,54 @@ function buildTrio(student: KitMember | null, parents: KitMember[], grade?: stri
     ],
   });
 
+  const nWord = CN_NUM[members.length] ?? String(members.length);
+
   return {
     key: "trio",
-    label: two ? "两人版" : "三人版",
+    label: "家长家庭综合版",
     title: "家庭沟通锦囊",
     subtitle: two ? "一个大人一个孩子，两种节奏，一种撞法" : "一家三口，三种节奏，六种撞法",
-    forWhom: two ? "全家一起看（还差一位家长，补齐才会出三人版）" : "全家一起看",
+    forWhom: two
+      ? "全家一起看。还差一位家长，补上才会出完整版（三人的那几节）"
+      : "全家一起看。爸妈孩子各一份，两两之间的那几对都在里面",
     meta: [
       { k: "参与成员", v: members.map((m) => `${m.name} ${m.type} 型`).join(" · ") },
       { k: "测评内容", v: `每人 24 组 DISC${grade ? ` · 孩子${grade}` : ""}` },
       { k: "怎么用", v: two ? "先看第 01 节，再看第 04 节那一对，最后翻到最后一节" : "先看第 01 节，再看第 04、05 节那两对，最后翻到最后一节" },
     ],
+    cover: {
+      eyebrow: "FAMILY COMMUNICATION KIT",
+      lines: two
+        ? ["一个大人一个孩子，两种节奏，一种撞法", "两个人各一张说明，一对一张应对，最后一张是这个家的规矩"]
+        : ["一家三口，三种节奏，六种撞法", "每个人一张说明，每一对一张应对，最后一张是这个家的规矩"],
+      badge: `家长家庭综合版 · ${two ? "两人 · " : ""}${sections.length} 节`,
+      visual: {
+        t: "say-cards",
+        lead: `同一个晚上八点半，${nWord}个人心里的话`,
+        /* 家长在前、孩子在后：读的时候是「大人怎么开口」→「孩子怎么接」 */
+        items: [...parents, ...(student ? [student] : [])].map((m) => ({
+          name: m.name,
+          type: m.type,
+          ...COVER_SCENE[m.kind === "student" ? "student" : "parent"][m.type],
+        })),
+        note: {
+          title: `${nWord}个人都没说错话，但这个晚上还是崩了`,
+          lines: [
+            `因为问题不在谁说了什么，而在${nWord}个人的节奏撞在一起时，没有人负责「换挡」。`,
+            "这份锦囊，就是把握档的位置标出来。",
+          ],
+        },
+      },
+      footNote:
+        "本锦囊只解释性格节奏带来的沟通错位，不含学业诊断与心理评估。成员超过三人时，每多一人加一页「个人说明」与一页「与主要照护者的对照」。",
+    },
     sections,
     ready: true,
   };
 }
 
 /* ------------------------------------------------------------------ */
-/* 书二 · 学生版《怎么跟我爸妈说话》                                    */
+/* 书二 · 学生家庭综合版《怎么跟我爸妈说话》                            */
 /* ------------------------------------------------------------------ */
 
 function buildStudentBook(student: KitMember | null, parents: KitMember[]): KitBook {
@@ -1486,7 +1606,7 @@ function buildStudentBook(student: KitMember | null, parents: KitMember[]): KitB
   if (!ready) {
     return {
       key: "student",
-      label: "学生版",
+      label: "学生家庭综合版",
       title: "怎么跟我爸妈说话",
       subtitle: "这一本不是让你去改脾气，是教你看懂他们的按键",
       forWhom: "给孩子自己看",
@@ -1765,17 +1885,39 @@ function buildStudentBook(student: KitMember | null, parents: KitMember[]): KitB
     ],
   });
 
+  /* 谁的声音大：取 D 与 I 里高的那一维——这两维才是「话先出口」的那一维 */
+  const voiceOf = (m: KitMember) => Math.max(m.score.D, m.score.I);
+  const voiceName = (m: KitMember) => (m.kind === "student" ? "你" : m.teenCall.replace(/^你/, "") || m.name);
+
   return {
     key: "student",
-    label: "学生版",
+    label: "学生家庭综合版",
     title: "怎么跟我爸妈说话",
     subtitle: "这一本不是让你去改脾气，是教你看懂他们的按键",
     forWhom: "给孩子自己看。不是给家长，也不需要给他们看",
     meta: [
       { k: "这份给谁", v: "给你。不是给家长，也不需要给他们看" },
-      { k: "数据从哪来", v: `你 ${s.type}、${ps.map((p) => `${p.teenCall} ${p.type}`).join("、")}，各一份 24 组 DISC` },
+      { k: "数据从哪来", v: `你 ${s.type}、${parents.map((p) => `${p.teenCall} ${p.type}`).join("、")}，各一份 24 组 DISC` },
       { k: "怎么用", v: "先看第 01 节，再翻到他们各自那一节，最后挑一句练" },
     ],
+    cover: {
+      eyebrow: "FOR YOU, NOT FOR YOUR PARENTS",
+      lines: ["这一本不是让你去改脾气，是教你看懂他们的按键", "哪些话他们会听，哪些话他们听不见，什么时候说了也白说"],
+      badge: `学生家庭综合版 · ${sections.length} 节`,
+      visual: {
+        t: "voice-bars",
+        lead: "在这个家，谁的声音最大",
+        rows: [...parents, s].map((m) => ({
+          name: voiceName(m),
+          value: voiceOf(m),
+          tail: VOICE_TAIL[m.type],
+        })),
+        lines: ["不是你没话说。", "是每次你说到一半，有人替你说完了，或者有人替你决定了。", "说久了，你就真的不说了。"],
+        strong: "这本讲的，是怎么把话拿回来。",
+      },
+      footNote:
+        "这份材料不评价谁对谁错，也不要求你「懂事」。它只做一件事：告诉你这个家里，哪句话进得去，哪句话进不去。",
+    },
     sections,
     ready: true,
   };
@@ -1989,6 +2131,22 @@ function buildMeBook(student: KitMember | null): KitBook {
       { k: "怎么来的", v: "你做的 24 组选择题，没有对错，选「更像你」的那个" },
       { k: "看第几页", v: "第 03 节看别人怎么误读你，第 05 节看你的三张牌" },
     ],
+    cover: {
+      eyebrow: "FOR YOUR EYES ONLY",
+      lines: ["这份只讲你，不讲你和别人的关系", "你的开关在哪，别人在哪儿容易看错你"],
+      badge: `学生个人版 · ${sections.length} 节`,
+      visual: {
+        t: "dim-rank",
+        lead: "你的四个维度",
+        rows: sorted.map((r, i) => ({ d: r.d, value: r.v, tag: i === 0 ? "主导" : i === 1 ? "副维" : undefined })),
+        lines: [
+          `${hi.d} 最高：${coverLine(hi.d, hi.v)}。`,
+          `${lo.d} 最低：${coverLine(lo.d, lo.v, false)}。`,
+        ],
+      },
+      footNote:
+        "这份材料不给你打分，也不评价你好不好。它只回答一个问题：你这种人，别人容易在哪些地方看懂你，你自己容易在哪些地方吃亏。",
+    },
     sections,
     ready: true,
   };
@@ -2318,7 +2476,7 @@ function buildOneParentBook(p: KitMember): KitBook {
         ],
       },
       { t: "p", text: "先练「作业拖延」那一句。理由很实际：它每天都会发生，练的机会最多。一句话练二十次才会变成习惯，一周说不到三次的话，练不出来。" },
-      { t: "note", text: `依据 六句按 ${p.type} 主导 / ${p.second} 副维 / 最低维 ${lo.d} ${lo.v} 的组合设计——共同点是「不削弱你的权威，只增加一个停顿」。不含孩子的测评数据，适用面比三人版更宽。` },
+      { t: "note", text: `依据 六句按 ${p.type} 主导 / ${p.second} 副维 / 最低维 ${lo.d} ${lo.v} 的组合设计——共同点是「不削弱你的权威，只增加一个停顿」。不含孩子的测评数据，适用面比家长家庭综合版更宽。` },
     ],
   });
 
@@ -2364,6 +2522,22 @@ function buildOneParentBook(p: KitMember): KitBook {
       { k: "怎么来的", v: "你做的 24 组选择题，折算成 D / I / S / C 四个维度分" },
       { k: "看第几页", v: "第 03 节看你的管教风格，第 04 节看你容易看不见什么" },
     ],
+    cover: {
+      eyebrow: "FOR PARENTS ONLY · SINGLE PROFILE",
+      lines: ["这份只讲你一个人，不讲孩子", "你这种性格，会把哪件事做对，会把哪件事看不见"],
+      badge: `家长个人版 · ${sections.length} 节`,
+      visual: {
+        t: "dim-rank",
+        lead: "你的四个维度",
+        rows: sorted.map((r, i) => ({ d: r.d, value: r.v, tag: i === 0 ? "主导" : i === 1 ? "副维" : undefined })),
+        lines: [
+          `${sorted[0].d} 是主导：${coverLine(sorted[0].d, sorted[0].v)}。`,
+          `${sorted[3].d} 只有 ${sorted[3].v}：这是你最容易出问题的那一格。`,
+        ],
+      },
+      footNote:
+        "这份材料不做诊断，也不评价你合不合格。它只回答一个问题：你这种性格的人做家长，会自然而然把哪件事做对，又会自然而然漏掉哪件事。",
+    },
     sections,
     ready: true,
   };

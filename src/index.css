@@ -136,6 +136,13 @@ div[id*="kimi-widget" i] {
   #report-print-root details > summary {
     display: none !important;
   }
+  /* 封面是一张整页的纸：去掉卡片边框，并让白底外扩铺满版心，
+     否则打印出来会是「米色纸上贴一张白卡」，与四份 PDF 的观感不符 */
+  #report-print-root .kit-cover,
+  .kit-cover {
+    overflow: visible !important;
+    box-shadow: 0 0 0 100vmax #fff;
+  }
   /* 打印纸面更宽：取消移动端横向滚动与最小宽度约束，避免图表被裁切变形 */
   #report-print-root .overflow-x-auto {
     overflow-x: visible !important;

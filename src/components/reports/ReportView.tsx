@@ -2527,7 +2527,7 @@ function ReportViewInner({
     subject: "学科能力评估报告",
     discparent: "家长认知冲突报告（亲子对照与沟通建议）",
     family: "家庭教育报告（五级台阶 · 亲子盲区）",
-    commkit: "家庭沟通锦囊（三人版 · 学生版 · 个人版）",
+    commkit: "家庭沟通锦囊（家长家庭综合版 · 学生家庭综合版 · 个人版）",
     parent: "家长认知冲突报告（亲子对照与沟通建议）",
     combined: "综合学习力报告",
     guidance: "升学指导综合报告",
