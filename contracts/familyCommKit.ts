@@ -755,6 +755,27 @@ function fearLoop(members: { type: DiscType }[]): string {
   return `${head}放在一起看，会发现一件事：各自最怕的东西恰好互相触发——${parts.join("，")}；${tail}`;
 }
 
+/** 三人版第 10 节：每人最容易缺的那一步 */
+function missStep(t: DiscType): string {
+  return t === "D"
+    ? "跳过感受，直接给方案"
+    : t === "I"
+      ? "替他解决，替他说完"
+      : t === "S"
+        ? "不说自己的不满，只忍"
+        : "先说错处，不说整体";
+}
+
+function practiceStep(t: DiscType): string {
+  return t === "D"
+    ? "练第一步（Y）：先问「是不是……」，停三秒再说话"
+    : t === "I"
+      ? "练第三步（S）：把「你想怎么办」还给他，不替他答"
+      : t === "S"
+        ? "练第一句：在还能平静的时候说一次「这件事我不太舒服」"
+        : "练顺序：先说「整体可以」，再说「这两处」";
+}
+
 /** 主导型取名：D 82 · 目标型 */
 function typeLine(m: KitMember): string {
   return `${m.type} ${m.score[m.type]} · ${TYPE_TAG[m.type]}`;
@@ -1328,10 +1349,80 @@ function buildTrio(student: KitMember | null, parents: KitMember[], grade?: stri
     ],
   });
 
-  /* 10 这周只做一件事 */
+  /* 10 六句话：一人一版（两位家长时就是「爸爸一版，妈妈一版」） */
+  const lastNo = secondParent ? 10 : 8;
+  sections.push({
+    no: no(secondParent ? 9 : 7),
+    title: secondParent ? `六句话：${mainParent.name}一版，${secondParent.name}一版` : `六句话：${mainParent.name}这一版`,
+    lead: "同一个场景，两个人不该说同一句话",
+    blocks: [
+      {
+        t: "p",
+        text: `不用背。先挑一句最像你家的，这周只练这一句。${
+          secondParent ? `两个人分开练——${mainParent.type} 型和 ${secondParent.type} 型缺的东西不一样，说一样的话反而假。` : ""
+        }`,
+      },
+      {
+        t: "table",
+        head: ["场景", "他可能说", ...(secondParent ? [`${mainParent.name}（${mainParent.type}）怎么说`, `${secondParent.name}（${secondParent.type}）怎么说`] : [`${mainParent.name}（${mainParent.type}）怎么说`])],
+        rows: PARENT_SCRIPT[mainParent.type].map((r, i) => [
+          r.scene,
+          r.childSays,
+          r.better,
+          ...(secondParent ? [PARENT_SCRIPT[secondParent.type][i].better] : []),
+        ]),
+      },
+      {
+        t: "table",
+        head: ["谁", "最容易缺的一步", "所以要练的是"],
+        rows: [
+          ...(secondParent
+            ? [
+                [mainParent.name + `（${mainParent.type}）`, missStep(mainParent.type), practiceStep(mainParent.type)],
+                [secondParent.name + `（${secondParent.type}）`, missStep(secondParent.type), practiceStep(secondParent.type)],
+              ]
+            : [[mainParent.name + `（${mainParent.type}）`, missStep(mainParent.type), practiceStep(mainParent.type)]]),
+          [student.name + `（${student.type}）`, "不主动开口", "练一句话的回答：被问到时说一句就行，不必说对"],
+        ],
+      },
+      {
+        t: "cards",
+        items: [
+          {
+            title: "先从哪一句开始",
+            sub: "别六句一起练",
+            rows: [
+              { k: mainParent.name, v: `先练「作业拖延」那一句——每天都会发生，练的机会最多。` },
+              ...(secondParent ? [{ k: secondParent.name, v: `先练「手机」那一句——这是你最容易替他找办法的地方。` }] : []),
+              { k: "节奏", v: "两个人第一周各练一句，遇到就练，不遇到不硬找。两周后再加第二句。" },
+            ],
+          },
+        ],
+      },
+      {
+        t: "table",
+        head: ["练不成，通常是这三种", "长什么样"],
+        rows: [
+          ["接住说得像审问", "「是不是又玩手机了？」——加个「又」，整句就废了。"],
+          ["说感受说成指责", "「我看到你就烦。」——说的是「我」，但姿态是审判。"],
+          ["方案只有一个选项", "「九点前必须写完。」——那不是选项，是通知。"],
+        ],
+      },
+      {
+        t: "p",
+        text: "如果他还是不说，换三个办法：① 换个场景——开车时、散步时、一起洗碗时，不用对视，男孩更容易开口；② 说「我」不发判词——「我最近有点担心你，也说不上为什么」；③ 借别人的事起头——「我同事家孩子也这样，你觉得呢」，谈别人比谈自己安全。",
+      },
+      {
+        t: "note",
+        text: `依据 六场景为家庭高频冲突点；话术按各人主导型分别生成，均遵循「接住感受 → 说自己的感受 → 给选择」三步。`,
+      },
+    ],
+  });
+
+  /* 11 这周只做一件事 */
   const quiet = sTop.name;
   sections.push({
-    no: no(secondParent ? 10 : 8),
+    no: no(lastNo),
     title: "这周，全家只做一件事",
     lead: `把「你怎么看」还给那个最少说话的人`,
     blocks: [
