@@ -27,6 +27,7 @@ import {
   organizations,
   assessmentResults,
   academicRecords,
+  counselingRecords,
   guideSessions,
   subjectIntentions,
   intentionRounds,
@@ -271,6 +272,92 @@ function academicsRate(subjects: { name?: string; lastScore?: number | null; ful
     full += f;
   }
   return full > 0 ? Math.round((got / full) * 1000) / 10 : null;
+}
+
+/* ------------------------------- v245 一生一册 P1 ------------------------------- */
+
+/** 班级名归一：「高一1班」「1班」「高一（1）班」→「1班」，用于导入匹配。 */
+function normClass(c: string | null | undefined): string {
+  return (c ?? "")
+    .replace(/[（(]\s*[一1]\s*[）)]/g, "1")
+    .replace(/高[一二三]/g, "")
+    .replace(/初[一二三]/g, "")
+    .replace(/年级/g, "")
+    .replace(/[\s（）()]/g, "")
+    .replace(/班$/, "班");
+}
+
+/** 学业下滑预警（导入后即时触发；与 reevaluate 同口径：相邻两次得分率降幅 ≥10 个百分点）。 */
+async function createDropWarnings(db: ReturnType<typeof getDb>, userIds: number[]) {
+  if (!userIds.length) return 0;
+  const openRows = await db.select().from(warningEvents).where(and(inArray(warningEvents.userId, userIds), eq(warningEvents.status, "open")));
+  const openKeys = new Set(openRows.map((e) => `${e.userId}:${e.type}`));
+  const recs = await db.select().from(academicRecords).where(inArray(academicRecords.userId, userIds)).orderBy(desc(academicRecords.createdAt));
+  const profs = await db.select().from(studentProfile).where(inArray(studentProfile.userId, userIds));
+  const profByUser = new Map(profs.map((p) => [p.userId, p]));
+  const byUser = new Map<number, typeof recs>();
+  for (const r of recs) {
+    const arr = byUser.get(r.userId) ?? [];
+    arr.push(r);
+    byUser.set(r.userId, arr);
+  }
+  const orgRows = await db
+    .select({ id: inviteRegistrations.userId, chOrgId: inviteChannels.orgId })
+    .from(inviteRegistrations)
+    .innerJoin(inviteChannels, eq(inviteChannels.id, inviteRegistrations.channelId))
+    .where(inArray(inviteRegistrations.userId, userIds));
+  const orgByUser = new Map(orgRows.map((r) => [r.id, r.chOrgId ?? null]));
+  let created = 0;
+  for (const uid of userIds) {
+    if (openKeys.has(`${uid}:academic_drop`)) continue;
+    const mine = byUser.get(uid) ?? [];
+    const grade = gradeLabel(profByUser.get(uid)?.grade);
+    const rates = mine.map((r) => academicsRate((r.subjects ?? []) as { name?: string; lastScore?: number | null; fullScore?: number | null }[], grade)).filter((x): x is number => x != null);
+    if (rates.length < 2) continue;
+    const [now, prev] = rates;
+    if (prev - now >= 10) {
+      await db.insert(warningEvents).values({
+        userId: uid,
+        orgId: orgByUser.get(uid) ?? null,
+        type: "academic_drop",
+        level: now < 50 ? "预警" : "关注",
+        detail: { from: prev, to: now, drop: Math.round((prev - now) * 10) / 10, source: "grade_import" },
+      });
+      created++;
+    }
+  }
+  return created;
+}
+
+/** 重算某次考试（orgId+examName）全部行的班排/年排。数据量校级，直接全量重算保证准确。 */
+async function recomputeRanks(db: ReturnType<typeof getDb>, orgId: number | null, examName: string) {
+  const rows = await db.select().from(academicRecords).where(and(eq(academicRecords.examName, examName), orgId == null ? eq(academicRecords.orgId, -1) : eq(academicRecords.orgId, orgId)));
+  const userIds = [...new Set(rows.map((r) => r.userId))];
+  const profs = userIds.length ? await db.select().from(studentProfile).where(inArray(studentProfile.userId, userIds)) : [];
+  const gradeByUser = new Map(profs.map((p) => [p.userId, gradeLabel(p.grade)]));
+  const byClass = new Map<string, typeof rows>();
+  const byGrade = new Map<string, typeof rows>();
+  for (const r of rows) {
+    if (r.total == null) continue;
+    const cls = r.className || "未分班";
+    const g = gradeByUser.get(r.userId) ?? "";
+    if (!byClass.has(cls)) byClass.set(cls, []);
+    if (!byGrade.has(g)) byGrade.set(g, []);
+    byClass.get(cls)!.push(r);
+    byGrade.get(g)!.push(r);
+  }
+  for (const list of byClass.values()) {
+    list.sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].classRank !== i + 1) await db.update(academicRecords).set({ classRank: i + 1 }).where(eq(academicRecords.id, list[i].id));
+    }
+  }
+  for (const list of byGrade.values()) {
+    list.sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].gradeRank !== i + 1) await db.update(academicRecords).set({ gradeRank: i + 1 }).where(eq(academicRecords.id, list[i].id));
+    }
+  }
 }
 
 /* ------------------------------- 档案校验码 ------------------------------- */
@@ -830,6 +917,227 @@ export const schoolRouter = createRouter({
       }),
   }),
 
+  /* ------------------------------- v245 成绩导入（教务） ------------------------------- */
+
+  grades: createRouter({
+    /** 供导入页选择班级（职员范围内）。 */
+    classes: intentionSvcQuery.query(async ({ ctx }) => {
+      requireStaff(ctx);
+      const db = getDb();
+      const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
+      let students = await campusStudents(db, orgId);
+      if (ctx.user.role === "tutor") {
+        const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+        const ids = new Set(mine.map((m) => m.studentUserId));
+        students = students.filter((s) => ids.has(s.userId));
+      }
+      const classes = [...new Set(students.map((s) => s.className).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "zh-Hans-CN", { numeric: true }));
+      return { classes, students: students.map((s) => ({ userId: s.userId, name: s.name, className: s.className, grade: s.grade })) };
+    }),
+
+    /** 导入预览：前端解析 Excel/CSV 后传行数据，后端按「班级+姓名」匹配并回显。 */
+    importPreview: intentionSvcQuery
+      .input(
+        z.object({
+          examName: z.string().trim().min(1).max(64),
+          className: z.string().trim().min(1).max(32),
+          rows: z.array(z.object({ name: z.string().trim().min(1).max(32), scores: z.record(z.string(), z.number().nullable()) })).min(1).max(300),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
+        let students = await campusStudents(db, orgId);
+        if (ctx.user.role === "tutor") {
+          const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+          const ids = new Set(mine.map((m) => m.studentUserId));
+          students = students.filter((s) => ids.has(s.userId));
+        }
+        const want = normClass(input.className);
+        const byName = new Map<string, (typeof students)[number]>();
+        for (const s of students) {
+          if (normClass(s.className) !== want) continue;
+          const key = s.name.trim();
+          if (!byName.has(key)) byName.set(key, s);
+        }
+        const matched: { name: string; userId: number; total: number | null }[] = [];
+        const unmatched: string[] = [];
+        for (const r of input.rows) {
+          const stu = byName.get(r.name.trim());
+          if (stu) {
+            const vals = Object.values(r.scores).filter((v): v is number => v != null);
+            matched.push({ name: r.name.trim(), userId: stu.userId, total: vals.length ? vals.reduce((a, b) => a + b, 0) : null });
+          } else {
+            unmatched.push(r.name.trim());
+          }
+        }
+        return { matched, unmatched, total: input.rows.length };
+      }),
+
+    /** 确认归档：写入 academic_records，重算班排/年排，触发学业下滑预警。 */
+    importCommit: intentionSvcQuery
+      .input(
+        z.object({
+          examName: z.string().trim().min(1).max(64),
+          examDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().default(""),
+          className: z.string().trim().min(1).max(32),
+          term: z.string().trim().max(16).optional().default(""),
+          rows: z.array(z.object({ name: z.string().trim().min(1).max(32), scores: z.record(z.string(), z.number().nullable()) })).min(1).max(300),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const orgId = isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null);
+        let students = await campusStudents(db, orgId);
+        if (ctx.user.role === "tutor") {
+          const mine = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, ctx.user.id));
+          const ids = new Set(mine.map((m) => m.studentUserId));
+          students = students.filter((s) => ids.has(s.userId));
+        }
+        const want = normClass(input.className);
+        const byName = new Map<string, (typeof students)[number]>();
+        for (const s of students) {
+          if (normClass(s.className) !== want) continue;
+          const key = s.name.trim();
+          if (!byName.has(key)) byName.set(key, s);
+        }
+        const inserted: number[] = [];
+        let skipped = 0;
+        for (const r of input.rows) {
+          const stu = byName.get(r.name.trim());
+          if (!stu) {
+            skipped++;
+            continue;
+          }
+          const subjects = Object.entries(r.scores)
+            .filter(([, v]) => v != null)
+            .map(([name, lastScore]) => ({ name, lastScore, fullScore: null as number | null }));
+          const total = subjects.reduce((a, s) => a + (s.lastScore ?? 0), 0);
+          const [row] = await db
+            .insert(academicRecords)
+            .values({
+              userId: stu.userId,
+              examName: input.examName,
+              subjects,
+              orgId: stu.orgId ?? orgId,
+              className: stu.className ?? input.className,
+              term: input.term,
+              examDate: input.examDate,
+              total: subjects.length ? total : null,
+              importedBy: ctx.user.id,
+            })
+            .$returningId();
+          if (row) inserted.push(stu.userId);
+        }
+        const realOrgId = orgId ?? (students.find((s) => inserted.includes(s.userId))?.orgId ?? null);
+        await recomputeRanks(db, realOrgId, input.examName);
+        const warningsCreated = await createDropWarnings(db, [...new Set(inserted)]);
+        return { imported: inserted.length, skipped, warningsCreated };
+      }),
+  }),
+
+  /* ------------------------------- v245 指导记录（约谈归档） ------------------------------- */
+
+  counseling: createRouter({
+    /** 学生历史指导记录（含记录人姓名）；职员范围内。 */
+    list: intentionSvcQuery
+      .input(z.object({ studentId: z.number().int() }))
+      .query(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const stu = await campusStudents(db, isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null));
+        const me = stu.find((s) => s.userId === input.studentId);
+        if (!me) throw new TRPCError({ code: "FORBIDDEN", message: "该学生不在你的校园范围内" });
+        if (ctx.user.role === "tutor") {
+          const assigned = await db.select({ id: studentTutor.id }).from(studentTutor).where(and(eq(studentTutor.tutorUserId, ctx.user.id), eq(studentTutor.studentUserId, input.studentId))).limit(1);
+          if (!assigned.length) throw new TRPCError({ code: "FORBIDDEN", message: "该学生未分配给你" });
+        }
+        const rows = await db.select().from(counselingRecords).where(eq(counselingRecords.userId, input.studentId)).orderBy(desc(counselingRecords.date), desc(counselingRecords.id));
+        const teacherIds = [...new Set(rows.map((r) => r.teacherId))];
+        const teachers = teacherIds.length ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, teacherIds)) : [];
+        const nameById = new Map(teachers.map((t) => [t.id, t.name ?? ""]));
+        return {
+          records: rows.map((r) => ({
+            id: r.id,
+            date: r.date,
+            type: r.type,
+            channel: r.channel,
+            summary: r.summary,
+            followUp: r.followUp,
+            warningId: r.warningId,
+            teacherName: nameById.get(r.teacherId) ?? "老师",
+          })),
+        };
+      }),
+
+    /** 该生未结预警（写指导记录时可关联）。 */
+    openWarnings: intentionSvcQuery
+      .input(z.object({ studentId: z.number().int() }))
+      .query(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const rows = await db
+          .select({ id: warningEvents.id, type: warningEvents.type, level: warningEvents.level, status: warningEvents.status, createdAt: warningEvents.createdAt, detail: warningEvents.detail })
+          .from(warningEvents)
+          .where(and(eq(warningEvents.userId, input.studentId), eq(warningEvents.status, "open")))
+          .orderBy(desc(warningEvents.createdAt));
+        return { warnings: rows };
+      }),
+
+    /** 新建指导记录；传 warningId 则联动把预警置为「处理中」并留痕。 */
+    create: intentionSvcQuery
+      .input(
+        z.object({
+          studentId: z.number().int(),
+          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          type: z.enum(["心理", "学业", "生涯", "行为", "家庭"]),
+          channel: z.enum(["面谈", "电话", "家访", "线上"]),
+          summary: z.string().trim().min(1).max(2000),
+          followUp: z.string().trim().max(512).optional().default(""),
+          warningId: z.number().int().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const stu = await campusStudents(db, isPlatformAdmin(ctx.user) ? null : (ctx.user.orgId ?? null));
+        const me = stu.find((s) => s.userId === input.studentId);
+        if (!me) throw new TRPCError({ code: "FORBIDDEN", message: "该学生不在你的校园范围内" });
+        if (ctx.user.role === "tutor") {
+          const assigned = await db.select({ id: studentTutor.id }).from(studentTutor).where(and(eq(studentTutor.tutorUserId, ctx.user.id), eq(studentTutor.studentUserId, input.studentId))).limit(1);
+          if (!assigned.length) throw new TRPCError({ code: "FORBIDDEN", message: "该学生未分配给你" });
+        }
+        if (input.warningId != null) {
+          const [w] = await db.select().from(warningEvents).where(and(eq(warningEvents.id, input.warningId), eq(warningEvents.userId, input.studentId))).limit(1);
+          if (!w) throw new TRPCError({ code: "NOT_FOUND", message: "关联预警不存在" });
+        }
+        const [row] = await db
+          .insert(counselingRecords)
+          .values({
+            userId: input.studentId,
+            orgId: me.orgId,
+            teacherId: ctx.user.id,
+            date: input.date,
+            type: input.type,
+            channel: input.channel,
+            summary: input.summary,
+            followUp: input.followUp,
+            warningId: input.warningId ?? null,
+          })
+          .$returningId();
+        const newId = row?.id ?? 0;
+        if (input.warningId != null) {
+          await db
+            .update(warningEvents)
+            .set({ status: "acknowledged", handledBy: ctx.user.id, handledAt: new Date(), handleNote: `已约谈并生成指导记录 #${newId}，待办结` })
+            .where(eq(warningEvents.id, input.warningId));
+        }
+        return { ok: true as const, id: newId };
+      }),
+  }),
+
   /* ------------------------------- 团体统计 ------------------------------- */
 
   stats: createRouter({
@@ -1103,16 +1411,49 @@ export const schoolRouter = createRouter({
         const results = await db.select().from(assessmentResults).where(eq(assessmentResults.userId, sid)).orderBy(desc(assessmentResults.createdAt));
         const recs = await db.select().from(academicRecords).where(eq(academicRecords.userId, sid)).orderBy(desc(academicRecords.createdAt));
         const warns = await db.select().from(warningEvents).where(eq(warningEvents.userId, sid)).orderBy(desc(warningEvents.createdAt));
-        const guides = await db.select().from(guideSessions).where(eq(guideSessions.userId, sid)).orderBy(desc(guideSessions.createdAt));
+        /* v245：指导记录改读 counseling_records（学校老师手写归档，可关联预警） */
+        const guides = await db.select().from(counselingRecords).where(eq(counselingRecords.userId, sid)).orderBy(desc(counselingRecords.date), desc(counselingRecords.id));
+        const teacherIds = [...new Set(guides.map((g) => g.teacherId))];
+        const teachers = teacherIds.length ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, teacherIds)) : [];
+        const teacherNameById = new Map(teachers.map((t) => [t.id, t.name ?? ""]));
+        const warnStatusById = new Map(warns.map((w) => [w.id, w.status]));
         const portfolio = {
           student: { userId: sid, name: me.name, className: me.className, grade: me.grade, school: profile?.school ?? null },
           assessments: results.map((r) => ({ kind: r.kind, createdAt: r.createdAt, result: r.result })),
-          academics: recs.map((r) => ({ examName: r.examName, subjects: r.subjects, createdAt: r.createdAt })),
-          warnings: warns.map((w) => ({ type: w.type, level: w.level, status: w.status, detail: w.detail, createdAt: w.createdAt, handleNote: w.handleNote })),
-          guidance: guides.map((g) => ({ date: g.date, step: g.step, done: g.done, answers: g.answers, createdAt: g.createdAt })),
+          academics: recs.map((r) => ({
+            examName: r.examName,
+            subjects: r.subjects,
+            createdAt: r.createdAt,
+            examDate: r.examDate,
+            term: r.term,
+            className: r.className,
+            total: r.total,
+            classRank: r.classRank,
+            gradeRank: r.gradeRank,
+            imported: r.importedBy != null,
+          })),
+          warnings: warns.map((w) => ({ id: w.id, type: w.type, level: w.level, status: w.status, detail: w.detail, createdAt: w.createdAt, handleNote: w.handleNote })),
+          guidance: guides.map((g) => ({
+            id: g.id,
+            date: g.date,
+            type: g.type,
+            channel: g.channel,
+            summary: g.summary,
+            followUp: g.followUp,
+            warningId: g.warningId,
+            warningStatus: g.warningId != null ? (warnStatusById.get(g.warningId) ?? null) : null,
+            teacherName: teacherNameById.get(g.teacherId) ?? "老师",
+            createdAt: g.createdAt,
+          })),
           generatedAt: new Date().toISOString(),
         };
-        return { ...portfolio, checksum: checksum(portfolio) };
+        /* 档案完整度：四类数据各 25% */
+        const completeness =
+          (portfolio.assessments.length ? 25 : 0) +
+          (portfolio.academics.length ? 25 : 0) +
+          (portfolio.warnings.length ? 25 : 0) +
+          (portfolio.guidance.length ? 25 : 0);
+        return { ...portfolio, completeness, checksum: checksum(portfolio) };
       }),
   }),
 });
