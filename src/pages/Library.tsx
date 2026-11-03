@@ -171,7 +171,16 @@ function MajorsTab({ isAdmin, initialMenlei }: { isAdmin: boolean; initialMenlei
     setMenlei(m);
     setCat("");
     setPage(1);
-    setSearchParams(m ? { subjectCategory: m } : {}, { replace: true });
+    // 合并而非整体替换 URL 参数：在 /admin?item=library 等场景下，避免冲掉 item 等参数导致页面弹回默认页
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (m) p.set("subjectCategory", m);
+        else p.delete("subjectCategory");
+        return p;
+      },
+      { replace: true },
+    );
   };
   const totalPages = Math.max(1, Math.ceil((query.data?.total ?? 0) / 20));
   const navCount = (m: string) => nav?.menleis.find((x) => x.menlei === m)?.n ?? 0;

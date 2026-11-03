@@ -16,7 +16,7 @@ import { getDb } from "./queries/connection";
 import { isPlatformAdmin } from "./tenant";
 import type { Subject4dResult } from "@contracts/subject4d";
 import { defaultFullScore } from "@contracts/academics";
-import { normalizeAssessKinds, INVITE_ASSESS_KINDS } from "@contracts/invite";
+import { normalizeAssessKinds, expandAssessKinds, INVITE_ASSESS_KINDS } from "@contracts/invite";
 import { resolveServices } from "@contracts/edition";
 import type { OrgServices } from "@contracts/edition";
 import {
@@ -28,7 +28,6 @@ import {
   assessmentResults,
   academicRecords,
   counselingRecords,
-  guideSessions,
   subjectIntentions,
   intentionRounds,
   warningEvents,
@@ -494,8 +493,9 @@ export const schoolRouter = createRouter({
         const db = getDb();
         const kinds = normalizeAssessKinds(input.kinds);
         if (!kinds?.length) throw new TRPCError({ code: "BAD_REQUEST", message: "测评种类格式不对" });
-        /* v224：机构被超管限制开放测评时，不允许推送限制外的测评 */
-        const open = await orgOpenAssessKinds(db, ctx.user.orgId ?? null);
+        /* v224：机构被超管限制开放测评时，不允许推送限制外的测评。
+           v246：旧配置里的 "mental" 视为同时开放四套心理量表（expandAssessKinds），保证拆分后旧配置可继续推送。 */
+        const open = expandAssessKinds(await orgOpenAssessKinds(db, ctx.user.orgId ?? null));
         if (open) {
           const blocked = kinds.filter((k) => !open.includes(k));
           if (blocked.length) {

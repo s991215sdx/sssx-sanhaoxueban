@@ -24,8 +24,8 @@ import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
 import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer, Users } from "lucide-react";
 
-/** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
-type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
+/** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评；v246 心理健康拆为四套量表四个独立测评。 */
+type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "scl90" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
 
 type TestDef = {
   kind: TestKind;

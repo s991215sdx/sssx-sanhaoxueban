@@ -2,10 +2,12 @@
  * v223 测评中心（校园版管理端）：测评组合/单项测评目录 + 报告效果图与功能介绍 + 组选批量推送。
  * 参考行业标杆「评估工具库 + 组合框」交互：左侧目录选测评 → 右侧勾选学生 → 一键推送，
  * 推送走 v82 已验证的 releasedAssessments 解锁机制，学生客户端立即可见可测。
+ * v246：目录归四类栏目（学习力/升学/家庭/心理健康），心理健康拆为四个独立测评。
  */
 import { useMemo, useState } from "react";
 import { Layers, Plus, Check, X, Search, Send, Clock, Users as UsersIcon, FileText, ChevronDown, ChevronUp, ChevronRight, History } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { expandAssessKinds } from "@contracts/invite";
 import { G, Card, SecTitle, Pill } from "./SchoolConsole";
 
 /* ---------------------------------- 测评目录（静态物料） ---------------------------------- */
@@ -13,6 +15,8 @@ import { G, Card, SecTitle, Pill } from "./SchoolConsole";
 type CatalogItem = {
   key: string;
   combo: boolean;
+  /** v246：归栏目——学习力测评 / 升学测评 / 家庭测评 / 心理健康测评 */
+  cat: "xueli" | "shengxue" | "jiating" | "xinli";
   name: string;
   kinds: string[];
   tags: string[];
@@ -31,7 +35,10 @@ const KIND_LABEL: Record<string, string> = {
   holland: "霍兰德职业兴趣",
   e3: "学习力诊断 E3",
   multi5: "多元智能五项",
-  mental: "心理健康筛查",
+  mental: "心理健康 · 通用版（PHQ-9+GAD-7）",
+  mentalsdq: "心理健康 · 学生版A（SDQ）",
+  mentalpa: "心理健康 · 学生版B（PHQ-A+GAD-7）",
+  scl90: "心理健康 · 深度评估（SCL-90）",
   e3parent: "家长卷 · 家庭支持",
   discparent: "家长 DISC（家庭版）",
   familystudent: "家庭关系测评 · 学生卷",
@@ -44,7 +51,7 @@ const KIND_LABEL: Record<string, string> = {
 
 const CATALOG: CatalogItem[] = [
   {
-    key: "xuanke", combo: true, name: "选科及升学规划组合",
+    key: "xuanke", combo: true, cat: "shengxue", name: "选科及升学规划组合",
     kinds: ["subject4d", "holland"],
     tags: ["选科", "升学规划", "粤华必测"],
     purpose: "学科四维 × 霍兰德 × 月考成绩交叉印证，输出三大选科推荐与升学规划报告",
@@ -54,7 +61,7 @@ const CATALOG: CatalogItem[] = [
     theory: "基于学科四维测评（兴趣、能力倾向、观念、效能感）与霍兰德职业兴趣量表（RIASEC），结合月考成绩加权（权重 0–60% 机构可调），按广东 3+1+2 规则在物理/历史两大方向内生成组合推荐。",
   },
   {
-    key: "xueli", combo: true, name: "学习力提升组合",
+    key: "xueli", combo: true, cat: "xueli", name: "学习力提升组合",
     kinds: ["e3", "multi5"],
     tags: ["学习方法", "潜能发现", "提分"],
     purpose: "E3 学业诊断定位方法与习惯短板，多元智能发现优势领域，配套提分策略",
@@ -64,7 +71,7 @@ const CATALOG: CatalogItem[] = [
     theory: "E3 学业诊断从方法、动力、习惯三个维度 9 项能力建模；多元智能理论（加德纳）从语言、逻辑、空间、运动、音乐、人际、自省、自然观察等维度刻画优势智能。",
   },
   {
-    key: "jiating", combo: true, name: "亲子沟通组合",
+    key: "jiating", combo: true, cat: "jiating", name: "亲子沟通组合",
     kinds: ["e3parent", "discparent"],
     tags: ["家校沟通", "亲子对照"],
     purpose: "家长与孩子分别作答，系统生成认知差异对照与沟通建议报告",
@@ -74,7 +81,7 @@ const CATALOG: CatalogItem[] = [
     theory: "家长卷（家庭支持 E3）与学生测评交叉比对，定位认知差距并生成沟通建议。",
   },
   {
-    key: "jiating-relation", combo: true, name: "家庭教育测评（亲子盲区）",
+    key: "jiating-relation", combo: true, cat: "jiating", name: "家庭教育测评（亲子盲区）",
     kinds: ["familystudent", "familyparent"],
     tags: ["亲子关系", "家校沟通", "盲区"],
     purpose: "孩子与家长各填一份，输出家庭教育认知报告：五级台阶断在哪一级、六项认知盲区、安全感与冲突场景",
@@ -93,7 +100,7 @@ const CATALOG: CatalogItem[] = [
     theory: "五级台阶模型（求助—开口—修复—协商—自主）与教养方式「要求 × 回应」两维模型；家长情感对照六题与孩子对应六题配对，差值 ≥1.5 记认知盲区。",
   },
   {
-    key: "subject4d", combo: false, name: "学科四维测评（九科）",
+    key: "subject4d", combo: false, cat: "shengxue", name: "学科四维测评（九科）",
     kinds: ["subject4d"],
     tags: ["选科", "学法"],
     purpose: "逐科诊断兴趣、能力倾向、观念、效能感四维，是选科推荐的基石",
@@ -103,7 +110,7 @@ const CATALOG: CatalogItem[] = [
     theory: "学科四维模型：兴趣（愿不愿学）、能力倾向（学不学得快）、观念（怎么看待这门学科）、效能感（信不信自己能学好）。",
   },
   {
-    key: "holland", combo: false, name: "霍兰德职业兴趣测评",
+    key: "holland", combo: false, cat: "shengxue", name: "霍兰德职业兴趣测评",
     kinds: ["holland"],
     tags: ["职业兴趣", "专业方向"],
     purpose: "RIASEC 六型定位职业兴趣，匹配专业与职业方向",
@@ -113,7 +120,7 @@ const CATALOG: CatalogItem[] = [
     theory: "霍兰德职业兴趣理论（John Holland）：现实型 R、研究型 I、艺术型 A、社会型 S、企业型 E、常规型 C。",
   },
   {
-    key: "e3", combo: false, name: "学习力诊断 E3",
+    key: "e3", combo: false, cat: "xueli", name: "学习力诊断 E3",
     kinds: ["e3"],
     tags: ["学习方法", "提分"],
     purpose: "三阶九能冰山模型，定位学习方法、动力、习惯短板",
@@ -123,7 +130,7 @@ const CATALOG: CatalogItem[] = [
     theory: "学习力三阶：基础阶（记忆、理解）、方法阶（归纳、迁移）、动力阶（目标、自律）；九能逐项评分。",
   },
   {
-    key: "multi5", combo: false, name: "多元智能五项",
+    key: "multi5", combo: false, cat: "xueli", name: "多元智能五项",
     kinds: ["multi5"],
     tags: ["潜能", "扬长"],
     purpose: "发现优势智能领域，为扬长教育与活动选择提供依据",
@@ -133,18 +140,48 @@ const CATALOG: CatalogItem[] = [
     theory: "多元智能理论（Howard Gardner）：语言、逻辑数学、空间、身体运动、人际等智能相对独立、各有优势。",
   },
   {
-    key: "mental", combo: false, name: "心理健康筛查（四套量表）",
-    kinds: ["mental"],
-    tags: ["心理", "预警"],
-    purpose: "情绪与行为风险筛查，异常自动进入预警中心分级推送",
-    crowd: "全体学生", minutes: 10, imgs: ["/assess/mental-cover.png", "/assess/mental.png"],
+    key: "mental-a", combo: false, cat: "xinli", name: "心理健康 · 学生版 A（SDQ 长处与困难）",
+    kinds: ["mentalsdq"],
+    tags: ["心理", "预警", "学生版A"],
+    purpose: "国际通用儿童青少年行为筛查，异常自动进入预警中心分级推送",
+    crowd: "4—17 岁（11 岁以下由家长引导填写）", minutes: 5, imgs: ["/assess/mental-cover.png", "/assess/mental.png"],
     why: ["心理风险发现越早，干预成本越低", "学校需要合规的筛查工具与留痕机制"],
-    gain: ["SDQ 五维筛查：情绪症状、品行、多动/注意缺陷、同伴交往、亲社会行为", "可按年龄选四套量表：学生版 A（SDQ）/ 学生版 B（PHQ-A+GAD-7）/ 通用版（PHQ-9+GAD-7）/ 深度评估（SCL-90）", "异常自动进预警中心，按班推送班主任；处置留痕，符合心理测评进校规范"],
-    theory: "SDQ 长处与困难问卷（Goodman）从情绪症状、品行、多动/注意缺陷、同伴交往、亲社会行为五个维度筛查；配套 PHQ-A / GAD-7 / PHQ-9 / SCL-90 量表覆盖不同年龄段与深度需求。学年一次施测，仅用于风险识别。",
+    gain: ["SDQ 五维筛查：情绪症状、品行、多动/注意缺陷、同伴交往、亲社会行为", "困难总分与综合评级，含 1 条安全预警题", "异常自动进预警中心，按班推送班主任；处置留痕，符合心理测评进校规范"],
+    theory: "SDQ 长处与困难问卷（Goodman）：25+1 题，从情绪症状、品行、多动/注意缺陷、同伴交往、亲社会行为五个维度筛查。学年一次施测，仅用于风险识别。",
+  },
+  {
+    key: "mental-b", combo: false, cat: "xinli", name: "心理健康 · 学生版 B（PHQ-A + GAD-7）",
+    kinds: ["mentalpa"],
+    tags: ["心理", "预警", "学生版B"],
+    purpose: "青少年抑郁 + 焦虑筛查（PHQ-A 为 PHQ-9 青少年改编版），含自伤念头红线题",
+    crowd: "11 岁以上", minutes: 4, imgs: ["/assess/mental-cover.png", "/assess/mental.png"],
+    why: ["抑郁与焦虑是青少年最常见的两类情绪风险", "PHQ-A + GAD-7 信效度依据充分，国际通用"],
+    gain: ["PHQ-A 抑郁分级（0—27）与 GAD-7 焦虑分级（0—21）", "含 1 道自伤念头红线题，触发即进预警中心", "处置留痕，符合心理测评进校规范"],
+    theory: "PHQ-A（青少年版患者健康问卷，PHQ-9 的青少年改编版）与 GAD-7（广泛性焦虑量表），按国际通用临界值分级。",
+  },
+  {
+    key: "mental-c", combo: false, cat: "xinli", name: "心理健康 · 通用版（PHQ-9 + GAD-7）",
+    kinds: ["mental"],
+    tags: ["心理", "预警", "通用版"],
+    purpose: "抑郁 + 焦虑标准筛查，青少年与成人都适用",
+    crowd: "不限", minutes: 4, imgs: ["/assess/mental-cover.png", "/assess/mental.png"],
+    why: ["国际通用的抑郁 + 焦虑筛查标准版", "已测过旧版（30 题十因子）的学生可在这里测新版"],
+    gain: ["PHQ-9 抑郁分级（0—27）与 GAD-7 焦虑分级（0—21）", "含 1 道自伤念头红线题，触发即进预警中心", "异常自动进预警中心，处置留痕"],
+    theory: "PHQ-9（患者健康问卷）与 GAD-7（广泛性焦虑量表）国际通用筛查标准版，按标准临界值分级。",
+  },
+  {
+    key: "mental-d", combo: false, cat: "xinli", name: "心理健康 · 深度评估（SCL-90）",
+    kinds: ["scl90"],
+    tags: ["心理", "深度评估"],
+    purpose: "90 题十因子全面深度心理评估，适合需要完整评估的学生",
+    crowd: "16 岁以上", minutes: 18, imgs: ["/assess/mental-cover.png", "/assess/mental.png"],
+    why: ["需要比筛查更深入、更全面的心理状态评估时选用", "10 因子全面扫描近一周状态"],
+    gain: ["10 因子得分：躯体化、强迫、人际敏感、抑郁、焦虑、敌对、恐怖、偏执、精神病性、其它", "总分与筛选结论，按中国常模口径", "含 1 道生命安全题，触发即进预警中心"],
+    theory: "SCL-90 症状自评量表（Derogatis）：90 题一字未改、10 因子，国际应用最广泛的心理症状自评工具，按中国常模给出筛选结论。",
   },
   /* ------- v224 补全：原通用版全部测评 ------- */
   {
-    key: "mbti", combo: false, name: "MBTI 性格快测",
+    key: "mbti", combo: false, cat: "xueli", name: "MBTI 性格快测",
     kinds: ["mbti"],
     tags: ["性格", "自我认知"],
     purpose: "28 道二选一迫选题，快速定位性格类型，帮学生理解自己的学习风格",
@@ -154,7 +191,7 @@ const CATALOG: CatalogItem[] = [
     theory: "MBTI（Myers-Briggs Type Indicator）基于荣格心理类型理论，从能量来源、信息获取、决策方式、生活态度四个维度划分 16 型人格。",
   },
   {
-    key: "disc", combo: false, name: "DISC 行为风格（学生版）",
+    key: "disc", combo: false, cat: "xueli", name: "DISC 行为风格（学生版）",
     kinds: ["disc"],
     tags: ["行为风格", "人际"],
     purpose: "24 组「最像我 / 最不像我」强迫选择，识别 D/I/S/C 行为特质",
@@ -164,7 +201,7 @@ const CATALOG: CatalogItem[] = [
     theory: "DISC 理论（William Marston）：人的行为风格可分支配 D、影响 I、稳健 S、谨慎 C 四类，强迫选择法（most/least）降低社会期许偏差。",
   },
   {
-    key: "discparent", combo: false, name: "家长 DISC（家庭版）",
+    key: "discparent", combo: false, cat: "jiating", name: "家长 DISC（家庭版）",
     kinds: ["discparent"],
     tags: ["家长", "亲子对照"],
     purpose: "家长测家庭环境下的行为风格，多位家长可各测一次，自动与孩子的校园 DISC 做冲突对照",
@@ -174,7 +211,7 @@ const CATALOG: CatalogItem[] = [
     theory: "与学生版 DISC 同题库、同计分（题干改写为家庭场景），保证亲子可比性。",
   },
   {
-    key: "e3parent", combo: false, name: "家长卷 · 家庭支持",
+    key: "e3parent", combo: false, cat: "jiating", name: "家长卷 · 家庭支持",
     kinds: ["e3parent"],
     tags: ["家长", "家校沟通"],
     purpose: "家长对孩子的了解程度与家庭支持方式自评，生成认知差异提示",
@@ -184,7 +221,7 @@ const CATALOG: CatalogItem[] = [
     theory: "家长卷与学生 E3 学业诊断交叉比对，量化家长认知与孩子自评的差异点。",
   },
   {
-    key: "subject", combo: false, name: "学科能力测评",
+    key: "subject", combo: false, cat: "xueli", name: "学科能力测评",
     kinds: ["subject"],
     tags: ["学法", "过程诊断"],
     purpose: "9 科「听懂 / 记住 / 运用」学习环节自评，定位每科卡在哪一环",
@@ -194,7 +231,7 @@ const CATALOG: CatalogItem[] = [
     theory: "学习环节模型：课堂听懂（输入）→ 课后记住（保持）→ 考试运用（输出），逐环节自评定位断点。",
   },
   {
-    key: "anchor", combo: false, name: "职业锚测评",
+    key: "anchor", combo: false, cat: "shengxue", name: "职业锚测评",
     kinds: ["anchor"],
     tags: ["职业价值观", "生涯"],
     purpose: "看看内心最看重什么——稳定、挑战、创造还是助人，锚定职业选择底层动力",
@@ -207,8 +244,10 @@ const CATALOG: CatalogItem[] = [
 
 const TABS = [
   { key: "all", label: "全部" },
-  { key: "combo", label: "组合测评" },
-  { key: "single", label: "单项测评" },
+  { key: "xueli", label: "学习力测评" },
+  { key: "shengxue", label: "升学测评" },
+  { key: "jiating", label: "家庭测评" },
+  { key: "xinli", label: "心理健康测评" },
 ] as const;
 
 /* ---------------------------------- 双图切换（封面 / 报告内页） ---------------------------------- */
@@ -269,20 +308,23 @@ export default function AssessCenter({ canManage }: { canManage: boolean }) {
     onError: (e) => setDone(`推送失败：${e.message}`),
   });
 
-  /* v224：按超管配置的机构开放测评过滤目录（openKinds=null 表示全部开放） */
+  /* v224：按超管配置的机构开放测评过滤目录（openKinds=null 表示全部开放）。
+     v246：旧配置中的 "mental" 视为同时开放四套心理量表（expandAssessKinds 兼容展开）。 */
   const openKinds = targetsData?.openKinds ?? null;
+  const openSet = useMemo(() => {
+    const expanded = expandAssessKinds(openKinds);
+    return expanded ? new Set(expanded) : null;
+  }, [openKinds]);
   const items = useMemo(() => {
-    const byTab = CATALOG.filter((c) => (tab === "all" ? true : tab === "combo" ? c.combo : !c.combo));
-    if (!openKinds) return byTab;
-    const set = new Set(openKinds);
-    return byTab.filter((c) => c.kinds.every((k) => set.has(k)));
-  }, [tab, openKinds]);
+    const byTab = CATALOG.filter((c) => (tab === "all" ? true : c.cat === tab));
+    if (!openSet) return byTab;
+    return byTab.filter((c) => c.kinds.every((k) => openSet.has(k)));
+  }, [tab, openSet]);
   /* 若已勾选的测评被超管关闭，同步从推送清单剔除 */
   const pickedValid = useMemo(() => {
-    if (!openKinds) return picked;
-    const set = new Set(openKinds);
-    return picked.filter((k) => (CATALOG.find((c) => c.key === k)?.kinds ?? []).every((t) => set.has(t)));
-  }, [picked, openKinds]);
+    if (!openSet) return picked;
+    return picked.filter((k) => (CATALOG.find((c) => c.key === k)?.kinds ?? []).every((t) => openSet.has(t)));
+  }, [picked, openSet]);
   const pushKinds = useMemo(() => [...new Set(pickedValid.flatMap((k) => CATALOG.find((c) => c.key === k)?.kinds ?? []))], [pickedValid]);
 
   const targets = targetsData?.targets ?? [];

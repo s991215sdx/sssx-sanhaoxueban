@@ -1629,7 +1629,7 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
             {item === "teachers" && <TutorsTab orgScope={{ orgId: null }} tutorLabel="指导老师" />}
             {item === "invites" && <InviteChannelsTab />}
             {item === "users" && <UsersSection />}
-            {item === "features" && <OrgFeaturesCard />}
+            {item === "features" && <OrgFeaturesCard defaultOpen />}
             {item === "library" && (
               <Suspense fallback={<div className="py-10 text-center text-sm text-[#7A8A83]">资料库加载中…</div>}>
                 <Library />
