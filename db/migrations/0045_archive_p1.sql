@@ -31,7 +31,7 @@ CREATE TABLE `counseling_records` (
 	`summary` text NOT NULL,
 	`follow_up` varchar(512) NOT NULL DEFAULT '',
 	`warning_id` bigint unsigned NULL,
-	`created_at` timestamp NOT NULL DEFAULT (now()),
+	`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT `counseling_records_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
