@@ -200,6 +200,8 @@ export type StudentDetail = {
     e3parent?: unknown;
     /** 全部家长版 DISC 结果（可多人/多次填写），按时间倒序。 */
     discParents: { label: string; result: unknown; createdAt: Date }[];
+    /** v247：全部 DISC（家长版新）结果（可多人/多次填写），按时间倒序。 */
+    discNewParents: { label: string; result: unknown; createdAt: Date }[];
     multi?: MultiResult;
     /** 选做测评（multi5/职业锚/霍兰德/心理健康），结构各异，前端按 kind 解析。 */
     optional?: Record<string, unknown>;
@@ -257,19 +259,30 @@ export async function getStudentDetail(
     .from(assessmentResults)
     .where(eq(assessmentResults.userId, userId))
     .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
-  const assessments: StudentDetail["assessments"] = { raw: [], discParents: [] };
+  const assessments: StudentDetail["assessments"] = { raw: [], discParents: [], discNewParents: [] };
   if (reportAccess && !reportAccess.allowed) {
     /* 无报告权限：只下发「做了哪些测评」清单（名称+时间），结果/作答一律不带 */
     assessments.raw = rows.map((r) => ({ kind: r.kind, answers: null, createdAt: r.createdAt }));
   } else {
   // 选做测评（multi5/职业锚/霍兰德/心理健康三套）也一并带出，供伴学师查看完整报告与综合分析
-  const OPTIONAL_KINDS = ["multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "subject", "subject4d"] as const;
+  const OPTIONAL_KINDS = ["multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "subject", "subject4d", "discnew"] as const;
   for (const row of rows) {
     const kind = row.kind;
     if (kind === "discparent") {
       // 家长版 DISC 可多次/多人填写，全部收集（answers.label 作为家长标签）
       const a = row.answers as { label?: string } | null;
       assessments.discParents.push({
+        label: a && typeof a.label === "string" && a.label ? a.label : "家长",
+        result: row.result,
+        createdAt: row.createdAt,
+      });
+      assessments.raw.push({ kind, answers: row.answers ?? null, createdAt: row.createdAt });
+      continue;
+    }
+    if (kind === "discparentnew") {
+      // v247：DISC（家长版新）可多次/多人填写，全部收集
+      const a = row.answers as { label?: string } | null;
+      assessments.discNewParents.push({
         label: a && typeof a.label === "string" && a.label ? a.label : "家长",
         result: row.result,
         createdAt: row.createdAt,

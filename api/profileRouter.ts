@@ -43,6 +43,7 @@ import {
   type E3V37ParentResult,
 } from "@contracts/assessments";
 import { stageOfGrade } from "@contracts/constants";
+import { DISC_NEW_GROUPS, DISC_NEW_GROUP_COUNT, scoreDiscNew, type DiscNewResult } from "@contracts/discNew";
 import { MULTI_RATINGS, scoreMulti, type MultiResult } from "@contracts/multi";
 import {
   FAMILY_STUDENT_CONDITION_REFS,
@@ -127,7 +128,7 @@ import {
   type Subject4dResult,
 } from "@contracts/subject4d";
 
-const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "subject", "subject4d", "familystudent", "familyparent"]);
+const kindSchema = z.enum(["mbti", "disc", "e3", "e3parent", "multi", "multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "discparent", "discnew", "discparentnew", "subject", "subject4d", "familystudent", "familyparent"]);
 
 /**
  * 判定这份家庭卷属于完整版还是速测版。
@@ -242,6 +243,9 @@ type E3V37ParentQuestionSet = {
 /** questions 接口返回：DISC V2 强迫选择题包（24 组四词）。 */
 type DiscParentQuestionSet = { kind: "discparent"; groups: typeof DISC_PARENT_V2_GROUPS };
 
+/** v247 DISC（新版，学生/家长两版同题库，场景文案不同）：24 组四词迫选。 */
+type DiscNewQuestionSet = { kind: "discnew" | "discparentnew"; groups: typeof DISC_NEW_GROUPS };
+
 /** DISC V2 作答：most/least 各 24 个词下标（0-3），且同组最像≠最不像。 */
 const discV2AnswersSchema = z
   .object({
@@ -288,6 +292,7 @@ type AssessmentQuestions =
   | E3V37QuestionSet
   | E3V37ParentQuestionSet
   | DiscParentQuestionSet
+  | DiscNewQuestionSet
   | { kind: "multi"; ratings: typeof MULTI_RATINGS }
   | { kind: "multi5"; stage?: string; stageLabel?: string; questions: Multi5PublicQuestion[] }
   | { kind: "anchor"; ratings: typeof ANCHOR_RATINGS }
@@ -308,6 +313,8 @@ type AssessmentSubmitOutcome =
   | { kind: "e3"; result: E3V37Result }
   | { kind: "e3parent"; result: E3V37ParentResult }
   | { kind: "discparent"; result: DiscResult }
+  | { kind: "discnew"; result: DiscNewResult }
+  | { kind: "discparentnew"; result: DiscNewResult }
   | { kind: "multi"; result: MultiResult }
   | { kind: "multi5"; result: Multi5Result }
   | { kind: "anchor"; result: AnchorResult }
@@ -497,6 +504,12 @@ async function paperFor(
     case "discparent":
       // 家长版 V2：家庭/亲子场景词组（维度映射与学生版逐组一致，计分复用 scoreDiscV2）
       return { kind: "discparent", groups: DISC_PARENT_V2_GROUPS };
+    case "discnew":
+      // v247 新版 DISC（学生版）：24 组四词迫选，场景文案由客户端渲染
+      return { kind: "discnew", groups: DISC_NEW_GROUPS };
+    case "discparentnew":
+      // v247 新版 DISC（家长版）：同题库、家庭场景
+      return { kind: "discparentnew", groups: DISC_NEW_GROUPS };
     case "familystudent": {
       // v235：学生侧家庭补充包（独立于 e3，14 道新题 + 6 条条件引用）
       // v236：支持 pack=standard|lite（速测版 9 题），默认完整版
@@ -673,6 +686,14 @@ async function applySubmission(
     const a = input.answers.answers;
     const result: DiscResult = Array.isArray(a) ? scoreDisc(a) : scoreDiscV2(a, DISC_PARENT_V2_GROUPS);
     outcome = { kind: "discparent", result };
+  } else if (input.kind === "discnew") {
+    // v247 DISC（学生版新）：24 组四词迫选，净分计分 + 三个我近似调整；存 {most, least}，不同步 profile.disc
+    const a = input.answers;
+    outcome = { kind: "discnew", result: scoreDiscNew(a.most, a.least, "campus") };
+  } else if (input.kind === "discparentnew") {
+    // v247 DISC（家长版新）：同题库、家庭场景；存整条 {label, most, least}，不同步 profile.disc
+    const a = input.answers;
+    outcome = { kind: "discparentnew", result: scoreDiscNew(a.most, a.least, "family") };
   } else if (input.kind === "mbti") {
     const result: MbtiResult = scoreMbti(input.answers);
     outcome = { kind: "mbti", result };
@@ -802,6 +823,8 @@ async function applySubmission(
       outcome.kind === "mentalpa" ||
       outcome.kind === "scl90" ||
       outcome.kind === "discparent" ||
+      outcome.kind === "discnew" ||
+      outcome.kind === "discparentnew" ||
       outcome.kind === "subject" ||
       outcome.kind === "subject4d" ||
       outcome.kind === "familystudent" ||
@@ -879,6 +902,23 @@ const submitInputSchema = z.discriminatedUnion("kind", [
             label: z.string().min(1).max(12),
             answers: z.union([z.array(z.union([z.literal(0), z.literal(1)])).length(DISC_QUESTIONS.length), discV2AnswersSchema]),
           }),
+        }),
+        z.object({
+          // v247 DISC（学生版新）：24 组四词迫选，与旧版 disc 并存互不影响
+          kind: z.literal("discnew"),
+          answers: z.object({
+            most: z.array(z.number().int().min(0).max(3)).length(DISC_NEW_GROUP_COUNT),
+            least: z.array(z.number().int().min(0).max(3)).length(DISC_NEW_GROUP_COUNT),
+          }).refine((a) => a.most.every((m, i) => m !== a.least[i]), { message: "同一组里最像与最不像不能是同一个词" }),
+        }),
+        z.object({
+          // v247 DISC（家长版新）：同题库、家庭场景，可多人各填一份
+          kind: z.literal("discparentnew"),
+          answers: z.object({
+            label: z.string().min(1).max(12),
+            most: z.array(z.number().int().min(0).max(3)).length(DISC_NEW_GROUP_COUNT),
+            least: z.array(z.number().int().min(0).max(3)).length(DISC_NEW_GROUP_COUNT),
+          }).refine((a) => a.most.every((m, i) => m !== a.least[i]), { message: "同一组里最像与最不像不能是同一个词" }),
         }),
         z.object({
           kind: z.literal("multi"),
@@ -1179,6 +1219,10 @@ export const assessmentRouter = createRouter({
       e3parent?: E3V37ParentResult | E3V27ParentResult;
       /** 全部家长版 DISC 结果（可多人填写），按时间倒序。 */
       discParents: { label: string; result: DiscResult; createdAt: Date }[];
+      /** v247 最新一条 DISC（学生版新）结果。 */
+      discNew?: DiscNewResult;
+      /** v247 全部 DISC（家长版新）结果（可多人填写），按时间倒序。 */
+      discNewParents: { label: string; result: DiscNewResult; createdAt: Date }[];
       /** 最新一条学生侧家庭补充包结果（v236）。 */
       familyStudent?: FamilyStudentProfile;
       /** 全部家长侧家庭卷结果（爸爸/妈妈/其他可各填一份），按时间倒序。 */
@@ -1200,7 +1244,7 @@ export const assessmentRouter = createRouter({
       /** 最新一条学科四维测评结果（V175 智慧生涯数据源）。 */
       subject4d?: Subject4dResult;
       raw: { kind: string; answers: unknown; createdAt: Date }[];
-    } = { raw: [], discParents: [], familyParents: [] };
+    } = { raw: [], discParents: [], discNewParents: [], familyParents: [] };
     for (const row of rows) {
       if (row.kind === "discparent") {
         // 家长版 DISC 可多次/多人填写，全部收集
@@ -1208,6 +1252,17 @@ export const assessmentRouter = createRouter({
         latest.discParents.push({
           label: a && typeof a.label === "string" && a.label ? a.label : "家长",
           result: row.result as unknown as DiscResult,
+          createdAt: row.createdAt,
+        });
+        latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
+        continue;
+      }
+      if (row.kind === "discparentnew") {
+        // v247 DISC（家长版新）与 discparent 同理：可多人各填一份，全部收集
+        const a = row.answers as { label?: string } | null;
+        latest.discNewParents.push({
+          label: a && typeof a.label === "string" && a.label ? a.label : "家长",
+          result: row.result as unknown as DiscNewResult,
           createdAt: row.createdAt,
         });
         latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
@@ -1231,11 +1286,12 @@ export const assessmentRouter = createRouter({
         latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
         continue;
       }
-      const key = row.kind as "mbti" | "disc" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa" | "scl90" | "subject" | "subject4d";
-      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : key === "scl90" ? latest.mentalScl90 : key === "subject" ? latest.subject : key === "subject4d" ? latest.subject4d : latest[key]) continue;
+      const key = row.kind as "mbti" | "disc" | "discnew" | "e3" | "e3parent" | "multi" | "multi5" | "anchor" | "holland" | "mental" | "mentalsdq" | "mentalpa" | "scl90" | "subject" | "subject4d";
+      if (key === "mentalsdq" ? latest.mentalSdq : key === "mentalpa" ? latest.mentalPa : key === "scl90" ? latest.mentalScl90 : key === "subject" ? latest.subject : key === "subject4d" ? latest.subject4d : key === "discnew" ? latest.discNew : latest[key]) continue;
       if (key === "e3parent") latest.e3parent = row.result as unknown as E3V37ParentResult | E3V27ParentResult;
       else if (key === "mbti") latest.mbti = row.result as unknown as MbtiResult;
       else if (key === "disc") latest.disc = row.result as unknown as DiscResult;
+      else if (key === "discnew") latest.discNew = row.result as unknown as DiscNewResult;
       else if (key === "e3") latest.e3 = row.result as unknown as E3V37Result | E3V27Result;
       else if (key === "multi5") latest.multi5 = row.result as unknown as Multi5Result;
       else if (key === "anchor") latest.anchor = row.result as unknown as AnchorResult;

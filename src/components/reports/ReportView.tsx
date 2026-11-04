@@ -95,6 +95,8 @@ import AbilityScoreTable from "@/components/reports/AbilityScoreTable";
 import SystemFramework from "@/components/reports/SystemFramework";
 import type { FrameworkStatus, FrameworkUnit, FrameworkLink } from "@/components/reports/SystemFramework";
 import DiscParentCompare from "@/components/reports/DiscParentCompare";
+import DiscNewReport from "@/components/reports/DiscNewReport";
+import type { DiscNewResult } from "@contracts/discNew";
 import { E3V37_LEVEL_CLASS, E3V37_LEVEL_CAPTION, E3V37_LEVEL_STYLE, e3v37LevelTextClass } from "@/components/reports/e3v37Theme";
 import {
   Radar,
@@ -125,6 +127,9 @@ export type ReportAssessmentData = {
   mbti?: MbtiResult; disc?: DiscResult; e3?: unknown;
   e3parent?: unknown;
   discParents?: { label: string; result: DiscResult; createdAt?: Date | string }[];
+  /** v247 DISC（学生版新）结果；v247 家长版新（可多人填写）。 */
+  discNew?: DiscNewResult | null;
+  discNewParents?: { label: string; result: DiscNewResult; createdAt?: Date | string }[];
   multi?: MultiResult | null; multi5?: Multi5Result | null;
   anchor?: AnchorResult | null; holland?: HollandResult | null;
   mental?: MentalResult | MentalV2Result | null;
@@ -137,7 +142,7 @@ export type ReportAssessmentData = {
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
-type Tab = "combined" | "zhihui" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent" | "family" | "commkit";
+type Tab = "combined" | "zhihui" | "guidance" | "academics" | "e3" | "mbti" | "disc" | "discnew" | "discparentnew" | "multi5" | "anchor" | "holland" | "mental" | "subject" | "discparent" | "parent" | "family" | "commkit";
 
 /** V36 报告内动作目标：未测 → 去测评；成绩未填 → 去填写。 */
 type RevealTarget = { kind: "assess"; start: string } | { kind: "fill-academics" };
@@ -154,6 +159,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "e3", label: "学业诊断报告" },
   { key: "mbti", label: "MBTI 性格详版" },
   { key: "disc", label: "DISC 行为详版" },
+  { key: "discnew", label: "DISC（学生版新）" },
+  { key: "discparentnew", label: "DISC（家长版新）" },
   { key: "multi5", label: "多元智能五项" },
   { key: "anchor", label: "职业锚" },
   { key: "holland", label: "职业兴趣" },
@@ -2427,6 +2434,14 @@ function ReportViewInner({
     return Array.isArray(v) ? v.filter((p) => p && p.result && p.result.dims) : [];
   }, [data]);
 
+  /** v247：家长版（新）DISC 结果列表（latest 字段，类型 any 兜底读取）。 */
+  const discNewParents = useMemo<{ label: string; result: DiscNewResult; createdAt?: Date | string }[]>(() => {
+    const v = (data as any)?.discNewParents;
+    return Array.isArray(v)
+      ? v.filter((p) => p && p.result && p.result.version === "new" && p.result.primary)
+      : [];
+  }, [data]);
+
   const mentalSdq = data?.mentalSdq ?? undefined;
   const mentalPa = data?.mentalPa ?? undefined;
   const mentalScl90 = data?.mentalScl90 ?? undefined;
@@ -2500,6 +2515,9 @@ function ReportViewInner({
     if (tab === "e3") return !!e3v37;
     if (tab === "mbti") return !!(data?.mbti && MBTI_REPORTS[data.mbti.type]);
     if (tab === "disc") return !!(data?.disc && DISC_REPORTS[data.disc.primary]);
+    /* v247：新版 DISC 报告暂不提供独立打印版，沿用页面打印（所见即所得） */
+    if (tab === "discnew") return !!data?.discNew;
+    if (tab === "discparentnew") return discNewParents.length > 0;
     if (tab === "multi5") return !!data?.multi5;
     if (tab === "parent" || tab === "discparent") return discParents.length > 0 || !!parentResult; // window.print 直接可用
     if (tab === "academics" || tab === "zhihui") return false; // 成绩/选科及升学规划 tab 不提供下载（选科报告页内自带下载按钮；升学指导已支持打印/下载）
@@ -2511,7 +2529,7 @@ function ReportViewInner({
     /* 锦囊只要有孩子或家长的 DISC 就能出（四本里至少一本可用），不必等全套齐 */
     if (tab === "commkit") return !!data?.disc || discParents.length > 0;
     return !!combined;
-  }, [tab, data, combined, e3v37, discParents]);
+  }, [tab, data, combined, e3v37, discParents, discNewParents]);
 
   /** 下载当前 tab 的报告：直接调浏览器打印当前页面（所见即所得，PDF 与网页完全一致，图表不变形）。
    *  用户在打印对话框里选「另存为 PDF」即可。打印时通过 document.title 带入报告名作为默认文件名。 */
@@ -2519,6 +2537,8 @@ function ReportViewInner({
     e3: "学业诊断报告（三阶九能 V3.7）",
     mbti: "MBTI 性格详版报告",
     disc: "DISC 行为详版报告",
+    discnew: "DISC（学生版新）个性和行为模式报告",
+    discparentnew: "DISC（家长版新）个性和行为模式报告",
     multi5: "多元智能五项测评报告",
     academics: "成绩现状及目标分数", // 该 tab 不提供下载，仅兜底
     anchor: "职业锚测评报告",
@@ -3167,6 +3187,50 @@ function ReportViewInner({
               <OliveDisc primary={disc.primary} dims={disc.dims} name={profile?.name ?? ""} grade={profile?.grade ?? null} date={oliveDate("disc")} />
             ) : (
               <DiscDetail primary={disc.primary} dims={disc.dims} version={disc.version} onGoCombined={goCombined} />
+            )}
+          </div>
+        ))}
+
+      {tab === "discnew" &&
+        (!(data as any)?.discNew ? (
+          <MissingCard text="还没有 DISC（学生版新）测评结果，24 组四选词迫选，约 8 分钟。" actionText="还未测评，开始测评 →" to="/assessments?start=discnew" />
+        ) : (
+          <div className="space-y-4">
+            <DiscNewReport
+              result={(data as any).discNew as DiscNewResult}
+              name={profile?.name ?? ""}
+              date={oliveDate("discnew")}
+            />
+            {data?.raw && data.raw.length > 0 && (
+              <AnswerDetailsByKind raw={data.raw} kinds={["discnew"]} />
+            )}
+          </div>
+        ))}
+
+      {tab === "discparentnew" &&
+        (discNewParents.length === 0 ? (
+          <MissingCard text="还没有家长填写 DISC（家长版新），请把出码页发给家长，家长选择身份后作答。" actionText="还未测评，开始测评 →" to="/assessments?start=discparentnew" />
+        ) : (
+          <div className="space-y-4">
+            {discNewParents.map((p, i) => (
+              <div key={i} className="space-y-3">
+                {discNewParents.length > 1 && (
+                  <p className="text-[12.5px] font-semibold text-olive-mute">{p.label || `家长 ${i + 1}`}</p>
+                )}
+                <DiscNewReport
+                  result={p.result}
+                  name={profile?.name ?? ""}
+                  label={p.label}
+                  date={
+                    p.createdAt
+                      ? new Date(p.createdAt).toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" })
+                      : undefined
+                  }
+                />
+              </div>
+            ))}
+            {data?.raw && data.raw.length > 0 && (
+              <AnswerDetailsByKind raw={data.raw} kinds={["discparentnew"]} />
             )}
           </div>
         ))}

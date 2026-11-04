@@ -41,10 +41,12 @@ export const PASS_CODE_RE = /^[a-z0-9]{1,12}-[a-z0-9]{1,2}-[a-z0-9]{1,6}-[a-z0-9
 export type PassKind =
   | "mbti"
   | "disc"
+  | "discnew"
   | "e3"
   | "e3parent"
   | "multi5"
   | "discparent"
+  | "discparentnew"
   | "anchor"
   | "holland"
   | "mental"
@@ -75,6 +77,7 @@ export const PASS_DEFS: readonly PassDef[] = [
   { kind: "e3", slug: "e3", name: "学习力诊断", brief: "三阶九能 70 题，按学段出卷", who: "student", minutes: 15 },
   { kind: "mbti", slug: "mb", name: "MBTI 性格快测", brief: "28 道二选一", who: "student", minutes: 6 },
   { kind: "disc", slug: "dc", name: "DISC 行为风格", brief: "24 组「最像我 / 最不像我」", who: "student", minutes: 8 },
+  { kind: "discnew", slug: "dn", name: "DISC（学生版新）", brief: "24 组选词迫选，出「三个我」报告", who: "student", minutes: 8 },
   { kind: "multi5", slug: "m5", name: "多元智能五项", brief: "40 题客观题，含计时", who: "student", minutes: 10 },
   { kind: "anchor", slug: "an", name: "职业锚测评", brief: "看看心里最看重什么", who: "student", minutes: 8 },
   { kind: "holland", slug: "ho", name: "霍兰德职业兴趣", brief: "RIASEC 六型兴趣", who: "student", minutes: 8 },
@@ -85,6 +88,7 @@ export const PASS_DEFS: readonly PassDef[] = [
   { kind: "familyparent", slug: "fp", name: "家庭关系测评 · 家长卷", brief: "29 题，爸爸、妈妈可各填一份", who: "parent", minutes: 7 },
   { kind: "e3parent", slug: "ep", name: "家长卷 · 家庭支持与观察", brief: "家庭环境、对孩子的观察，与孩子的诊断做对照", who: "parent", minutes: 9 },
   { kind: "discparent", slug: "dp", name: "家长 DISC（家庭版）", brief: "24 组词，看家庭里的行为风格", who: "parent", minutes: 6 },
+  { kind: "discparentnew", slug: "dx", name: "DISC（家长版新）", brief: "24 组选词迫选，出「三个我」报告", who: "parent", minutes: 6 },
 ];
 
 const BY_KIND = new Map<PassKind, PassDef>(PASS_DEFS.map((d) => [d.kind, d]));

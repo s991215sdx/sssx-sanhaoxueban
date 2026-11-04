@@ -16,6 +16,7 @@ import { trpc } from "@/providers/trpc";
 import FamilyQuiz from "@/components/family/FamilyQuiz";
 import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
+import DiscNewQuiz from "@/components/companion/DiscNewQuiz";
 import { normalizePassCode } from "@contracts/passCode";
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -77,7 +78,7 @@ export default function PassJoin() {
             {cancelled
               ? "刚才那份没有交上去，所以什么都没记录。这张码还有效，等有空再扫一次，从头填也可以。"
               : `答案已经交到 ${childAlias} 的档案里，伴学师和孩子都能在报告里看到。${
-                  def.kind === "familyparent" || def.kind === "discparent"
+                  def.kind === "familyparent" || def.kind === "discparent" || def.kind === "discparentnew"
                     ? "另一位家长可以扫同一张码再填一份——两个人分开填，才看得出你们各自怎么看。"
                     : ""
                 }`}
@@ -181,6 +182,7 @@ export default function PassJoin() {
       )}
       {kind === "e3parent" && <E3ParentQuiz guestCode={normalized} onDone={() => onDone()} />}
       {kind === "discparent" && <DiscParentQuiz guestCode={normalized} onDone={() => onDone()} />}
+      {kind === "discparentnew" && <DiscNewQuiz variant="parent" guestCode={normalized} onDone={() => onDone()} />}
 
       <p className="mt-5 text-center text-[11.5px] leading-relaxed text-olive-mute">
         这份问卷不会看到孩子的任何测评结果，也不会发给其他家长。

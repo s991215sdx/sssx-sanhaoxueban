@@ -37,6 +37,7 @@ export default function StudentDetailDrawer({
     multi5: "多元智能五项", anchor: "职业锚", holland: "霍兰德职业兴趣",
     mental: "心理健康·通用版", mentalsdq: "心理健康·学生版A(SDQ)", mentalpa: "心理健康·学生版B(PHQ-A)",
     scl90: "心理健康·深度评估(SCL-90)", subject: "学科能力评估", subject4d: "学科四维测评（三好生涯）", e3parent: "家长卷", discparent: "家长版 DISC",
+    discnew: "DISC（学生版新）", discparentnew: "DISC（家长版新）",
     familystudent: "家庭关系测评·学生卷", familyparent: "家庭关系测评·家长卷",
   };
   /** 宽屏模式：电脑上默认全屏打开报告，可一键还原为半屏抽屉（v182：默认全屏，看得更清楚）。 */
@@ -206,6 +207,8 @@ export default function StudentDetailDrawer({
                   if (a.optional?.subject) names.push("学科能力评估");
                   if (a.optional?.subject4d) names.push("学科四维测评（三好生涯）");
                   if (a.e3parent) names.push("家长卷");
+                  if (a.optional?.discnew) names.push("DISC（学生版新）");
+                  if (a.discNewParents && a.discNewParents.length > 0) names.push("DISC（家长版新）");
                   return names.length > 0 ? `已测 ${names.length} 项：${names.join("、")}` : "还没有测评结果。";
                 })()}
               </p>
@@ -223,6 +226,8 @@ export default function StudentDetailDrawer({
                           mentalScl90: (a.optional?.scl90 as any) ?? null,
                           subject: (a.optional?.subject as any) ?? null,
                           e3parent: a.e3parent, discParents: (a.discParents ?? []) as any, raw: a.raw ?? [],
+                          discNew: (a.optional?.discnew as any) ?? null,
+                          discNewParents: (a.discNewParents ?? []) as any,
                         }}
                         profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as any }}
                         viewer="tutor"

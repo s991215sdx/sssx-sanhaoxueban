@@ -57,6 +57,8 @@ const KIND_LABEL: Record<string, string> = {
   scl90: "心理 SCL-90",
   e3parent: "家长认知",
   discparent: "家长 DISC",
+  discnew: "DISC(新)",
+  discparentnew: "家长DISC(新)",
   subject: "学科能力(旧)",
 };
 

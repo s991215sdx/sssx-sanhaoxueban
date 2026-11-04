@@ -14,6 +14,7 @@ import MentalScl90Quiz from "@/components/companion/MentalScl90Quiz";
 import E3ParentQuiz from "@/components/companion/E3ParentQuiz";
 import DiscParentQuiz from "@/components/companion/DiscParentQuiz";
 import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
+import DiscNewQuiz from "@/components/companion/DiscNewQuiz";
 import SubjectQuiz from "@/components/companion/SubjectQuiz";
 import Subject4dQuiz from "@/components/companion/Subject4dQuiz";
 import FamilyQuiz from "@/components/family/FamilyQuiz";
@@ -26,7 +27,7 @@ import { expandAssessKinds } from "@contracts/invite";
 import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer, Users } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评；v246 心理健康拆为四套量表四个独立测评。 */
-type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "scl90" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
+type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "discnew" | "discparentnew" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "scl90" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
 
 type TestDef = {
   kind: TestKind;
@@ -131,6 +132,28 @@ const TESTS: TestDef[] = [
       return n > 0 ? `已测 ${n} 位家长` : null;
     },
     doneOf: (l) => ((l.discParents as unknown[] | undefined)?.length ?? 0) > 0,
+  },
+  /* v247：复刻版 DISC 新测评，与旧版 disc/discparent 并存互不影响 */
+  {
+    kind: "discnew",
+    name: "DISC（学生版新）",
+    desc: "24 组四词迫选（新版题库）：真实的我 / 校园中的我 / 压力下的我，四因子倾向度 + 96 词特征词库 · 选做",
+    required: false,
+    tab: "discnew",
+    summary: (l) => (l.discNew ? `主型 ${l.discNew.primary}（${l.discNew.typeName}）` : null),
+    doneOf: (l) => !!l.discNew,
+  },
+  {
+    kind: "discparentnew",
+    name: "DISC（家长版新）",
+    desc: "新版题库家长版：家庭场景下的「三个我」报告，多位家长可各测一次 · 选做",
+    required: false,
+    tab: "discparentnew",
+    summary: (l) => {
+      const n = (l.discNewParents as unknown[] | undefined)?.length ?? 0;
+      return n > 0 ? `已测 ${n} 位家长` : null;
+    },
+    doneOf: (l) => ((l.discNewParents as unknown[] | undefined)?.length ?? 0) > 0,
   },
   {
     kind: "anchor",
@@ -243,6 +266,8 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   if (kind === "e3parent") return <E3ParentQuiz onDone={onDone} />;
   if (kind === "multi5") return <Multi5Quiz onDone={onDone} />;
   if (kind === "discparent") return <DiscParentQuiz onDone={onDone} />;
+  if (kind === "discnew") return <DiscNewQuiz variant="student" onDone={onDone} />;
+  if (kind === "discparentnew") return <DiscNewQuiz variant="parent" onDone={onDone} />;
   if (kind === "familystudent" || kind === "familyparent") return <FamilyQuiz kind={kind} onDone={onDone} />;
   if (kind === "anchor") return <AnchorQuiz onDone={onDone} />;
   if (kind === "holland") return <HollandQuiz onDone={onDone} />;

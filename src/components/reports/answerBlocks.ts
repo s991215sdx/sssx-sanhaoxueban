@@ -32,6 +32,7 @@ import {
   E3V37P_MIRROR_HINTS,
 } from "@contracts/e3v37Parent";
 import { multi5QuestionsFor } from "@contracts/multi5";
+import { DISC_NEW_GROUPS } from "@contracts/discNew";
 import { ANCHOR_RATINGS } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS } from "@contracts/holland";
 import {
@@ -143,6 +144,25 @@ export function buildAnswerBlocks(raw: RawAnswer[], kinds?: string[]): AnswerBlo
           no: i + 1,
           text: q.text,
           ans: a[i] === 0 ? `A · ${q.a}` : a[i] === 1 ? `B · ${q.b}` : "未答",
+        })),
+      });
+    } else if ((r.kind === "discnew" || r.kind === "discparentnew") && r.answers != null) {
+      /* v247 复刻版 DISC：作答形态 { most, least }（学生）/ { label, most, least }（家长）；
+         题干取 DISC_NEW_GROUPS（24 组四选词，words 为 { t, f }）。 */
+      const payload = r.answers as { label?: string; most?: number[]; least?: number[] };
+      const most = Array.isArray(payload.most) ? payload.most : [];
+      const least = Array.isArray(payload.least) ? payload.least : [];
+      if (most.length === 0) continue;
+      const label = typeof payload.label === "string" ? payload.label : "";
+      const who = r.kind === "discparentnew" ? `DISC（家长版新）${label ? `（${label}）` : ""}` : "DISC（学生版新）";
+      blocks.push({
+        key: `${r.kind}-${label || blocks.length}`,
+        title: `${who} · ${DISC_NEW_GROUPS.length} 组（${date}）`,
+        note: "每组 4 个描述词，各选 1 个「最像我」+ 1 个「最不像我」。",
+        rows: DISC_NEW_GROUPS.map((g, i) => ({
+          no: i + 1,
+          text: g.words.map((w) => w.t).join(" / "),
+          ans: `最像「${g.words[most[i]]?.t ?? "?"}」 · 最不像「${g.words[least[i]]?.t ?? "?"}」`,
         })),
       });
     } else if (r.kind === "e3" && r.answers && typeof r.answers === "object") {

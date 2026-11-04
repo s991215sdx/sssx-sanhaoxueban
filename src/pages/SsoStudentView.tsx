@@ -116,6 +116,8 @@ export default function SsoStudentView() {
                   mentalScl90: (a.optional?.scl90 as never) ?? null,
                   subject: (a.optional?.subject as never) ?? null,
                   e3parent: a.e3parent, discParents: (a.discParents ?? []) as never, raw: a.raw ?? [],
+                  discNew: (a.optional?.discnew as never) ?? null,
+                  discNewParents: (a.discNewParents ?? []) as never,
                 }}
                 profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as never }}
                 viewer="tutor"

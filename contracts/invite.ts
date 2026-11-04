@@ -43,6 +43,8 @@ export const INVITE_REPORT_KINDS = [
   { key: "subject", label: "学科能力评估" },
   { key: "mbti", label: "MBTI 性格详版" },
   { key: "disc", label: "DISC 行为详版" },
+  { key: "discnew", label: "DISC（学生版新）" },
+  { key: "discparentnew", label: "DISC（家长版新）" },
   { key: "multi5", label: "多元智能五项" },
   { key: "anchor", label: "职业锚" },
   { key: "holland", label: "职业兴趣" },
@@ -95,6 +97,8 @@ export const INVITE_ASSESS_KINDS = [
   { key: "scl90", label: "心理健康 · 深度评估（SCL-90）" },
   { key: "e3parent", label: "家长卷 · 家庭支持" },
   { key: "discparent", label: "家长 DISC（家庭版）" },
+  { key: "discnew", label: "DISC（学生版新）" },
+  { key: "discparentnew", label: "DISC（家长版新）" },
   { key: "familystudent", label: "家庭关系测评 · 学生卷" },
   { key: "familyparent", label: "家庭关系测评 · 家长卷" },
 ] as const;
