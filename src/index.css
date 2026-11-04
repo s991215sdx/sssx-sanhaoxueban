@@ -52,16 +52,9 @@
 }
 
 @layer utilities {
-  /* v93：桌面端报告整体放大（zoom 同比放大字号与图表），打印与移动端还原 */
-  @media (min-width: 768px) {
-    .report-view-zoom {
-      zoom: 1.15;
-    }
-  }
-  @media print {
-    .report-view-zoom {
-      zoom: 1;
-    }
+  /* v247：屏幕与打印统一 100%，不再随断点整体放大报告。 */
+  .report-view-zoom {
+    zoom: 1;
   }
   /* v183：手机端（<768px）报告正文整体提一号，缓解“字太小总要放大页面”。
      仅屏幕生效：打印走纸面宽度（≥768px），不会命中本查询，PDF 版式不变。

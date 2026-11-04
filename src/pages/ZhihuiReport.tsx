@@ -1080,7 +1080,7 @@ td { font-size: 13px; padding: 9px 8px; border: 1px solid #E8F1EC; text-align: c
 /* ---------- 移动端阅读优化（≤768px）：满屏书页、栅格堆叠、表格横滑、整体放大 ---------- */
 @media (max-width: 768px) {
   .zh-root { background: #fff; padding: 0 0 24px; }
-  .zh-page { margin: 0 auto 14px; padding: 26px 16px 36px; max-width: 100%; min-height: auto !important; border-radius: 0; box-shadow: none; border-bottom: 1px solid ${C.line}; zoom: 1.12; }
+  .zh-page { margin: 0 auto 14px; padding: 26px 16px 36px; max-width: 100%; min-height: auto !important; border-radius: 0; box-shadow: none; border-bottom: 1px solid ${C.line}; }
   .zh-page svg { max-width: 100%; height: auto; }
   .pfoot { position: static; margin-top: 26px; padding-top: 10px; border-top: 1px dashed ${C.line}; }
   .pno { position: static; transform: none; margin: 0 auto; }

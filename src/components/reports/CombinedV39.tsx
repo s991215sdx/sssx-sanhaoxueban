@@ -354,12 +354,11 @@ export default function CombinedV39Report({
     mentalSdq || mentalPa || mental ? "心理健康" : null,
   ].filter(Boolean).join(" · ");
 
-  /* ---------- 冰山几何：测量 + 连线 + 宽度适配（<768px 手机端堆叠，无连线） ---------- */
+  /* ---------- 冰山几何：测量 + 连线；窄屏/窄容器堆叠，所有屏幕保持 100% 字号 ---------- */
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
   const [geom, setGeom] = useState<{ H: number; lines: { pts: string; head: string }[] } | null>(null);
-  const [scale, setScale] = useState(1);
   const [panelH, setPanelH] = useState(BERG_H);
   const [stacked, setStacked] = useState(false);
   const [stretch, setStretch] = useState(1);
@@ -369,14 +368,13 @@ export default function CombinedV39Report({
     const measure = () => {
       const stage = stageRef.current;
       const wrap = wrapRef.current;
-      const stackedNow = mq.matches;
-      setStacked((p) => (p === stackedNow ? p : stackedNow));
       if (!stage || !wrap) return;
+      const stackedNow = mq.matches || wrap.clientWidth < STAGE_W;
+      setStacked((p) => (p === stackedNow ? p : stackedNow));
       if (stackedNow) {
-        /* 手机端：静态堆叠，无绝对定位/连线/缩放；清掉桌面端遗留的内联定位 */
+        /* 窄屏：静态堆叠，无绝对定位/连线/整体缩放；清掉桌面端遗留的内联定位 */
         setGeom((p) => (p === null ? p : null));
-        setScale((p) => (p === 1 ? p : 1));
-        /* v217：手机端同样按记分卡列高度拉伸冰山（1–1.6，随容器宽度折算自然高），
+        /* v217：窄屏同样按记分卡列高度拉伸冰山（1–1.6，随容器宽度折算自然高），
            冰山更长、下方留白更少（唐先生反馈：空白太多，拉长点） */
         const cardsEl = stage.querySelector<HTMLElement>('[data-col="cards"]');
         const cardsH = cardsEl?.offsetHeight ?? 0;
@@ -440,14 +438,11 @@ export default function CombinedV39Report({
         const same = prev && prev.H === H && JSON.stringify(prev.lines) === JSON.stringify(lines);
         return same ? prev : { H, lines };
       });
-      /* 一屏看全：宽度和高度双向约束（与定稿样例 v9 一致），并回填缩放后的高度避免留白 */
-      const s = Math.min(1, wrap.clientWidth / STAGE_W, (window.innerHeight - 80) / H);
-      setScale((prev) => (prev === s ? prev : s));
-      /* 舞台缩放后整体水平居中（图4：冰山偏左修复） */
-      const ml = Math.max(0, Math.round((wrap.clientWidth - STAGE_W * s) / 2));
+      /* 舞台始终 100%：宽屏居中，高度由内容决定；空间不足时上方已切换为堆叠布局。 */
+      const ml = Math.max(0, Math.round((wrap.clientWidth - STAGE_W) / 2));
       if (stage.style.marginLeft !== `${ml}px`) stage.style.marginLeft = `${ml}px`;
-      const scaledH = Math.round(H * s + 10);
-      if (wrap.style.height !== `${scaledH}px`) wrap.style.height = `${scaledH}px`;
+      const naturalH = Math.round(H + 10);
+      if (wrap.style.height !== `${naturalH}px`) wrap.style.height = `${naturalH}px`;
     };
     measure();
     window.addEventListener("resize", measure);
@@ -620,7 +615,7 @@ export default function CombinedV39Report({
           <div
             ref={stageRef}
             className="relative"
-            style={stacked ? undefined : { width: STAGE_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
+            style={stacked ? undefined : { width: STAGE_W }}
           >
             <div className={stacked ? "flex flex-col gap-4" : "flex gap-6"}>
               {/* 左：冰山（桌面端面板高度 = 内容高，冰山垂直居中不留白） */}
