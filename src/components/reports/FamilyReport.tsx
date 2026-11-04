@@ -9,9 +9,10 @@
  * 2. 不贴类型名：不写「专制型」「权威型」，只写要求与回应两个分，以及那句人话。
  * 3. 0—10 打分只给咨询师看：报告里不印孩子给父母的分数。
  */
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import type { ReactNode } from "react";
 import { trpc } from "@/providers/trpc";
+import { useAssessmentPass } from "@/components/coach/passRequest";
 import type { LadderMerge, FamilyProfile } from "@contracts/familyProfile";
 import type { FamilyStudentProfile } from "@contracts/familyStudent";
 
@@ -66,17 +67,34 @@ export default function FamilyReport({
           这份报告需要两份问卷：孩子一份（学生卷 14 题），家长一份（家长卷 29 题）。
           两边都答完，才能看出「你以为的」和「他实际答的」差在哪里。
         </p>
-        <Link
-          to={viewer === "student" ? "/assessments?start=familystudent" : "/assessments"}
-          className="mt-4 inline-block rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream no-underline hover:bg-lime"
-        >
-          去做家庭关系测评
-        </Link>
+        {viewer === "tutor" ? (
+          <>
+            {/* 伴学师点这里不是「我要去答」，而是「把卷递出去」：出码，孩子或家长扫 */}
+            <PassStartButton />
+            <p className="mt-2 text-[11.5px] leading-relaxed text-olive-mute">
+              孩子扫：用他自己的账号答完，直接进这份报告。家长扫：不用注册，答案落到这个孩子名下。
+            </p>
+          </>
+        ) : (
+          <Link
+            to="/assessments?start=familystudent"
+            className="mt-4 inline-block rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream no-underline hover:bg-lime"
+          >
+            去做家庭关系测评
+          </Link>
+        )}
       </div>
     );
   }
 
-  return <FamilyReportBody student={student} merged={data?.merged ?? null} hasParent={hasParent} />;
+  return (
+    <FamilyReportBody
+      student={student}
+      merged={data?.merged ?? null}
+      hasParent={hasParent}
+      parentCount={data?.parents?.length ?? 0}
+    />
+  );
 }
 
 /**
@@ -87,11 +105,15 @@ export function FamilyReportBody({
   student,
   merged,
   hasParent,
+  parentCount,
 }: {
   student: FamilyStudentProfile | null;
   merged: FamilyProfile | null;
   hasParent: boolean;
+  /** 收到几份家长卷（爸爸、妈妈各一份则为 2）：锦囊的「父母版」靠这个判断够不够 */
+  parentCount?: number;
 }) {
+  void parentCount;
   return (
     <div className="space-y-4">
       <Conclusion merged={merged} student={student} hasParent={hasParent} />
@@ -100,11 +122,55 @@ export function FamilyReportBody({
       {student && <Security student={student} />}
       <Scene merged={merged} hasParent={hasParent} />
       <NextSteps merged={merged} student={student} />
+      <CommKitEntry />
       <p className="px-1 text-[11.5px] leading-relaxed text-olive-mute">
         这份报告只描述「现在这段关系的样子」，不评价任何一方。台阶与盲区的数字来自本次作答，
         孩子给父母的 0—10 打分不对家长展示，仅咨询师可见。
       </p>
     </div>
+  );
+}
+
+/**
+ * 沟通锦囊已独立成一份报告（v240），和本报告并列。
+ * 这里只留一个入口：诊断说「哪一级走不通」，锦囊说「第一句话怎么说」——
+ * 两件事分开写，才不会在同一页里出现两种口径。
+ */
+function CommKitEntry() {
+  const navigate = useNavigate();
+  const loc = useLocation();
+  return (
+    <section className="paper-card p-5">
+      <h3 className="text-[16px] font-bold text-olive">下一步：第一句话怎么说</h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-olive-soft">
+        这一份讲的是「现在这段关系是什么样」。真要开口，去看《家庭沟通锦囊》——
+        它按每个人 DISC 的主导与副维写，分家长家庭综合版、学生家庭综合版、学生个人版、
+        家长个人版四本，各带封面、各能单独打印，每一句都能照着念。
+      </p>
+      <button
+        onClick={() => {
+          const q = new URLSearchParams(loc.search);
+          q.set("tab", "commkit");
+          navigate(`${loc.pathname}?${q.toString()}`);
+        }}
+        className="mt-3 rounded-xl bg-brand px-4 py-2 text-[13px] font-semibold text-cream hover:bg-lime"
+      >
+        去看家庭沟通锦囊
+      </button>
+    </section>
+  );
+}
+
+/** 伴学师视角的「去做家庭关系测评」：出码，而不是把人送去孩子的页面。 */
+function PassStartButton() {
+  const openPass = useAssessmentPass();
+  return (
+    <button
+      onClick={() => openPass?.("familystudent")}
+      className="mt-4 inline-block rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-cream hover:bg-lime"
+    >
+      去做家庭关系测评
+    </button>
   );
 }
 

@@ -46,7 +46,12 @@ function checkThrottle(phone: string) {
 
 const PHONE_RE = /^1[3-9]\d{9}$/;
 
-export function setSessionCookie(ctx: { req: Request; resHeaders: Headers }, token: string) {
+export function setSessionCookie(
+  ctx: { req: Request; resHeaders: Headers },
+  token: string,
+  /** v239：扫码换来的短会话只活 2 小时，比常规登录会话短得多（一张当面递出去的码不该换来一年门禁）。 */
+  maxAgeMs: number = Session.maxAgeMs,
+) {
   const opts = getSessionCookieOptions(ctx.req);
   ctx.resHeaders.append(
     "set-cookie",
@@ -55,7 +60,7 @@ export function setSessionCookie(ctx: { req: Request; resHeaders: Headers }, tok
       path: opts.path,
       sameSite: opts.sameSite?.toLowerCase() as "lax" | "none",
       secure: opts.secure,
-      maxAge: Session.maxAgeMs / 1000,
+      maxAge: maxAgeMs / 1000,
     }),
   );
 }

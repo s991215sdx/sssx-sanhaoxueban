@@ -4,9 +4,9 @@
  * 导致整个后台控制台（961 行 + 全部 tab 组件）被打进入口 chunk。
  * 现在 Layout 与本文件单向依赖，SchoolConsole 按需懒加载。
  */
-import { AlertTriangle, BadgeCheck, BarChart3, BookOpen, ClipboardList, FolderHeart, Gauge, LayoutGrid, Network, PieChart, QrCode, UserCog, Users, type LucideIcon } from "lucide-react";
+import { AlertTriangle, BadgeCheck, BarChart3, BookOpen, ClipboardList, FileUp, FolderHeart, Gauge, LayoutGrid, Network, NotebookPen, PieChart, QrCode, UserCog, Users, type LucideIcon } from "lucide-react";
 
-export type ItemKey = "assess" | "tasks" | "progress" | "intention" | "selection" | "archive" | "students" | "teachers" | "warnings" | "invites" | "users" | "library" | "features";
+export type ItemKey = "assess" | "tasks" | "progress" | "intention" | "selection" | "archive" | "grades" | "students" | "teachers" | "guidance" | "warnings" | "invites" | "users" | "library" | "features";
 export type SchoolItemKey = ItemKey;
 
 export const GROUPS: { label: string; items: { key: ItemKey; label: string; icon: LucideIcon; jiaowu?: boolean }[] }[] = [
@@ -24,6 +24,7 @@ export const GROUPS: { label: string; items: { key: ItemKey; label: string; icon
       { key: "intention", label: "选科意向分析", icon: BarChart3 },
       { key: "selection", label: "选科统计分析", icon: PieChart },
       { key: "archive", label: "成长档案", icon: FolderHeart },
+      { key: "grades", label: "成绩导入", icon: FileUp, jiaowu: true },
     ],
   },
   {
@@ -31,6 +32,7 @@ export const GROUPS: { label: string; items: { key: ItemKey; label: string; icon
     items: [
       { key: "students", label: "学员管理", icon: Users, jiaowu: true },
       { key: "teachers", label: "指导老师", icon: UserCog },
+      { key: "guidance", label: "指导记录", icon: NotebookPen, jiaowu: true },
     ],
   },
   {
@@ -48,8 +50,9 @@ export const GROUPS: { label: string; items: { key: ItemKey; label: string; icon
   },
 ];
 
-/* v220.3：教务可见项（学校版教务：看统计/预警/意向/催办/档案 + 学员分配台） */
-const JIAOWU_KEYS: SchoolItemKey[] = ["assess", "tasks", "progress", "intention", "selection", "archive", "warnings", "students"];
+/* v220.3：教务可见项（学校版教务：看统计/预警/意向/催办/档案 + 学员分配台）
+   v245：教务可录入成绩（成绩导入）与写指导记录 */
+const JIAOWU_KEYS: SchoolItemKey[] = ["assess", "tasks", "progress", "intention", "selection", "archive", "grades", "warnings", "students", "guidance"];
 
 /** v220.3：供外层侧边栏（Layout）渲染学校版菜单；jiaowu=只返回教务可见项 */
 export function visibleSchoolGroups(jiaowu: boolean) {

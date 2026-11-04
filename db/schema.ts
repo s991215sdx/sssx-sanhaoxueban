@@ -171,6 +171,9 @@ export const studentProfile = mysqlTable("student_profile", {
   grade: varchar("grade", { length: 32 }).notNull().default("初一"),
   /** v235 家庭测评：走读 day / 寄宿 board。寄宿家庭台阶判定阈值需下调 0.4 分 */
   boarding: varchar("boarding", { length: 16 }),
+  /** v238 家庭码版本：爸妈扫的那张码由「孩子编号 + 版本 + 签名」算出，版本存在这里。
+   *  换码 = 版本 +1，旧码立刻对不上，不用建表、也不动任何历史答卷。 */
+  familyCodeVer: int("family_code_ver").notNull().default(0),
   /** v191 校园模式注册：班级（如「高一(3)班」，校园渠道注册时必填） */
   className: varchar("class_name", { length: 32 }),
   school: varchar("school", { length: 128 }),
@@ -200,16 +203,43 @@ export const studentProfile = mysqlTable("student_profile", {
 export type StudentProfile = typeof studentProfile.$inferSelect;
 
 /** V72：成绩多次记录——每次保存「学业目标/成绩」都追加一条历史（含考试名与各科分数），
- *  用于成绩变化曲线；student_profile.academics 始终为最近一次（报告计算口径不变）。 */
+ *  用于成绩变化曲线；student_profile.academics 始终为最近一次（报告计算口径不变）。
+ *  v245：校园版教务导入扩展（orgId/className/term/examDate/total/classRank/gradeRank/importedBy），
+ *  旧 C 端写入的行这些字段为空，展示时兼容。 */
 export const academicRecords = mysqlTable("academic_records", {
   id: serial("id").primaryKey(),
   userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().default(0),
   examName: varchar("exam_name", { length: 64 }).notNull().default(""),
   subjects: json("subjects").$type<Record<string, unknown>[]>(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  className: varchar("class_name", { length: 32 }).notNull().default(""),
+  term: varchar("term", { length: 16 }).notNull().default(""),
+  examDate: varchar("exam_date", { length: 10 }).notNull().default(""),
+  total: int("total"),
+  classRank: int("class_rank"),
+  gradeRank: int("grade_rank"),
+  importedBy: bigint("imported_by", { mode: "number", unsigned: true }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export type AcademicRecord = typeof academicRecords.$inferSelect;
+
+/** v245 学校指导/约谈记录：班主任/心理/生涯老师手写归档，可关联预警（warning_id）形成处置闭环。 */
+export const counselingRecords = mysqlTable("counseling_records", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  teacherId: bigint("teacher_id", { mode: "number", unsigned: true }).notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  type: mysqlEnum("type", ["心理", "学业", "生涯", "行为", "家庭"]).notNull().default("学业"),
+  channel: mysqlEnum("channel", ["面谈", "电话", "家访", "线上"]).notNull().default("面谈"),
+  summary: text("summary").notNull(),
+  followUp: varchar("follow_up", { length: 512 }).notNull().default(""),
+  warningId: bigint("warning_id", { mode: "number", unsigned: true }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type CounselingRecord = typeof counselingRecords.$inferSelect;
 
 /** V56：学员-伴学师多对多分配。一个学员可挂多位伴学师（管理员在后台分配）；
  *  student_profile.tutor_id 保留为主管伴学师（= 本表第一条，向后兼容旧逻辑）。
@@ -331,6 +361,7 @@ export const recordings = mysqlTable("recordings", {
 });
 
 export type Recording = typeof recordings.$inferSelect;
+
 
 /* ------------------------------ 引导学习会话（错题深练） ----------------------------- */
 

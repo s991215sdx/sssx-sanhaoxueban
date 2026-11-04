@@ -68,14 +68,16 @@ export function normalizeReportKinds(raw: unknown): string[] | null {
     const k = item.trim();
     if (k === "all") return ["all"];
     if (valid.has(k as (typeof INVITE_REPORT_KINDS)[number]["key"]) && !out.includes(k)) out.push(k);
-    if (out.length > 16) break;
+    if (out.length > 32) break;
   }
   return out;
 }
 
 /**
  * v82 二维码「测评套餐」：渠道可勾选注册学员注册后一站式连做的测评。
- * key 与测评中心 AssessmentCenter 的 TESTS kind 一致（mental 一项覆盖四套心理量表）；
+ * key 与测评中心 AssessmentCenter 的 TESTS kind 一致；
+ * v246 起心理健康拆为四个独立 kind：mentalsdq（学生版A·SDQ）/ mentalpa（学生版B·PHQ-A）/ mental（通用版·PHQ-9+GAD-7）/ scl90（深度评估），
+ * 兼容规则见 expandAssessKinds——旧配置里的 "mental" 视为同时开放全部四套量表。
  * "all" 表示全部测评。未勾选的测评在客户端隐藏，由伴学师后台推送（releasedAssessments）后开放。
  */
 export const INVITE_ASSESS_KINDS = [
@@ -87,12 +89,30 @@ export const INVITE_ASSESS_KINDS = [
   { key: "subject", label: "学科能力测评" },
   { key: "anchor", label: "职业锚测评" },
   { key: "holland", label: "霍兰德职业兴趣" },
-  { key: "mental", label: "心理健康筛查" },
+  { key: "mental", label: "心理健康 · 通用版（PHQ-9+GAD-7）" },
+  { key: "mentalsdq", label: "心理健康 · 学生版A（SDQ）" },
+  { key: "mentalpa", label: "心理健康 · 学生版B（PHQ-A+GAD-7）" },
+  { key: "scl90", label: "心理健康 · 深度评估（SCL-90）" },
   { key: "e3parent", label: "家长卷 · 家庭支持" },
   { key: "discparent", label: "家长 DISC（家庭版）" },
   { key: "familystudent", label: "家庭关系测评 · 学生卷" },
   { key: "familyparent", label: "家庭关系测评 · 家长卷" },
 ] as const;
+
+/** v246：心理量表四合一的兼容集合——旧配置中的 "mental" 视为同时开放四套量表。 */
+export const MENTAL_FAMILY_KINDS = ["mentalsdq", "mentalpa", "mental", "scl90"] as const;
+
+/**
+ * v246：把 kinds 清单按「mental ≡ 四套心理量表」规则展开。
+ * - null/undefined 原样返回（表示全部开放，调用方各自处理）；
+ * - 含 "all" 或不含 "mental" 的清单原样返回；
+ * - 含 "mental" 时补齐另外三个心理量表（去重）。
+ * 用于：校园版测评中心目录过滤、批量推送的开放校验、学生端可见测评计算，保持旧配置行为不变。
+ */
+export function expandAssessKinds(kinds: string[] | null | undefined): string[] | null {
+  if (!kinds || kinds.includes("all") || !kinds.includes("mental")) return kinds ?? null;
+  return [...new Set([...kinds, ...MENTAL_FAMILY_KINDS])];
+}
 
 /** 校验并归一化测评种类数组：剔除未知 key、去重、限量；返回 null 表示非法输入。兼容 JSON 字符串。 */
 export function normalizeAssessKinds(raw: unknown): string[] | null {
@@ -113,7 +133,7 @@ export function normalizeAssessKinds(raw: unknown): string[] | null {
     const k = item.trim();
     if (k === "all") return ["all"];
     if (valid.has(k as (typeof INVITE_ASSESS_KINDS)[number]["key"]) && !out.includes(k)) out.push(k);
-    if (out.length > 16) break;
+    if (out.length > 32) break;
   }
   return out;
 }

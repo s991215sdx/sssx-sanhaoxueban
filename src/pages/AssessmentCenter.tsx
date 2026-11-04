@@ -17,14 +17,16 @@ import DiscV2Quiz from "@/components/companion/DiscV2Quiz";
 import SubjectQuiz from "@/components/companion/SubjectQuiz";
 import Subject4dQuiz from "@/components/companion/Subject4dQuiz";
 import FamilyQuiz from "@/components/family/FamilyQuiz";
+import FamilySuite from "@/components/family/FamilySuite";
 import CombinedSuite from "@/components/assessment/CombinedSuite";
 import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
-import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer } from "lucide-react";
+import { expandAssessKinds } from "@contracts/invite";
+import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer, Users } from "lucide-react";
 
-/** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评。 */
-type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
+/** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评；v246 心理健康拆为四套量表四个独立测评。 */
+type TestKind = "mbti" | "disc" | "e3" | "e3parent" | "multi5" | "discparent" | "anchor" | "holland" | "mentalsdq" | "mentalpa" | "scl90" | "mental" | "subject" | "subject4d" | "familystudent" | "familyparent";
 
 type TestDef = {
   kind: TestKind;
@@ -162,22 +164,47 @@ const TESTS: TestDef[] = [
     tab: "zhihui",
     summary: (l) => (l.subject4d ? "已生成九科四维画像" : null),
   },
+  /* v246：心理健康拆为四个独立测评，各自计完成状态，报告仍统一在「心理健康」页签查看 */
   {
-    kind: "mental",
-    name: "心理健康筛查（四套量表 · 选一套做）",
-    desc: "学生版 A（SDQ 长处与困难，4—17 岁）/ 学生版 B（PHQ-A + GAD-7，11 岁以上）/ 通用版（PHQ-9 + GAD-7）/ 深度评估（SCL-90，16 岁以上 90 题）· 均为选做，可分开多次做 · 选做",
+    kind: "mentalsdq",
+    name: "心理健康 · 学生版 A（SDQ）",
+    desc: "4—17 岁适用（11 岁以下由家长引导）：情绪、品行、注意力、同伴关系、亲社会五维筛查，25+1 题约 4 分钟 · 选做",
     required: false,
     tab: "mental",
-    summary: (l) => {
-      const parts: string[] = [];
-      if (l.mentalSdq) parts.push(`A·SDQ ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）`);
-      if (l.mentalPa) parts.push(`B·PHQ-A ${l.mentalPa.phq9}（${l.mentalPa.phq9Level}）`);
-      if (l.mental)
-        parts.push(isMentalV2(l.mental) ? `通用·PHQ-9 ${l.mental.phq9}（${l.mental.phq9Level}）` : "通用·旧版结果保留");
-      if (l.mentalScl90) parts.push(`深度·SCL-90 ${l.mentalScl90.total} 分（${l.mentalScl90.level}）`);
-      return parts.length > 0 ? parts.join(" · ") : null;
-    },
-    doneOf: (l) => !!(l.mental || l.mentalSdq || l.mentalPa || l.mentalScl90),
+    summary: (l) => (l.mentalSdq ? `A·SDQ ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）` : null),
+    doneOf: (l) => !!l.mentalSdq,
+  },
+  {
+    kind: "mentalpa",
+    name: "心理健康 · 学生版 B（PHQ-A + GAD-7）",
+    desc: "11 岁以上：青少年抑郁 + 焦虑筛查，16 题约 3 分钟，含自伤念头红线题 · 选做",
+    required: false,
+    tab: "mental",
+    summary: (l) => (l.mentalPa ? `B·PHQ-A ${l.mentalPa.phq9}/27（${l.mentalPa.phq9Level}）· GAD-7 ${l.mentalPa.gad7}/21（${l.mentalPa.gad7Level}）` : null),
+    doneOf: (l) => !!l.mentalPa,
+  },
+  {
+    kind: "scl90",
+    name: "心理健康 · 深度评估（SCL-90）",
+    desc: "16 岁以上：90 题十因子全面评估，约 15—20 分钟，按中国常模给出筛选结论 · 选做",
+    required: false,
+    tab: "mental",
+    summary: (l) => (l.mentalScl90 ? `深度·SCL-90 ${l.mentalScl90.total}/450（${l.mentalScl90.level}）` : null),
+    doneOf: (l) => !!l.mentalScl90,
+  },
+  {
+    kind: "mental",
+    name: "心理健康 · 通用版（PHQ-9 + GAD-7）",
+    desc: "不限年龄：抑郁 + 焦虑标准筛查，16 题约 3 分钟，含自伤念头红线题 · 选做",
+    required: false,
+    tab: "mental",
+    summary: (l) =>
+      l.mental
+        ? isMentalV2(l.mental)
+          ? `通用·PHQ-9 ${l.mental.phq9}/27（${l.mental.phq9Level}）· GAD-7 ${l.mental.gad7}/21（${l.mental.gad7Level}）`
+          : "通用·旧版结果保留"
+        : null,
+    doneOf: (l) => !!l.mental,
   },
 ];
 
@@ -223,101 +250,8 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
   if (kind === "subject4d") return <Subject4dQuiz onDone={onDone} />;
   if (kind === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
   if (kind === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
-  return <MentalChooser onDone={onDone} />;
-}
-
-/** 心理健康四套量表自选页：孩子自己挑一套做（四套可分开多次做）。 */
-function MentalChooser({ onDone }: { onDone: () => void }) {
-  const { data } = trpc.assessment.latest.useQuery();
-  const [picked, setPicked] = useState<"mentalsdq" | "mentalpa" | "scl90" | "mental" | null>(null);
-  if (picked === "mentalsdq") return <MentalSdqQuiz onDone={onDone} />;
-  if (picked === "mentalpa") return <MentalPaQuiz onDone={onDone} />;
-  if (picked === "scl90") return <MentalScl90Quiz onDone={onDone} />;
-  if (picked === "mental") return <MentalQuiz onDone={onDone} />;
-  const l: any = data ?? {};
-  const OPTIONS: { key: "mentalsdq" | "mentalpa" | "scl90" | "mental"; badge: string; title: string; age: string; desc: string; done: null | { label: string; note: string } }[] = [
-    {
-      key: "mentalsdq",
-      badge: "学生版 A",
-      title: "SDQ 长处与困难问卷",
-      age: "4—17 岁（11 岁以下由家长引导填写）",
-      desc: "国际通用的儿童青少年行为筛查：把状态拆成情绪、行为、注意力、同伴关系、亲社会优势五个观察面，还含 1 条安全预警题。25+1 题约 4 分钟。",
-      done: l.mentalSdq
-        ? { label: "已测", note: `困难总分 ${l.mentalSdq.totalDiff}/40（${l.mentalSdq.totalBand}）· 综合「${l.mentalSdq.level}」${l.mentalSdq.selfHarm ? " · ⚠有安全预警信号" : ""}` }
-        : null,
-    },
-    {
-      key: "mentalpa",
-      badge: "学生版 B",
-      title: "PHQ-A + GAD-7",
-      age: "11 岁以上",
-      desc: "国际通用的青少年抑郁 + 焦虑筛查：PHQ-A 是 PHQ-9 的青少年改编版，GAD-7 为原版标准措辞，信效度依据充分。16 题约 3 分钟，含 1 道自伤念头红线题。",
-      done: l.mentalPa
-        ? { label: "已测", note: `PHQ-A ${l.mentalPa.phq9}/27（${l.mentalPa.phq9Level}）· GAD-7 ${l.mentalPa.gad7}/21（${l.mentalPa.gad7Level}）${l.mentalPa.selfHarm ? " · ⚠有安全预警信号" : ""}` }
-        : null,
-    },
-    {
-      key: "scl90",
-      badge: "深度评估",
-      title: "SCL-90 症状自评量表",
-      age: "16 岁以上 · 约 15—20 分钟",
-      desc: "国际应用最广泛的心理症状自评量表（原版标准 90 题、一字未改）：10 因子全面扫描近一周状态，按中国常模口径给出筛选结论，含 1 道生命安全题。适合想做一次完整深度评估的同学。",
-      done: l.mentalScl90
-        ? { label: "已测", note: `总分 ${l.mentalScl90.total}/450（${l.mentalScl90.level}）${l.mentalScl90.selfHarm ? " · ⚠有安全预警信号" : ""}` }
-        : null,
-    },
-    {
-      key: "mental",
-      badge: "通用版",
-      title: "PHQ-9 + GAD-7",
-      age: "不限（青少年与成人都适用）",
-      desc: "国际通用的抑郁 + 焦虑筛查标准版。16 题约 3 分钟，含 1 道自伤念头红线题。已经测过旧版（30 题十因子）的同学，也可以在这里测新版。",
-      done: l.mental
-        ? isMentalV2(l.mental)
-          ? { label: "已测", note: `PHQ-9 ${l.mental.phq9}/27（${l.mental.phq9Level}）· GAD-7 ${l.mental.gad7}/21（${l.mental.gad7Level}）${l.mental.selfHarm ? " · ⚠有安全预警信号" : ""}` }
-          : { label: "旧版结果", note: "30 题旧版结果保留可查，建议测上面的新版" }
-        : null,
-    },
-  ];
-  return (
-    <div className="paper-card p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-olive">心理健康测评 · 选一套做</h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">
-            四套都是国际通用筛查工具（选做），观察的侧重点和深度不同，可以挑一套，也可以分几次各做一套——做过的结果都会进报告。如实作答，结果只有你自己看到。
-          </p>
-        </div>
-        <button onClick={onDone} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
-          返回
-        </button>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {OPTIONS.map((o) => (
-          <div key={o.key} className="flex flex-col rounded-xl border border-[#E3B53A]/40 bg-butter-pale/50 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-bold text-cream">{o.badge}</span>
-              {o.done ? (
-                <span className="rounded-full border border-lime/60 bg-cream px-2 py-px text-[11px] font-semibold text-[#2F7A41]">{o.done.label}</span>
-              ) : (
-                <span className="rounded-full border border-dashed border-[#A9B8B0]/80 px-2 py-px text-[11px] text-olive-mute">未测</span>
-              )}
-            </div>
-            <div className="mt-2 text-[14.5px] font-bold text-olive">{o.title}</div>
-            <div className="mono mt-0.5 text-[11px] text-olive-mute">{o.age}</div>
-            <p className="mt-2 flex-1 text-[12.5px] leading-relaxed text-olive-soft">{o.desc}</p>
-            {o.done && <p className="mt-2 text-[11.5px] leading-relaxed text-olive-mute">{o.done.note}</p>}
-            <button
-              onClick={() => setPicked(o.key)}
-              className="mt-3 w-full rounded-xl bg-brand py-2.5 text-[13.5px] font-semibold text-cream transition-colors hover:bg-lime"
-            >
-              {o.done ? "重新测一遍" : "开始这套测评"}
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  if (kind === "scl90") return <MentalScl90Quiz onDone={onDone} />;
+  return <MentalQuiz onDone={onDone} />;
 }
 
 /** 测评中心主页（/assessments）：全部测评的入口与报告导航。 */
@@ -329,6 +263,8 @@ export default function AssessmentCenter() {
   const [suiteOpen, setSuiteOpen] = useState(false);
   // v181：选科及升学规划测评（一条龙向导）
   const [zhihuiOpen, setZhihuiOpen] = useState(false);
+  /* v238：家庭教育测评（孩子 + 爸妈扫码） */
+  const [familyOpen, setFamilyOpen] = useState(false);
   // v82：注册二维码「测评套餐」——渠道绑定的测评种类 + 伴学师额外推送的种类
   const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
   const { data: profile } = trpc.profile.get.useQuery();
@@ -386,10 +322,11 @@ export default function AssessmentCenter() {
   /* V66：必测完成进度（未完成时顶部入口显示进度） */
   const requiredDone = [latest.mbti, latest.disc, latest.e3].filter(Boolean).length;
 
-  /* v82：渠道绑定测评套餐时，只显示套餐内 + 伴学师已推送的测评；老用户/后台建号不限制（fail-open） */
+  /* v82：渠道绑定测评套餐时，只显示套餐内 + 伴学师已推送的测评；老用户/后台建号不限制（fail-open）。
+     v246：旧配置中的 "mental" 视为同时开放四套心理量表（expandAssessKinds 兼容展开）。 */
   const released: string[] = Array.isArray(profile?.releasedAssessments) ? (profile!.releasedAssessments as string[]) : [];
   const restricted = !!access?.enabled && !(access?.kinds ?? []).includes("all");
-  const visibleSet = restricted ? new Set<string>([...(access?.kinds ?? []), ...released]) : null;
+  const visibleSet = restricted ? new Set<string>(expandAssessKinds([...(access?.kinds ?? []), ...released]) ?? []) : null;
   const visibleTests = visibleSet ? TESTS.filter((t) => visibleSet.has(t.kind)) : TESTS;
   const hiddenCount = TESTS.length - visibleTests.length;
 
@@ -404,6 +341,9 @@ export default function AssessmentCenter() {
   if (zhihuiOpen) {
     return <ZhihuiSuite onExit={() => setZhihuiOpen(false)} />;
   }
+  if (familyOpen) {
+    return <FamilySuite onExit={() => setFamilyOpen(false)} />;
+  }
 
   /* v181e：两个推荐入口受渠道套餐全量权限控制——
      套餐完整包含该向导全部测评时才对注册学员显示；否则页面只展示套餐内的测评列表。
@@ -413,6 +353,10 @@ export default function AssessmentCenter() {
   const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
   /* v194：选科组合门槛 = 学科四维 + 霍兰德（核心两项；职业锚/多元智能为可选增量，校园渠道可不含） */
   const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland"].every((k) => visibleSet.has(k));
+  /* v238：家庭教育测评入口与前两个组合并列常驻。
+     只有校园渠道仍按套餐走——学校没安排家长问卷，不该被系统塞一份进去；
+     普通渠道与机构版一律显示，家长卷本身走公开页、不占学生测评名额。 */
+  const familySuiteVisible = !access?.campus || !visibleSet || visibleSet.has("familystudent");
   /* v191：学习力系列任一测评在套餐内 → 展示「综合学习力报告」入口；套餐不含学习力（如校园选科版）则隐藏，避免引导做未开放测评 */
   const suiteGranted = !visibleSet || ["mbti", "disc", "e3"].some((k) => visibleSet.has(k));
 
@@ -508,6 +452,33 @@ export default function AssessmentCenter() {
               )}
             </div>
           )}
+          {/* v238：家庭教育测评——和前两个组合并列的第三个入口。
+              它跟另外两个不一样的地方是「要家长配合」，所以标题上直接写出来，不让人点进去才发现。 */}
+          {familySuiteVisible && (
+            <button
+              onClick={() => setFamilyOpen(true)}
+              className="paper-card accent-l flex w-full items-center gap-4 border-[#0C7064]/25 bg-gradient-to-r from-mint-pale/40 to-cream p-5 text-left shadow-sm hover:from-mint-pale/70"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0C7064] text-cream">
+                <Users size={24} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[17px] font-bold text-olive">家庭教育测评</h3>
+                  <span className="rounded-full border border-[#0C7064]/30 bg-cream px-2 py-px text-[10.5px] font-semibold text-[#0C7064]">
+                    家长一起做
+                  </span>
+                </span>
+                <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
+                  你答 14 题、爸妈各答 29 题：五级台阶断在哪一级、六项认知盲区、九十天怎么改。
+                  爸妈扫同一张码，都填到你这个孩子名下，不用注册。
+                </p>
+              </span>
+              <span className="shrink-0 rounded-xl bg-[#0C7064] px-4 py-2.5 text-[13.5px] font-semibold text-cream">
+                开始 →
+              </span>
+            </button>
+          )}
           {/* 更多测评：点击平滑滚动到下方测评列表 */}
           <button
             onClick={() => document.getElementById("assessment-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -537,7 +508,7 @@ export default function AssessmentCenter() {
         </div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">
           {suiteVisible && zhihuiSuiteVisible
-            ? "推荐先完成上面两项测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；更多测评在下方列表里，按需要挑着做。"
+            ? "推荐先完成上面两个组合测评：学习力测评生成综合学习力报告，选科及升学规划测评生成选科及升学规划报告；家庭教育测评要家长配合，可以等爸妈有空时再做；更多测评在下方列表里，按需要挑着做。"
             : zhihuiSuiteVisible
               ? (() => {
                   /* v194：按渠道套餐动态列出流程（校园渠道无职业锚、含成绩步骤） */
@@ -548,8 +519,8 @@ export default function AssessmentCenter() {
                   return `推荐先完成上面的「选科及升学规划测评」：${items.join(" → ")}，全部完成自动生成你的选科及升学规划报告（选科组合、适合的专业与职业、升学路径规划）；更多测评在下方列表里，按需要挑着做。`;
                 })()
               : suiteVisible
-                ? "推荐先完成上面的「学习力测评」，做完即可生成你的综合学习力报告；更多测评在下方列表里，按需要挑着做。"
-                : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」两项推荐入口。"}
+                ? "推荐先完成上面的「学习力测评」，做完即可生成你的综合学习力报告；家庭教育测评要家长配合，可以等爸妈有空时再做；更多测评在下方列表里，按需要挑着做。"
+                : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」「家庭教育测评」三项推荐入口。"}
         </p>
       </div>
 

@@ -3,13 +3,16 @@
  * 版式对齐学校版策划效果图：顶部墨绿品牌条 + 左侧分组导航 + 白卡片内容区。
  * 约定：粤华学校版不出现「伴学师」，统一称「指导老师」；聚合分布不点名，名单按职员权限下钻。
  */
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import {
-  RefreshCw,
-  Printer,
   BellRing,
+  Download,
+  FileUp,
   GraduationCap,
+  NotebookPen,
+  Printer,
+  RefreshCw,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import StudentsTab from "./StudentsTab";
@@ -542,15 +545,221 @@ function WarningsSection() {
   );
 }
 
-/* ---------------------------------- 成长档案 ---------------------------------- */
+/* ---------------------------------- 成长档案 v245：时间轴 + 测评摘要 + 分数/排名双曲线 ---------------------------------- */
+
+/** Date/字符串 → YYYY-MM-DD（无效输入返回空串） */
+const iso = (x: unknown) => {
+  const d = new Date(x as string);
+  return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+};
+
+/** 学年标签：8 月起为新学年；结合当前年级回推「高一上 / 高一下」 */
+function semesterLabel(dateStr: string, gradeNow: string | null | undefined): string {
+  const g = /高([一二三123])/.exec(gradeNow ?? "");
+  const gi = g ? (g[1] === "一" || g[1] === "1" ? 1 : g[1] === "二" || g[1] === "2" ? 2 : 3) : 0;
+  const d = dateStr ? new Date(dateStr) : null;
+  if (!d || isNaN(d.getTime())) return "";
+  const now = new Date();
+  const startYear = (t: Date) => (t.getMonth() >= 7 ? t.getFullYear() : t.getFullYear() - 1);
+  const diff = startYear(now) - startYear(d); // 0 = 本学年
+  const gradeIdx = gi ? gi - diff : 0;
+  const gradeName = gradeIdx === 1 ? "高一" : gradeIdx === 2 ? "高二" : gradeIdx === 3 ? "高三" : "";
+  const term = d.getMonth() >= 7 || d.getMonth() === 0 ? "上" : "下";
+  return `${gradeName}${term}`;
+}
+
+/** 测评结论一句话（防御式取各 kind 的特征字段） */
+function assessSummary(kind: string, result: unknown): string {
+  const r = (result ?? {}) as Record<string, unknown>;
+  switch (kind) {
+    case "holland":
+      return r.code ? `代码 ${String(r.code)}` : "已完成";
+    case "e3":
+      return typeof r.score === "number" ? `得分 ${r.score}${r.total ? ` / ${String(r.total)}` : ""}` : "已完成";
+    case "subject4d":
+      return r.headline ? String(r.headline) : "已完成";
+    case "mbti":
+      return r.type ? `${String(r.type)} 型` : "已完成";
+    case "disc":
+    case "anchor":
+      return r.code ? String(r.code) : "已完成";
+    case "multi5":
+      return Array.isArray(r.top) && r.top.length
+        ? `优势：${(r.top as unknown[]).slice(0, 3).map(String).join("、")}`
+        : "已完成";
+    default:
+      if (kind.startsWith("mental")) return r.level ? `等级 ${String(r.level)}` : "已完成";
+      return "已完成";
+  }
+}
+
+type AcadPoint = {
+  examName: string;
+  examDate: string | null;
+  createdAt: unknown;
+  total: number | null;
+  classRank: number | null;
+  gradeRank: number | null;
+};
+
+/** 成绩双曲线：总分（左轴，绿实线） + 班级排名（右轴，橙虚线，越靠上排名越靠前） */
+function TrendChart({ academics }: { academics: AcadPoint[] }) {
+  const pts = academics
+    .map((a) => ({
+      label: (a.examName || "考试").trim(),
+      date: a.examDate || iso(a.createdAt),
+      total: a.total,
+      rank: a.classRank,
+    }))
+    .filter((p) => p.total != null || p.rank != null)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  if (!pts.length) {
+    return (
+      <p className="rounded-lg px-3 py-6 text-center text-[12.5px]" style={{ background: "#F6F7F3", color: G.mute }}>
+        暂无成绩数据——可在「成绩导入」上传 Excel/CSV 后自动归档
+      </p>
+    );
+  }
+  const W = 680, H = 200, PL = 42, PR = 42, PT = 16, PB = 30;
+  const iw = W - PL - PR, ih = H - PT - PB;
+  const totals = pts.map((p) => p.total).filter((v): v is number => v != null);
+  const ranks = pts.map((p) => p.rank).filter((v): v is number => v != null);
+  const tMin = totals.length ? Math.max(0, Math.min(...totals) - 20) : 0;
+  const tMax = totals.length ? Math.max(...totals) + 20 : 100;
+  const rMin = ranks.length ? Math.max(1, Math.min(...ranks)) : 1;
+  const rMax = ranks.length ? Math.max(...ranks) : 10;
+  const x = (i: number) => PL + (pts.length === 1 ? iw / 2 : (i / (pts.length - 1)) * iw);
+  const yT = (v: number) => PT + ih - ((v - tMin) / Math.max(1, tMax - tMin)) * ih;
+  const yR = (v: number) => PT + ((v - rMin) / Math.max(1, rMax - rMin)) * ih; // 排名倒置：越小越靠上
+  const lineT = pts.map((p, i) => (p.total != null ? `${x(i).toFixed(1)},${yT(p.total).toFixed(1)}` : "")).filter(Boolean).join(" ");
+  const lineR = pts.map((p, i) => (p.rank != null ? `${x(i).toFixed(1)},${yR(p.rank).toFixed(1)}` : "")).filter(Boolean).join(" ");
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="成绩与排名曲线">
+        {[0, 1, 2, 3].map((i) => {
+          const y = PT + (i / 3) * ih;
+          const tv = Math.round(tMax - (i / 3) * (tMax - tMin));
+          const rv = Math.round(rMin + (i / 3) * (rMax - rMin));
+          return (
+            <g key={i}>
+              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke={G.line} strokeWidth={1} />
+              <text x={PL - 6} y={y + 4} textAnchor="end" fontSize={10} fill={G.mute}>{tv}</text>
+              <text x={W - PR + 6} y={y + 4} fontSize={10} fill={G.warn}>{rv}</text>
+            </g>
+          );
+        })}
+        {pts.map((p, i) => (
+          <text key={`x${i}`} x={x(i)} y={H - 8} textAnchor="middle" fontSize={10.5} fill={G.mute}>
+            {p.label.length > 6 ? p.label.slice(-6) : p.label}
+          </text>
+        ))}
+        {lineR && <polyline points={lineR} fill="none" stroke={G.warn} strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" />}
+        {lineT && <polyline points={lineT} fill="none" stroke={G.brand} strokeWidth={2.5} strokeLinejoin="round" />}
+        {pts.map((p, i) => (
+          <g key={`p${i}`}>
+            {p.total != null && (
+              <>
+                <circle cx={x(i)} cy={yT(p.total)} r={3.5} fill="#fff" stroke={G.brand} strokeWidth={2} />
+                <text x={x(i)} y={yT(p.total) - 8} textAnchor="middle" fontSize={10.5} fontWeight={700} fill={G.brand}>{p.total}</text>
+              </>
+            )}
+            {p.rank != null && (
+              <>
+                <circle cx={x(i)} cy={yR(p.rank)} r={3} fill="#fff" stroke={G.warn} strokeWidth={2} />
+                <text x={x(i)} y={yR(p.rank) + 14} textAnchor="middle" fontSize={10} fill={G.warn}>#{p.rank}</text>
+              </>
+            )}
+          </g>
+        ))}
+      </svg>
+      <div className="mt-1 flex flex-wrap gap-4 text-[11.5px]" style={{ color: G.mute }}>
+        <span className="flex items-center gap-1.5"><i className="inline-block h-[3px] w-5 rounded" style={{ background: G.brand }} />总分（左轴）</span>
+        <span className="flex items-center gap-1.5"><i className="inline-block h-[3px] w-5 rounded" style={{ background: G.warn, opacity: 0.75 }} />班级排名（右轴，越上越好）</span>
+      </div>
+    </div>
+  );
+}
 
 function ArchiveSection() {
   const [studentId, setStudentId] = useState<number | null>(null);
+  const [sem, setSem] = useState<string>("全部");
+  const [, setParams] = useSearchParams();
   const { data: students } = trpc.school.archive.students.useQuery();
   const { data: portfolio, isLoading } = trpc.school.archive.portfolio.useQuery(
     { studentId: studentId ?? 0 },
     { enabled: studentId != null },
   );
+
+  type TLItem = { date: string; tag: string; tagColor: string; title: string; desc: string };
+  const items = useMemo<TLItem[]>(() => {
+    if (!portfolio) return [];
+    const arr: TLItem[] = [
+      ...portfolio.assessments.map((a) => ({
+        date: iso(a.createdAt),
+        tag: "测评",
+        tagColor: G.brand,
+        title: KIND_LABEL[a.kind] ?? a.kind,
+        desc: assessSummary(a.kind, a.result),
+      })),
+      ...portfolio.academics.map((a) => {
+        const subs = (a.subjects as { name: string; lastScore?: number | null }[] | null) ?? [];
+        const top = subs.slice(0, 5).map((s) => `${s.name}${s.lastScore ?? "—"}`).join(" · ");
+        return {
+          date: a.examDate || iso(a.createdAt),
+          tag: "成绩",
+          tagColor: "#D9A13B",
+          title: a.examName || "考试成绩",
+          desc: [a.total != null ? `总分 ${a.total}` : "", top, a.classRank ? `班排 ${a.classRank}` : "", a.gradeRank ? `年排 ${a.gradeRank}` : ""].filter(Boolean).join(" ｜ "),
+        };
+      }),
+      ...portfolio.warnings.map((w) => ({
+        date: iso(w.createdAt),
+        tag: "预警",
+        tagColor: w.level === "高风险" ? G.danger : w.level === "预警" ? G.warn : G.brand,
+        title: `${WARN_TYPE_LABEL[w.type] ?? w.type} · ${w.level}`,
+        desc: `${w.status === "open" ? "待处理" : w.status === "acknowledged" ? "处理中" : "已办结"}${w.handleNote ? `｜${w.handleNote}` : ""}`,
+      })),
+      ...portfolio.guidance.map((g) => ({
+        date: g.date,
+        tag: "指导",
+        tagColor: "#5B7FE0",
+        title: `${g.type} · ${g.channel}｜${g.teacherName}`,
+        desc: [
+          g.summary,
+          g.followUp ? `跟进：${g.followUp}` : "",
+          g.warningStatus === "open" ? "关联预警：待处理" : g.warningStatus === "acknowledged" ? "关联预警：处理中" : g.warningStatus === "resolved" ? "关联预警：已办结" : "",
+        ].filter(Boolean).join(" ｜ "),
+      })),
+    ];
+    return arr.sort((a, b) => (a.date < b.date ? 1 : -1));
+  }, [portfolio]);
+
+  const sems = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of items) {
+      const lab = semesterLabel(it.date, portfolio?.student.grade) || it.date.slice(0, 7);
+      if (lab) set.add(lab);
+    }
+    return ["全部", ...set];
+  }, [items, portfolio?.student.grade]);
+
+  const shown = useMemo(
+    () =>
+      sem === "全部"
+        ? items
+        : items.filter((it) => (semesterLabel(it.date, portfolio?.student.grade) || it.date.slice(0, 7)) === sem),
+    [items, sem, portfolio?.student.grade],
+  );
+
+  const completeness = portfolio?.completeness ?? 0;
+  const COMP_LABELS = ["测评", "成绩", "预警", "指导"] as const;
+  const compOn = [
+    (portfolio?.assessments.length ?? 0) > 0,
+    (portfolio?.academics.length ?? 0) > 0,
+    (portfolio?.warnings.length ?? 0) > 0,
+    (portfolio?.guidance.length ?? 0) > 0,
+  ];
+
   const print = () => {
     if (!portfolio) return;
     const esc = (x: unknown) =>
@@ -562,28 +771,28 @@ function ArchiveSection() {
     const rows = [
       ...portfolio.assessments.map(
         (a) =>
-          `<tr><td>测评</td><td>${esc(KIND_LABEL[a.kind] ?? a.kind)}</td><td>${esc(new Date(a.createdAt).toLocaleDateString("zh-CN"))}</td><td>${esc(JSON.stringify(a.result).slice(0, 200))}</td></tr>`,
+          `<tr><td>测评</td><td>${esc(KIND_LABEL[a.kind] ?? a.kind)}</td><td>${esc(iso(a.createdAt))}</td><td>${esc(assessSummary(a.kind, a.result))}</td></tr>`,
       ),
       ...portfolio.academics.map(
         (a) =>
-          `<tr><td>成绩</td><td>${esc(a.examName)}</td><td>${esc(new Date(a.createdAt).toLocaleDateString("zh-CN"))}</td><td>${esc(JSON.stringify(a.subjects))}</td></tr>`,
+          `<tr><td>成绩</td><td>${esc(a.examName || "考试成绩")}</td><td>${esc(a.examDate || iso(a.createdAt))}</td><td>${esc(`总分 ${a.total ?? "—"}｜班排 ${a.classRank ?? "—"}｜年排 ${a.gradeRank ?? "—"}`)}</td></tr>`,
       ),
       ...portfolio.warnings.map(
         (w) =>
-          `<tr><td>预警</td><td>${esc(WARN_TYPE_LABEL[w.type] ?? w.type)}·${esc(w.level)}</td><td>${esc(new Date(w.createdAt).toLocaleDateString("zh-CN"))}</td><td>${esc(w.status)} ${esc(w.handleNote ?? "")}</td></tr>`,
+          `<tr><td>预警</td><td>${esc(WARN_TYPE_LABEL[w.type] ?? w.type)}·${esc(w.level)}</td><td>${esc(iso(w.createdAt))}</td><td>${esc(w.status)} ${esc(w.handleNote ?? "")}</td></tr>`,
       ),
       ...portfolio.guidance.map(
         (g) =>
-          `<tr><td>指导</td><td>七步法第${g.step}步${g.done ? "（完成）" : ""}</td><td>${esc(g.date)}</td><td>${esc(JSON.stringify(g.answers))}</td></tr>`,
+          `<tr><td>指导</td><td>${esc(`${g.date} ${g.type}·${g.channel}`)}</td><td>${esc(g.teacherName)}</td><td>${esc(g.summary)}${g.followUp ? `<br>跟进：${esc(g.followUp)}` : ""}</td></tr>`,
       ),
     ].join("");
-    const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>${esc(s.name)}·一生一策成长档案</title>
+    const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>${esc(s.name)}·一生一册成长档案</title>
 <style>body{font-family:system-ui,"Microsoft YaHei",sans-serif;max-width:820px;margin:24px auto;padding:0 16px;color:#1E3530}
 h1{font-size:20px}h2{font-size:15px;margin-top:20px}table{width:100%;border-collapse:collapse;font-size:12px}
-td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f5f2e8}
+td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}th{background:#E3F1EB}
 .check{font-family:monospace;font-size:12px;color:#0E7A5F}</style></head><body>
-<h1>一生一策成长档案 · ${esc(s.name)}</h1>
-<p>${esc(s.grade ?? "")} ${esc(s.className ?? "")} ${esc(s.school ?? "")} ｜ 生成时间：${esc(portfolio.generatedAt)}</p>
+<h1>一生一册成长档案 · ${esc(s.name)}</h1>
+<p>${esc(s.grade ?? "")} ${esc(s.className ?? "")} ${esc(s.school ?? "")} ｜ 生成时间：${esc(portfolio.generatedAt)} ｜ 档案完整度 ${completeness}%</p>
 <p class="check">校验码：${esc(portfolio.checksum)}（SHA-256 摘要，可校验档案完整性）</p>
 <h2>档案明细（测评 / 成绩 / 预警 / 指导记录）</h2>
 <table><thead><tr><th>类型</th><th>项目</th><th>日期</th><th>内容</th></tr></thead><tbody>${rows}</tbody></table>
@@ -595,6 +804,7 @@ td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}t
     w.focus();
     w.print();
   };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -602,7 +812,10 @@ td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}t
           <GraduationCap size={18} style={{ color: G.brand }} />
           <select
             value={studentId ?? ""}
-            onChange={(e) => setStudentId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => {
+              setStudentId(e.target.value ? Number(e.target.value) : null);
+              setSem("全部");
+            }}
             className="min-w-60 rounded-lg border bg-white px-2.5 py-2 text-[12.5px]"
             style={{ borderColor: G.line, color: G.ink }}
           >
@@ -614,14 +827,32 @@ td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}t
             ))}
           </select>
           {portfolio && (
-            <button
-              onClick={print}
-              className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12.5px] font-semibold text-white"
-              style={{ background: G.brand }}
-            >
-              <Printer size={14} />
-              打印 / 导出 PDF
-            </button>
+            <>
+              <button
+                onClick={print}
+                className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12.5px] font-semibold text-white"
+                style={{ background: G.brand }}
+              >
+                <Printer size={14} />
+                打印 / 导出 PDF
+              </button>
+              <button
+                onClick={() => setParams({ item: "guidance", student: String(studentId) })}
+                className="flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[12.5px] font-semibold"
+                style={{ borderColor: G.brand, color: G.brand }}
+              >
+                <NotebookPen size={14} />
+                写指导记录
+              </button>
+              <button
+                onClick={() => setParams({ item: "grades" })}
+                className="flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[12.5px] font-semibold"
+                style={{ borderColor: G.line, color: G.ink }}
+              >
+                <FileUp size={14} />
+                导入成绩
+              </button>
+            </>
           )}
         </div>
       </Card>
@@ -649,62 +880,566 @@ td,th{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}t
               <BigStat key={label} value={n} label={label} />
             ))}
           </div>
-          <details className="mt-4 rounded-xl border" style={{ borderColor: G.line }}>
-            <summary className="cursor-pointer px-3 py-2.5 text-[12.5px] font-bold" style={{ color: G.ink }}>
-              测评明细（{portfolio.assessments.length}）
-            </summary>
-            <div className="space-y-1.5 px-3 pb-3">
+          <div className="mt-3 rounded-xl border p-4" style={{ borderColor: G.line }}>
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] font-bold" style={{ color: G.ink }}>档案完整度</span>
+              <span className="text-[12px]" style={{ color: G.mute }}>
+                {completeness}% ｜ 测评 / 成绩 / 预警 / 指导 各 25%
+              </span>
+            </div>
+            <div className="mt-2 flex h-2.5 overflow-hidden rounded-full" style={{ background: G.track }}>
+              {COMP_LABELS.map((lab, i) => (
+                <div
+                  key={lab}
+                  className="h-full flex-1"
+                  title={lab}
+                  style={{ background: compOn[i] ? G.brand : "transparent", borderRight: i < 3 ? "2px solid #fff" : undefined }}
+                />
+              ))}
+            </div>
+            <div className="mt-1.5 flex justify-between text-[11px]">
+              {COMP_LABELS.map((lab, i) => (
+                <span key={lab} style={{ color: compOn[i] ? G.brand : G.mute }}>
+                  {lab}{compOn[i] ? " ✓" : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
+      {portfolio && (
+        <Card>
+          <SecTitle title="成绩曲线 · 总分与班级排名" note="绿实线 = 总分（左轴）；橙虚线 = 班排（右轴，越靠上排名越靠前）" />
+          <TrendChart academics={portfolio.academics} />
+        </Card>
+      )}
+      {portfolio && (
+        <Card>
+          <SecTitle title={`测评摘要（${portfolio.assessments.length}）`} note="各次测评结论一句话" />
+          {portfolio.assessments.length ? (
+            <div className="grid gap-2 md:grid-cols-2">
               {portfolio.assessments.map((a, i) => (
-                <div key={i} className="rounded-lg px-2.5 py-1.5 text-[12px]" style={{ background: "#F6F7F3", color: G.ink }}>
+                <div key={i} className="rounded-lg px-3 py-2 text-[12px]" style={{ background: "#F6F7F3", color: G.ink }}>
                   <b>{KIND_LABEL[a.kind] ?? a.kind}</b>
-                  <span style={{ color: G.mute }}> · {new Date(a.createdAt).toLocaleDateString("zh-CN")}</span>
-                </div>
-              ))}
-            </div>
-          </details>
-          <details className="mt-2 rounded-xl border" style={{ borderColor: G.line }}>
-            <summary className="cursor-pointer px-3 py-2.5 text-[12.5px] font-bold" style={{ color: G.ink }}>
-              成绩曲线（{portfolio.academics.length}）
-            </summary>
-            <div className="space-y-1.5 px-3 pb-3">
-              {portfolio.academics.map((a, i) => (
-                <div key={i} className="rounded-lg px-2.5 py-1.5 text-[12px]" style={{ background: "#F6F7F3", color: G.ink }}>
-                  <b>{a.examName || "考试成绩"}</b>
-                  <span style={{ color: G.mute }}> · {new Date(a.createdAt).toLocaleDateString("zh-CN")}</span>
-                </div>
-              ))}
-            </div>
-          </details>
-          <details className="mt-2 rounded-xl border" style={{ borderColor: G.line }}>
-            <summary className="cursor-pointer px-3 py-2.5 text-[12.5px] font-bold" style={{ color: G.ink }}>
-              预警与处置（{portfolio.warnings.length}）
-            </summary>
-            <div className="space-y-1.5 px-3 pb-3">
-              {portfolio.warnings.map((w, i) => (
-                <div key={i} className="rounded-lg px-2.5 py-1.5 text-[12px]" style={{ background: "#F6F7F3", color: G.ink }}>
-                  <b>{WARN_TYPE_LABEL[w.type] ?? w.type} · {w.level}</b>
-                  <span style={{ color: G.mute }}>
-                    {" "}· {new Date(w.createdAt).toLocaleDateString("zh-CN")} · {w.status === "open" ? "待处理" : w.status === "acknowledged" ? "已确认" : "已办结"}
-                    {w.handleNote ? ` · ${w.handleNote}` : ""}
+                  <span className="block truncate" style={{ color: G.mute }}>
+                    {assessSummary(a.kind, a.result)} ｜ {iso(a.createdAt)}
                   </span>
                 </div>
               ))}
-              {!portfolio.warnings.length && <p className="text-[12px]" style={{ color: G.mute }}>无预警记录</p>}
             </div>
-          </details>
-          <details className="mt-2 rounded-xl border" style={{ borderColor: G.line }}>
-            <summary className="cursor-pointer px-3 py-2.5 text-[12.5px] font-bold" style={{ color: G.ink }}>
-              指导记录（{portfolio.guidance.length}）
-            </summary>
-            <div className="space-y-1.5 px-3 pb-3">
-              {portfolio.guidance.map((g, i) => (
-                <div key={i} className="rounded-lg px-2.5 py-1.5 text-[12px]" style={{ background: "#F6F7F3", color: G.ink }}>
-                  <b>{g.date}</b> · 七步法第{g.step}步{g.done ? "（已完成）" : ""}
+          ) : (
+            <p className="text-[12.5px]" style={{ color: G.mute }}>暂无测评记录</p>
+          )}
+        </Card>
+      )}
+      {portfolio && (
+        <Card>
+          <SecTitle title="成长时间轴" note="测评 / 成绩 / 预警 / 指导 自动归集，按学期筛选" />
+          <div className="mb-4 flex flex-wrap gap-2">
+            {sems.map((s) => (
+              <Pill key={s} active={sem === s} onClick={() => setSem(s)}>{s}</Pill>
+            ))}
+          </div>
+          <ol className="relative ml-2 space-y-3 border-l-2 pl-4" style={{ borderColor: G.line }}>
+            {shown.map((it, i) => (
+              <li key={i} className="relative">
+                <span className="absolute -left-[23px] top-1 h-3 w-3 rounded-full border-2 border-white" style={{ background: it.tagColor }} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full px-2 py-0.5 text-[10.5px] font-bold text-white" style={{ background: it.tagColor }}>{it.tag}</span>
+                  <span className="text-[12.5px] font-bold" style={{ color: G.ink }}>{it.title}</span>
+                  <span className="ml-auto text-[11.5px]" style={{ color: G.mute }}>{it.date}</span>
                 </div>
+                <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: G.mute }}>{it.desc}</p>
+              </li>
+            ))}
+            {!shown.length && <p className="text-[12.5px]" style={{ color: G.mute }}>该学期暂无记录</p>}
+          </ol>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------- v245 成绩导入（教务） ---------------------------------- */
+
+function GradeImportSection() {
+  const utils = trpc.useUtils();
+  const { data: cls } = trpc.school.grades.classes.useQuery();
+  const [examName, setExamName] = useState("");
+  const [examDate, setExamDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [term, setTerm] = useState("");
+  const [className, setClassName] = useState("");
+  const [rows, setRows] = useState<{ name: string; scores: Record<string, number | null> }[]>([]);
+  const [fileName, setFileName] = useState("");
+  const [error, setError] = useState("");
+  const [doneMsg, setDoneMsg] = useState("");
+
+  const preview = trpc.school.grades.importPreview.useMutation();
+  const commit = trpc.school.grades.importCommit.useMutation({
+    onSuccess: (r) => {
+      utils.school.grades.classes.invalidate();
+      setDoneMsg(`已归档 ${r.imported} 人，跳过 ${r.skipped} 人${r.warningsCreated ? `，触发学业下滑预警 ${r.warningsCreated} 条` : ""}。`);
+      setRows([]);
+      setFileName("");
+      preview.reset();
+    },
+  });
+
+  /* 解析后自动按「班级 + 姓名」匹配预览 */
+  useEffect(() => {
+    if (rows.length && className) {
+      preview.mutate({ examName: examName.trim() || "考试成绩", className, rows });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, className]);
+
+  const downloadTemplate = () => {
+    const head = "姓名,语文,数学,英语,物理,化学,道德与法治,历史,地理,生物";
+    const blob = new Blob(["\uFEFF" + head + "\n张三,120,118,115,82,79,88,80,86,85\n"], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "成绩导入模板.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const parseFile = async (f: File) => {
+    setError("");
+    setDoneMsg("");
+    preview.reset();
+    try {
+      let grid: (string | number | null)[][] = [];
+      if (/\.csv$/i.test(f.name)) {
+        const text = await f.text();
+        grid = text
+          .replace(/^\uFEFF/, "")
+          .split(/\r?\n/)
+          .filter((l) => l.trim())
+          .map((l) => l.split(",").map((c) => c.trim()));
+      } else if (/\.xlsx?$/i.test(f.name)) {
+        const XLSX = await import("xlsx");
+        const buf = await f.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        if (!ws) throw new Error("Excel 中没有工作表");
+        grid = XLSX.utils.sheet_to_json<(string | number | null)[]>(ws, { header: 1, defval: null });
+      } else {
+        setError("仅支持 .xlsx / .xls / .csv 文件");
+        return;
+      }
+      const head = (grid[0] ?? []).map((h) => String(h ?? "").trim());
+      const nameIdx = head.findIndex((h) => h.includes("姓名"));
+      if (nameIdx < 0) {
+        setError("未找到「姓名」列，请按模板格式整理表格（首列姓名，其后各列为科目）");
+        return;
+      }
+      const subjCols = head
+        .map((h, i) => ({ h, i }))
+        .filter(({ h, i }) => i !== nameIdx && !!h);
+      const out: { name: string; scores: Record<string, number | null> }[] = [];
+      for (const r of grid.slice(1)) {
+        const name = String(r[nameIdx] ?? "").trim();
+        if (!name) continue;
+        const scores: Record<string, number | null> = {};
+        for (const { h, i } of subjCols) {
+          const v = r[i];
+          const n = v == null || String(v).trim() === "" ? null : Number(v);
+          scores[h] = n != null && !isNaN(n) ? n : null;
+        }
+        out.push({ name, scores });
+      }
+      if (!out.length) {
+        setError("表格中没有可导入的数据行");
+        return;
+      }
+      setRows(out);
+      setFileName(f.name);
+    } catch (e) {
+      setError(`文件解析失败：${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const matchedCount = preview.data?.matched.length ?? 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <BigStat value={cls?.classes.length ?? 0} suffix="个班" label="可导入班级" />
+        <BigStat value={cls?.students.length ?? 0} suffix="人" label="校园学生" />
+        <BigStat value={rows.length} suffix="行" label="当前表格数据行" />
+        <BigStat value={matchedCount} suffix="人" label="已匹配学生" />
+      </div>
+      <Card>
+        <SecTitle title="第一步 · 考试信息" note="同一班级同一考试只导一次；重复导入会生成重复记录" />
+        <div className="grid gap-3 md:grid-cols-4">
+          <label className="block">
+            <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>考试名称（必填）</span>
+            <input
+              value={examName}
+              onChange={(e) => setExamName(e.target.value)}
+              placeholder="如：高一上学期期中考试"
+              className="w-full rounded-lg border bg-white px-3 py-2 text-[12.5px]"
+              style={{ borderColor: G.line, color: G.ink }}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>考试日期</span>
+            <input
+              type="date"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+              className="w-full rounded-lg border bg-white px-3 py-2 text-[12.5px]"
+              style={{ borderColor: G.line, color: G.ink }}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>学期（选填）</span>
+            <input
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              placeholder="如：2026-2027上"
+              className="w-full rounded-lg border bg-white px-3 py-2 text-[12.5px]"
+              style={{ borderColor: G.line, color: G.ink }}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>班级（必填）</span>
+            <select
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+              className="w-full rounded-lg border bg-white px-3 py-2 text-[12.5px]"
+              style={{ borderColor: G.line, color: G.ink }}
+            >
+              <option value="">选择班级…</option>
+              {(cls?.classes ?? []).map((c) => (
+                <option key={c} value={c}>{c}</option>
               ))}
-              {!portfolio.guidance.length && <p className="text-[12px]" style={{ color: G.mute }}>暂无指导记录</p>}
+            </select>
+          </label>
+        </div>
+      </Card>
+      <Card>
+        <SecTitle title="第二步 · 上传成绩表" note="首列姓名，其后各列为科目；支持 .xlsx / .csv" />
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={downloadTemplate}
+            className="flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[12.5px] font-semibold"
+            style={{ borderColor: G.line, color: G.ink }}
+          >
+            <Download size={14} />
+            下载模板
+          </button>
+          <label
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12.5px] font-semibold text-white"
+            style={{ background: G.brand }}
+          >
+            <FileUp size={14} />
+            选择 Excel / CSV
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void parseFile(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {fileName && (
+            <span className="text-[12px]" style={{ color: G.mute }}>
+              {fileName} ｜ 共 {rows.length} 行
+            </span>
+          )}
+        </div>
+        {error && (
+          <p className="mt-3 rounded-lg px-3 py-2 text-[12.5px]" style={{ background: "#F7E3DE", color: G.danger }}>{error}</p>
+        )}
+      </Card>
+      {preview.data && (
+        <Card>
+          <SecTitle
+            title={`匹配结果：${preview.data.matched.length} 人匹配，${preview.data.unmatched.length} 人未匹配`}
+            note="按「班级 + 姓名」匹配；未匹配的名字请核对班级或姓名后重新上传"
+          />
+          {preview.isPending && <p className="text-[12.5px]" style={{ color: G.mute }}>匹配中…</p>}
+          {!!preview.data.matched.length && (
+            <div className="mb-3 overflow-x-auto">
+              <table className="w-full min-w-130 text-[12.5px]">
+                <thead>
+                  <tr className="text-left" style={{ background: G.brandSoft, color: G.brand }}>
+                    <th className="rounded-l-lg px-3 py-2 font-bold">姓名</th>
+                    <th className="px-3 py-2 font-bold">总分</th>
+                    <th className="rounded-r-lg px-3 py-2 font-bold">状态</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.data.matched.map((m) => (
+                    <tr key={m.userId} className="border-t" style={{ borderColor: G.line }}>
+                      <td className="px-3 py-2" style={{ color: G.ink }}>{m.name}</td>
+                      <td className="px-3 py-2 font-bold" style={{ color: G.brand }}>{m.total ?? "—"}</td>
+                      <td className="px-3 py-2" style={{ color: G.mute }}>将归档</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </details>
+          )}
+          {!!preview.data.unmatched.length && (
+            <div className="flex flex-wrap gap-1.5">
+              {preview.data.unmatched.map((n) => (
+                <span key={n} className="rounded-full px-2.5 py-1 text-[11.5px] font-bold" style={{ background: "#F8ECD8", color: G.warn }}>
+                  {n} · 未匹配
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() =>
+                commit.mutate({
+                  examName: examName.trim() || "考试成绩",
+                  examDate,
+                  term: term.trim(),
+                  className,
+                  rows,
+                })
+              }
+              disabled={commit.isPending || !examName.trim() || !className || !rows.length || !matchedCount}
+              className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12.5px] font-semibold text-white"
+              style={{ background: G.brand, opacity: commit.isPending || !matchedCount ? 0.5 : 1 }}
+            >
+              <FileUp size={14} />
+              {commit.isPending ? "归档中…" : `确认归档（${matchedCount} 人）`}
+            </button>
+            {doneMsg && (
+              <span className="text-[12.5px] font-bold" style={{ color: G.brand }}>{doneMsg}</span>
+            )}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------- v245 指导记录（约谈归档，可关联预警） ---------------------------------- */
+
+const GUIDE_TYPES = ["心理", "学业", "生涯", "行为", "家庭"] as const;
+const GUIDE_CHANNELS = ["面谈", "电话", "家访", "线上"] as const;
+const GUIDE_TYPE_COLOR: Record<string, string> = {
+  心理: G.danger,
+  学业: G.brand,
+  生涯: "#5B7FE0",
+  行为: G.warn,
+  家庭: "#8A63C9",
+};
+
+function GuidanceSection() {
+  const utils = trpc.useUtils();
+  const [params, setParams] = useSearchParams();
+  const qStudent = Number(params.get("student")) || null;
+  const qWarning = Number(params.get("warning")) || null;
+  const [studentId, setStudentId] = useState<number | null>(qStudent);
+  const { data: students } = trpc.school.archive.students.useQuery();
+  const { data: listData, isLoading } = trpc.school.counseling.list.useQuery(
+    { studentId: studentId ?? 0 },
+    { enabled: studentId != null },
+  );
+  const { data: openData } = trpc.school.counseling.openWarnings.useQuery(
+    { studentId: studentId ?? 0 },
+    { enabled: studentId != null },
+  );
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [type, setType] = useState<(typeof GUIDE_TYPES)[number]>("学业");
+  const [channel, setChannel] = useState<(typeof GUIDE_CHANNELS)[number]>("面谈");
+  const [summary, setSummary] = useState("");
+  const [followUp, setFollowUp] = useState("");
+  const [warningId, setWarningId] = useState<number | null>(null);
+  const [msg, setMsg] = useState("");
+
+  /* URL 带 ?warning= 时，若该预警仍未结则预选关联 */
+  useEffect(() => {
+    if (qWarning && openData?.warnings.some((w) => w.id === qWarning)) setWarningId(qWarning);
+  }, [openData, qWarning]);
+
+  const create = trpc.school.counseling.create.useMutation({
+    onSuccess: (r) => {
+      setMsg(`指导记录 #${r.id} 已归档${warningId ? "，关联预警已转为「处理中」" : ""}。`);
+      setSummary("");
+      setFollowUp("");
+      setWarningId(null);
+      void utils.school.counseling.list.invalidate({ studentId: studentId ?? 0 });
+      void utils.school.counseling.openWarnings.invalidate({ studentId: studentId ?? 0 });
+      void utils.school.warnings.list.invalidate();
+      void utils.school.archive.portfolio.invalidate({ studentId: studentId ?? 0 });
+    },
+    onError: (e) => setMsg(`保存失败：${e.message}`),
+  });
+
+  const openWarnings = openData?.warnings ?? [];
+  const records = listData?.records ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <BigStat value={records.length} suffix="条" label="该生指导记录" />
+        <BigStat value={openWarnings.length} suffix="条" label="该生待处理预警" />
+        <BigStat value="5 类" label="心理 / 学业 / 生涯 / 行为 / 家庭" />
+        <BigStat value="4 种" label="面谈 / 电话 / 家访 / 线上" />
+      </div>
+      <Card>
+        <SecTitle title="学生" note="先选择要写指导记录的学生" />
+        <select
+          value={studentId ?? ""}
+          onChange={(e) => {
+            setStudentId(e.target.value ? Number(e.target.value) : null);
+            setWarningId(null);
+            setMsg("");
+          }}
+          className="min-w-60 rounded-lg border bg-white px-2.5 py-2 text-[12.5px]"
+          style={{ borderColor: G.line, color: G.ink }}
+        >
+          <option value="">选择学生…</option>
+          {(students?.students ?? []).map((s) => (
+            <option key={s.userId} value={s.userId}>
+              {s.className ?? "未分班"} · {s.name}（{s.grade}）
+            </option>
+          ))}
+        </select>
+      </Card>
+      {studentId != null && (
+        <Card>
+          <SecTitle title="写指导记录" note={warningId ? "保存后关联预警自动转为「处理中」并留痕" : "约谈后即时归档，沉淀进成长档案"} />
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="block">
+              <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>日期</span>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-lg border bg-white px-3 py-2 text-[12.5px]"
+                style={{ borderColor: G.line, color: G.ink }}
+              />
+            </label>
+            <div>
+              <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>类型</span>
+              <div className="flex flex-wrap gap-1.5">
+                {GUIDE_TYPES.map((t) => (
+                  <Pill key={t} active={type === t} onClick={() => setType(t)}>{t}</Pill>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>方式</span>
+              <div className="flex flex-wrap gap-1.5">
+                {GUIDE_CHANNELS.map((c) => (
+                  <Pill key={c} active={channel === c} onClick={() => setChannel(c)}>{c}</Pill>
+                ))}
+              </div>
+            </div>
+          </div>
+          <label className="mt-3 block">
+            <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>沟通要点（必填）</span>
+            <textarea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              rows={4}
+              placeholder="学生反馈、老师观察、达成的共识…"
+              className="w-full rounded-lg border bg-white px-3 py-2 text-[12.5px]"
+              style={{ borderColor: G.line, color: G.ink }}
+            />
+          </label>
+          <label className="mt-3 block">
+            <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>跟进事项（选填）</span>
+            <input
+              value={followUp}
+              onChange={(e) => setFollowUp(e.target.value)}
+              placeholder="如：两周后回访；与家长同步…"
+              className="w-full rounded-lg border bg-white px-3 py-2 text-[12.5px]"
+              style={{ borderColor: G.line, color: G.ink }}
+            />
+          </label>
+          {!!openWarnings.length && (
+            <div className="mt-3">
+              <span className="mb-1 block text-[11.5px]" style={{ color: G.mute }}>关联预警（选填，关联后预警转为「处理中」）</span>
+              <div className="flex flex-wrap gap-1.5">
+                {openWarnings.map((w) => (
+                  <Pill key={w.id} active={warningId === w.id} onClick={() => setWarningId(warningId === w.id ? null : w.id)}>
+                    {WARN_TYPE_LABEL[w.type] ?? w.type} · {w.level}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => {
+                if (studentId == null || !summary.trim()) return;
+                create.mutate({
+                  studentId,
+                  date,
+                  type,
+                  channel,
+                  summary: summary.trim(),
+                  followUp: followUp.trim(),
+                  warningId: warningId ?? undefined,
+                });
+              }}
+              disabled={create.isPending || !summary.trim()}
+              className="flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[12.5px] font-semibold text-white"
+              style={{ background: G.brand, opacity: create.isPending || !summary.trim() ? 0.5 : 1 }}
+            >
+              <NotebookPen size={14} />
+              {create.isPending ? "保存中…" : warningId ? "保存并归档（关联预警 · 状态转为处理中）" : "保存并归档"}
+            </button>
+            <button
+              onClick={() => setParams({ item: "archive", student: String(studentId) })}
+              className="rounded-lg border px-3.5 py-2 text-[12.5px] font-semibold"
+              style={{ borderColor: G.line, color: G.ink }}
+            >
+              查看该生成长档案
+            </button>
+            {msg && (
+              <span className="text-[12.5px] font-bold" style={{ color: msg.startsWith("保存失败") ? G.danger : G.brand }}>{msg}</span>
+            )}
+          </div>
+        </Card>
+      )}
+      {studentId != null && (
+        <Card>
+          <SecTitle title={`指导记录历史（${records.length}）`} note="按日期倒序，含记录人" />
+          {isLoading ? (
+            <p className="text-[13px]" style={{ color: G.mute }}>加载中…</p>
+          ) : !records.length ? (
+            <p className="text-[12.5px]" style={{ color: G.mute }}>暂无指导记录——约谈后在上方表单归档</p>
+          ) : (
+            <ol className="relative ml-2 space-y-3 border-l-2 pl-4" style={{ borderColor: G.line }}>
+              {records.map((r) => (
+                <li key={r.id} className="relative">
+                  <span className="absolute -left-[23px] top-1 h-3 w-3 rounded-full border-2 border-white" style={{ background: GUIDE_TYPE_COLOR[r.type] ?? G.brand }} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full px-2 py-0.5 text-[10.5px] font-bold text-white" style={{ background: GUIDE_TYPE_COLOR[r.type] ?? G.brand }}>{r.type}</span>
+                    <span className="text-[12.5px] font-bold" style={{ color: G.ink }}>
+                      {r.channel}｜{r.teacherName}
+                    </span>
+                    {r.warningId != null && (
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10.5px] font-bold"
+                        style={{ background: "#F8ECD8", color: G.warn }}
+                      >
+                        关联预警
+                      </span>
+                    )}
+                    <span className="ml-auto text-[11.5px]" style={{ color: G.mute }}>{r.date}</span>
+                  </div>
+                  <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: G.ink }}>{r.summary}</p>
+                  {r.followUp && (
+                    <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: G.mute }}>跟进：{r.followUp}</p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
         </Card>
       )}
     </div>
@@ -807,9 +1542,11 @@ const TITLES: Record<ItemKey, { crumb: string; title: string; sub?: string }> = 
   progress: { crumb: "测评管理 / 进度看板", title: "进度看板 · 参测完成统计", sub: "全校必测完成率与班级排行，黄色班级建议重点跟进" },
   intention: { crumb: "数据统计 / 选科意向分析", title: "选科意向分析 · 推荐采纳率", sub: "系统推荐与实际确认的对比——前三推荐采纳、自定义理由回收，自动产出「推荐有效率」" },
   selection: { crumb: "数据统计 / 选科统计分析", title: "选科统计分析", sub: "年级/班级选科结构、第一推荐聚合、三轮意向对比——把个体推荐聚合成管理依据" },
-  archive: { crumb: "数据统计 / 成长档案", title: "一生一策成长档案", sub: "测评 + 成绩 + 预警 + 指导记录自动归档，可导出校验" },
+  archive: { crumb: "数据统计 / 成长档案", title: "一生一册成长档案", sub: "测评 + 成绩 + 预警 + 指导记录自动归集成时间轴，成绩曲线含分数与排名，可导出校验" },
+  grades: { crumb: "数据统计 / 成绩导入", title: "成绩导入 · 教务归档", sub: "上传班级成绩 Excel/CSV，自动匹配学生、计算总分与班排年排，并触发学业下滑预警" },
   students: { crumb: "学生管理 / 学员管理", title: "学员管理", sub: "搜索学员、分配指导老师、报告查看权限" },
   teachers: { crumb: "学生管理 / 指导老师", title: "指导老师", sub: "名下学员、二维码默认报告权限管理" },
+  guidance: { crumb: "学生管理 / 指导记录", title: "指导记录 · 约谈归档", sub: "心理 / 学业 / 生涯 / 行为 / 家庭五类约谈留痕，可关联预警自动转「处理中」" },
   warnings: { crumb: "学校管理 / 预警中心", title: "预警中心", sub: "心理红线 / 学业下滑 / 动力不足——处置留痕，可审计" },
   invites: { crumb: "学校管理 / 注册邀请", title: "注册邀请", sub: "生成注册二维码，配置开放的测评与报告" },
   users: { crumb: "学校管理 / 组织架构", title: "组织架构 · 用户与角色", sub: "管理员、指导老师、教务的角色管理" },
@@ -885,12 +1622,14 @@ export default function SchoolConsole({ selfName, jiaowu = false }: { selfName: 
             {item === "intention" && <IntentionSection canManage={canManage} />}
             {item === "selection" && <SelectionStats canManage={canManage} />}
             {item === "archive" && <ArchiveSection />}
+          {item === "grades" && <GradeImportSection />}
+          {item === "guidance" && <GuidanceSection />}
             {item === "warnings" && <WarningsSection />}
             {item === "students" && <StudentsTab jiaowu={jiaowu} orgScope={{ orgId: null }} tutorLabel="指导老师" />}
             {item === "teachers" && <TutorsTab orgScope={{ orgId: null }} tutorLabel="指导老师" />}
             {item === "invites" && <InviteChannelsTab />}
             {item === "users" && <UsersSection />}
-            {item === "features" && <OrgFeaturesCard />}
+            {item === "features" && <OrgFeaturesCard defaultOpen />}
             {item === "library" && (
               <Suspense fallback={<div className="py-10 text-center text-sm text-[#7A8A83]">资料库加载中…</div>}>
                 <Library />

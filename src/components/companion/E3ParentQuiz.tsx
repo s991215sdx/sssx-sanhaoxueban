@@ -23,35 +23,49 @@ const DRAFT = "e3parent";
  * E3 V3.7 第二部分 · 家长卷（选做，约 8 分钟）。
  * 进入系统后可随时补填；用于家庭支持系统了解 + 家长观察与孩子自评对照。
  */
-export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
+export default function E3ParentQuiz({
+  onDone,
+  guestCode,
+}: {
+  onDone: () => void;
+  /** v239：家长扫码填（/p/<码>）。没有账号态，题目与提交都走公开接口，答案落到码对应的孩子名下。 */
+  guestCode?: string;
+}) {
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  const { data, isLoading } = trpc.assessment.questions.useQuery({ kind: "e3parent" });
+  /* 扫码进来的家长没有会话，登录态接口一律关掉，否则会打一串 401 */
+  const authed = trpc.assessment.questions.useQuery({ kind: "e3parent" }, { enabled: !guestCode });
+  const guest = trpc.assessment.passPaper.useQuery({ code: guestCode ?? "" }, { enabled: !!guestCode });
+  const data = guestCode ? guest.data : authed.data;
+  const isLoading = guestCode ? guest.isLoading : authed.isLoading;
+
+  /* 草稿按人或按码分开：同一台手机上，爸爸填一半、妈妈接着扫码，不该看到爸爸的进度 */
+  const draftId = guestCode ? `${DRAFT}.${guestCode}` : DRAFT;
 
   /* 旧版（V2.7）草稿结构不同（family 用的是旧 keys，mirror 的 -1=未答语义也不同）：
      首个 state 初始化时校验 family 是否含新版 key「fatherRole」，不含则视为旧草稿直接丢弃。 */
   const [draftValid] = useState(() => {
-    const d = loadQuizDraft(user?.id, DRAFT);
+    const d = loadQuizDraft(user?.id, draftId);
     if (!d) return true;
     const fam = d.family as Record<string, number> | undefined;
     if (fam && Object.keys(fam).length > 0 && !("fatherRole" in fam)) {
-      clearQuizDraft(user?.id, DRAFT);
+      clearQuizDraft(user?.id, draftId);
       return false;
     }
     return true;
   });
 
   // 作答进度挂草稿：误退出/刷新后回来接着填，不用重填
-  const [family, setFamily] = useDraftState<Record<string, number>>(DRAFT, "family", {});
-  const [distractions, setDistractions] = useDraftState<number[]>(DRAFT, "distractions", []);
-  const [familyChangeNote, setFamilyChangeNote] = useDraftState<string>(DRAFT, "familyChangeNote", "");
-  const [wish, setWish] = useDraftState<string>(DRAFT, "wish", "");
-  const [condObserve, setCondObserve] = useDraftState<Record<string, number>>(DRAFT, "condObserve", {});
-  const [mirror, setMirror] = useDraftState<number[]>(DRAFT, "mirror", () => Array(16).fill(-1)); // -1 未答（提交时 0=不了解）
+  const [family, setFamily] = useDraftState<Record<string, number>>(draftId, "family", {});
+  const [distractions, setDistractions] = useDraftState<number[]>(draftId, "distractions", []);
+  const [familyChangeNote, setFamilyChangeNote] = useDraftState<string>(draftId, "familyChangeNote", "");
+  const [wish, setWish] = useDraftState<string>(draftId, "wish", "");
+  const [condObserve, setCondObserve] = useDraftState<Record<string, number>>(draftId, "condObserve", {});
+  const [mirror, setMirror] = useDraftState<number[]>(draftId, "mirror", () => Array(16).fill(-1)); // -1 未答（提交时 0=不了解）
   // v70：跟随 uid 重算（换号/新注册账号不再误显示"已恢复进度"）
   const computeResumed = (u: string | number | null | undefined) => {
     if (!draftValid) return false;
-    const d = loadQuizDraft(u, DRAFT);
+    const d = loadQuizDraft(u, draftId);
     if (!d) return false;
     const fam = (d.family as Record<string, number> | undefined) ?? {};
     const mir = (d.mirror as number[] | undefined) ?? [];
@@ -69,7 +83,7 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
   const resetAll = () => {
-    clearQuizDraft(user?.id, DRAFT);
+    clearQuizDraft(user?.id, draftId);
     setFamily({});
     setDistractions([]);
     setFamilyChangeNote("");
@@ -79,12 +93,22 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
     setResumed(false);
   };
 
-  const submit = trpc.assessment.submit.useMutation({
+  const authedSubmit = trpc.assessment.submit.useMutation({
     onSuccess: () => {
-      clearQuizDraft(user?.id, DRAFT); // 提交成功，清除草稿
+      clearQuizDraft(user?.id, draftId); // 提交成功，清除草稿
       void utils.assessment.latest.invalidate();
     },
   });
+  const passSubmit = trpc.assessment.submitByPass.useMutation({
+    onSuccess: () => clearQuizDraft(user?.id, draftId),
+  });
+  /* 两条路的返回形状对齐（kind + result），下面只写一次结果卡 */
+  const submitData = (guestCode ? passSubmit.data : authedSubmit.data) as
+    | { kind?: string; result?: unknown }
+    | undefined;
+  const submitting = guestCode ? passSubmit.isPending : authedSubmit.isPending;
+  const submitFailed = guestCode ? passSubmit.isError : authedSubmit.isError;
+  const submitted = guestCode ? passSubmit.isSuccess : authedSubmit.isSuccess;
 
   if (isLoading || !data || (data as { kind?: string }).kind !== "e3parent") {
     return (
@@ -106,8 +130,16 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
   const condObserveItems = q.condObserve ?? E3V37P_COND_OBSERVE;
   const mirrorQuestions = q.mirrorQuestions ?? E3V37P_MIRROR_QUESTIONS;
 
-  if (submit.isSuccess && (submit.data as { kind?: string }).kind === "e3parent") {
-    const r = (submit.data as { result?: unknown }).result as E3V37ParentResult | undefined;
+  /** 提交入口：扫码走公开接口，登录走原接口。两条路的答案完全一样，只是落库时记一笔 via=pass。 */
+  const doSubmit = () => {
+    if (!ready) return;
+    const answers = { family, distractions, familyChangeNote, wish, condObserve, mirror };
+    if (guestCode) passSubmit.mutate({ code: guestCode, input: { kind: "e3parent", answers } } as never);
+    else authedSubmit.mutate({ kind: "e3parent", answers } as never);
+  };
+
+  if (submitted && submitData?.kind === "e3parent") {
+    const r = submitData.result as E3V37ParentResult | undefined;
     return (
       <div className="paper-card accent-l border-lime p-6">
         <h2 className="text-lg font-bold text-olive">家长卷已提交</h2>
@@ -299,19 +331,13 @@ export default function E3ParentQuiz({ onDone }: { onDone: () => void }) {
       </div>
 
       <button
-        onClick={() =>
-          ready &&
-          submit.mutate({
-            kind: "e3parent",
-            answers: { family, distractions, familyChangeNote, wish, condObserve, mirror },
-          } as never)
-        }
-        disabled={!ready || submit.isPending}
+        onClick={doSubmit}
+        disabled={!ready || submitting}
         className="w-full rounded-xl bg-brand py-3.5 text-[16px] font-semibold text-cream transition-colors hover:bg-lime disabled:opacity-40"
       >
-        {submit.isPending ? "正在生成对照分析…" : ready ? "提交家长卷" : "还有题目没答完"}
+        {submitting ? "正在生成对照分析…" : ready ? "提交家长卷" : "还有题目没答完"}
       </button>
-      {submit.isError && <p className="text-center text-[13px] text-terra">提交没成功，再点一次试试。</p>}
+      {submitFailed && <p className="text-center text-[13px] text-terra">提交没成功，再点一次试试。</p>}
     </div>
   );
 }
