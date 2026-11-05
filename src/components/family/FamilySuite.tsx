@@ -1,7 +1,7 @@
 /**
  * 家庭教育测评 · 学生端引导页（v238）
  *
- * 一份测评两头做：孩子答 14 题（他自己的那份），爸妈扫同一张码各答 29 题。
+ * 一份测评两头做：孩子答 10 题（他自己的那份），爸妈扫同一张码各答 55 题 + 24 组 DISC。
  * 这一页只负责把两件事串起来——先把「我的」做完，再让爸妈扫码；做完两侧才出对照。
  *
  * 不做成「必须按顺序」的强制流程：家长今天没空、明天再填都很常见，
@@ -56,8 +56,8 @@ export default function FamilySuite({ onExit }: { onExit: () => void }) {
           再放在一起看——不是为了评谁对谁错，是为了找出哪几件事你们理解得不一样。
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-[12px] text-olive-mute">
-          <span className="rounded-full bg-cream px-2.5 py-1">你答 14 题 · 约 3 分钟</span>
-          <span className="rounded-full bg-cream px-2.5 py-1">爸妈各答 29 题 · 约 6 分钟</span>
+          <span className="rounded-full bg-cream px-2.5 py-1">你答 10 题 · 约 4 分钟</span>
+          <span className="rounded-full bg-cream px-2.5 py-1">爸妈各答 55 题 + DISC · 约 12 分钟</span>
           <span className="rounded-full bg-cream px-2.5 py-1">两边都做完才出对照</span>
         </div>
       </div>

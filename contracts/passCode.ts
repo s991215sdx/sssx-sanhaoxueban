@@ -81,8 +81,8 @@ export const PASS_DEFS: readonly PassDef[] = [
   { kind: "subject", slug: "sj", name: "学科能力评估", brief: "9 科「听懂 / 记住 / 运用」自评，可只答几科", who: "student", minutes: 10 },
   { kind: "subject4d", slug: "s4", name: "学科四维测评", brief: "9 科 × 4 维共 108 题", who: "student", minutes: 18 },
   { kind: "mental", slug: "mh", name: "心理健康筛查", brief: "四套国际通用量表，进去自己挑一套", who: "student", minutes: 8 },
-  { kind: "familystudent", slug: "fs", name: "家庭关系测评 · 学生卷", brief: "14 题，你和爸妈之间哪一级走不通", who: "student", minutes: 4 },
-  { kind: "familyparent", slug: "fp", name: "家庭关系测评 · 家长卷", brief: "29 题，爸爸、妈妈可各填一份", who: "parent", minutes: 7 },
+  { kind: "familystudent", slug: "fs", name: "家庭关系测评 · 学生卷", brief: "10 题，你和爸妈之间哪一级走不通", who: "student", minutes: 4 },
+  { kind: "familyparent", slug: "fp", name: "家庭关系测评 · 家长卷", brief: "55 题 + 24 组 DISC，爸爸、妈妈可各填一份", who: "parent", minutes: 12 },
   { kind: "e3parent", slug: "ep", name: "家长卷 · 家庭支持与观察", brief: "家庭环境、对孩子的观察，与孩子的诊断做对照", who: "parent", minutes: 9 },
   { kind: "discparent", slug: "dp", name: "家长 DISC（家庭版）", brief: "24 组词，看家庭里的行为风格", who: "parent", minutes: 6 },
 ];

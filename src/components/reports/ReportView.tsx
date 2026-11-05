@@ -115,7 +115,7 @@ import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
 import MentalDetail from "@/components/reports/MentalDetail";
-import FamilyReport from "@/components/reports/FamilyReport";
+import FamilyReportFull from "@/pages/FamilyReportFull";
 import FamilyCommKit from "@/components/reports/FamilyCommKit";
 import { AssessmentPassProvider } from "@/components/coach/AssessmentPassDialog";
 import { useAssessmentPass } from "@/components/coach/passRequest";
@@ -3203,7 +3203,7 @@ function ReportViewInner({
         </div>
       )}
 
-      {tab === "family" && <FamilyReport viewer={viewer} studentId={viewer === "tutor" ? studentUserId : undefined} />}
+      {tab === "family" && <FamilyReportFull viewer={viewer} studentId={viewer === "tutor" ? studentUserId : undefined} />}
       {tab === "commkit" && <FamilyCommKit disc={disc} discParents={discParents} viewer={viewer} profile={profile} />}
 
       {tab === "anchor" &&

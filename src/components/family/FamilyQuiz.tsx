@@ -1,8 +1,8 @@
 /**
  * 家庭教育测评 · 一套组件两种卷（v236）
  *
- * 学生卷（familystudent，14 题）：台阶五级 → 怎么看父母 → 安全感四题 → 冲突场景一题。
- * 家长卷（familyparent，29 题）：台阶五级 → 管教要求/回应 → 猜孩子怎么看 → 家庭投入 → 家长自身 → 冲突场景。
+ * 学生卷（familystudent，10 题）：台阶五级 → 怎么看父母三题 → 安全感两题。
+ * 家长卷（familyparent，55 题 + 24 组 DISC）：家庭支持 → 条件观察 → 认知对照 → 台阶 → 管教 → 投入 → 自身 → 冲突场景 → DISC。
  *
  * 三件事在这个文件里一次解决：
  *
@@ -27,20 +27,9 @@ import { useScrollToQuestion } from "@/lib/quizScroll";
 import { nextOpenIndex } from "@/lib/quizFlow";
 import { ChevronLeft, Users, MessageSquare } from "lucide-react";
 import FamilyCodeCard from "./FamilyCodeCard";
-import {
-  FAMILY_STUDENT_P5,
-  type FamilyItem,
-  type FamilyConditionRef,
-  type FamilyStudentProfile,
-} from "@contracts/familyStudent";
-import {
-  FAMILY_P5,
-  FAMILY_P6,
-  FAMILY_P4_MONEY,
-  FAMILY_P5_TIME,
-  type FamilyParentItem,
-  type FamilyParentProfile,
-} from "@contracts/familyParent";
+import { type FamilyStudentProfile } from "@contracts/familyStudent";
+import { type FamilyParentProfile } from "@contracts/familyParent";
+import { FAMILY_SCENE_KEYS, FP5, FP6, type ParentItem, type StudentRelItem, type ParentPaper, type StudentRelPaper } from "@contracts/familyFullPaper";
 
 type Kind = "familystudent" | "familyparent";
 
@@ -59,6 +48,8 @@ type Step = {
   rating?: boolean;
   /** 场景单选：选项值是场景 key（phone / homework …），不是分数。 */
   scene?: { key: string; label: string }[];
+  /** DISC 词组：一组四个词，先点「最像」再点「最不像」。 */
+  disc?: { gi: number; words: string[] };
 };
 
 /** 台阶五级各自问的是什么，结果卡里要写清，不然「L3 勉强」没人看得懂。 */
@@ -111,7 +102,6 @@ export default function FamilyQuiz({
   );
   const data = isGuest ? guestPaper : selfPaper;
   const isLoading = isGuest ? guestLoading : selfLoading;
-  const { data: latest } = trpc.assessment.latest.useQuery(undefined, { enabled: !isGuest });
 
   /* 家长卷先确定填卷人：报告称谓、「谁说的」都要用 */
   const LABELS: { label: string; respondent: "dad" | "mom" | "other" }[] = [
@@ -130,45 +120,41 @@ export default function FamilyQuiz({
   const [idx, setIdx] = useDraftState<number>(draftKind, "idx", 0);
   const [vals, setVals] = useDraftState<Record<string, number>>(draftKind, "vals", {});
   const [scene, setScene] = useDraftState<string | null>(draftKind, "scene", null);
+  /* DISC：每组选一个「最像」+ 一个「最不像」，两组数组分开存，草稿也一起留着 */
+  const [discMost, setDiscMost] = useDraftState<Record<number, number>>(draftKind, "dmost", {});
+  const [discLeast, setDiscLeast] = useDraftState<Record<number, number>>(draftKind, "dleast", {});
   const [resumed, setResumed] = useDraftResumed(user?.id, draftKind, "vals");
 
-  /* 做过 E3 V3.7（70 题）的孩子，六道条件题不重答——服务端按题号复用那六道的分 */
-  const e3Ready = useMemo(() => {
-    const raw = (latest?.raw ?? []).find((r) => r.kind === "e3");
-    const a = raw?.answers as { ratings?: number[] } | undefined;
-    return Array.isArray(a?.ratings) && a.ratings.length === 70;
-  }, [latest]);
 
   const steps = useMemo<Step[]>(() => {
     if (!data) return [];
-    if (data.kind === "familystudent") {
-      const items = data.items as FamilyItem[];
-      const refs = data.conditionRefs as FamilyConditionRef[];
-      const base: Step[] = items.map((q) => {
-        if (q.options) return { id: q.id, text: q.text, scene: q.options.map((o) => ({ key: o.value, label: o.label })) };
-        if (q.scale === 10) return { id: q.id, text: q.text, rating: true };
-        return { id: q.id, text: q.text, opts: toOpts(FAMILY_STUDENT_P5) };
-      });
-      const cond: Step[] = e3Ready
-        ? []
-        : refs.map((r) => ({ id: r.id, text: r.text, opts: toOpts(FAMILY_STUDENT_P5) }));
-      return [...base, ...cond];
-    }
-    if (data.kind === "familyparent") {
-      const items = data.items as FamilyParentItem[];
-      const scenes = data.sceneOptions as readonly { value: string; label: string }[];
-      return items.map((q) => {
-        if (q.scale === "scene") {
-          return { id: q.id, text: q.text, scene: scenes.map((o) => ({ key: o.value, label: o.label })) };
+    /* v250：完整家长卷 55 题 + 24 组 DISC；孩子那一份是关系卷 10 题（孩子的 DISC 走既有 disc 入口） */
+    const paper = data as unknown as ParentPaper | StudentRelPaper;
+    if (paper.version !== "v250") return [];
+    const itemSteps: Step[] = paper.items.map((raw) => {
+      if ("kind" in raw) {
+        const q = raw as ParentItem;
+        if (q.kind === "scene") {
+          return {
+            id: q.id,
+            text: q.text,
+            scene: (q.options ?? []).map((label, i) => ({ key: FAMILY_SCENE_KEYS[i] ?? String(i), label })),
+          };
         }
-        if (q.scale === "p6") return { id: q.id, text: q.text, opts: toOpts(FAMILY_P6, 0) };
-        if (q.scale === "p4money") return { id: q.id, text: q.text, opts: toOpts(FAMILY_P4_MONEY) };
-        if (q.scale === "p5time") return { id: q.id, text: q.text, opts: toOpts(FAMILY_P5_TIME) };
-        return { id: q.id, text: q.text, opts: toOpts(FAMILY_P5) };
-      });
-    }
-    return [];
-  }, [data, e3Ready]);
+        if (q.kind === "scale5") return { id: q.id, text: q.text, opts: toOpts(FP5) };
+        if (q.kind === "mirror") return { id: q.id, text: q.text, opts: toOpts(FP6, 0) };
+        return { id: q.id, text: q.text, opts: toOpts(q.options ?? []) };
+      }
+      const q = raw as StudentRelItem;
+      return { id: q.id, text: q.text, opts: toOpts(FP5) };
+    });
+    const discSteps: Step[] = (paper.disc ?? []).map((g, gi) => ({
+      id: `DISC${String(gi + 1).padStart(2, "0")}`,
+      text: "",
+      disc: { gi, words: g.words },
+    }));
+    return [...itemSteps, ...discSteps];
+  }, [data]);
 
   const total = steps.length;
   const sceneStepId = steps.find((s) => s.scene)?.id ?? null;
@@ -199,7 +185,8 @@ export default function FamilyQuiz({
     setResumed(false);
   };
 
-  const answered = (s: Step) => (s.scene ? scene != null : vals[s.id] !== undefined);
+  const answered = (s: Step) =>
+    s.disc ? discMost[s.disc.gi] != null && discLeast[s.disc.gi] != null : s.scene ? scene != null : vals[s.id] !== undefined;
 
   /**
    * 提交。
@@ -217,10 +204,17 @@ export default function FamilyQuiz({
       if (s.id.startsWith("FC")) condition[s.id] = v;
       else items[s.id] = v;
     }
+    /* DISC 24 组：只交完整答完的；缺组由后端按长度校验兜住 */
+    const disc = (data as ParentPaper | StudentRelPaper | undefined)?.disc
+      ? {
+          most: ((data as ParentPaper).disc ?? []).map((_, gi) => discMost[gi] ?? 0),
+          least: ((data as ParentPaper).disc ?? []).map((_, gi) => discLeast[gi] ?? 1),
+        }
+      : undefined;
     if (kind === "familystudent") {
       submit.mutate({
         kind: "familystudent",
-        answers: { pack: "standard", items, scene: allScene, condition },
+        answers: { pack: "standard", items, scene: allScene, condition, disc },
       } as never);
     } else if (isGuest) {
       submitGuest.mutate({
@@ -231,6 +225,7 @@ export default function FamilyQuiz({
           label: who?.label ?? "家长",
           items,
           scene: allScene,
+          disc,
         },
       });
     } else {
@@ -242,6 +237,7 @@ export default function FamilyQuiz({
           label: who?.label ?? "家长",
           items,
           scene: allScene,
+          disc,
         },
       } as never);
     }
@@ -260,6 +256,32 @@ export default function FamilyQuiz({
     const cur = steps.findIndex((st) => st.id === s.id);
     const next = nextOpenIndex(total, cur + 1, (i) => isDone(steps[i]));
     if (next < 0) submitAll(nextVals, nextScene);
+    else setIdx(next);
+  };
+
+  /** DISC 一组两击：第一击记「最像」，第二击记「最不像」；点回同一个词视为取消。 */
+  const pickDisc = (gi: number, wi: number) => {
+    const most = { ...discMost };
+    const least = { ...discLeast };
+    if (most[gi] == null) {
+      most[gi] = wi;
+      if (least[gi] === wi) delete least[gi];
+    } else if (most[gi] === wi) {
+      delete most[gi];
+    } else {
+      if (least[gi] === wi) delete least[gi];
+      else least[gi] = wi;
+    }
+    setDiscMost(most);
+    setDiscLeast(least);
+    setResumed(false);
+    if (most[gi] == null || least[gi] == null) return;
+    const cur = steps.findIndex((st) => st.disc?.gi === gi);
+    const isDone = (st: Step) =>
+      st.disc ? (st.disc.gi === gi ? true : most[st.disc.gi] != null && least[st.disc.gi] != null)
+        : st.scene ? scene != null : vals[st.id] !== undefined;
+    const next = nextOpenIndex(total, cur + 1, (i) => isDone(steps[i]));
+    if (next < 0) submitAll(vals, scene);
     else setIdx(next);
   };
 
@@ -306,7 +328,8 @@ export default function FamilyQuiz({
             <h2 className="text-lg font-bold text-olive">家长卷 · 家庭关系与管教方式</h2>
           </div>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-olive-soft">
-            这一份由家长本人填写，29 道题约 6 分钟，全部是选择，没有对错。
+            这一份由家长本人填写：55 道题 + 24 组性格词，约 12 分钟，全部是选择，没有对错。后半段是 DISC——
+            四组词里点「最像」和「最不像」，它决定报告第 5 页能不能画出「你是 D、他是 S」那张对照。
             孩子那份做完之后，系统会把「你以为的」和「他实际答的」放在一起对照——不是为了评判谁，
             是为了找出哪几件事你们理解得不一样。
           </p>
@@ -347,7 +370,9 @@ export default function FamilyQuiz({
               {kind === "familystudent" ? "家庭关系测评 · 学生卷" : `家庭关系测评 · 家长卷（${who?.label}）`}
             </h2>
             <p className="mt-0.5 text-[13px] text-olive-soft">
-              {kind === "familystudent" ? "14 道题约 3 分钟" : "29 道题约 6 分钟"} · 没有对错，按真实情况选
+              {kind === "familystudent"
+                ? `${steps.filter((x) => !x.disc).length} 道题约 4 分钟`
+                : `${steps.filter((x) => !x.disc).length} 道题 + ${steps.filter((x) => x.disc).length} 组性格词，约 12 分钟`} · 没有对错，按真实情况选
             </p>
           </div>
           <button onClick={() => onDone()} className="shrink-0 text-[13px] text-olive-mute hover:text-olive">
@@ -379,7 +404,40 @@ export default function FamilyQuiz({
             <p className="mt-1 text-center text-[12px] text-olive-mute">0 分是一点也不合格，10 分是满分父母</p>
           )}
 
-          {q.rating ? (
+          {q.disc ? (
+            <div className="mt-4">
+              <p className="text-center text-[12.5px] text-olive-mute">
+                这一组四个词里，先点<b className="text-olive">最像他</b>的一个，再点<b className="text-olive">最不像他</b>的一个
+              </p>
+              <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                {q.disc.words.map((w, wi) => {
+                  const isMost = discMost[q.disc!.gi] === wi;
+                  const isLeast = discLeast[q.disc!.gi] === wi;
+                  return (
+                    <button
+                      key={`${q.id}-${wi}`}
+                      disabled={pending}
+                      onClick={() => pickDisc(q.disc!.gi, wi)}
+                      className={`relative rounded-xl border px-4 py-3 text-left text-[14.5px] leading-relaxed transition-colors ${
+                        isMost
+                          ? "border-lime bg-lime-pale font-medium text-olive"
+                          : isLeast
+                            ? "border-[#D9A3A3] bg-[#FDF1F1] text-[#8E4040]"
+                            : "border-border bg-cream text-olive-soft hover:border-[#E3B53A]/60 hover:bg-butter-pale/60"
+                      }`}
+                    >
+                      {w}
+                      {(isMost || isLeast) && (
+                        <span className="ml-2 rounded-full bg-white/70 px-1.5 py-0.5 text-[11px] font-semibold">
+                          {isMost ? "最像" : "最不像"}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : q.rating ? (
             <div className="mx-auto mt-4 grid max-w-md grid-cols-6 gap-2">
               {Array.from({ length: 11 }, (_, v) => v).map((v) => (
                 <button

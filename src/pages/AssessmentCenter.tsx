@@ -87,7 +87,7 @@ const TESTS: TestDef[] = [
   {
     kind: "familystudent",
     name: "家庭关系测评 · 学生卷",
-    desc: "14 题约 3 分钟：五级台阶（你和爸妈之间哪一级走不通）、你怎么看爸妈、安全感、最容易吵的那件事 · 自己填 · 选做",
+    desc: "10 题约 4 分钟：五级台阶（你和爸妈之间哪一级走不通）、你怎么看爸妈、安全感 · 自己填 · 选做",
     required: false,
     tab: "family",
     summary: (l) =>
@@ -103,7 +103,7 @@ const TESTS: TestDef[] = [
   {
     kind: "familyparent",
     name: "家庭关系测评 · 家长卷",
-    desc: "29 题约 6 分钟：台阶、管教的要求与回应、猜孩子怎么看你们、家庭投入、家长自身状态 · 由家长填写，爸爸/妈妈可各填一份 · 选做",
+    desc: "55 题 + 24 组 DISC 约 12 分钟：台阶、管教的要求与回应、认知对照、家庭投入、家长自身、亲子性格 · 由家长填写，爸爸/妈妈可各填一份 · 选做",
     required: false,
     tab: "family",
     summary: (l) => {
@@ -470,7 +470,7 @@ export default function AssessmentCenter() {
                   </span>
                 </span>
                 <p className="mt-1 text-[13px] leading-relaxed text-olive-mute">
-                  你答 14 题、爸妈各答 29 题：五级台阶断在哪一级、六项认知盲区、九十天怎么改。
+                  你答 10 题、爸妈各答 55 题 + DISC：五级台阶断在哪一级、十六项认知盲区、九十天怎么改，出 13 页完整版报告。
                   爸妈扫同一张码，都填到你这个孩子名下，不用注册。
                 </p>
               </span>

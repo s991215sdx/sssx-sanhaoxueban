@@ -45,26 +45,22 @@ import {
 import { stageOfGrade } from "@contracts/constants";
 import { MULTI_RATINGS, scoreMulti, type MultiResult } from "@contracts/multi";
 import {
-  FAMILY_STUDENT_CONDITION_REFS,
   FAMILY_STUDENT_PACKS,
   buildFamilyStudentProfile,
   e3ScoresOf,
-  itemsOf as familyStudentItems,
-  type FamilyItem,
-  type FamilyConditionRef,
   type FamilyStudentAnswers,
   type FamilyStudentProfile,
 } from "@contracts/familyStudent";
 import {
   FAMILY_PARENT_PACKS,
-  FAMILY_PARENT_SCENE_OPTIONS,
   buildFamilyParentProfile,
-  parentItemsOf,
   type FamilyParentAnswers,
-  type FamilyParentItem,
   type FamilyParentProfile,
 } from "@contracts/familyParent";
 import { buildFamilyProfile, type FamilyProfile } from "@contracts/familyProfile";
+import { buildFamilyFullReport } from "@contracts/familyFullReport";
+import { buildParentFullPaper, buildStudentRelPaper, type ParentPaper, type StudentRelPaper } from "@contracts/familyFullPaper";
+import { isV250Parent, isV250Student, toV236ParentItems, toV236StudentItems } from "@contracts/familyPackAdapter";
 import {
   familyChildAlias,
   latestPerRespondent,
@@ -298,8 +294,9 @@ type AssessmentQuestions =
   | MentalPaQuestionSet
   | MentalSdqQuestionSet
   | Scl90QuestionSet
-  | { kind: "familystudent"; pack: "standard" | "lite"; items: FamilyItem[]; conditionRefs: FamilyConditionRef[] }
-  | { kind: "familyparent"; pack: "standard" | "lite"; items: FamilyParentItem[]; sceneOptions: typeof FAMILY_PARENT_SCENE_OPTIONS };
+  /* v250：关系卷 10 题 / 完整家长卷 55 题 + 24 组 DISC（旧卷的 pack 字段仍可读，前端按 items 判形态） */
+  | StudentRelPaper
+  | ParentPaper;
 
 /** submit 接口返回。 */
 type AssessmentSubmitOutcome =
@@ -486,7 +483,7 @@ export const profileRouter = createRouter({
 async function paperFor(
   userId: number,
   kind: (typeof kindSchema)["_output"],
-  pack?: "standard" | "lite",
+  _pack?: "standard" | "lite",
 ): Promise<AssessmentQuestions> {
   switch (kind) {
     case "mbti":
@@ -498,25 +495,12 @@ async function paperFor(
       // 家长版 V2：家庭/亲子场景词组（维度映射与学生版逐组一致，计分复用 scoreDiscV2）
       return { kind: "discparent", groups: DISC_PARENT_V2_GROUPS };
     case "familystudent": {
-      // v235：学生侧家庭补充包（独立于 e3，14 道新题 + 6 条条件引用）
-      // v236：支持 pack=standard|lite（速测版 9 题），默认完整版
-      const chosen = pack ?? "standard";
-      return {
-        kind: "familystudent",
-        pack: chosen,
-        items: familyStudentItems(chosen),
-        conditionRefs: FAMILY_STUDENT_CONDITION_REFS,
-      };
+      // v250：关系卷 10 题（台阶 5 + 看父母 3 + 安全感 2），孩子的 DISC 走既有的 disc 入口
+      return buildStudentRelPaper();
     }
     case "familyparent": {
-      // v235：家长侧家庭卷（29 题：台阶/管教/情感对照/投入/自身/场景）
-      const chosen = pack ?? "standard";
-      return {
-        kind: "familyparent",
-        pack: chosen,
-        items: parentItemsOf(chosen),
-        sceneOptions: FAMILY_PARENT_SCENE_OPTIONS,
-      };
+      // v250：完整家长卷 55 题 + 家长 DISC 24 组（报告 PART02/04 的家长一侧全靠它）
+      return buildParentFullPaper();
     }
     case "e3": {
       // V3.7：按学生学段下发对应版本（小学/初中/高中），默认初中版
@@ -731,17 +715,17 @@ async function applySubmission(
     const result: Subject4dResult = scoreSubject4d(input.answers);
     outcome = { kind: "subject4d", result };
   } else if (input.kind === "familystudent") {
-    // v236：学生侧家庭补充包计分
-    // 条件域优先复用孩子最近一次 E3 的 6 个分值——做过诊断的孩子不重答这 6 题
+    // v250：关系卷 10 题（S01—S10）；v236 老卷（FS01—FS14）继续可用
     const a = input.answers;
-    const pack = familyPackOf(a.items, FAMILY_STUDENT_PACKS, a.pack, ["FS14"]);
+    const v250 = isV250Student(a.items);
+    const pack = v250 ? "standard" : familyPackOf(a.items, FAMILY_STUDENT_PACKS, a.pack, ["FS14"]);
     if (!pack) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
     }
     const ratings = await latestE3Ratings(db, userId);
     const e3Scores = e3ScoresOf(ratings);
     const payload: FamilyStudentAnswers = {
-      items: a.items,
+      items: v250 ? toV236StudentItems(a.items) : a.items,
       scene: (a.scene ?? null) as FamilyStudentAnswers["scene"],
       condition: a.condition,
       e3Scores: Object.keys(e3Scores).length ? e3Scores : undefined,
@@ -751,14 +735,15 @@ async function applySubmission(
     // 存库：pack 与原始分一并留下，答题明细/复算都要用
     input = { ...input, answers: { ...a, pack } as unknown as typeof input.answers };
   } else if (input.kind === "familyparent") {
-    // v236：家长侧家庭卷计分（同 discparent，多位家长各存一条）
+    // v250：完整家长卷 55 题（P01—P55）+ 家长 DISC 24 组
     const a = input.answers;
-    const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
+    const v250 = isV250Parent(a.items);
+    const pack = v250 ? "standard" : familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
     if (!pack) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
     }
     const payload: FamilyParentAnswers = {
-      items: a.items,
+      items: v250 ? toV236ParentItems(a.items) : a.items,
       scene: a.scene ?? null,
       respondent: a.respondent,
     };
@@ -943,24 +928,25 @@ const submitInputSchema = z.discriminatedUnion("kind", [
         }),
         z.object({
           kind: z.literal("familystudent"),
-          // v235 学生侧家庭补充包：items 为 FS01—FS14 的作答（五点 1—5；FS09 为 0—10 打分）
-          // condition 是包内自带的六道条件题（答过 E3 的孩子不答这六题，改由后端按 srcNo 复用）
+          // v250 关系卷 10 题（S01—S10）；同时兼容 v235 的 FS01—FS14 老答卷
           answers: z.object({
             pack: z.enum(["standard", "lite"]).optional(),
             items: z.record(z.string(), z.number().int().min(0).max(10)),
             scene: z.string().max(16).nullable().optional(),
             condition: z.record(z.string(), z.number().int().min(1).max(5)).optional(),
+            disc: z.object({ most: z.array(z.number().int().min(0).max(3)), least: z.array(z.number().int().min(0).max(3)) }).optional(),
           }),
         }),
         z.object({
           kind: z.literal("familyparent"),
-          // v235 家长侧家庭卷：家长家庭卷多人可填，每次都存一条（同 discparent 的做法）
+          // v250 完整家长卷 55 题 + 家长 DISC 24 组；多位家长各存一条
           answers: z.object({
             pack: z.enum(["standard", "lite"]).optional(),
             respondent: z.enum(["dad", "mom", "other"]),
             label: z.string().max(12).optional(),
             items: z.record(z.string(), z.number().int().min(0).max(5)),
             scene: z.string().max(16).nullable().optional(),
+            disc: z.object({ most: z.array(z.number().int().min(0).max(3)), least: z.array(z.number().int().min(0).max(3)) }).optional(),
           }),
         }),
       ]);
@@ -1336,6 +1322,128 @@ export const assessmentRouter = createRouter({
     };
     }),
 
+  /**
+   * v250 完整版报告取数：把四份作答汇成一份 FamilyFullReport。
+   *
+   * 为什么单独开一个口：完整版 13 页要的不只是关系卷，还要家长 DISC、孩子 DISC、
+   * E3 70 题、心理量表 16 题。这些分散在四个 kind 里，让前端各查一遍再拼，
+   * 早晚会出现「这页读了旧的那份」——统一在这里拼一次，报告只认这一个接口。
+   */
+  familyFull: authedQuery
+    .input(z.object({ userId: z.number().int().positive().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const userId = input?.userId ?? ctx.user.id;
+      if (userId !== ctx.user.id) {
+        const allowed =
+          ctx.user.role === "admin" ||
+          ((await isMyStudent(db, ctx.user.id, userId)) &&
+            (await getTutorReportAccess(db, ctx.user.id, userId)).allowed);
+        if (!allowed) throw new TRPCError({ code: "FORBIDDEN", message: "没有查看该学员报告的权限" });
+      }
+
+      const rows = await db
+        .select({
+          kind: assessmentResults.kind,
+          result: assessmentResults.result,
+          answers: assessmentResults.answers,
+          createdAt: assessmentResults.createdAt,
+        })
+        .from(assessmentResults)
+        .where(
+          and(
+            eq(assessmentResults.userId, userId),
+            inArray(assessmentResults.kind, ["familystudent", "familyparent", "disc", "discparent", "e3", "mental"]),
+          ),
+        )
+        .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
+
+      const latest = (kind: string) => rows.find((r) => r.kind === kind) ?? null;
+      const me = await getProfile(userId);
+
+      /* 学生关系卷：新包 S01—S10；老包（v236 的 FS01—FS14）按对应关系搬过来，老数据也能出报告 */
+      const sRow = latest("familystudent");
+      const sAns = (sRow?.answers ?? null) as { items?: Record<string, number> } | null;
+      const rawItems = sAns?.items ?? {};
+      const LEGACY: Record<string, string> = { S01: "FS01", S02: "FS02", S03: "FS03", S04: "FS04", S05: "FS05", S06: "FS06", S07: "FS07", S08: "FS08", S09: "FS12", S10: "FS13" };
+      const studentRel: Record<string, number> = {};
+      for (const [k, from] of Object.entries(LEGACY)) {
+        const v = rawItems[k] ?? rawItems[from];
+        if (v) studentRel[k] = v;
+      }
+
+      /* 家长卷：同一位家长只留最新一份，爸爸填的优先（报告里的「你」指填卷人） */
+      const parents = latestPerRespondent(
+        rows
+          .filter((r) => r.kind === "familyparent")
+          .map((r) => {
+            const a = r.answers as { items?: Record<string, number>; scene?: string | null; respondent?: string; label?: string } | null;
+            return {
+              respondent: (a?.respondent ?? "other") as "dad" | "mom" | "other",
+              label: a?.label ?? "",
+              items: a?.items ?? {},
+              scene: a?.scene ?? null,
+            };
+          }),
+      );
+      const p0 = parents[0] ?? null;
+
+      const discRow = latest("disc");
+      const discParentRow = latest("discparent");
+      const discDims = (row: typeof discRow) => {
+        const r = row?.result as { dims?: Record<string, number> } | null;
+        return r?.dims ? (r.dims as Record<"D" | "I" | "S" | "C", number>) : null;
+      };
+
+      const e3Row = latest("e3");
+      const e3Answers = (e3Row?.answers ?? null) as { ratings?: number[] } | number[] | null;
+      const e3Ratings = Array.isArray(e3Answers) ? e3Answers : e3Answers?.ratings ?? null;
+
+      const mentalRow = latest("mental");
+      const m = mentalRow?.result as { phq9?: number; gad7?: number; selfHarm?: boolean } | null;
+      const mental = m?.phq9 != null && m?.gad7 != null
+        ? { anxiety: m.gad7, mood: m.phq9, selfHarm: m.selfHarm ? 1 : 0 }
+        : null;
+
+      const grade = me?.grade ?? "";
+      const ageFromGrade = (g: string): number | null => {
+        const map: Record<string, number> = { 初一: 13, 初二: 14, 初三: 15, 高一: 16, 高二: 17, 高三: 18, 小一: 7, 小二: 8, 小三: 9, 小四: 10, 小五: 11, 小六: 12 };
+        return map[g.replace(/（.*?）/, "")] ?? null;
+      };
+
+      const report = buildFamilyFullReport({
+        meta: {
+          studentName: me?.name ?? "",
+          grade,
+          age: ageFromGrade(grade),
+          respondent: (p0?.respondent ?? "dad") as "dad" | "mom" | "other",
+          respondentLabel: p0?.label || (p0?.respondent === "mom" ? "妈妈" : "爸爸"),
+          date: new Date(),
+        },
+        studentRel,
+        parentItems: p0?.items ?? {},
+        parentScene: p0?.scene ?? null,
+        studentDiscDims: discDims(discRow),
+        parentDiscDims: discDims(discParentRow),
+        e3Ratings,
+        mental,
+        stage: e3Answers && !Array.isArray(e3Answers) && (e3Answers as { stage?: string }).stage === "senior" ? "senior" : "junior",
+      });
+
+      return {
+        report,
+        has: {
+          student: Object.keys(studentRel).length > 0,
+          parent: !!p0,
+          disc: !!discDims(discRow),
+          discParent: !!discDims(discParentRow),
+          e3: !!e3Ratings,
+          mental: !!mental,
+        },
+        parents: parents.map((p) => p.label || p.respondent),
+      };
+    }),
+
   /* ---------------------- v238 家庭码：父母扫同一个码 ---------------------- */
 
   /**
@@ -1392,15 +1500,7 @@ export const assessmentRouter = createRouter({
     }),
 
   /** 家长端（公开）：家长卷题包。家长没有账号，走不了登录态的 questions 接口。 */
-  familyParentPaper: publicQuery.query(() => {
-    const pack = "standard" as const;
-    return {
-      kind: "familyparent" as const,
-      pack,
-      items: parentItemsOf(pack),
-      sceneOptions: FAMILY_PARENT_SCENE_OPTIONS,
-    };
-  }),
+  familyParentPaper: publicQuery.query(() => buildParentFullPaper()),
 
   /**
    * 家长端（公开）：按码提交家长卷。
@@ -1420,6 +1520,7 @@ export const assessmentRouter = createRouter({
           label: z.string().max(12).optional(),
           items: z.record(z.string(), z.number().int().min(0).max(5)),
           scene: z.string().max(16).nullable().optional(),
+          disc: z.object({ most: z.array(z.number().int().min(0).max(3)), least: z.array(z.number().int().min(0).max(3)) }).optional(),
         }),
       }),
     )
@@ -1430,12 +1531,13 @@ export const assessmentRouter = createRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "这张码已失效，请让家人重新生成一张" });
       }
       const a = input.answers;
-      const pack = familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
+      const v250 = isV250Parent(a.items);
+      const pack = v250 ? "standard" : familyPackOf(a.items, FAMILY_PARENT_PACKS, a.pack, ["HP01"]);
       if (!pack) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "还有题没答完，翻回去补齐再提交。" });
       }
       const result = buildFamilyParentProfile({
-        items: a.items,
+        items: v250 ? toV236ParentItems(a.items) : a.items,
         scene: a.scene ?? null,
         respondent: a.respondent,
       });
