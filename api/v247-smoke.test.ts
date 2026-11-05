@@ -6,6 +6,7 @@ import {
   DISC_NEW_TYPE_NAMES,
   DISC_NEW_FACTORS,
   scoreDiscNew,
+  discNewTopTypes,
   discNewHlWords,
 } from "@contracts/discNew";
 import { normalizeAssessKinds, normalizeReportKinds } from "@contracts/invite";
@@ -46,6 +47,15 @@ describe("v247 复刻版 DISC 计分", () => {
       expect(r.pct[f]).toBe(Math.round((r.net[f] / DISC_NEW_GROUP_COUNT) * 100));
     }
     expect(r.order[0]).toBe(expectPrimary);
+  });
+
+  it("组合类型保留得分顺序：SC=踏实严谨型，CS=勤奋敬业型", () => {
+    const sc = discNewTopTypes({ D: -20, I: -5, S: 20, C: 10 });
+    const cs = discNewTopTypes({ D: -20, I: -5, S: 10, C: 20 });
+    expect(sc.typeKey).toBe("SC");
+    expect(sc.typeName).toBe("踏实严谨型");
+    expect(cs.typeKey).toBe("CS");
+    expect(cs.typeName).toBe("勤奋敬业型");
   });
 
   it("家庭场景结果 scene=family", () => {

@@ -57,12 +57,12 @@ export const DISC_NEW_WORD_BANK: Record<DiscNewFactor, { pos: string[]; neg: str
        neg: ["吹毛求疵", "逃避推诿", "不拘细节", "自有主张", "随心所欲", "坚持己见", "粗枝大叶", "不讲策略", "自以为是", "毫无章法", "公然违抗", "顽固不化"] },
 };
 
-/** 组合命名表（SD/CS/DC/S 为原版实测确认，其余为自订占位，商用前需校对）。 */
+/** 组合命名表（SD/SC/CS/DC/S 为原版实测确认，其余为自订占位，商用前需校对）。 */
 export const DISC_NEW_TYPE_NAMES: Record<string, string> = {
   D: "指挥型", I: "感染型", S: "支持型", C: "严谨型",
   DI: "开拓影响型", DS: "坚韧执行型", DC: "战略执行型",
   ID: "热情领导型", IS: "温暖亲和型", IC: "缜密影响型",
-  SD: "目标支持型", SI: "和谐支持型", SC: "稳健配合型",
+  SD: "目标支持型", SI: "和谐支持型", SC: "踏实严谨型",
   CD: "谨慎推进型", CI: "细致表达型", CS: "勤奋敬业型",
 };
 
@@ -254,7 +254,7 @@ export type DiscNewScores = {
   pressure: Record<DiscNewFactor, number>;
 };
 
-/** 主分型：order=分数降序；typeKey=前两名（字母序）组合；typeName=组合名。 */
+/** 主分型：order=分数降序；typeKey=前两名按得分顺序组合；typeName=组合名。 */
 export type DiscNewTypeInfo = {
   order: DiscNewFactor[];
   typeKey: string;
@@ -321,12 +321,12 @@ export function scoreDiscNew(most: number[], least: number[], scene: DiscNewScen
   };
 }
 
-/** 由净分/调整分算主分型：取所有正分因子前二（字母序拼组合），无正分则取最高分单型。 */
+/** 由净分/调整分算主分型：取所有正分因子前二（按得分顺序拼组合），无正分则取最高分单型。 */
 export function discNewTopTypes(p: Record<DiscNewFactor, number>): DiscNewTypeInfo {
   const order = DISC_NEW_FACTORS.slice().sort((a, b) => p[b] - p[a]);
   const hi = order.filter((f) => p[f] > 0);
   const top = hi.length ? hi.slice(0, 2) : order.slice(0, 1);
-  const combo = top.slice(0, 2).sort().join("");
+  const combo = top.slice(0, 2).join("");
   return { order, typeKey: combo, typeName: DISC_NEW_TYPE_NAMES[combo] ?? `${DISC_NEW_TYPE_NAMES[top[0]]}型`, top };
 }
 

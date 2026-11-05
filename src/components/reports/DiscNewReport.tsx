@@ -11,10 +11,17 @@ import {
   DISC_NEW_SCENES,
   discNewTopTypes,
   discNewHlWords,
-  discNewAxisDots,
   type DiscNewResult,
   type DiscNewFactor,
 } from "@contracts/discNew";
+import {
+  DISC_NEW_CHART_BG,
+  DISC_NEW_ICON_I,
+  DISC_NEW_ICON_S,
+  DISC_NEW_ICON_C,
+  DISC_NEW_DOT_D,
+  DISC_NEW_DOT_I,
+} from "@contracts/discNewChartAssets";
 
 /**
  * v247 DISC（学生版新 / 家长版新）报告视图。
@@ -38,18 +45,11 @@ const REPORT_CSS = `
 .disc-new-report .cover-info { font-size:14px; color:#445; line-height:2.4; }
 .disc-new-report .cover-info b { color:#243b55; }
 .disc-new-report .cover-brand { margin-top:50px; font-size:12px; color:#8fa1b8; }
-.disc-new-report .axis-chart { margin:10px 0 16px; }
-.disc-new-report .axis-row { display:flex; align-items:center; margin-bottom:14px; }
-.disc-new-report .axis-name { width:46px; font-size:14px; font-weight:800; text-align:center; }
-.disc-new-report .axis-bar-wrap { flex:1; padding:0 8px; }
-.disc-new-report .axis-bar { position:relative; height:10px; background:linear-gradient(90deg,#dfe5ee,#c9d4e4); border-radius:5px; }
-.disc-new-report .axis-dot { position:absolute; top:50%; width:16px; height:16px; border-radius:50%; border:2.5px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.4); transform:translate(-50%,-50%); }
-.disc-new-report .axis-ends { display:flex; justify-content:space-between; font-size:11px; color:#999; margin-top:4px; padding:0 8px; }
-.disc-new-report .profile-chips { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
-.disc-new-report .profile-chip { display:flex; align-items:center; gap:12px; background:#f6f8fb; border-radius:10px; padding:10px 14px; }
-.disc-new-report .profile-chip .pc-label { font-size:13px; font-weight:700; color:#556; width:92px; }
-.disc-new-report .profile-chip .pc-type { font-size:16px; font-weight:800; }
-.disc-new-report .pc-dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:10px; vertical-align:-1px; }
+.disc-new-report .original-section-title { display:flex; align-items:stretch; margin:4px 0 24px; background:#e8f5f0; border-radius:4px; overflow:hidden; color:#242424; }
+.disc-new-report .original-section-title > span { display:flex; align-items:center; background:#45b58a; color:#fff; font-size:29px; font-weight:500; padding:7px 21px; }
+.disc-new-report .original-section-title > strong { padding:10px 18px; font-size:25px; line-height:1.35; font-weight:800; }
+.disc-new-report .original-state-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:12px 0 20px; }
+.disc-new-report .original-state-chart { display:block; width:100%; height:auto; }
 .disc-new-report .lead-note { font-size:14px; color:#556; margin-top:12px; }
 .disc-new-report .pct-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:8px 0 14px; }
 .disc-new-report .pct-card { border-radius:10px; padding:10px 12px; color:#fff; }
@@ -106,6 +106,35 @@ const REPORT_CSS = `
 }
 `;
 
+function OriginalStateChart({
+  title,
+  scores,
+  type,
+}: {
+  title: string;
+  scores: Record<DiscNewFactor, number>;
+  type: ReturnType<typeof discNewTopTypes>;
+}) {
+  const xs: Record<DiscNewFactor, number> = { D: 100, I: 200, S: 300, C: 400 };
+  const ys = DISC_NEW_FACTORS.map((f) => 460 - Math.max(-24, Math.min(24, scores[f])) * 11.1);
+  const points = DISC_NEW_FACTORS.map((f, i) => `${xs[f]},${ys[i]}`).join(" ");
+  const typeLabel = `${type.top.join(" ")}${type.typeName ? `（${type.typeName}）` : ""}`;
+  return (
+    <svg className="original-state-chart" viewBox="0 0 500 832" role="img" aria-label={`${title}：${typeLabel}`}>
+      <image href={DISC_NEW_CHART_BG} x="0" y="0" width="500" height="832" />
+      <text x="250" y="45" textAnchor="middle" fill="#fff" fontSize="29" fontWeight="500">{title}</text>
+      <polyline points={points} fill="none" stroke="#666" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      {DISC_NEW_FACTORS.map((f, i) => {
+        const isAnimal = f === "S" || f === "C" || (f === "I" && scores.I > 0);
+        const src = f === "D" ? DISC_NEW_DOT_D : f === "I" ? (scores.I > 0 ? DISC_NEW_ICON_I : DISC_NEW_DOT_I) : f === "S" ? DISC_NEW_ICON_S : DISC_NEW_ICON_C;
+        const size = isAnimal ? 64 : 34;
+        return <image key={f} href={src} x={xs[f] - size / 2} y={ys[i] - size / 2} width={size} height={size} />;
+      })}
+      <text x="250" y="812" textAnchor="middle" fill="#333" fontSize="25">{typeLabel}</text>
+    </svg>
+  );
+}
+
 export default function DiscNewReport({
   result,
   name,
@@ -133,27 +162,6 @@ export default function DiscNewReport({
     .reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7)
     .toString(36)
     .toUpperCase()}`;
-
-  /* P2 四轴三点位移图（原版：真实=因子色，场景=紫，压力=深蓝） */
-  const axesHtml = DISC_NEW_AXES.map((ax) => (
-    <div className="axis-row" key={ax.f}>
-      <div className="axis-name" style={{ color: F_COLOR[ax.f] }}>{ax.f}</div>
-      <div className="axis-bar-wrap">
-        <div className="axis-bar">
-          <span className="axis-dot" title="真实的我" style={{ left: `${discNewAxisDots(result.net[ax.f])}%`, background: F_COLOR[ax.f] }} />
-          <span className="axis-dot" title="场景中的我" style={{ left: `${discNewAxisDots(result.sceneScores[ax.f])}%`, background: "#8e44ad" }} />
-          <span className="axis-dot" title="压力下的我" style={{ left: `${discNewAxisDots(result.pressureScores[ax.f])}%`, background: "#2c3e50" }} />
-        </div>
-        <div className="axis-ends"><span>{ax.left}</span><span>{ax.right}</span></div>
-      </div>
-    </div>
-  ));
-
-  const chips: { label: string; t: ReturnType<typeof discNewTopTypes>; color: string }[] = [
-    { label: "真实的我", t: realT, color: "#e67e22" },
-    { label: `${scene.subject}中的我`, t: sceneT, color: "#8e44ad" },
-    { label: "压力下的我", t: presT, color: "#2c3e50" },
-  ];
 
   /* P3 解读段落：按因子倾向度绝对值排序 */
   const paraOrder = DISC_NEW_FACTORS.slice().sort((a, b) => Math.abs(result.pct[b]) - Math.abs(result.pct[a]));
@@ -208,26 +216,13 @@ export default function DiscNewReport({
         <div className="cover-brand">DISC REPORT · 三好学伴测评系统</div>
       </div>
 
-      {/* P2 基本情况解读 */}
+      {/* P2 基本情况解读：原版三栏纵向四轴图 */}
       <div className="page">
-        <Head title="1 基本情况解读" />
-        <div className="axis-chart">
-          {axesHtml}
-          <div className="axis-ends" style={{ justifyContent: "flex-start", gap: 16, padding: 0 }}>
-            <span><span className="pc-dot" style={{ background: "#e67e22" }} />真实的我</span>
-            <span><span className="pc-dot" style={{ background: "#8e44ad" }} />场景中的我</span>
-            <span><span className="pc-dot" style={{ background: "#2c3e50" }} />压力下的我</span>
-          </div>
-        </div>
-        <div className="profile-chips">
-          {chips.map((c) => (
-            <div className="profile-chip" key={c.label}>
-              <div className="pc-label"><span className="pc-dot" style={{ background: c.color }} />{c.label}</div>
-              <div className="pc-type" style={{ color: F_COLOR[c.t.top[0]] }}>
-                {c.t.top.join(" ")}{c.t.typeName ? `（${c.t.typeName}）` : ""}
-              </div>
-            </div>
-          ))}
+        <div className="original-section-title"><span>1</span><strong>基本情况解读</strong></div>
+        <div className="original-state-grid">
+          <OriginalStateChart title="真实的我" scores={result.net} type={realT} />
+          <OriginalStateChart title={`${scene.subject}中的我`} scores={result.sceneScores} type={sceneT} />
+          <OriginalStateChart title="压力下的我" scores={result.pressureScores} type={presT} />
         </div>
         <p className="lead-note">{who}可能有以下行为特征：</p>
         <PageNum n={1} />
