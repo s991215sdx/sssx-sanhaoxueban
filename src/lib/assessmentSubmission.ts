@@ -1,3 +1,5 @@
+import { createRequestKey } from "./requestKey";
+
 const CACHE_KEY = "sanhao.assessment.submission-keys";
 const TASK_PREFIX = "sanhao.assessment.assignment.";
 
@@ -17,7 +19,7 @@ function submissionKey(body: string): string {
   try { cache = JSON.parse(sessionStorage.getItem(CACHE_KEY) ?? "{}") as Record<string, string>; } catch { /* 私密模式退化为当次标识 */ }
   const fingerprint = fingerprintBody(body);
   if (!cache[fingerprint]) {
-    cache[fingerprint] = crypto.randomUUID();
+    cache[fingerprint] = createRequestKey();
     const entries = Object.entries(cache).slice(-40);
     try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(Object.fromEntries(entries))); } catch { /* 服务端任务锁仍防重 */ }
   }

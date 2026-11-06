@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpenCheck, Check, ChevronDown, CircleDollarSign, ClipboardList, Search, Send, Users, XCircle } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import GrowEditor from "@/components/org/GrowEditor";
+import { createRequestKey } from "@/lib/requestKey";
 
 const STATUS: Record<string, string> = { pending: "待开始", in_progress: "作答中", completed: "已完成", cancelled: "已取消" };
 
@@ -57,7 +58,7 @@ export default function OrgAssessmentCenter({ onOpenReport, onOpenCoaching }: {
   const cancel = trpc.orgService.cancelItem.useMutation({ onSuccess: refresh });
 
   const submit = () => {
-    requestKey.current ??= crypto.randomUUID();
+    requestKey.current ??= createRequestKey();
     create.mutate({ requestKey: requestKey.current, studentIds, selections, title,
       note: note.trim() || undefined, dueAt: dueDate ? new Date(`${dueDate}T23:59:59`) : null });
   };
