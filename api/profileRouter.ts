@@ -4,6 +4,7 @@ import { z } from "zod";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
+import { persistAssessmentResult } from "./assessmentPersistence";
 import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
 import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
@@ -612,6 +613,16 @@ async function applySubmission(
 ): Promise<AssessmentSubmitOutcome> {
   const db = getDb();
 
+  /* 同一个提交键的重试必须直接返回原结果：不得再次计分、覆盖档案或触发学年频次拦截。 */
+  if (input.submissionKey) {
+    const [previous] = await db.select().from(assessmentResults).where(eq(assessmentResults.submissionKey, input.submissionKey)).limit(1);
+    if (previous) {
+      if (previous.userId !== userId || previous.kind !== input.kind) {
+        throw new TRPCError({ code: "CONFLICT", message: "提交标识与答卷不一致，请刷新后重试" });
+      }
+      return { kind: previous.kind, result: previous.result } as AssessmentSubmitOutcome;
+    }
+  }
 
   /* v220 学校版心理测评合规：校园生每学年（9月1日起算）每套心理量表仅测一次，
    * 防止重复筛查刷数据；复测需求由老师线下评估后处理。 */
@@ -772,14 +783,20 @@ async function applySubmission(
 
   // 存结果 + 原始作答（伴学师可查看答题明细）；学科测评存累计合并后的作答
   const rawAnswers = (outcome.kind === "subject" ? mergedSubjectAnswers : input.answers) as unknown;
-  await db.insert(assessmentResults).values({
+  const saved = await persistAssessmentResult(db, {
     userId,
-    kind: outcome.kind,
-    result: outcome.result as unknown as Record<string, unknown>,
+    outcome: { kind: outcome.kind, result: outcome.result as unknown as Record<string, unknown> },
     /* via=pass：扫码交来的答卷要能一眼认出来——计算机构建报告时不必区分，
        但排查「这份是谁填的」时，唯一能问的就是这一笔标记 */
-    answers: (opts?.via ? { ...(rawAnswers as object), via: opts.via } : rawAnswers) as unknown as number[],
+    answers: opts?.via ? { ...(rawAnswers as object), via: opts.via } : rawAnswers,
+    actorUserId: userId,
+    submissionKey: input.submissionKey,
+    assignmentId: input.assignmentId,
   });
+  if (saved.assignmentId != null) {
+    /* 同一次提交的后续档案同步失败时，重试仍返回原结果，不重复扣积分。 */
+    outcome = { kind: saved.kind, result: saved.result } as AssessmentSubmitOutcome;
+  }
 
   // 同步到档案对应字段；没有档案则先建一条默认档案
   let profile = await getProfile(userId);
@@ -963,7 +980,11 @@ const submitInputSchema = z.discriminatedUnion("kind", [
             scene: z.string().max(16).nullable().optional(),
           }),
         }),
-      ]);
+      ]).and(z.object({
+        /** 同一答卷重试复用；由统一请求层生成，服务端数据库唯一键兜底。 */
+        submissionKey: z.string().min(12).max(64).optional(),
+        assignmentId: z.number().int().positive().optional(),
+      }));
 type AssessmentSubmitInput = z.infer<typeof submitInputSchema>;
 
 
@@ -1414,6 +1435,7 @@ export const assessmentRouter = createRouter({
     .input(
       z.object({
         code: z.string().max(32),
+        submissionKey: z.string().min(12).max(64).optional(),
         answers: z.object({
           pack: z.enum(["standard", "lite"]).optional(),
           respondent: z.enum(["dad", "mom", "other"]),
@@ -1439,13 +1461,14 @@ export const assessmentRouter = createRouter({
         scene: a.scene ?? null,
         respondent: a.respondent,
       });
-      await db.insert(assessmentResults).values({
+      const saved = await persistAssessmentResult(db, {
         userId: target.studentUserId,
-        kind: "familyparent",
-        result: result as unknown as Record<string, unknown>,
+        outcome: { kind: "familyparent", result: result as unknown as Record<string, unknown> },
         /* via=code：区分「家长在孩子的账号里填」与「扫码填」，排查数据来源时用得上 */
-        answers: { ...a, pack, via: "code" } as unknown as number[],
+        answers: { ...a, pack, via: "code" },
+        submissionKey: input.submissionKey,
+        actorUserId: null,
       });
-      return { kind: "familyparent" as const, result };
+      return { kind: saved.kind, result: saved.result };
     }),
 });

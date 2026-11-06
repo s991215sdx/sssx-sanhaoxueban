@@ -263,6 +263,10 @@ export const assessmentResults = mysqlTable("assessment_results", {
   result: json("result").$type<Record<string, unknown>>().notNull(),
   /** 原始作答（题目选项/评分），供伴学师查看答题明细。 */
   answers: json("answers").$type<Record<string, unknown> | number[]>(),
+  /** 同一次作答提交／重试的唯一键；历史数据为空。 */
+  submissionKey: varchar("submission_key", { length: 64 }).unique(),
+  /** 机构测评任务关联；旧的无任务结果保持为空。 */
+  assignmentId: bigint("assignment_id", { mode: "number", unsigned: true }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -806,3 +810,6 @@ export const campusAssessPushes = mysqlTable("campus_assess_pushes", {
 });
 
 export type CampusAssessPush = typeof campusAssessPushes.$inferSelect;
+
+/* 机构版测评、积分、独立陪跑与五课：独立文件维护，统一经 @db/schema 注入 Drizzle。 */
+export * from "./orgServiceSchema";

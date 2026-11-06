@@ -33,6 +33,7 @@ const ReportDetail = lazy(() => import("./pages/ReportDetail"));
 const ZhihuiReport = lazy(() => import("./pages/ZhihuiReport"));
 const LearnFlow = lazy(() => import("./pages/LearnFlow"));
 const AssessmentCenter = lazy(() => import("./pages/AssessmentCenter"));
+const FamilyCoaching = lazy(() => import("./pages/FamilyCoaching"));
 
 function PageSpinner() {
   return (
@@ -184,6 +185,7 @@ export default function App() {
                     <Route path="/preview/:code" element={<PreviewSession />} />
                     <Route path="/gaps" element={<Gaps />} />
                     <Route path="/assessments" element={<AssessmentCenter />} />
+                    <Route path="/coaching" element={<FamilyCoaching />} />
                     <Route path="/learn/:errorId" element={<LearnFlow />} />
                     <Route path="/papers" element={<Papers />} />
                     <Route path="/treehole" element={<Treehole />} />

@@ -179,6 +179,11 @@ export const orgRouter = createRouter({
         role: "admin",
         orgId,
       });
+      /* 机构版首次开通才发默认积分；初始化服务内部再以机构唯一流水防重。 */
+      if (edition === "org") {
+        const { initializeOrgPoints } = await import("./orgPoints");
+        await initializeOrgPoints(db, orgId, ctx.user.id);
+      }
       const org = (await db.select().from(organizations).where(eq(organizations.id, orgId)).limit(1))[0];
       return { ok: true as const, org: org ? await orgRow(db, org) : null };
     }),

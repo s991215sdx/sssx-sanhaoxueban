@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { clearAssessmentAssignment, rememberAssessmentAssignment } from "@/lib/assessmentSubmission";
 import ChoiceStage from "@/components/welcome/ChoiceStage";
 import E3Stage from "@/components/welcome/E3Stage";
 import Multi5Quiz from "@/components/companion/Multi5Quiz";
@@ -257,7 +258,9 @@ function QuizStage({ kind, onDone }: { kind: TestKind; onDone: () => void }) {
 /** 测评中心主页（/assessments）：全部测评的入口与报告导航。 */
 export default function AssessmentCenter() {
   const navigate = useNavigate();
+  const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.latest.useQuery();
+  const { data: assignments = [] } = trpc.orgService.myAssignments.useQuery();
   const [testing, setTesting] = useState<TestKind | null>(null);
   // V56/v181：学习力测评（一条龙向导）
   const [suiteOpen, setSuiteOpen] = useState(false);
@@ -273,6 +276,30 @@ export default function AssessmentCenter() {
   const [queueTotal, setQueueTotal] = useState(0);
   // 支持 ?start=e3 深链：从报告页「去测评」直达对应答题；?queue=a,b,c：一站式连测
   const [params, setParams] = useSearchParams();
+  const activeAssignments = assignments.filter((row) => ["pending", "in_progress"].includes(row.assignment.status));
+  const startTask = trpc.orgService.startAssignment.useMutation({
+    onSuccess: async (result) => {
+      if (!TESTS.some((test) => test.kind === result.kind)) return;
+      rememberAssessmentAssignment(result.kind, result.assignmentId);
+      setSuiteOpen(false); setZhihuiOpen(false); setFamilyOpen(false);
+      setTesting(result.kind as TestKind);
+      await utils.orgService.myAssignments.invalidate();
+    },
+  });
+  const openTest = (kind: TestKind) => {
+    const task = activeAssignments.find((row) => row.assignment.kind === kind);
+    if (task) startTask.mutate({ assignmentId: task.assignment.id });
+    else { clearAssessmentAssignment(kind); setTesting(kind); }
+  };
+  const openRecommended = (fallback: () => void) => {
+    const first = activeAssignments[0];
+    if (first && TESTS.some((test) => test.kind === first.assignment.kind)) startTask.mutate({ assignmentId: first.assignment.id });
+    else fallback();
+  };
+  const refreshResults = () => {
+    void utils.assessment.latest.invalidate();
+    void utils.orgService.myAssignments.invalidate();
+  };
   useEffect(() => {
     const q = params.get("queue");
     if (q) {
@@ -292,28 +319,29 @@ export default function AssessmentCenter() {
       if (todo.length > 0) {
         setQueue(todo);
         setQueueTotal(todo.length);
-        setTesting(todo[0]);
+        openTest(todo[0]);
       }
       return;
     }
     const start = params.get("start") as TestKind | null;
     if (start && TESTS.some((t) => t.kind === start)) {
-      setTesting(start);
+      openTest(start);
       setParams({}, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, data, setParams]);
   // anchor / holland / mental 为并行任务新增字段，接口已约定；类型未就绪故按 any 读取。
   const latest: any = data ?? {};
-  const close = () => setTesting(null);
+  const close = () => { if (testing) clearAssessmentAssignment(testing); refreshResults(); setTesting(null); };
   /* v82：连测队列中完成一项 → 自动进入下一项；队列走完 → 回到测评中心列表 */
-  const queueDone = () =>
-    setQueue((q) => {
-      const rest = q.slice(1);
-      if (rest.length > 0) setTesting(rest[0]);
-      else setTesting(null);
-      return rest;
-    });
+  const queueDone = () => {
+    if (testing) clearAssessmentAssignment(testing);
+    refreshResults();
+    const rest = queue.slice(1);
+    setQueue(rest);
+    if (rest.length > 0) openTest(rest[0]);
+    else setTesting(null);
+  };
   const hasResult = (kind: TestKind) => {
     const def = TESTS.find((t) => t.kind === kind);
     return def?.doneOf ? def.doneOf(latest) : !!latest[kind];
@@ -399,7 +427,7 @@ export default function AssessmentCenter() {
             <div className="grid gap-3 lg:grid-cols-2">
               {suiteVisible && (
                 <button
-                  onClick={() => setSuiteOpen(true)}
+                  onClick={() => openRecommended(() => setSuiteOpen(true))}
                   className="paper-card accent-l flex w-full items-center gap-4 border-[#E3B53A]/50 bg-gradient-to-r from-butter-pale/70 to-cream p-5 text-left shadow-sm hover:from-butter-pale"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-cream">
@@ -423,7 +451,7 @@ export default function AssessmentCenter() {
               )}
               {zhihuiSuiteVisible && (
                 <button
-                  onClick={() => setZhihuiOpen(true)}
+                  onClick={() => openRecommended(() => setZhihuiOpen(true))}
                   className="paper-card accent-l flex w-full items-center gap-4 border-lime/60 bg-gradient-to-r from-mint-pale/70 to-cream p-5 text-left shadow-sm hover:from-mint-pale"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lime text-cream">
@@ -456,7 +484,7 @@ export default function AssessmentCenter() {
               它跟另外两个不一样的地方是「要家长配合」，所以标题上直接写出来，不让人点进去才发现。 */}
           {familySuiteVisible && (
             <button
-              onClick={() => setFamilyOpen(true)}
+              onClick={() => openRecommended(() => setFamilyOpen(true))}
               className="paper-card accent-l flex w-full items-center gap-4 border-[#0C7064]/25 bg-gradient-to-r from-mint-pale/40 to-cream p-5 text-left shadow-sm hover:from-mint-pale/70"
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0C7064] text-cream">
@@ -523,6 +551,27 @@ export default function AssessmentCenter() {
                 : "下面是你当前可用的测评，按需要挑着做；等伴学师为你开放更多测评后，这里会出现「学习力测评」「选科及升学规划测评」「家庭教育测评」三项推荐入口。"}
         </p>
       </div>
+
+      {!testing && assignments.length > 0 && (
+        <section className="rounded-2xl border border-[#0C7064]/20 bg-mint-pale/25 p-4 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="flex-1 text-[16px] font-bold text-olive">伴学师发起的测评任务</h2>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0C7064]">待完成 {activeAssignments.length} 项</span>
+          </div>
+          <p className="mt-1 text-[11.5px] text-olive-mute">请优先从这里进入，完成后任务状态与报告会同步更新。</p>
+          <div className="mt-3 space-y-2">
+            {assignments.slice(0, 30).map((row) => {
+              const def = TESTS.find((test) => test.kind === row.assignment.kind);
+              const active = ["pending", "in_progress"].includes(row.assignment.status);
+              return <div key={row.assignment.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-white px-3 py-2.5">
+                <div className="min-w-0 flex-1"><div className="text-[12.5px] font-semibold text-olive">{def?.name ?? row.title}</div><div className="mt-0.5 text-[10.5px] text-olive-mute">{row.activityTitle} · {row.tutorName ?? "伴学师"}{row.dueAt ? ` · 截止 ${new Date(row.dueAt).toLocaleDateString("zh-CN")}` : ""}</div></div>
+                {active ? <button type="button" disabled={startTask.isPending} onClick={() => startTask.mutate({ assignmentId: row.assignment.id })} className="rounded-lg bg-[#0C7064] px-3 py-2 text-[11.5px] font-semibold text-white disabled:opacity-40">{row.assignment.status === "in_progress" ? "继续作答" : "开始任务"}</button> : <span className="rounded-full bg-mint-pale px-2.5 py-1 text-[10.5px] text-[#0C7064]">已完成 ✓</span>}
+              </div>;
+            })}
+          </div>
+          {startTask.error && <p role="alert" className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[11.5px] text-red-700">{startTask.error.message}</p>}
+        </section>
+      )}
 
       {/* 最重要入口：综合学习力报告 + 成绩现状（置顶突出）；v191：套餐不含学习力测评（如校园选科版）时隐藏综合学习力入口 */}
       {!testing && (
@@ -613,7 +662,7 @@ export default function AssessmentCenter() {
                         查看报告
                       </button>
                       <button
-                        onClick={() => setTesting(t.kind)}
+                        onClick={() => openTest(t.kind)}
                         className="flex-1 rounded-xl border border-border bg-cream-card py-2 text-[13px] text-olive-mute transition-colors hover:border-[#E3B53A]/60 hover:text-olive"
                       >
                         重新测
@@ -621,7 +670,7 @@ export default function AssessmentCenter() {
                     </>
                   ) : (
                     <button
-                      onClick={() => setTesting(t.kind)}
+                      onClick={() => openTest(t.kind)}
                       className="flex-1 rounded-xl bg-brand py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
                     >
                       开始测评

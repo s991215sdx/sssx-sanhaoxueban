@@ -23,6 +23,8 @@ import { ssoRouter } from "./ssoRouter";
 import { libraryRouter } from "./libraryRouter";
 import { zhihuiRouter } from "./zhihuiRouter";
 import { schoolRouter } from "./schoolRouter";
+import { orgServiceRouter } from "./orgServiceRouter";
+import { coachingRouter } from "./coachingRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
 const BUILD_TAG = "v246-2026-11-03";
@@ -229,6 +231,8 @@ export const appRouter = createRouter({
   invite: inviteRouter,
   coach: coachRouter,
   org: orgRouter,
+  orgService: orgServiceRouter,
+  coaching: coachingRouter,
   /** v158：一体通 SSO 免登只读接口（ticket 短会话，最小权限） */
   sso: ssoRouter,
   /** v171：智慧生涯数据底座三库（专业/职业/广东分数）+ 分年级规划模板 + 未来期望 */

@@ -11,6 +11,9 @@ import ResetPasswordButton from "@/components/ResetPasswordButton";
 import DeleteStudentButton from "@/components/DeleteStudentButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
+import OrgAssessmentCenter from "@/components/org/OrgAssessmentCenter";
+import OrgPointsPanel from "@/components/org/OrgPointsPanel";
+import CoachingWorkspace from "@/components/org/CoachingWorkspace";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
@@ -95,8 +98,9 @@ export default function Tutor() {
   const [modulesFor, setModulesFor] = useState<number | null>(null);
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
-  // V57：学员管理 / 陪跑训练专栏
-  const [section, setSection] = useState<"students" | "training">("students");
+  const orgView = !campusView && user?.orgId != null;
+  const [section, setSection] = useState<"students" | "assessments" | "coaching" | "points" | "training">("students");
+  const [coachingCaseId, setCoachingCaseId] = useState<number | undefined>();
   const { data: students, isLoading } = trpc.coach.myStudents.useQuery(undefined, { enabled: allowed });
   // V56：学员查询（姓名/手机号）
   const kw = q.trim();
@@ -145,17 +149,21 @@ export default function Tutor() {
         </div>
         {/* V57：两大专栏切换 */}
         {/* v127：与后台统一——tab 条白底，选中=草绿色卡+白字 */}
-        <div className="mt-3 flex rounded-xl border border-[#1E3530]/10 bg-white p-1">
+        <div className="mt-3 flex rounded-xl border border-[#1E3530]/10 bg-white p-1 flex-wrap gap-1">
           {(
             [
-              { key: "students", label: "学员管理" },
-              { key: "training", label: "陪跑训练专栏" },
+              { key: "students", label: "学员管理", visible: true },
+              { key: "assessments", label: "测评中心", visible: orgView },
+              { key: "coaching", label: "独立陪跑", visible: orgView },
+              { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
+              { key: "training", label: "陪跑训练专栏", visible: true },
             ] as const
-          ).map((t) => (
+          ).filter((t) => t.visible).map((t) => (
             <button
               key={t.key}
+              type="button"
               onClick={() => setSection(t.key)}
-              className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
+              className={`min-h-10 flex-1 rounded-lg px-3 py-2 text-[12px] font-semibold whitespace-nowrap transition ${
                 section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
               }`}
             >
@@ -311,6 +319,17 @@ export default function Tutor() {
           </section>
         </>
       )}
+
+      {orgView && section === "assessments" && (
+        <OrgAssessmentCenter
+          onOpenReport={openDetail}
+          onOpenCoaching={(caseId) => { setCoachingCaseId(caseId); setSection("coaching"); }}
+        />
+      )}
+
+      {orgView && section === "coaching" && <CoachingWorkspace initialCaseId={coachingCaseId} />}
+
+      {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
 
       {section === "training" && (
         <div className="space-y-4">

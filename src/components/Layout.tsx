@@ -132,6 +132,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   /* 学员端功能开关（v50）：null=全功能；数组=只显示这些模块（测评中心恒显示） */
   const { data: profile } = trpc.profile.get.useQuery();
   const enabledModules = profile?.enabledModules ?? null;
+  const { data: familyCases = [] } = trpc.coaching.familyCases.useQuery(undefined, { enabled: !isStaff });
   const navVisible = (m: string) => enabledModules === null || m === "assessments" || enabledModules.includes(m);
 
   /* v220.3：校园机构判定（机构管理员/教务）——学校版后台菜单并入外层侧边栏，隐藏伴学工作台 */
@@ -224,6 +225,16 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && n.label}
             </NavLink>
           ))}
+          {!isStaff && familyCases.length > 0 && (
+            <NavLink
+              to="/coaching"
+              title={collapsed ? "陪跑反馈" : undefined}
+              className={({ isActive }) => `group flex items-center rounded-xl transition-colors ${collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"} ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <BookOpenCheck size={18} strokeWidth={2.2} />
+              {!collapsed && "陪跑反馈"}
+            </NavLink>
+          )}
           {/* v220.3：学校版管理者隐藏「伴学工作台」，侧边栏直接列出学校版控制台菜单（与回收站并列） */}
           {showCoach && !campusMgr && (
             <NavLink
@@ -361,6 +372,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
         <Logo brand={brand} />
         <div className="flex items-center gap-2">
+          {!isStaff && familyCases.length > 0 && (
+            <NavLink to="/coaching" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title="陪跑反馈">
+              <BookOpenCheck size={18} />
+            </NavLink>
+          )}
           {showCoach && !campusMgr && (
             <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title={campusTutor ? "指导老师工作台" : "伴学工作台"}>
               <GraduationCap size={18} />

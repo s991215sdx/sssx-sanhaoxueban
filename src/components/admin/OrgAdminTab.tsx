@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import { Building2, Plus, Power, KeyRound, PencilLine, X } from "lucide-react";
 import { INVITE_ASSESS_KINDS } from "@contracts/invite";
 import { ORG_EDITIONS, ORG_SERVICES } from "@contracts/edition";
+import OrgPlatformPoints from "@/components/org/OrgPlatformPoints";
 
 type OrgRow = {
   id: number;
@@ -36,6 +37,8 @@ export default function OrgAdminTab() {
           总系统：为每个合作机构开通一套独立的三好学伴——机构用自己的商标和名称，自建管理员与伴学师账号，数据彼此隔离。
         </p>
       </header>
+
+      {!isLoading && <OrgPlatformPoints orgs={orgs ?? []} />}
 
       <div className="flex justify-end">
         <button
