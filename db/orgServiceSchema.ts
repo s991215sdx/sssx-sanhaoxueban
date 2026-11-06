@@ -4,8 +4,9 @@ const longtext = customType<{ data: string }>({ dataType: () => "longtext" });
 const id = () => serial("id").primaryKey();
 const orgId = () => bigint("org_id", { mode: "number", unsigned: true }).notNull();
 const userId = (name = "user_id") => bigint(name, { mode: "number", unsigned: true }).notNull();
-const createdAt = () => timestamp("created_at").notNull().defaultNow();
-const updatedAt = () => timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date());
+/* 保留 CynosDB 的 CURRENT_TIMESTAMP 默认值；应用显式写入，避免与 mysql2 的 Date 写入时区不一致。 */
+const createdAt = () => timestamp("created_at").notNull().defaultNow().$defaultFn(() => new Date());
+const updatedAt = () => timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()).$defaultFn(() => new Date());
 
 /** owner_user_id=0 为机构未分配池，其余为伴学师／管理员个人钱包。 */
 export const orgPointAccounts = mysqlTable("org_point_accounts", {

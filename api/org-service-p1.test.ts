@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { and, eq } from "drizzle-orm";
-import { orgPointAccounts, orgPointLedger } from "@db/schema";
+import { drizzle } from "drizzle-orm/mysql2";
+import { getTableConfig } from "drizzle-orm/mysql-core";
+import { assessmentActivities, orgPointAccounts, orgPointLedger } from "@db/schema";
 import { ASSESSMENT_PACKAGES, COMPREHENSIVE_KINDS, assessmentCredits, fullCoverageCredits, phaseForVisit, recommendedOrgPoints, selectionFor, validateSessionPhase } from "@contracts/orgService";
 import { createAssessmentActivity } from "./assessmentActivities";
 import { initializeOrgPoints, ledgerDelta, refundOriginalDebitTx, writeLedger, type PointTx } from "./orgPoints";
@@ -11,6 +14,22 @@ function storageMock() {
   const values = new Map<string, string>();
   return { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); }, removeItem: (key: string) => { values.delete(key); }, clear: () => values.clear() };
 }
+
+describe("新表时间一致性", () => {
+  it("保留 CURRENT_TIMESTAMP 默认值，同时由应用显式写入创建与更新时间", () => {
+    const migration = readFileSync("db/migrations/0046_org_service_p1.sql", "utf8");
+    expect(migration).toContain("`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP");
+    const createdColumn = getTableConfig(assessmentActivities).columns.find((column) => column.name === "created_at");
+    const createdAt = createdColumn?.defaultFn?.() as Date;
+    expect(Math.abs(createdAt.getTime() - Date.now())).toBeLessThan(2000);
+    const db = drizzle.mock();
+    const activity = db.insert(assessmentActivities).values({ orgId: 7, createdBy: 9, requestKey: "time-consistency-test", title: "时间验证" }).toSQL();
+    expect(activity.sql).toContain("`created_at`");
+    const account = db.insert(orgPointAccounts).values({ orgId: 7, ownerUserId: 0, balance: 0 }).toSQL();
+    expect(account.sql).toContain("`created_at`");
+    expect(account.sql).toContain("`updated_at`");
+  });
+});
 
 describe("机构测评计价与课程节奏", () => {
   it("完整理论覆盖每人 299，200 人 59,800，默认取整 60,000", () => {
