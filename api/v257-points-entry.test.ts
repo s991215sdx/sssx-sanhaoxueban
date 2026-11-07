@@ -25,6 +25,6 @@ describe("v257 机构管理员积分管理直达入口", () => {
     const panel = readFileSync("src/components/org/OrgPointsPanel.tsx", "utf8");
     expect(panel).toContain("trpc.orgService.allocatePoints.useMutation");
     expect(panel).toContain("trpc.orgService.reclaimPoints.useMutation");
-    expect(router).toContain('const BUILD_TAG = "v257-2026-11-07"');
+    expect(router).toContain('const BUILD_TAG = "v258-2026-11-07"');
   });
 });
