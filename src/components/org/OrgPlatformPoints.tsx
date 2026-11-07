@@ -18,7 +18,7 @@ export default function OrgPlatformPoints({ orgs }: { orgs: { id: number; name: 
 
   return <section className="rounded-2xl border border-[#0C7064]/20 bg-mint-pale/25 p-4">
     <div className="flex flex-wrap items-center gap-3">
-      <div className="min-w-52 flex-1"><h2 className="flex items-center gap-2 text-[16px] font-bold text-olive"><Coins size={18} className="text-[#0C7064]" />机构积分初始化与调整</h2><p className="mt-1 text-[11.5px] text-olive-mute">新机构默认首次发放 10,000 积分，超管可调整；200 人完整理论覆盖测算为 59,800 积分（取整参考 60,000）。仅首次初始化发放，已有机构不补发、不重置，编辑资料或刷新不会重复赠送；校园版不发放。</p></div>
+      <div className="min-w-52 flex-1"><h2 className="flex items-center gap-2 text-[16px] font-bold text-olive"><Coins size={18} className="text-[#0C7064]" />机构积分初始化与调整</h2><p className="mt-1 text-[11.5px] text-olive-mute">新机构默认首次发放 {DEFAULT_ORG_POINTS.toLocaleString()} 积分，超管可调整；200 人完整理论覆盖测算为 59,800 积分（取整参考 60,000）。仅首次初始化发放，已有机构不补发、不重置，编辑资料或刷新不会重复赠送；校园版不发放。</p></div>
       <select aria-label="选择机构" value={orgId} onChange={(e) => setOrgId(Number(e.target.value))} className="min-h-11 rounded-xl border border-border bg-white px-3 py-2 text-[12.5px] text-olive outline-none focus:border-[#0C7064]">{institutionOrgs.map((o) => <option key={o.id} value={o.id}>{o.brandName}（{o.name}）</option>)}</select>
     </div>
     {!institutionOrgs.length ? <p className="mt-3 text-[12px] text-olive-mute">暂无机构版账号。</p> : <>

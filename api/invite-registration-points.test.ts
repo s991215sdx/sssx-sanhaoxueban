@@ -29,8 +29,8 @@ describe("渠道注册计价", () => {
     expect(inviteAssessmentQuote(true, ["mental", "mentalsdq", "mentalpa", "scl90"]).total).toBe(50);
   });
 
-  it("新机构默认 10,000；已有机构的重复初始化仍由唯一初始化状态防重", () => {
-    expect(DEFAULT_ORG_POINTS).toBe(10_000);
+  it("新机构默认 15,000；已有机构的重复初始化仍由唯一初始化状态防重", () => {
+    expect(DEFAULT_ORG_POINTS).toBe(15_000);
     const src = readFileSync("api/orgPoints.ts", "utf8");
     expect(src).toContain("if (pool.initialized) return");
   });

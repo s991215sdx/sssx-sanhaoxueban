@@ -9,19 +9,31 @@ export default function OrgPointsPanel() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const { data: points, isLoading, error } = trpc.orgService.points.useQuery({});
-  const { data: tutors = [] } = trpc.admin.tutors.useQuery({ orgId: user?.orgId });
+  const { data: tutors = [], error: tutorsError } = trpc.admin.tutors.useQuery({ orgId: user?.orgId });
   const [tutorUserId, setTutorUserId] = useState(0);
   const [amount, setAmount] = useState(6000);
   const [reclaimAmount, setReclaimAmount] = useState(1000);
   const [reclaimReason, setReclaimReason] = useState("");
   const wallets = useMemo(() => new Map((points?.accounts ?? []).map((a) => [a.ownerUserId, a])), [points]);
-  const allocate = trpc.orgService.allocatePoints.useMutation({ onSuccess: async () => { await utils.orgService.points.invalidate(); } });
-  const reclaim = trpc.orgService.reclaimPoints.useMutation({ onSuccess: async () => { setReclaimReason(""); await utils.orgService.points.invalidate(); } });
+  const allocate = trpc.orgService.allocatePoints.useMutation({ onSuccess: async () => { await Promise.all([utils.orgService.points.invalidate(), utils.orgService.myWallet.invalidate()]); } });
+  const reclaim = trpc.orgService.reclaimPoints.useMutation({ onSuccess: async () => { setReclaimReason(""); await Promise.all([utils.orgService.points.invalidate(), utils.orgService.myWallet.invalidate()]); } });
   const recipients = [
     ...(user?.role === "admin" ? [{ id: user.id, name: `${user.name ?? "我"}（我 · 管理员）` }] : []),
     ...tutors.filter((t) => t.id !== user?.id),
   ];
   const personalTotal = (points?.totalBalance ?? 0) - (points?.poolBalance ?? 0);
+  /* 从未分配过的伴学师也显示 0 余额，避免“没有钱包记录就找不到人”。 */
+  const accountRows = [
+    ...(points?.accounts ?? []).filter((account) => account.ownerUserId === 0),
+    ...recipients.map((recipient) => ({
+      id: wallets.get(recipient.id)?.id ?? -recipient.id,
+      ownerUserId: recipient.id,
+      name: wallets.get(recipient.id)?.name ?? recipient.name,
+      role: wallets.get(recipient.id)?.role ?? (recipient.id === user?.id ? "admin" : "tutor"),
+      balance: wallets.get(recipient.id)?.balance ?? 0,
+    })),
+    ...(points?.accounts ?? []).filter((account) => account.ownerUserId !== 0 && !recipients.some((recipient) => recipient.id === account.ownerUserId)),
+  ];
 
   if (user?.role !== "admin") return <div className="rounded-2xl border border-border bg-white p-6 text-[13px] text-olive-mute">积分分配由机构管理员操作。你当前可用积分请见「测评中心」右上角。</div>;
   return <div className="space-y-4">
@@ -34,10 +46,11 @@ export default function OrgPointsPanel() {
     <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
         <h2 className="text-[16px] font-bold text-olive">给伴学师／管理员分配个人积分</h2>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-olive-mute">分配只是从未分配池转到个人钱包，不属于测评消耗。管理员也可分给本人，用于本人建码的扫码注册和点选测评；注册或测评扣费时不会再扣机构池。请按实际服务量发放。</p>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-olive-mute">分配只是从未分配池转到个人钱包，不属于测评消耗。从未分配过的伴学师也显示在右侧，点「分配」即可选中。管理员也可分给本人，用于本人建码的扫码注册和点选测评；注册或测评扣费时不会再扣机构池。</p>
         {!points?.initialized && !isLoading && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-800">本机构尚未初始化，请联系平台超管在「机构管理」中发放初始积分。</p>}
+        {tutorsError && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-700">伴学师名单加载失败：{tutorsError.message}</p>}
         <div className="mt-4 space-y-3">
-          <label className="block text-[12px] font-semibold text-olive">伴学师<select value={tutorUserId} onChange={(e) => setTutorUserId(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-border bg-cream px-3 py-2.5 font-normal outline-none focus:border-[#0C7064]"><option value={0}>请选择接收人</option>{recipients.map((t) => <option key={t.id} value={t.id}>{t.name} · 当前 {(wallets.get(t.id)?.balance ?? 0).toLocaleString()} 积分</option>)}</select></label>
+          <label className="block text-[12px] font-semibold text-olive">伴学师<select value={tutorUserId} onChange={(e) => { setTutorUserId(Number(e.target.value)); allocate.reset(); reclaim.reset(); }} className="mt-1 w-full rounded-lg border border-border bg-cream px-3 py-2.5 font-normal outline-none focus:border-[#0C7064]"><option value={0}>请选择接收人</option>{recipients.map((t) => <option key={t.id} value={t.id}>{t.name} · 当前 {(wallets.get(t.id)?.balance ?? 0).toLocaleString()} 积分</option>)}</select></label>
           <label className="block text-[12px] font-semibold text-olive">分配数量<input type="number" min={1} max={10000000} step={100} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-border bg-cream px-3 py-2.5 font-normal outline-none focus:border-[#0C7064]" /></label>
           <button type="button" disabled={allocate.isPending || !tutorUserId || !Number.isSafeInteger(amount) || amount <= 0 || amount > (points?.poolBalance ?? 0)} onClick={() => allocate.mutate({ tutorUserId, amount })} className="min-h-11 w-full rounded-xl bg-[#0C7064] py-2.5 text-[13px] font-semibold text-white hover:bg-[#095C53] disabled:opacity-40">{allocate.isPending ? "正在分配…" : "确认分配"}</button>
           {allocate.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-700">{allocate.error.message}</p>}
@@ -55,7 +68,7 @@ export default function OrgPointsPanel() {
 
       <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
         <h2 className="text-[16px] font-bold text-olive">钱包明细</h2>
-        <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[480px] text-left text-[12px]"><thead className="text-[10.5px] text-olive-mute"><tr className="border-b border-border"><th className="py-2 font-medium">账户</th><th className="py-2 font-medium">角色</th><th className="py-2 text-right font-medium">可用积分</th></tr></thead><tbody>{(points?.accounts ?? []).map((account) => <tr key={account.id} className="border-b border-border/60 last:border-0"><td className="py-2.5 font-semibold text-olive">{account.name}</td><td className="py-2.5 text-olive-mute">{account.ownerUserId === 0 ? "机构池" : account.role === "admin" ? "管理员" : "伴学师"}</td><td className="mono py-2.5 text-right font-bold text-olive">{account.balance.toLocaleString()}</td></tr>)}</tbody></table></div>
+        <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[520px] text-left text-[12px]"><thead className="text-[10.5px] text-olive-mute"><tr className="border-b border-border"><th className="py-2 font-medium">账户</th><th className="py-2 font-medium">角色</th><th className="py-2 text-right font-medium">可用积分</th><th className="py-2 text-right font-medium">操作</th></tr></thead><tbody>{accountRows.map((account) => <tr key={account.id} className={`border-b border-border/60 last:border-0 ${account.ownerUserId === tutorUserId ? "bg-mint-pale/30" : ""}`}><td className="py-2.5 font-semibold text-olive">{account.name}</td><td className="py-2.5 text-olive-mute">{account.ownerUserId === 0 ? "机构池" : account.role === "admin" ? "管理员" : "伴学师"}</td><td className="mono py-2.5 text-right font-bold text-olive">{account.balance.toLocaleString()}</td><td className="py-2 text-right">{account.ownerUserId !== 0 && <button type="button" onClick={() => { setTutorUserId(account.ownerUserId); allocate.reset(); reclaim.reset(); }} className="min-h-8 rounded-lg border border-[#0C7064]/25 px-3 text-[11px] font-semibold text-[#0C7064] hover:bg-mint-pale">分配</button>}</td></tr>)}</tbody></table></div>
       </div>
     </section>
 

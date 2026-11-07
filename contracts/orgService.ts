@@ -5,7 +5,7 @@ export const COMPREHENSIVE_ASSESSMENT = "learning_comprehensive" as const;
 export const XUANKE_ASSESSMENT = "xuanke_free" as const;
 export const COMPREHENSIVE_KINDS = ["mbti", "disc", "e3", "multi5", "mentalsdq"] as const;
 export const FREE_ASSESSMENT_KINDS = ["mbti", "disc", "discparent"] as const;
-export const DEFAULT_ORG_POINTS = 10_000;
+export const DEFAULT_ORG_POINTS = 15_000;
 export const FULL_COVERAGE_STUDENTS = 200;
 
 export type AssessmentSelection = {
