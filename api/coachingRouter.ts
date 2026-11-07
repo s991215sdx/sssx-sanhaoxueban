@@ -7,7 +7,7 @@ import { requireOrgStaff } from "./orgAccess";
 import {
   acceptHandoff, addCoachingReview, addCoachingTask, addHandoff, coachingCaseDetail, createCoachingCase, downloadCoachingDeliverable,
   ensureCourseCatalog, familyCoachingFeedback, grantGuardian, listCoachingCases, listFamilyCoachingCases, pushParticipantFeedback, reassignCoachingCase,
-  revokeGuardian, saveCoachingPlan, saveCourseSession, saveSupervision, setCoachingStatus, updateGrow, uploadCoachingDeliverable, verifyCoachingTask,
+  revokeGuardian, saveCoachingPlan, saveCourseSession, saveDailyCheckin, saveSupervision, setCoachingStatus, updateGrow, uploadCoachingDeliverable, verifyCoachingTask,
 } from "./coachingService";
 
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -16,6 +16,17 @@ const caseInput = z.object({ studentUserId: z.number().int().positive(), scenari
   serviceStart: dateText, serviceEnd: dateText });
 const supervisionInput = z.object({ selfStudyMinutes: z.number().int().min(0).max(1440).default(0),
   alignment: z.string().max(6000).default(""), checks: z.string().max(6000).default(""), exitCheck: z.string().max(6000).default(""), followUp: z.string().max(6000).default("") });
+const dailyCheckinInput = z.object({
+  caseId: z.number().int().positive(), supervisionId: z.number().int().positive().nullable().optional(), checkDate: dateText,
+  completionRate: z.number().int().min(0).max(100), accuracyRate: z.number().int().min(0).max(100),
+  actualCompletion: z.string().max(10000), evidence: z.string().max(10000), tomorrowFirst: z.string().max(6000),
+  gapReason: z.string().max(6000).default(""), errorCause: z.string().max(6000).default(""), correction: z.string().max(6000).default(""),
+  followUp: z.string().max(6000).default(""), followUpDate: dateText.nullable().optional(),
+  feynmanEnabled: z.boolean().default(false), feynmanConcept: z.string().max(2000).default(""), feynmanOutput: z.string().max(10000).default(""),
+  feynmanGrade: z.enum(["A", "B", "C"]).optional(), feynmanStuck: z.string().max(6000).default(""), feynmanQuestion: z.string().max(6000).default(""),
+  retestDate: dateText.nullable().optional(), traces: z.array(z.enum(["draft", "notes", "mindmap", "errorbook", "review"])).max(5),
+  traceEvidence: z.string().max(10000).default(""), traceFollowUp: z.string().max(6000).default(""), changeReason: z.string().trim().max(500).optional(),
+});
 
 export const coachingRouter = createRouter({
   cases: tutorQuery.query(({ ctx }) => listCoachingCases(getDb(), ctx.user)),
@@ -53,6 +64,7 @@ export const coachingRouter = createRouter({
     .mutation(({ ctx, input }) => setCoachingStatus(getDb(), ctx.user, input)),
   reassign: tutorQuery.input(z.object({ caseId: z.number().int().positive(), coachId: z.number().int().positive(), supervisorId: z.number().int().positive(), reason: z.string().trim().min(2).max(2000) }))
     .mutation(({ ctx, input }) => reassignCoachingCase(getDb(), ctx.user, input)),
+  saveCheckin: tutorQuery.input(dailyCheckinInput).mutation(({ ctx, input }) => saveDailyCheckin(getDb(), ctx.user, input)),
   saveSupervision: tutorQuery.input(z.object({ caseId: z.number().int().positive(), visitAt: z.date(), status: z.enum(["draft", "completed"]).default("completed") }).merge(supervisionInput))
     .mutation(({ ctx, input }) => saveSupervision(getDb(), ctx.user, input)),
   saveSession: tutorQuery.input(z.object({ caseId: z.number().int().positive(), startAt: z.date(), format: z.enum(["one_to_one", "salon", "workshop", "mixed"]),

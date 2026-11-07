@@ -2,11 +2,12 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import {
-  assessmentResults, coachingCases, coachingCaseScenarios, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
+  assessmentResults, coachingCases, coachingCaseScenarios, coachingCheckins, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
   coachingPlans, coachingReviews, coachingTasks, coachingTaskVerifications, courseCatalog, courseParticipants, courseSessions, courseSessionUnits,
   studentProfile, studentTutor, studySupervisionRecords, users,
 } from "@db/schema";
-import { COURSE_CATALOG, HANDOFF_TYPES, TECHNIQUE_LESSONS, coachingScenarioLabel, normalizeCoachingScenarios, phaseForVisit, validateSessionPhase } from "@contracts/orgService";
+import { COURSE_CATALOG, HANDOFF_TYPES, LEARNING_TRACE_KEYS, TECHNIQUE_LESSONS, coachingScenarioLabel, normalizeCoachingScenarios, phaseForVisit,
+  validateDailyCheckin, validateSessionPhase, type DailyCheckinRuleInput } from "@contracts/orgService";
 import type { getDb } from "./queries/connection";
 import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
@@ -76,10 +77,12 @@ export async function listCoachingCases(db: Db, me: StaffUser) {
 
 export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) {
   const coachingCase = await assertCaseAccess(db, me, caseId);
-  const [plans, tasks, reviews, handoffs, events, supervisions, sessions, deliverables, guardians, results, catalog] = await Promise.all([
+  const [plans, tasks, reviews, checkins, handoffs, events, supervisions, sessions, deliverables, guardians, results, catalog] = await Promise.all([
     db.select().from(coachingPlans).where(eq(coachingPlans.caseId, caseId)).orderBy(desc(coachingPlans.id)),
     db.select().from(coachingTasks).where(eq(coachingTasks.caseId, caseId)).orderBy(asc(coachingTasks.dueDate), desc(coachingTasks.id)),
     db.select().from(coachingReviews).where(eq(coachingReviews.caseId, caseId)).orderBy(desc(coachingReviews.id)),
+    db.select().from(coachingCheckins).where(and(eq(coachingCheckins.caseId, caseId), eq(coachingCheckins.orgId, coachingCase.orgId)))
+      .orderBy(desc(coachingCheckins.checkDate), desc(coachingCheckins.version), desc(coachingCheckins.id)),
     db.select().from(coachingHandoffs).where(eq(coachingHandoffs.caseId, caseId)).orderBy(desc(coachingHandoffs.id)),
     db.select().from(coachingEvents).where(eq(coachingEvents.caseId, caseId)).orderBy(desc(coachingEvents.id)).limit(150),
     db.select().from(studySupervisionRecords).where(eq(studySupervisionRecords.caseId, caseId)).orderBy(desc(studySupervisionRecords.visitAt)),
@@ -120,7 +123,7 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
     db.select().from(coachingCaseScenarios).where(eq(coachingCaseScenarios.caseId, caseId)).orderBy(desc(coachingCaseScenarios.startedAt), desc(coachingCaseScenarios.id)),
   ]);
   const serviceScenarios = normalizeCoachingScenarios(scenarioHistory.filter((item) => !item.endedAt).map((item) => item.scenario));
-  return { coachingCase, serviceScenarios, scenarioHistory, plans, tasks, reviews, handoffs, events, supervisions,
+  return { coachingCase, serviceScenarios, scenarioHistory, plans, tasks, reviews, checkins, handoffs, events, supervisions,
     sessions: sessions.map((session) => ({ ...session, units: units.filter((u) => u.sessionId === session.id),
       participants: participants.filter((p) => p.participant.sessionId === session.id) })),
     deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog };
@@ -257,6 +260,48 @@ export async function verifyCoachingTask(db: Db, me: StaffUser, input: { taskId:
     await event(tx, task.caseId, me.id, "task_verified", `${task.title} V${version}：${result}`);
     return { ok: true as const, id, version };
   });
+}
+
+type DailyCheckinInput = Omit<DailyCheckinRuleInput, "hasPreviousVersion"> & { caseId: number; supervisionId?: number | null };
+
+export async function assertCheckinSupervision(db: Db, coachingCase: CaseRow, supervisionId?: number | null) {
+  if (supervisionId == null) return;
+  const [record] = await db.select({ id: studySupervisionRecords.id, caseId: studySupervisionRecords.caseId, studentUserId: studySupervisionRecords.studentUserId })
+    .from(studySupervisionRecords).where(eq(studySupervisionRecords.id, supervisionId)).limit(1);
+  if (!record || record.caseId !== coachingCase.id || record.studentUserId !== coachingCase.studentUserId) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "关联督学记录与当前陪跑主档或学员不匹配" });
+  }
+}
+
+export async function appendDailyCheckinTx(tx: PointTx, me: StaffUser, coachingCase: CaseRow, input: DailyCheckinInput) {
+  const [previous] = await tx.select({ id: coachingCheckins.id, version: coachingCheckins.version }).from(coachingCheckins)
+    .where(and(eq(coachingCheckins.caseId, coachingCase.id), eq(coachingCheckins.orgId, coachingCase.orgId), eq(coachingCheckins.checkDate, input.checkDate)))
+    .orderBy(desc(coachingCheckins.version)).limit(1).for("update");
+  const version = (previous?.version ?? 0) + 1;
+  const validationError = validateDailyCheckin({ ...input, hasPreviousVersion: Boolean(previous) });
+  if (validationError) throw new TRPCError({ code: "BAD_REQUEST", message: validationError });
+  const text = (value?: string | null) => value?.trim() ?? "";
+  const traces = LEARNING_TRACE_KEYS.filter((key) => input.traces.includes(key));
+  const [{ id }] = await tx.insert(coachingCheckins).values({
+    caseId: coachingCase.id, orgId: coachingCase.orgId, supervisionId: input.supervisionId ?? null,
+    checkDate: input.checkDate, version, previousId: previous?.id ?? null, changeReason: previous ? text(input.changeReason) : "",
+    completionRate: input.completionRate, accuracyRate: input.accuracyRate,
+    actualCompletion: text(input.actualCompletion), evidence: text(input.evidence), tomorrowFirst: text(input.tomorrowFirst),
+    gapReason: text(input.gapReason), errorCause: text(input.errorCause), correction: text(input.correction),
+    followUp: text(input.followUp), followUpDate: input.completionRate < 100 ? input.followUpDate : null,
+    feynmanConcept: input.feynmanEnabled ? text(input.feynmanConcept) : "", feynmanOutput: input.feynmanEnabled ? text(input.feynmanOutput) : "",
+    feynmanGrade: input.feynmanEnabled ? input.feynmanGrade! : "", feynmanStuck: input.feynmanEnabled ? text(input.feynmanStuck) : "",
+    feynmanQuestion: input.feynmanEnabled ? text(input.feynmanQuestion) : "", retestDate: input.feynmanEnabled ? input.retestDate || null : null,
+    traces, traceEvidence: text(input.traceEvidence), traceFollowUp: text(input.traceFollowUp), createdBy: me.id,
+  }).$returningId();
+  await event(tx, coachingCase.id, me.id, "daily_checkin", `日检验 ${input.checkDate} V${version}：完成 ${input.completionRate}%，准确 ${input.accuracyRate}%；明日第一件事：${text(input.tomorrowFirst)}`);
+  return { id, version };
+}
+
+export async function saveDailyCheckin(db: Db, me: StaffUser, input: DailyCheckinInput) {
+  const coachingCase = await assertCaseAccess(db, me, input.caseId);
+  await assertCheckinSupervision(db, coachingCase, input.supervisionId);
+  return db.transaction((tx) => appendDailyCheckinTx(tx, me, coachingCase, input));
 }
 
 export async function addCoachingReview(db: Db, me: StaffUser, input: { caseId: number; period: "day" | "week" | "month" | "term"; periodKey: string; content: string; nextActions: string }) {

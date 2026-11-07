@@ -200,6 +200,71 @@ export function coachingScenarioLabel(key: string): string {
 }
 export const HANDOFF_TYPES = ["H1", "H2", "H3", "H4", "H5"] as const;
 
+export const LEARNING_TRACE_KEYS = ["draft", "notes", "mindmap", "errorbook", "review"] as const;
+export type LearningTraceKey = (typeof LEARNING_TRACE_KEYS)[number];
+export const LEARNING_TRACES = [
+  { key: "draft", label: "草稿" },
+  { key: "notes", label: "笔记" },
+  { key: "mindmap", label: "导图" },
+  { key: "errorbook", label: "错题本" },
+  { key: "review", label: "复盘文字" },
+] as const satisfies readonly { key: LearningTraceKey; label: string }[];
+
+export type DailyCheckinRuleInput = {
+  checkDate: string;
+  completionRate: number;
+  accuracyRate: number;
+  actualCompletion: string;
+  evidence: string;
+  gapReason?: string;
+  errorCause?: string;
+  correction?: string;
+  followUp?: string;
+  followUpDate?: string | null;
+  tomorrowFirst: string;
+  feynmanEnabled: boolean;
+  feynmanConcept?: string;
+  feynmanOutput?: string;
+  feynmanGrade?: "A" | "B" | "C";
+  feynmanStuck?: string;
+  feynmanQuestion?: string;
+  retestDate?: string | null;
+  traces: string[];
+  traceEvidence?: string;
+  traceFollowUp?: string;
+  hasPreviousVersion: boolean;
+  changeReason?: string;
+};
+
+/** 前后端共用的日检验规则；服务端不能依赖页面是否禁用了提交按钮。 */
+export function validateDailyCheckin(input: DailyCheckinRuleInput): string | null {
+  if (!input.checkDate) return "请选择检验日期";
+  if (input.actualCompletion.trim().length < 2) return "请填写实际完成情况";
+  if (input.evidence.trim().length < 2) return "请填写可核验的学习证据，签到不等于掌握";
+  if (input.tomorrowFirst.trim().length < 2) return "请填写明日第一件事";
+  if (input.completionRate < 100) {
+    if ((input.gapReason?.trim().length ?? 0) < 2) return "完成率不足 100% 时须填写未完成原因";
+    if ((input.followUp?.trim().length ?? 0) < 2) return "完成率不足 100% 时须填写补位行动";
+    if (!input.followUpDate) return "完成率不足 100% 时须选择补位日期";
+    if (input.followUpDate < input.checkDate) return "补位日期不能早于检验日期";
+  }
+  if (input.accuracyRate < 100) {
+    if ((input.errorCause?.trim().length ?? 0) < 2) return "准确率不足 100% 时须填写错因";
+    if ((input.correction?.trim().length ?? 0) < 2) return "准确率不足 100% 时须填写订正情况";
+  }
+  if (input.feynmanEnabled) {
+    if ((input.feynmanConcept?.trim().length ?? 0) < 2) return "费曼输出须填写知识点";
+    if ((input.feynmanOutput?.trim().length ?? 0) < 2) return "请记录学生自己的讲解输出，而非只勾选已完成";
+    if (!input.feynmanGrade || !["A", "B", "C"].includes(input.feynmanGrade)) return "请选择费曼输出 A／B／C 评级";
+  }
+  if (input.traces.some((key) => !(LEARNING_TRACE_KEYS as readonly string[]).includes(key))) return "学习痕迹类型无效";
+  if (new Set(input.traces).size !== LEARNING_TRACE_KEYS.length && (input.traceFollowUp?.trim().length ?? 0) < 2) {
+    return "五项学习痕迹未集齐时须填写缺项补齐安排";
+  }
+  if (input.hasPreviousVersion && (input.changeReason?.trim().length ?? 0) < 2) return "同日再次提交须填写修改原因，原版本不会被覆盖";
+  return null;
+}
+
 export function phaseForVisit(serviceStart: string, visitAt: Date): "early" | "late" {
   const start = new Date(`${serviceStart}T00:00:00+08:00`);
   if (Number.isNaN(start.getTime())) throw new Error("陪跑开始日期无效");

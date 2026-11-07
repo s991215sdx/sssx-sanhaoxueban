@@ -1,4 +1,4 @@
-import { mysqlTable, serial, bigint, int, varchar, text, json, timestamp, boolean, customType } from "drizzle-orm/mysql-core";
+import { mysqlTable, serial, bigint, int, varchar, text, json, timestamp, boolean, customType, index, uniqueIndex } from "drizzle-orm/mysql-core";
 
 const longtext = customType<{ data: string }>({ dataType: () => "longtext" });
 const id = () => serial("id").primaryKey();
@@ -98,6 +98,27 @@ export const coachingReviews = mysqlTable("coaching_reviews", {
   periodKey: varchar("period_key", { length: 24 }).notNull(), content: text("content").notNull(), nextActions: text("next_actions").notNull(),
   version: int("version").notNull().default(1), createdBy: userId("created_by"), createdAt: createdAt(),
 });
+
+/** 同日检验只追加版本；机构与主档双重限定，避免跨机构串联。 */
+export const coachingCheckins = mysqlTable("coaching_checkins", {
+  id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), orgId: orgId(),
+  supervisionId: bigint("supervision_id", { mode: "number", unsigned: true }),
+  checkDate: varchar("check_date", { length: 10 }).notNull(), version: int("version").notNull(),
+  previousId: bigint("previous_id", { mode: "number", unsigned: true }), changeReason: varchar("change_reason", { length: 500 }).notNull().default(""),
+  completionRate: int("completion_rate").notNull(), accuracyRate: int("accuracy_rate").notNull(),
+  actualCompletion: text("actual_completion").notNull(), gapReason: text("gap_reason").notNull(),
+  errorCause: text("error_cause").notNull(), correction: text("correction").notNull(), evidence: text("evidence").notNull(),
+  followUp: text("follow_up").notNull(), followUpDate: varchar("follow_up_date", { length: 10 }), tomorrowFirst: text("tomorrow_first").notNull(),
+  feynmanConcept: text("feynman_concept").notNull(), feynmanOutput: text("feynman_output").notNull(),
+  feynmanGrade: varchar("feynman_grade", { length: 1 }).notNull().default(""), feynmanStuck: text("feynman_stuck").notNull(),
+  feynmanQuestion: text("feynman_question").notNull(), retestDate: varchar("retest_date", { length: 10 }),
+  traces: json("traces").$type<string[]>().notNull(), traceEvidence: text("trace_evidence").notNull(), traceFollowUp: text("trace_follow_up").notNull(),
+  createdBy: userId("created_by"), createdAt: createdAt(),
+}, (table) => [
+  uniqueIndex("coaching_checkins_case_date_version_unique").on(table.caseId, table.checkDate, table.version),
+  index("coaching_checkins_case_date_version_idx").on(table.caseId, table.checkDate, table.version),
+  index("coaching_checkins_org_date_idx").on(table.orgId, table.checkDate),
+]);
 
 export const coachingHandoffs = mysqlTable("coaching_handoffs", {
   id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), type: varchar("type", { length: 8 }).notNull(),
