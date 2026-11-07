@@ -324,6 +324,13 @@
       "when": 1794038400000,
       "tag": "0047_assessment_closure",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "5",
+      "when": 1794042093372,
+      "tag": "0048_coaching_service_scenarios",
+      "breakpoints": true
     }
   ]
 }

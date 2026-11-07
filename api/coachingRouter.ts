@@ -11,7 +11,7 @@ import {
 } from "./coachingService";
 
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const caseInput = z.object({ studentUserId: z.number().int().positive(), scenario: z.enum(["新生接手", "方案调整", "结课复盘", "回访"]),
+const caseInput = z.object({ studentUserId: z.number().int().positive(), scenarios: z.array(z.enum(["A", "B", "C", "D"])).min(1).max(4),
   goal: z.string().trim().min(2).max(5000), currentSituation: z.string().trim().min(2).max(8000), planSummary: z.string().trim().min(2).max(10000),
   serviceStart: dateText, serviceEnd: dateText });
 const supervisionInput = z.object({ selfStudyMinutes: z.number().int().min(0).max(1440).default(0),
@@ -26,7 +26,7 @@ export const coachingRouter = createRouter({
   }),
   detail: tutorQuery.input(z.object({ caseId: z.number().int().positive() })).query(({ ctx, input }) => coachingCaseDetail(getDb(), ctx.user, input.caseId)),
   createCase: tutorQuery.input(caseInput).mutation(({ ctx, input }) => createCoachingCase(getDb(), ctx.user, input)),
-  updateGrow: tutorQuery.input(caseInput.omit({ studentUserId: true }).extend({ caseId: z.number().int().positive() }))
+  updateGrow: tutorQuery.input(caseInput.omit({ studentUserId: true }).extend({ caseId: z.number().int().positive(), scenarioChangeReason: z.string().trim().max(500).optional() }))
     .mutation(({ ctx, input }) => updateGrow(getDb(), ctx.user, input)),
   catalog: tutorQuery.query(async ({ ctx }) => {
     const db = getDb(); const orgId = requireOrgStaff(ctx.user);

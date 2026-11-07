@@ -2,11 +2,11 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import {
-  assessmentResults, coachingCases, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
+  assessmentResults, coachingCases, coachingCaseScenarios, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
   coachingPlans, coachingReviews, coachingTasks, coachingTaskVerifications, courseCatalog, courseParticipants, courseSessions, courseSessionUnits,
   studentProfile, studentTutor, studySupervisionRecords, users,
 } from "@db/schema";
-import { COURSE_CATALOG, HANDOFF_TYPES, TECHNIQUE_LESSONS, phaseForVisit, validateSessionPhase } from "@contracts/orgService";
+import { COURSE_CATALOG, HANDOFF_TYPES, TECHNIQUE_LESSONS, coachingScenarioLabel, normalizeCoachingScenarios, phaseForVisit, validateSessionPhase } from "@contracts/orgService";
 import type { getDb } from "./queries/connection";
 import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
@@ -57,13 +57,21 @@ export async function listCoachingCases(db: Db, me: StaffUser) {
   const rows = await db.select({ coachingCase: coachingCases, studentName: users.name, grade: studentProfile.grade }).from(coachingCases)
     .leftJoin(users, eq(coachingCases.studentUserId, users.id)).leftJoin(studentProfile, eq(coachingCases.studentUserId, studentProfile.userId))
     .where(eq(coachingCases.orgId, orgId)).orderBy(desc(coachingCases.updatedAt)).limit(150);
-  if (me.role === "admin") return rows;
-  const [links, profiles] = await Promise.all([
-    db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, me.id)),
-    db.select({ userId: studentProfile.userId }).from(studentProfile).where(eq(studentProfile.tutorId, me.id)),
-  ]);
-  const allowed = new Set([...links.map((l) => l.studentUserId), ...profiles.map((p) => p.userId)]);
-  return rows.filter((r) => r.coachingCase.coachId === me.id || r.coachingCase.supervisorId === me.id || allowed.has(r.coachingCase.studentUserId));
+  let visibleRows = rows;
+  if (me.role !== "admin") {
+    const [links, profiles] = await Promise.all([
+      db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, me.id)),
+      db.select({ userId: studentProfile.userId }).from(studentProfile).where(eq(studentProfile.tutorId, me.id)),
+    ]);
+    const allowed = new Set([...links.map((l) => l.studentUserId), ...profiles.map((p) => p.userId)]);
+    visibleRows = rows.filter((r) => r.coachingCase.coachId === me.id || r.coachingCase.supervisorId === me.id || allowed.has(r.coachingCase.studentUserId));
+  }
+  const caseIds = visibleRows.map((row) => row.coachingCase.id);
+  const scenarioRows = caseIds.length ? await db.select({ caseId: coachingCaseScenarios.caseId, scenario: coachingCaseScenarios.scenario })
+    .from(coachingCaseScenarios).where(and(inArray(coachingCaseScenarios.caseId, caseIds), eq(coachingCaseScenarios.orgId, orgId), isNull(coachingCaseScenarios.endedAt))) : [];
+  const grouped = new Map<number, string[]>();
+  for (const row of scenarioRows) grouped.set(row.caseId, [...(grouped.get(row.caseId) ?? []), row.scenario]);
+  return visibleRows.map((row) => ({ ...row, serviceScenarios: normalizeCoachingScenarios(grouped.get(row.coachingCase.id) ?? []) }));
 }
 
 export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) {
@@ -106,38 +114,89 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
       .leftJoin(users, eq(courseParticipants.studentUserId, users.id))
       .where(and(inArray(courseParticipants.sessionId, sessionIds), eq(courseParticipants.studentUserId, coachingCase.studentUserId))),
   ]) : [[], []];
-  const [reportAllowed, verificationHistory] = await Promise.all([
+  const [reportAllowed, verificationHistory, scenarioHistory] = await Promise.all([
     hasAssessmentReportAccess(db, me, coachingCase.studentUserId),
     db.select().from(coachingTaskVerifications).where(eq(coachingTaskVerifications.caseId, caseId)).orderBy(asc(coachingTaskVerifications.taskId), desc(coachingTaskVerifications.version)),
+    db.select().from(coachingCaseScenarios).where(eq(coachingCaseScenarios.caseId, caseId)).orderBy(desc(coachingCaseScenarios.startedAt), desc(coachingCaseScenarios.id)),
   ]);
-  return { coachingCase, plans, tasks, reviews, handoffs, events, supervisions,
+  const serviceScenarios = normalizeCoachingScenarios(scenarioHistory.filter((item) => !item.endedAt).map((item) => item.scenario));
+  return { coachingCase, serviceScenarios, scenarioHistory, plans, tasks, reviews, handoffs, events, supervisions,
     sessions: sessions.map((session) => ({ ...session, units: units.filter((u) => u.sessionId === session.id),
       participants: participants.filter((p) => p.participant.sessionId === session.id) })),
     deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog };
 }
 
-export async function createCoachingCase(db: Db, me: StaffUser, input: { studentUserId: number; scenario: string; goal: string; currentSituation: string; planSummary: string; serviceStart: string; serviceEnd: string }) {
+export async function syncCoachingScenariosTx(tx: PointTx, input: { caseId: number; orgId: number; actorUserId: number; scenarios: string[]; reason?: string }) {
+  let next: string[];
+  try {
+    next = normalizeCoachingScenarios(input.scenarios);
+  } catch {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "陪跑服务场景无效" });
+  }
+  if (!next.length) throw new TRPCError({ code: "BAD_REQUEST", message: "请至少选择一种陪跑服务场景" });
+  const currentRows = await tx.select().from(coachingCaseScenarios)
+    .where(and(eq(coachingCaseScenarios.caseId, input.caseId), isNull(coachingCaseScenarios.endedAt))).for("update");
+  const current = new Set(currentRows.map((row) => row.scenario));
+  const desired = new Set(next);
+  const removedRows = currentRows.filter((row) => !desired.has(row.scenario));
+  const added = next.filter((scenario) => !current.has(scenario));
+  const reason = input.reason?.trim() ?? "";
+  if (removedRows.length && reason.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "停用已有服务场景须填写调整原因" });
+  if (!removedRows.length && !added.length) return { active: next, added: [], removed: [] };
+  const now = new Date();
+  for (const row of removedRows) {
+    await tx.update(coachingCaseScenarios).set({ activeKey: null, endedAt: now, endedBy: input.actorUserId, changeReason: reason })
+      .where(and(eq(coachingCaseScenarios.id, row.id), isNull(coachingCaseScenarios.endedAt)));
+  }
+  for (const scenario of added) {
+    await tx.insert(coachingCaseScenarios).values({ caseId: input.caseId, orgId: input.orgId, scenario, activeKey: `${input.caseId}:${scenario}`,
+      startedAt: now, createdBy: input.actorUserId, changeReason: reason, createdAt: now });
+  }
+  const removed = removedRows.map((row) => row.scenario);
+  const changes = [added.length ? `新增 ${added.map(coachingScenarioLabel).join("、")}` : "", removed.length ? `停用 ${removed.map(coachingScenarioLabel).join("、")}` : ""].filter(Boolean).join("；");
+  await event(tx, input.caseId, input.actorUserId, "scenario_changed", `${changes}${reason ? `；原因：${reason}` : ""}`);
+  return { active: next, added, removed };
+}
+
+export async function createCoachingCase(db: Db, me: StaffUser, input: { studentUserId: number; scenarios: string[]; goal: string; currentSituation: string; planSummary: string; serviceStart: string; serviceEnd: string }) {
   const orgId = requireOrgStaff(me);
   await assertStudentAccess(db, me, input.studentUserId);
-  if (!["新生接手", "方案调整", "结课复盘", "回访"].includes(input.scenario)) throw new TRPCError({ code: "BAD_REQUEST", message: "陪跑场景无效" });
   if (Date.parse(input.serviceEnd) < Date.parse(input.serviceStart)) throw new TRPCError({ code: "BAD_REQUEST", message: "结束日期不能早于开始日期" });
   await ensureCourseCatalog(db, orgId);
   const [old] = await db.select({ id: coachingCases.id }).from(coachingCases).where(and(eq(coachingCases.orgId, orgId), eq(coachingCases.studentUserId, input.studentUserId))).limit(1);
   if (old) return { caseId: old.id, duplicate: true as const };
   return db.transaction(async (tx) => {
     const [{ id }] = await tx.insert(coachingCases).values({ orgId, studentUserId: input.studentUserId, coachId: me.id, supervisorId: me.id,
-      scenario: input.scenario, goal: required(input.goal, "请先明确陪跑目标"), currentSituation: required(input.currentSituation, "请评估学员现状"),
+      scenario: "新生接手", goal: required(input.goal, "请先明确陪跑目标"), currentSituation: required(input.currentSituation, "请评估学员现状"),
       planSummary: required(input.planSummary, "请定制陪跑计划"), serviceStart: input.serviceStart, serviceEnd: input.serviceEnd }).$returningId();
+    await syncCoachingScenariosTx(tx, { caseId: id, orgId, actorUserId: me.id, scenarios: input.scenarios, reason: "建立陪跑主档" });
     await tx.insert(coachingPlans).values({ caseId: id, level: "term", title: "学期陪跑方案", content: input.planSummary,
       startDate: input.serviceStart, endDate: input.serviceEnd, status: "confirmed", confirmedBy: me.id, confirmedAt: new Date(), createdBy: me.id });
     await tx.insert(coachingHandoffs).values({ caseId: id, type: "H1", fromUserId: me.id, toUserId: me.id,
       title: "新生接手：目标、现状与方案交接", content: `目标：${input.goal}\n现状：${input.currentSituation}\n计划：${input.planSummary}` });
-    await event(tx, id, me.id, "case_created", `创建${input.scenario}主档，目标、现状与学期计划已确认`);
+    await event(tx, id, me.id, "case_created", `创建陪跑主档（${input.scenarios.map(coachingScenarioLabel).join("＋")}），目标、现状与学期计划已确认`);
     return { caseId: id, duplicate: false as const };
   });
 }
 
-export async function saveCoachingPlan(db: Db, me: StaffUser, input: { caseId: number; level: "term" | "month" | "week" | "day"; parentId?: number | null; title: string; content: string; startDate: string; endDate: string; sourceResultId?: number | null; confirmed: boolean }) {
+type SaveCoachingPlanInput = { caseId: number; level: "term" | "month" | "week" | "day"; parentId?: number | null; title: string; content: string; startDate: string; endDate: string; sourceResultId?: number | null; confirmed: boolean };
+
+async function saveCoachingPlanTx(tx: PointTx, me: StaffUser, coachingCase: CaseRow, input: SaveCoachingPlanInput) {
+  const previous = await tx.select({ version: coachingPlans.version }).from(coachingPlans)
+    .where(and(eq(coachingPlans.caseId, input.caseId), eq(coachingPlans.level, input.level))).orderBy(desc(coachingPlans.version)).limit(1).for("update");
+  const version = (previous[0]?.version ?? 0) + 1;
+  const [{ id }] = await tx.insert(coachingPlans).values({ caseId: input.caseId, parentId: input.parentId ?? null, level: input.level,
+    title: required(input.title, "请填写计划名称"), content: input.content, startDate: input.startDate, endDate: input.endDate,
+    sourceResultId: input.sourceResultId ?? null, version, status: input.confirmed ? "confirmed" : "draft",
+    confirmedBy: input.confirmed ? me.id : null, confirmedAt: input.confirmed ? new Date() : null, createdBy: me.id }).$returningId();
+  if (input.level === "term") {
+    await tx.update(coachingCases).set({ planSummary: input.content, scenario: version > 1 ? "方案调整" : coachingCase.scenario, version: coachingCase.version + 1 }).where(eq(coachingCases.id, input.caseId));
+  }
+  await event(tx, input.caseId, me.id, "plan_version", `${input.title} V${version}${input.confirmed ? " 已确认" : " 保存草稿"}`);
+  return { id, version };
+}
+
+export async function saveCoachingPlan(db: Db, me: StaffUser, input: SaveCoachingPlanInput) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
   required(input.content, "计划内容不能为空");
   if (input.endDate < input.startDate) throw new TRPCError({ code: "BAD_REQUEST", message: "计划结束日期不能早于开始日期" });
@@ -146,29 +205,21 @@ export async function saveCoachingPlan(db: Db, me: StaffUser, input: { caseId: n
     if (result?.userId !== coachingCase.studentUserId) throw new TRPCError({ code: "FORBIDDEN", message: "不能关联其他学员的测评结果" });
     await assertAssessmentReportAccess(db, me, coachingCase.studentUserId);
   }
-  return db.transaction(async (tx) => {
-    const previous = await tx.select({ version: coachingPlans.version }).from(coachingPlans)
-      .where(and(eq(coachingPlans.caseId, input.caseId), eq(coachingPlans.level, input.level))).orderBy(desc(coachingPlans.version)).limit(1).for("update");
-    const version = (previous[0]?.version ?? 0) + 1;
-    const [{ id }] = await tx.insert(coachingPlans).values({ caseId: input.caseId, parentId: input.parentId ?? null, level: input.level,
-      title: required(input.title, "请填写计划名称"), content: input.content, startDate: input.startDate, endDate: input.endDate,
-      sourceResultId: input.sourceResultId ?? null, version, status: input.confirmed ? "confirmed" : "draft",
-      confirmedBy: input.confirmed ? me.id : null, confirmedAt: input.confirmed ? new Date() : null, createdBy: me.id }).$returningId();
-    if (input.level === "term") {
-      await tx.update(coachingCases).set({ planSummary: input.content, scenario: version > 1 ? "方案调整" : coachingCase.scenario, version: coachingCase.version + 1 }).where(eq(coachingCases.id, input.caseId));
-    }
-    await event(tx, input.caseId, me.id, "plan_version", `${input.title} V${version}${input.confirmed ? " 已确认" : " 保存草稿"}`);
-    return { id, version };
-  });
+  return db.transaction((tx) => saveCoachingPlanTx(tx, me, coachingCase, input));
 }
 
-export async function updateGrow(db: Db, me: StaffUser, input: { caseId: number; goal: string; currentSituation: string; planSummary: string; scenario: string }) {
+export async function updateGrow(db: Db, me: StaffUser, input: { caseId: number; goal: string; currentSituation: string; planSummary: string; scenarios: string[]; scenarioChangeReason?: string; serviceStart: string; serviceEnd: string }) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
-  if (!["新生接手", "方案调整", "结课复盘", "回访"].includes(input.scenario)) throw new TRPCError({ code: "BAD_REQUEST", message: "陪跑场景无效" });
-  await db.update(coachingCases).set({ goal: required(input.goal, "目标不能为空"), currentSituation: required(input.currentSituation, "现状评估不能为空"),
-    planSummary: required(input.planSummary, "计划不能为空"), scenario: input.scenario, version: coachingCase.version + 1 }).where(eq(coachingCases.id, input.caseId));
-  return saveCoachingPlan(db, me, { caseId: input.caseId, level: "term", title: `${input.scenario}·学期方案`, content: input.planSummary,
-    startDate: coachingCase.serviceStart, endDate: coachingCase.serviceEnd, confirmed: true });
+  required(input.goal, "目标不能为空"); required(input.currentSituation, "现状评估不能为空"); required(input.planSummary, "计划不能为空");
+  if (input.serviceEnd < input.serviceStart) throw new TRPCError({ code: "BAD_REQUEST", message: "结束日期不能早于开始日期" });
+  return db.transaction(async (tx) => {
+    await tx.update(coachingCases).set({ goal: input.goal.trim(), currentSituation: input.currentSituation.trim(),
+      serviceStart: input.serviceStart, serviceEnd: input.serviceEnd, scenario: "方案调整", version: coachingCase.version + 1 }).where(eq(coachingCases.id, input.caseId));
+    await syncCoachingScenariosTx(tx, { caseId: input.caseId, orgId: coachingCase.orgId, actorUserId: me.id,
+      scenarios: input.scenarios, reason: input.scenarioChangeReason });
+    return saveCoachingPlanTx(tx, me, coachingCase, { caseId: input.caseId, level: "term", title: "GROW·学期方案", content: input.planSummary,
+      startDate: input.serviceStart, endDate: input.serviceEnd, confirmed: true });
+  });
 }
 
 export async function addCoachingTask(db: Db, me: StaffUser, input: { caseId: number; planId?: number | null; title: string; detail?: string; dueDate: string }) {

@@ -178,7 +178,26 @@ export const TECHNIQUE_LESSONS = [
 ] as const;
 
 export type CourseKey = (typeof COURSE_CATALOG)[number]["key"];
-export const COACHING_SCENARIOS = ["新生接手", "方案调整", "结课复盘", "回访"] as const;
+export const COACHING_SCENARIO_KEYS = ["A", "B", "C", "D"] as const;
+export type CoachingScenarioKey = (typeof COACHING_SCENARIO_KEYS)[number];
+export const COACHING_SCENARIOS = [
+  { key: "A", name: "晚自习型", shortName: "晚自习", description: "签到、任务对齐、巡场检查、日总结与当日家长反馈" },
+  { key: "B", name: "周末型", shortName: "周末", description: "逐科复盘、查缺补漏、费曼输出与下周计划" },
+  { key: "C", name: "全日制型", shortName: "全日制", description: "三时段执行、出勤行踪、值班交接与补课衔接" },
+  { key: "D", name: "假期集训型", shortName: "假期集训", description: "假期总计划、每日打卡、结营成果与开学交接" },
+] as const satisfies readonly { key: CoachingScenarioKey; name: string; shortName: string; description: string }[];
+
+/** 同一学员可叠加 A＋B 等场景；统一排序，避免重复或无效值进入主档。 */
+export function normalizeCoachingScenarios(values: readonly string[]): CoachingScenarioKey[] {
+  if (values.some((value) => !(COACHING_SCENARIO_KEYS as readonly string[]).includes(value))) throw new Error("陪跑服务场景无效");
+  const selected = new Set(values);
+  return COACHING_SCENARIO_KEYS.filter((key) => selected.has(key));
+}
+
+export function coachingScenarioLabel(key: string): string {
+  const item = COACHING_SCENARIOS.find((scenario) => scenario.key === key);
+  return item ? `${item.key} ${item.name}` : key;
+}
 export const HANDOFF_TYPES = ["H1", "H2", "H3", "H4", "H5"] as const;
 
 export function phaseForVisit(serviceStart: string, visitAt: Date): "early" | "late" {

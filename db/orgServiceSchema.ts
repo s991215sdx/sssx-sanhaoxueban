@@ -68,6 +68,14 @@ export const coachingCases = mysqlTable("coaching_cases", {
   createdAt: createdAt(), updatedAt: updatedAt(),
 });
 
+export const coachingCaseScenarios = mysqlTable("coaching_case_scenarios", {
+  id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), orgId: orgId(),
+  scenario: varchar("scenario", { length: 8 }).notNull(), activeKey: varchar("active_key", { length: 64 }),
+  startedAt: timestamp("started_at").notNull().defaultNow().$defaultFn(() => new Date()), endedAt: timestamp("ended_at"),
+  createdBy: userId("created_by"), endedBy: bigint("ended_by", { mode: "number", unsigned: true }),
+  changeReason: varchar("change_reason", { length: 500 }).notNull().default(""), createdAt: createdAt(),
+});
+
 export const coachingPlans = mysqlTable("coaching_plans", {
   id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), parentId: bigint("parent_id", { mode: "number", unsigned: true }),
   level: varchar("level", { length: 16 }).notNull(), title: varchar("title", { length: 160 }).notNull(), content: text("content").notNull(),

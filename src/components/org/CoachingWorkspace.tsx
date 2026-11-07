@@ -6,6 +6,7 @@ import { saveCoachingFile } from "@/lib/coachingDownload";
 import GrowEditor from "./GrowEditor";
 import CoachingSessions from "./CoachingSessions";
 import type { CoachingDetail } from "./coachingTypes";
+import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
 
 const STATUS: Record<string, string> = { active: "服务中", paused: "已暂停", closed: "已结课", archived: "已归档" };
 const LEVEL: Record<string, string> = { term: "学期", month: "月", week: "周", day: "日" };
@@ -18,24 +19,35 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
   const { data: students = [] } = trpc.coach.myStudents.useQuery();
   const [caseId, setCaseId] = useState(initialCaseId ?? 0);
   const [newStudentId, setNewStudentId] = useState(0);
+  const [scenarioFilter, setScenarioFilter] = useState<"all" | CoachingScenarioKey>("all");
   const [tab, setTab] = useState<"plan" | "sessions" | "review" | "family">("plan");
+  const filteredCases = useMemo(() => scenarioFilter === "all" ? cases : cases.filter((row) => row.serviceScenarios.includes(scenarioFilter)), [cases, scenarioFilter]);
+  const scenarioPersonTimes = useMemo(() => cases.reduce((sum, row) => sum + row.serviceScenarios.length, 0), [cases]);
   useEffect(() => { if (initialCaseId) { setCaseId(initialCaseId); setNewStudentId(0); } }, [initialCaseId]);
-  useEffect(() => { if (!caseId && !newStudentId && cases[0]) setCaseId(cases[0].coachingCase.id); }, [caseId, newStudentId, cases]);
+  useEffect(() => {
+    if (newStudentId) return;
+    if (!filteredCases.length) { if (caseId) setCaseId(0); return; }
+    if (!caseId || !filteredCases.some((row) => row.coachingCase.id === caseId)) setCaseId(filteredCases[0].coachingCase.id);
+  }, [caseId, newStudentId, filteredCases]);
   const { data: detail, isLoading: detailLoading, error } = trpc.coaching.detail.useQuery({ caseId }, { enabled: caseId > 0 });
-  const activeCase = cases.find((row) => row.coachingCase.id === caseId);
+  const activeCase = filteredCases.find((row) => row.coachingCase.id === caseId);
   const availableStudents = useMemo(() => students.filter((s) => !cases.some((c) => c.coachingCase.studentUserId === s.userId)), [students, cases]);
 
   return <div className="grid gap-4 xl:grid-cols-[250px_minmax(0,1fr)]">
     <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start">
       <section className="rounded-2xl border border-border bg-white p-3 shadow-sm">
         <h2 className="flex items-center gap-1.5 px-1 text-[14px] font-bold text-olive"><Users size={15} />陪跑主档</h2>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-center"><div className="rounded-lg bg-mint-pale/45 p-2"><b className="block text-[18px] text-olive">{cases.length}</b><span className="text-[10px] text-olive-mute">去重学员</span></div><div className="rounded-lg bg-mint-pale/45 p-2"><b className="block text-[18px] text-olive">{scenarioPersonTimes}</b><span className="text-[10px] text-olive-mute">场景人次</span></div></div>
+        <label className="mt-3 block text-[11px] font-semibold text-olive">按服务场景筛选<select aria-label="按服务场景筛选" value={scenarioFilter} onChange={(e) => setScenarioFilter(e.target.value as typeof scenarioFilter)} className="mt-1 w-full rounded-lg border border-border bg-cream px-2.5 py-2 text-[12px] font-normal text-olive"><option value="all">全部场景 · {cases.length} 人</option>{COACHING_SCENARIOS.map((item) => <option key={item.key} value={item.key}>{item.key} {item.name} · {cases.filter((row) => row.serviceScenarios.includes(item.key)).length} 人</option>)}</select></label>
         <div className="mt-2 max-h-[420px] space-y-1 overflow-y-auto">
-          {cases.map((row) => <button type="button" key={row.coachingCase.id} onClick={() => { setCaseId(row.coachingCase.id); setNewStudentId(0); }} className={`w-full rounded-xl border px-3 py-2.5 text-left ${caseId === row.coachingCase.id ? "border-[#0C7064]/30 bg-mint-pale/55" : "border-transparent hover:bg-cream"}`}>
+          {filteredCases.map((row) => <button type="button" key={row.coachingCase.id} onClick={() => { setCaseId(row.coachingCase.id); setNewStudentId(0); }} className={`w-full rounded-xl border px-3 py-2.5 text-left ${caseId === row.coachingCase.id ? "border-[#0C7064]/30 bg-mint-pale/55" : "border-transparent hover:bg-cream"}`}>
             <span className="flex items-center gap-2"><b className="min-w-0 flex-1 truncate text-[12.5px] text-olive">{row.studentName}</b><span className="text-[10px] text-olive-mute">{STATUS[row.coachingCase.status] ?? row.coachingCase.status}</span></span>
-            <span className="mt-0.5 block text-[10.5px] text-olive-mute">{row.grade || "年级待补全"} · {row.coachingCase.scenario}</span>
+            <span className="mt-0.5 block text-[10.5px] text-olive-mute">{row.grade || "年级待补全"}</span>
+            <span className="mt-1.5 flex flex-wrap gap-1">{row.serviceScenarios.length ? row.serviceScenarios.map((key) => <span key={key} className="rounded-full bg-mint-pale px-1.5 py-0.5 text-[9.5px] text-[#0C7064]">{coachingScenarioLabel(key)}</span>) : <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9.5px] text-amber-800">待设置场景</span>}</span>
           </button>)}
           {isLoading && <p className="p-4 text-center text-[12px] text-olive-mute">正在读取主档…</p>}
           {!isLoading && !cases.length && <p className="p-4 text-center text-[12px] text-olive-mute">还没有陪跑主档。</p>}
+          {!isLoading && cases.length > 0 && !filteredCases.length && <p className="p-4 text-center text-[12px] text-olive-mute">当前场景没有服务中的主档。</p>}
         </div>
       </section>
       <section className="rounded-2xl border border-[#0C7064]/15 bg-mint-pale/30 p-3">
@@ -48,6 +60,7 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
       {newStudentId > 0 ? <GrowEditor key={newStudentId} studentUserId={newStudentId} onOpenCoaching={(id) => { setCaseId(id); setNewStudentId(0); }} /> : activeCase ? <>
         <header className="rounded-2xl bg-[#0C7064] px-5 py-4 text-white shadow-sm">
           <div className="flex flex-wrap items-center gap-3"><div className="min-w-0 flex-1"><div className="text-[10px] tracking-[.16em] text-white/60">独立陪跑 · 学员 {activeCase.coachingCase.studentUserId}</div><h2 className="mt-1 text-[20px] font-bold">{activeCase.studentName}的学业生涯陪跑</h2><p className="mt-1 text-[11.5px] text-white/75">{activeCase.coachingCase.serviceStart} 至 {activeCase.coachingCase.serviceEnd} · {STATUS[activeCase.coachingCase.status]}</p></div><span className="rounded-full bg-white/12 px-3 py-1.5 text-[11px]">主档 V{activeCase.coachingCase.version}</span></div>
+          <div className="mt-2 flex flex-wrap gap-1.5">{activeCase.serviceScenarios.length ? activeCase.serviceScenarios.map((key) => <span key={key} className="rounded-full bg-white/12 px-2.5 py-1 text-[10.5px] text-white/90">{coachingScenarioLabel(key)}</span>) : <span className="rounded-full bg-amber-100/20 px-2.5 py-1 text-[10.5px] text-amber-50">待设置服务场景</span>}</div>
           <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-white/10 p-1 sm:grid-cols-4">{([{ key: "plan", label: "目标与计划", icon: ClipboardCheck }, { key: "sessions", label: "到店与五课", icon: BookOpenCheck }, { key: "review", label: "复盘与交接", icon: ArrowRightLeft }, { key: "family", label: "家长反馈", icon: MessageSquareText }] as const).map((item) => <button type="button" key={item.key} onClick={() => setTab(item.key)} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11.5px] font-semibold ${tab === item.key ? "bg-white text-[#0C7064] shadow" : "text-white/80 hover:bg-white/10"}`}><item.icon size={14} />{item.label}</button>)}</div>
         </header>
         {detailLoading && <div className="rounded-2xl border border-border bg-white p-8 text-center text-[13px] text-olive-mute">正在读取计划、课堂与反馈…</div>}
@@ -56,7 +69,7 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
         {detail && tab === "sessions" && <CoachingSessions data={detail} />}
         {detail && tab === "review" && <ReviewWorkspace data={detail} />}
         {detail && tab === "family" && <GuardianPanel data={detail} />}
-      </> : !isLoading && <div className="rounded-2xl border border-dashed border-border bg-white/50 p-12 text-center"><Users className="mx-auto text-olive-mute" size={30} /><h2 className="mt-3 text-[16px] font-bold text-olive">选择主档，或先为学员建立 GROW 方案</h2><p className="mt-2 text-[12px] text-olive-mute">课堂、督学、验收、复盘和家校反馈都会归入同一个学员主档。</p></div>}
+      </> : !isLoading && <div className="rounded-2xl border border-dashed border-border bg-white/50 p-12 text-center"><Users className="mx-auto text-olive-mute" size={30} /><h2 className="mt-3 text-[16px] font-bold text-olive">{cases.length && !filteredCases.length ? "当前筛选没有对应主档" : "选择主档，或先为学员建立 GROW 方案"}</h2><p className="mt-2 text-[12px] text-olive-mute">课堂、督学、验收、复盘和家校反馈都会归入同一个学员主档。</p></div>}
     </div>
   </div>;
 }
