@@ -3,7 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, Coins, Send, WalletCards } from "lucide-re
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 
-const TYPE: Record<string, string> = { initial_grant: "平台初始化", platform_adjustment: "平台调整", allocation_out: "分配给伴学师", allocation_in: "机构分配入账", assessment_debit: "测评扣费", assessment_refund: "取消退款" };
+const TYPE: Record<string, string> = { initial_grant: "平台初始化", platform_adjustment: "平台调整", allocation_out: "分配给伴学师", allocation_in: "机构分配入账", reclaim_out: "机构回收出账", reclaim_in: "机构回收入账", assessment_debit: "测评扣费", assessment_refund: "取消／过期退款" };
 
 export default function OrgPointsPanel() {
   const { user } = useAuth();
@@ -12,8 +12,11 @@ export default function OrgPointsPanel() {
   const { data: tutors = [] } = trpc.admin.tutors.useQuery({ orgId: user?.orgId });
   const [tutorUserId, setTutorUserId] = useState(0);
   const [amount, setAmount] = useState(6000);
+  const [reclaimAmount, setReclaimAmount] = useState(1000);
+  const [reclaimReason, setReclaimReason] = useState("");
   const wallets = useMemo(() => new Map((points?.accounts ?? []).map((a) => [a.ownerUserId, a])), [points]);
   const allocate = trpc.orgService.allocatePoints.useMutation({ onSuccess: async () => { await utils.orgService.points.invalidate(); } });
+  const reclaim = trpc.orgService.reclaimPoints.useMutation({ onSuccess: async () => { setReclaimReason(""); await utils.orgService.points.invalidate(); } });
   const recipients = [
     ...(user?.role === "admin" ? [{ id: user.id, name: `${user.name ?? "我"}（我 · 管理员）` }] : []),
     ...tutors.filter((t) => t.id !== user?.id),
@@ -39,6 +42,14 @@ export default function OrgPointsPanel() {
           <button type="button" disabled={allocate.isPending || !tutorUserId || !Number.isSafeInteger(amount) || amount <= 0 || amount > (points?.poolBalance ?? 0)} onClick={() => allocate.mutate({ tutorUserId, amount })} className="min-h-11 w-full rounded-xl bg-[#0C7064] py-2.5 text-[13px] font-semibold text-white hover:bg-[#095C53] disabled:opacity-40">{allocate.isPending ? "正在分配…" : "确认分配"}</button>
           {allocate.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-700">{allocate.error.message}</p>}
           {allocate.isSuccess && <p className="text-[12px] text-[#2F7A41]">已分配，双方钱包与流水已同步更新。</p>}
+        </div>
+        <div className="mt-5 space-y-3 border-t border-border pt-4">
+          <div><h3 className="text-[13px] font-bold text-olive">回收未使用个人积分</h3><p className="mt-1 text-[10.5px] leading-relaxed text-olive-mute">只退回个人钱包现有余额，已消耗的不冲销。该人员有服务中或暂停的陪跑主档时，必须先完成改派。</p></div>
+          <label className="block text-[12px] font-semibold text-olive">回收数量<input type="number" min={1} max={Math.max(1, wallets.get(tutorUserId)?.balance ?? 0)} step={100} value={reclaimAmount} onChange={(e) => setReclaimAmount(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-border bg-cream px-3 py-2.5 font-normal outline-none focus:border-[#0C7064]" /></label>
+          <label className="block text-[12px] font-semibold text-olive">回收原因<textarea value={reclaimReason} onChange={(e) => setReclaimReason(e.target.value)} rows={2} maxLength={500} placeholder="例：人员服务已改派，回收剩余未用额度" className="mt-1 w-full resize-y rounded-lg border border-border bg-cream px-3 py-2 font-normal outline-none focus:border-[#0C7064]" /></label>
+          <button type="button" disabled={reclaim.isPending || !tutorUserId || !Number.isSafeInteger(reclaimAmount) || reclaimAmount <= 0 || reclaimAmount > (wallets.get(tutorUserId)?.balance ?? 0) || reclaimReason.trim().length < 2} onClick={() => reclaim.mutate({ tutorUserId, amount: reclaimAmount, reason: reclaimReason })} className="min-h-11 w-full rounded-xl border border-[#0C7064]/25 bg-mint-pale/40 py-2.5 text-[13px] font-semibold text-[#0C7064] hover:bg-mint-pale disabled:opacity-40">{reclaim.isPending ? "正在回收…" : `从所选人员回收至机构池（可回收 ${(wallets.get(tutorUserId)?.balance ?? 0).toLocaleString()}）`}</button>
+          {reclaim.error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-700">{reclaim.error.message}</p>}
+          {reclaim.isSuccess && <p className="text-[12px] text-[#2F7A41]">已回收，个人出账与机构池入账双流水已同步生成。</p>}
         </div>
       </div>
 

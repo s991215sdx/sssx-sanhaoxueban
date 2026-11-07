@@ -5,8 +5,9 @@ import { getDb } from "./queries/connection";
 import { isPlatformAdmin } from "./tenant";
 import { ASSESSMENT_PACKAGES, COURSE_CATALOG, DEFAULT_ORG_POINTS, fullCoverageCredits, recommendedOrgPoints, selectionFor } from "@contracts/orgService";
 import { INVITE_ASSESS_KINDS } from "@contracts/invite";
-import { adjustOrgPoints, allocateOrgPoints, initializeOrgPoints, pointOverview, walletBalance } from "./orgPoints";
-import { cancelAssessmentItem, createAssessmentActivity, listAssessmentActivities, myAssessmentAssignments, startAssessmentAssignment } from "./assessmentActivities";
+import { adjustOrgPoints, allocateOrgPoints, initializeOrgPoints, pointOverview, reclaimOrgPoints, walletBalance } from "./orgPoints";
+import { cancelAssessmentItem, cancelAssessmentStudent, createAssessmentActivity, listAssessmentActivities, myAssessmentAssignments, startAssessmentAssignment } from "./assessmentActivities";
+import { listAssessmentReports } from "./assessmentReports";
 import { requireOrgStaff } from "./orgAccess";
 
 function platformOrg(ctx: { user: { role: "tutor" | "user" | "admin" | "jiaowu"; orgId: number | null } }, orgId: number): number {
@@ -47,16 +48,30 @@ export const orgServiceRouter = createRouter({
       return allocateOrgPoints(getDb(), { orgId: ctx.user.orgId, actorUserId: ctx.user.id, ...input });
     }),
 
+  reclaimPoints: adminQuery.input(z.object({ tutorUserId: z.number().int().positive(), amount: z.number().int().positive().max(10_000_000), reason: z.string().trim().min(2).max(500) }))
+    .mutation(({ ctx, input }) => {
+      if (ctx.user.orgId == null) throw new TRPCError({ code: "FORBIDDEN", message: "请由本机构管理员回收伴学师积分" });
+      return reclaimOrgPoints(getDb(), { orgId: ctx.user.orgId, actorUserId: ctx.user.id, ...input });
+    }),
+
   createActivity: tutorQuery.input(z.object({
     requestKey: z.string().min(12).max(64), studentIds: z.array(z.number().int().positive()).min(1).max(50),
     selections: z.array(z.string().min(1).max(48)).min(1).max(20), title: z.string().trim().min(1).max(128),
     note: z.string().max(500).optional(), dueAt: z.date().nullable().optional(),
+    expiryPolicy: z.enum(["auto_refund", "manual_review"]).default("auto_refund"), retestOfAssignmentId: z.number().int().positive().nullable().optional(),
   })).mutation(({ ctx, input }) => createAssessmentActivity(getDb(), ctx.user, input)),
 
   activities: tutorQuery.query(({ ctx }) => listAssessmentActivities(getDb(), ctx.user)),
 
+  reports: tutorQuery.input(z.object({ studentUserId: z.number().int().positive().optional(), activityId: z.number().int().positive().optional(),
+    kind: z.string().max(32).optional(), from: z.date().optional(), to: z.date().optional(), query: z.string().trim().max(100).optional() }))
+    .query(({ ctx, input }) => listAssessmentReports(getDb(), ctx.user, input)),
+
   cancelItem: tutorQuery.input(z.object({ itemId: z.number().int().positive(), reason: z.string().trim().min(2).max(500) }))
     .mutation(({ ctx, input }) => cancelAssessmentItem(getDb(), ctx.user, input.itemId, input.reason)),
+
+  cancelStudent: tutorQuery.input(z.object({ itemId: z.number().int().positive(), studentUserId: z.number().int().positive(), reason: z.string().trim().min(2).max(500) }))
+    .mutation(({ ctx, input }) => cancelAssessmentStudent(getDb(), ctx.user, input.itemId, input.studentUserId, input.reason)),
 
   myAssignments: authedQuery.query(({ ctx }) => {
     if (ctx.user.role !== "user") throw new TRPCError({ code: "FORBIDDEN", message: "请以学员身份查看测评任务" });

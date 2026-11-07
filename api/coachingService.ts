@@ -1,15 +1,16 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import {
   assessmentResults, coachingCases, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
-  coachingPlans, coachingReviews, coachingTasks, courseCatalog, courseParticipants, courseSessions, courseSessionUnits,
+  coachingPlans, coachingReviews, coachingTasks, coachingTaskVerifications, courseCatalog, courseParticipants, courseSessions, courseSessionUnits,
   studentProfile, studentTutor, studySupervisionRecords, users,
 } from "@db/schema";
 import { COURSE_CATALOG, HANDOFF_TYPES, TECHNIQUE_LESSONS, phaseForVisit, validateSessionPhase } from "@contracts/orgService";
 import type { getDb } from "./queries/connection";
 import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
+import { assertAssessmentReportAccess, hasAssessmentReportAccess } from "./assessmentReports";
 
 type Db = ReturnType<typeof getDb>;
 type CaseRow = typeof coachingCases.$inferSelect;
@@ -105,10 +106,14 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
       .leftJoin(users, eq(courseParticipants.studentUserId, users.id))
       .where(and(inArray(courseParticipants.sessionId, sessionIds), eq(courseParticipants.studentUserId, coachingCase.studentUserId))),
   ]) : [[], []];
+  const [reportAllowed, verificationHistory] = await Promise.all([
+    hasAssessmentReportAccess(db, me, coachingCase.studentUserId),
+    db.select().from(coachingTaskVerifications).where(eq(coachingTaskVerifications.caseId, caseId)).orderBy(asc(coachingTaskVerifications.taskId), desc(coachingTaskVerifications.version)),
+  ]);
   return { coachingCase, plans, tasks, reviews, handoffs, events, supervisions,
     sessions: sessions.map((session) => ({ ...session, units: units.filter((u) => u.sessionId === session.id),
       participants: participants.filter((p) => p.participant.sessionId === session.id) })),
-    deliverables, guardians, results, catalog };
+    deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog };
 }
 
 export async function createCoachingCase(db: Db, me: StaffUser, input: { studentUserId: number; scenario: string; goal: string; currentSituation: string; planSummary: string; serviceStart: string; serviceEnd: string }) {
@@ -139,6 +144,7 @@ export async function saveCoachingPlan(db: Db, me: StaffUser, input: { caseId: n
   if (input.sourceResultId) {
     const [result] = await db.select({ userId: assessmentResults.userId }).from(assessmentResults).where(eq(assessmentResults.id, input.sourceResultId)).limit(1);
     if (result?.userId !== coachingCase.studentUserId) throw new TRPCError({ code: "FORBIDDEN", message: "不能关联其他学员的测评结果" });
+    await assertAssessmentReportAccess(db, me, coachingCase.studentUserId);
   }
   return db.transaction(async (tx) => {
     const previous = await tx.select({ version: coachingPlans.version }).from(coachingPlans)
@@ -174,13 +180,32 @@ export async function addCoachingTask(db: Db, me: StaffUser, input: { caseId: nu
 }
 
 export async function verifyCoachingTask(db: Db, me: StaffUser, input: { taskId: number; evidence: string; result: string }) {
-  const [task] = await db.select().from(coachingTasks).where(eq(coachingTasks.id, input.taskId)).limit(1);
-  if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "行动任务不存在" });
-  await assertCaseAccess(db, me, task.caseId);
-  await db.update(coachingTasks).set({ status: "verified", evidence: required(input.evidence, "请填写行动证据，签到不等于掌握"),
-    result: required(input.result, "请填写验收结果"), verifierId: me.id, completedAt: new Date() }).where(eq(coachingTasks.id, task.id));
-  await db.insert(coachingEvents).values({ caseId: task.caseId, actorUserId: me.id, type: "task_verified", content: `${task.title}：${input.result}` });
-  return { ok: true as const };
+  const [existing] = await db.select().from(coachingTasks).where(eq(coachingTasks.id, input.taskId)).limit(1);
+  if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "行动任务不存在" });
+  await assertCaseAccess(db, me, existing.caseId);
+  const evidence = required(input.evidence, "请填写行动证据，签到不等于掌握");
+  const result = required(input.result, "请填写验收结果");
+  return db.transaction(async (tx) => {
+    const [task] = await tx.select().from(coachingTasks).where(eq(coachingTasks.id, input.taskId)).limit(1).for("update");
+    if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "行动任务不存在" });
+    const history = await tx.select().from(coachingTaskVerifications).where(eq(coachingTaskVerifications.taskId, task.id)).orderBy(desc(coachingTaskVerifications.version)).for("update");
+    let previous = history[0] ?? null;
+    /* 兼容 0046 已验收但迁移补录尚未可见的数据：先保存原始版本，再新增更正。 */
+    if (!previous && task.status === "verified") {
+      const [{ id }] = await tx.insert(coachingTaskVerifications).values({ taskId: task.id, caseId: task.caseId, version: 1,
+        evidence: task.evidence, result: task.result, verifierId: task.verifierId, createdAt: task.completedAt ?? task.updatedAt }).$returningId();
+      previous = { id, taskId: task.id, caseId: task.caseId, version: 1, previousId: null, evidence: task.evidence,
+        result: task.result, verifierId: task.verifierId, createdAt: task.completedAt ?? task.updatedAt };
+    }
+    const version = (previous?.version ?? 0) + 1;
+    const [{ id }] = await tx.insert(coachingTaskVerifications).values({ taskId: task.id, caseId: task.caseId, version,
+      previousId: previous?.id ?? null, evidence, result, verifierId: me.id }).$returningId();
+    /* 首次验收兼容旧字段；后续只追加版本，绝不覆盖首次证据和结果。 */
+    if (task.status !== "verified") await tx.update(coachingTasks).set({ status: "verified", evidence, result, verifierId: me.id, completedAt: new Date() })
+      .where(and(eq(coachingTasks.id, task.id), ne(coachingTasks.status, "verified")));
+    await event(tx, task.caseId, me.id, "task_verified", `${task.title} V${version}：${result}`);
+    return { ok: true as const, id, version };
+  });
 }
 
 export async function addCoachingReview(db: Db, me: StaffUser, input: { caseId: number; period: "day" | "week" | "month" | "term"; periodKey: string; content: string; nextActions: string }) {

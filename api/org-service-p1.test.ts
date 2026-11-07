@@ -38,12 +38,13 @@ describe("机构测评计价与课程节奏", () => {
     expect(recommendedOrgPoints(200)).toBe(60_000);
   });
 
-  it("MBTI、DISC、家长 DISC 免费，选科组合免费，综合包 199", () => {
+  it("MBTI、DISC、家长 DISC 免费，选科组合按两个单项合计 20，综合包 199", () => {
     expect(assessmentCredits("mbti")).toBe(0);
     expect(assessmentCredits("disc")).toBe(0);
     expect(assessmentCredits("discparent")).toBe(0);
     expect(assessmentCredits("e3")).toBe(10);
-    expect(selectionFor("xuanke_free")?.price).toBe(0);
+    expect(selectionFor("xuanke_free")?.price).toBe(20);
+    expect(selectionFor("xuanke_free")?.description).toContain("10 积分＋霍兰德 10 积分");
     const comprehensive = ASSESSMENT_PACKAGES.find((item) => item.key === "learning_comprehensive");
     expect(comprehensive?.price).toBe(199);
     expect(new Set(comprehensive?.kinds).size).toBe(COMPREHENSIVE_KINDS.length);

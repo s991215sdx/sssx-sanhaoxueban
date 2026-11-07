@@ -317,6 +317,13 @@
       "when": 1793952000000,
       "tag": "0046_org_service_p1",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "5",
+      "when": 1794038400000,
+      "tag": "0047_assessment_closure",
+      "breakpoints": true
     }
   ]
 }

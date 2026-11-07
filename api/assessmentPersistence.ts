@@ -76,12 +76,13 @@ export async function persistAssessmentResult(
         if (hit.assignment.studentUserId !== input.userId || hit.assignment.kind !== input.outcome.kind || !hit.item.includedKinds.includes(input.outcome.kind)) {
           throw new TRPCError({ code: "FORBIDDEN", message: "这份答卷不属于该测评任务" });
         }
-        if (hit.activity.status !== "open") throw new TRPCError({ code: "CONFLICT", message: "该测评活动已取消，请让伴学师重新发起" });
+        if (hit.activity.status !== "open") throw new TRPCError({ code: "CONFLICT", message: "该测评活动已取消或过期，请让伴学师重新发起" });
+        if (hit.activity.dueAt && hit.activity.dueAt.getTime() <= Date.now()) throw new TRPCError({ code: "CONFLICT", message: "该测评已超过完成期限，不能提交；请让伴学师处理到期任务" });
         if (hit.assignment.status === "completed" && hit.assignment.resultId) {
           const [old] = await tx.select().from(assessmentResults).where(eq(assessmentResults.id, hit.assignment.resultId)).limit(1);
           if (old) return { kind: old.kind, result: old.result, resultId: old.id, assignmentId: hit.assignment.id };
         }
-        if (["cancelled", "completed"].includes(hit.assignment.status)) throw new TRPCError({ code: "CONFLICT", message: "该测评任务已结束，请让伴学师重新发起" });
+        if (["cancelled", "completed", "expired"].includes(hit.assignment.status)) throw new TRPCError({ code: "CONFLICT", message: "该测评任务已结束，请让伴学师重新发起" });
       }
       const [student] = await tx.select({ orgId: users.orgId, edition: organizations.edition }).from(users)
         .leftJoin(organizations, eq(organizations.id, users.orgId)).where(eq(users.id, input.userId)).limit(1);
@@ -101,7 +102,8 @@ export async function persistAssessmentResult(
       const [{ id }] = await tx.insert(assessmentResults).values({ userId: input.userId, kind: input.outcome.kind,
         result: input.outcome.result, answers: input.answers as number[], submissionKey, assignmentId: hit?.assignment.id ?? null }).$returningId();
       if (hit) {
-        await tx.update(assessmentAssignments).set({ status: "completed", resultId: id, completedAt: new Date() }).where(eq(assessmentAssignments.id, hit.assignment.id));
+        await tx.update(assessmentAssignments).set({ status: "completed", resultId: id, completedAt: new Date() })
+          .where(and(eq(assessmentAssignments.id, hit.assignment.id), inArray(assessmentAssignments.status, ["pending", "in_progress"])));
       }
       return { ...input.outcome, resultId: id, assignmentId: hit?.assignment.id ?? null };
     });
