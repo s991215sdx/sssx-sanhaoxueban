@@ -95,7 +95,7 @@ describe("0048 场景周期迁移", () => {
     expect(migration).toContain("(`org_id`,`scenario`,`ended_at`)");
     expect(migration).not.toContain("INSERT INTO `coaching_case_scenarios`");
     const journal = JSON.parse(readFileSync("db/migrations/meta/_journal.json", "utf8")) as { entries: { idx: number; tag: string }[] };
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 48, tag: "0048_coaching_service_scenarios" });
+    expect(journal.entries.find((entry) => entry.idx === 48)).toMatchObject({ idx: 48, tag: "0048_coaching_service_scenarios" });
   });
 
   it("Drizzle 同时保留数据库默认值与应用显式时间", () => {

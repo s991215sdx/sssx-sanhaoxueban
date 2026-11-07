@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { saveCoachingFile } from "@/lib/coachingDownload";
 import GrowEditor from "./GrowEditor";
 import CoachingSessions from "./CoachingSessions";
+import CoachingCheckins from "./CoachingCheckins";
 import type { CoachingDetail } from "./coachingTypes";
 import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
 
@@ -135,7 +136,7 @@ function TaskCard({ data, task }: { data: CoachingDetail; task: CoachingDetail["
 }
 
 function ReviewWorkspace({ data }: { data: CoachingDetail }) {
-  return <div className="grid items-start gap-4 2xl:grid-cols-2"><div className="space-y-4"><ReviewPanel data={data} /><HandoffPanel data={data} /></div><div className="space-y-4"><StatusPanel data={data} /><Panel title="主档事件时间线" icon={<History size={16} />}><div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">{data.events.map((event) => <div key={event.id} className="border-l-2 border-[#0C7064]/20 pl-3 text-[11.5px]"><time className="text-[10px] text-olive-mute">{new Date(event.createdAt).toLocaleString("zh-CN")}</time><p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-olive-soft">{event.content}</p></div>)}</div></Panel></div></div>;
+  return <div className="space-y-4"><CoachingCheckins data={data} /><div className="grid items-start gap-4 2xl:grid-cols-2"><div className="space-y-4"><ReviewPanel data={data} /><HandoffPanel data={data} /></div><div className="space-y-4"><StatusPanel data={data} /><Panel title="主档事件时间线" icon={<History size={16} />}><div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">{data.events.map((event) => <div key={event.id} className="border-l-2 border-[#0C7064]/20 pl-3 text-[11.5px]"><time className="text-[10px] text-olive-mute">{new Date(event.createdAt).toLocaleString("zh-CN")}</time><p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-olive-soft">{event.content}</p></div>)}</div></Panel></div></div></div>;
 }
 function ReviewPanel({ data }: { data: CoachingDetail }) {
   const utils = trpc.useUtils(); const [period, setPeriod] = useState<"day" | "week" | "month" | "term">("week"); const [periodKey, setPeriodKey] = useState(today().slice(0, 7)); const [content, setContent] = useState(""); const [nextActions, setNextActions] = useState("");
