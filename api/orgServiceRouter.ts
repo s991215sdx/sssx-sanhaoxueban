@@ -22,6 +22,7 @@ export const orgServiceRouter = createRouter({
     fullCoverageCredits: fullCoverageCredits(),
     students: 200,
     recommendedPoints: recommendedOrgPoints(200),
+    defaultPoints: DEFAULT_ORG_POINTS,
   })),
 
   myWallet: tutorQuery.query(({ ctx }) => walletBalance(getDb(), requireOrgStaff(ctx.user), ctx.user.id)),

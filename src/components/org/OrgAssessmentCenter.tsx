@@ -117,7 +117,7 @@ export default function OrgAssessmentCenter({ onOpenReport, onOpenCoaching }: {
           </div>
           {create.isSuccess && <p className="mt-2 text-right text-[11px] text-[#2F7A41]">已发起，学员端已出现对应任务。</p>}
         </div>
-        <div className="rounded-xl border border-[#0C7064]/15 bg-mint-pale/35 px-4 py-3 text-[11.5px] leading-relaxed text-olive-soft"><CircleDollarSign size={15} className="mr-1 inline text-[#0C7064]" />完整理论覆盖每人 <b>{catalog?.fullCoverageCredits ?? 299}</b> 积分；200 人共 {(299 * 200).toLocaleString()}，默认取整发放 <b>{(catalog?.recommendedPoints ?? 60000).toLocaleString()}</b>。测评只扣伴学师个人钱包，机构池只在分配时减少，不会双扣。</div>
+        <div className="rounded-xl border border-[#0C7064]/15 bg-mint-pale/35 px-4 py-3 text-[11.5px] leading-relaxed text-olive-soft"><CircleDollarSign size={15} className="mr-1 inline text-[#0C7064]" />新机构默认首次发放 <b>{(catalog?.defaultPoints ?? 10000).toLocaleString()}</b> 积分，已有机构余额不变，超管可调整。完整理论覆盖每人 <b>{catalog?.fullCoverageCredits ?? 299}</b> 积分；200 人共 <b>{((catalog?.fullCoverageCredits ?? 299) * 200).toLocaleString()}</b>，取整测算参考 {(catalog?.recommendedPoints ?? 60000).toLocaleString()}。测评只扣伴学师个人钱包，机构池只在分配时减少，不会双扣。</div>
       </div>
 
       <div className="min-w-0">

@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { desc, eq, or, sql } from "drizzle-orm";
 import { INVITE_CHANNEL_KINDS, INVITE_ASSESS_KINDS, normalizeInviteCode, normalizeReportKinds, normalizeAssessKinds } from "@contracts/invite";
-import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
-import { inviteChannels, inviteRegistrations, organizations, studentProfile, studentTutor, users } from "@db/schema";
+import { inviteChannels, inviteRegistrations, organizations, users } from "@db/schema";
+import { createInviteRegistration, duplicateInviteEntry, type InviteRegistrationChannel } from "./inviteRegistration";
 import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { hashPassword, setSessionCookie } from "./auth-router";
@@ -23,6 +23,15 @@ function newInviteCode(): string {
 
 function badRequest(message: string): never {
   throw new TRPCError({ code: "BAD_REQUEST", message });
+}
+
+/** 学科四维置顶，多元智能五项保持选做；计价另按 expandAssessKinds 的实际开放范围计算。 */
+function assessmentQueueFor(ch: Pick<InviteRegistrationChannel, "assessmentAccess" | "assessmentKinds">): string[] {
+  const rawKinds = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
+  const assessQueue = rawKinds.includes("all")
+    ? ["subject4d", ...INVITE_ASSESS_KINDS.map((k) => k.key).filter((k) => k !== "multi5" && k !== "subject4d")]
+    : ["subject4d", ...rawKinds.filter((k) => k !== "multi5" && k !== "subject4d")];
+  return assessQueue;
 }
 
 /** v82：校验当前用户能否修改该渠道（伴学师只能动自己的码，机构管理员限本机构，平台超管全部）。 */
@@ -212,18 +221,35 @@ export const inviteRouter = createRouter({
           ? undefined /* 平台超管 god mode：全部渠道 */
           : eq(inviteChannels.orgId, ctx.user.orgId)
         : or(eq(inviteChannels.tutorId, ctx.user.id), eq(inviteChannels.createdBy, ctx.user.id));
-    const [channels, counts, recent] = await Promise.all([
-      db.select().from(inviteChannels).where(where).orderBy(desc(inviteChannels.createdAt)),
+    const [channels, counts, recent, currentOrg] = await Promise.all([
+      db.select({ channel: inviteChannels, edition: organizations.edition }).from(inviteChannels)
+        .leftJoin(organizations, eq(organizations.id, inviteChannels.orgId)).where(where).orderBy(desc(inviteChannels.createdAt)),
       db
         .select({ channelId: inviteRegistrations.channelId, c: sql<number>`count(*)` })
         .from(inviteRegistrations)
         .groupBy(inviteRegistrations.channelId),
       db.select().from(inviteRegistrations).orderBy(desc(inviteRegistrations.createdAt)).limit(50),
+      ctx.user.orgId == null
+        ? Promise.resolve(null)
+        : db.select({ edition: organizations.edition }).from(organizations).where(eq(organizations.id, ctx.user.orgId)).limit(1).then((rows) => rows[0] ?? null),
     ]);
+    const payerIds = [...new Set(channels.map((row) => row.channel.tutorId ?? row.channel.createdBy))];
+    const payers = payerIds.length
+      ? await db.select({ id: users.id, orgId: users.orgId, role: users.role, deletedAt: users.deletedAt }).from(users)
+        .where(or(...payerIds.map((id) => eq(users.id, id))))
+      : [];
+    const payerMap = new Map(payers.map((payer) => [payer.id, payer]));
     const totalMap = new Map(counts.map((r) => [Number(r.channelId), Number(r.c)]));
-    const mine = new Set(channels.map((c) => c.id));
+    const mine = new Set(channels.map((row) => row.channel.id));
     return {
-      channels: channels.map((c) => ({ ...c, registrations: totalMap.get(c.id) ?? 0 })),
+      currentBillingEnabled: currentOrg?.edition === "org" && ["tutor", "admin"].includes(ctx.user.role),
+      channels: channels.map((row) => {
+        const c = row.channel;
+        const payer = payerMap.get(c.tutorId ?? c.createdBy);
+        const legacyPlatformChannel = c.tutorId == null && payer?.role === "admin" && payer.orgId == null;
+        const billingEnabled = row.edition === "org" && !legacyPlatformChannel && !!payer && !payer.deletedAt && payer.orgId === c.orgId && ["tutor", "admin"].includes(payer.role);
+        return { ...c, edition: row.edition, billingEnabled, legacyPlatformChannel, registrations: totalMap.get(c.id) ?? 0 };
+      }),
       /* 只看得到自己权限范围内渠道的注册记录（V59：管理员也限本机构，不看全局） */
       recent: recent.filter((r) => mine.has(r.channelId)),
     };
@@ -297,82 +323,37 @@ export const inviteRouter = createRouter({
           : undefined;
       const unionId = `campus:${ch.id}:${name}:${className}`;
 
-      /* 同姓名同班级 = 老用户回来：直接发会话（免密）。 */
+      /* 同姓名同班级 = 老用户回来：只更新登录时间并发出会话，不进入计费事务。 */
       const existing = (await db.select().from(users).where(eq(users.unionId, unionId)).limit(1))[0];
       if (existing) {
         if (existing.deletedAt) badRequest("这个账号已被删除，请联系老师恢复");
         await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, existing.id));
         const token = await signSessionToken({ unionId: existing.unionId, clientId: env.appId });
         setSessionCookie(ctx, token);
-        const rawKinds0 = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
-        const assessQueue0 = rawKinds0.includes("all")
-          ? ["subject4d", ...INVITE_ASSESS_KINDS.map((k) => k.key).filter((k) => k !== "multi5" && k !== "subject4d")]
-          : ["subject4d", ...rawKinds0.filter((k) => k !== "multi5" && k !== "subject4d")];
-        return { ok: true as const, isNewUser: false, name: existing.name ?? name, assessQueue: assessQueue0 };
+        return { ok: true as const, isNewUser: false, name: existing.name ?? name, assessQueue: assessmentQueueFor(ch) };
       }
 
-      /* 新注册：users.phone 留空（免手机号），密码随机不可登录，姓名即账号标识。 */
+      /* 新用户、档案、归属、渠道记录与扣费一次提交；唯一键竞争失败的整个事务回滚。 */
       const passwordHash = hashPassword(randomBytes(18).toString("hex"));
-      let userId = 0;
       try {
-        const [{ id }] = await db
-          .insert(users)
-          .values({ unionId, phone: null, passwordHash, name, orgId: ch.orgId ?? null, lastSignInAt: new Date() })
-          .$returningId();
-        userId = Number(id);
-      } catch {
-        /* 并发撞 unionId：按老用户处理，重查一次 */
+        await createInviteRegistration(db, ch, {
+          unionId, phone: "", passwordHash, name, campus: true, grade, className, school: org?.name ?? null,
+        });
+      } catch (error) {
+        if (!duplicateInviteEntry(error)) throw error;
+        /* 并发撞 unionId：胜者的提交已可见，按老用户回登，不再扣第二次。 */
         const again = (await db.select().from(users).where(eq(users.unionId, unionId)).limit(1))[0];
         if (!again) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "注册失败，请重试" });
+        if (again.deletedAt) badRequest("这个账号已被删除，请联系老师恢复");
+        await db.update(users).set({ lastSignInAt: new Date() }).where(eq(users.id, again.id));
         const token = await signSessionToken({ unionId: again.unionId, clientId: env.appId });
         setSessionCookie(ctx, token);
-        return { ok: true as const, isNewUser: false, name: again.name ?? name, assessQueue: [] as string[] };
+        return { ok: true as const, isNewUser: false, name: again.name ?? name, assessQueue: assessmentQueueFor(ch) };
       }
-      try {
-        await db.insert(studentProfile).values({
-          userId,
-          name,
-          grade,
-          className,
-          /* 学校随机构固定，写进档案供报告展示 */
-          school: org?.name ?? null,
-          enabledModules: DEFAULT_INVITE_MODULES,
-          tutorId: ch.tutorId ?? null,
-          /* 校园版：注册即视为完成引导（学校/年级已固定），报告中心直接开放 */
-          onboarded: true,
-          reportReleased: true,
-        });
-      } catch {
-        /* 档案建失败不阻断注册，welcome 引导兜底 */
-      }
-      /* 伴学师渠道：同步挂名 + 报告权限随该伴学师的「邀请学员默认可看报告」配置（与手机号注册同口径） */
-      if (ch.tutorId != null) {
-        try {
-          const tutor = (
-            await db.select({ inviteReportDefault: users.inviteReportDefault }).from(users).where(eq(users.id, ch.tutorId)).limit(1)
-          )[0];
-          await db.insert(studentTutor).values({
-            studentUserId: userId,
-            tutorUserId: ch.tutorId,
-            reportAccess: tutor?.inviteReportDefault ?? false,
-            reportAccessExpiresAt: null,
-          });
-        } catch {
-          /* 已有分配记录或迁移未就绪：保持现状 */
-        }
-      }
-      /* invite_registrations.phone 为历史 NOT NULL 列：校园注册无手机号，置空串占位；
-         该表同时是 myReportAccess / myAssessmentAccess（学员端报告与测评放行）的数据源，必须写入。 */
-      await db.insert(inviteRegistrations).values({ channelId: ch.id, channelCode: ch.code, phone: "", studentName: name, grade, userId });
 
       const token = await signSessionToken({ unionId, clientId: env.appId });
       setSessionCookie(ctx, token);
-      /* 测评队列与手机号注册同口径（学科四维置顶，多元智能五项选做不进队列） */
-      const rawKinds = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
-      const assessQueue = rawKinds.includes("all")
-        ? ["subject4d", ...INVITE_ASSESS_KINDS.map((k) => k.key).filter((k) => k !== "multi5" && k !== "subject4d")]
-        : ["subject4d", ...rawKinds.filter((k) => k !== "multi5" && k !== "subject4d")];
-      return { ok: true as const, isNewUser: true, name, assessQueue };
+      return { ok: true as const, isNewUser: true, name, assessQueue: assessmentQueueFor(ch) };
     }),
 
   /**
@@ -398,64 +379,21 @@ export const inviteRouter = createRouter({
       const existing = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
       if (existing[0]) badRequest("这个手机号已经注册过了，直接去登录页登录就好");
 
-      /* V51 极简注册：不采集家长称呼/学生姓名/年级，档案姓名用尾号占位，欢迎引导里再补全 */
+      /* V51 极简注册：档案姓名用尾号占位；注册及计费任一环节失败都不留下半条数据。 */
       const studentName = `同学${phone.slice(-4)}`;
       const passwordHash = hashPassword(password);
-      let userId = 0;
       try {
-        const [{ id }] = await db
-          .insert(users)
-          .values({ unionId: `phone:${phone}`, phone, passwordHash, name: studentName, orgId: ch.orgId ?? null, lastSignInAt: new Date() })
-          .$returningId();
-        userId = Number(id);
-      } catch {
-        badRequest("这个手机号已经注册过了，直接去登录页登录就好");
-      }
-      try {
-        await db.insert(studentProfile).values({
-          userId,
-          name: studentName,
-          enabledModules: DEFAULT_INVITE_MODULES,
-          tutorId: ch.tutorId ?? null,
-          onboarded: true,
+        await createInviteRegistration(db, ch, {
+          unionId: `phone:${phone}`, phone, passwordHash, name: studentName, campus: false,
         });
-      } catch {
-        /* 档案建失败不阻断注册，welcome 引导会兜底补齐 */
+      } catch (error) {
+        if (duplicateInviteEntry(error)) badRequest("这个手机号已经注册过了，直接去登录页登录就好");
+        throw error;
       }
-      /* v170：伴学师渠道的注册学员同步写多对多分配表，报告权限随该伴学师的「邀请学员默认可看报告」配置。
-         之后管理员仍可在分配/分配报告里对该学员单独覆盖。失败不阻断注册（容错：迁移未就绪时跳过）。 */
-      if (ch.tutorId != null) {
-        try {
-          const tutor = (
-            await db
-              .select({ inviteReportDefault: users.inviteReportDefault })
-              .from(users)
-              .where(eq(users.id, ch.tutorId))
-              .limit(1)
-          )[0];
-          await db.insert(studentTutor).values({
-            studentUserId: userId,
-            tutorUserId: ch.tutorId,
-            reportAccess: tutor?.inviteReportDefault ?? false,
-            reportAccessExpiresAt: null,
-          });
-        } catch {
-          /* 已有分配记录或迁移未就绪：保持现状 */
-        }
-      }
-      await db
-        .insert(inviteRegistrations)
-        .values({ channelId: ch.id, channelCode: ch.code, phone, userId });
 
       const token = await signSessionToken({ unionId: `phone:${phone}`, clientId: env.appId });
       setSessionCookie(ctx, token);
-      /* v82：渠道绑定了测评套餐时，随注册响应返回测评队列，客户端注册成功后一站式连做。
-         v176：注册后默认先做学科四维测评（置顶）；多元智能五项改为选做、不进注册队列（伴学师可后台推送）；
-         客户端落地时还会按已测结果过滤（如已做过霍兰德则不再重做）。 */
-      const rawKinds = ch.assessmentAccess ? (normalizeAssessKinds(ch.assessmentKinds) ?? []) : [];
-      const assessQueue = rawKinds.includes("all")
-        ? ["subject4d", ...INVITE_ASSESS_KINDS.map((k) => k.key).filter((k) => k !== "multi5" && k !== "subject4d")]
-        : ["subject4d", ...rawKinds.filter((k) => k !== "multi5" && k !== "subject4d")];
-      return { ok: true as const, name: studentName, assessQueue };
+      /* v176：学科四维置顶；多元智能五项选做、不进注册队列。 */
+      return { ok: true as const, name: studentName, assessQueue: assessmentQueueFor(ch) };
     }),
 });

@@ -439,11 +439,13 @@ export const organizations = mysqlTable("organizations", {
   edition: mysqlEnum("edition", ["school", "org"]).notNull().default("org"),
   /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40）；
    *  assess.kinds = 校园版测评中心开放给本校的测评（INVITE_ASSESS_KINDS key 数组；含 "all" 或缺省=全部开放）；
-   *  services = 功能权限包（ORG_SERVICES key → 布尔；缺省=全部开启，见 contracts/edition.ts） */
+   *  services = 功能权限包（ORG_SERVICES key → 布尔；缺省=全部开启，见 contracts/edition.ts）；
+   *  campusUserLimit = 校园版学员注册账户上限（仅 school；未配置=存量校园机构不限，不使用积分） */
   settings: json("settings").$type<{
     xuanke?: { scoreWeight?: number };
     assess?: { kinds?: string[] };
     services?: Partial<import("@contracts/edition").OrgServices>;
+    campusUserLimit?: number;
   }>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")

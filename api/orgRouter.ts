@@ -6,7 +6,7 @@ import { attempts, errorLogs, inviteChannels, moodEntries, organizations, previe
 import { hashPassword } from "./auth-router";
 import { isPlatformAdmin } from "./tenant";
 import { normalizeAssessKinds } from "@contracts/invite";
-import { normalizeEdition, normalizeServices } from "@contracts/edition";
+import { DEFAULT_CAMPUS_USER_LIMIT, isValidCampusUserLimit, normalizeEdition, normalizeServices } from "@contracts/edition";
 
 /**
  * V59 SaaS 总系统：平台超管（role=admin 且 orgId IS NULL）专用——
@@ -30,7 +30,7 @@ function requirePlatformAdmin(user: Pick<typeof users.$inferSelect, "role" | "or
 
 /** 机构行 + 各角色人数 + 管理员账号（用于列表展示与找回）。 */
 async function orgRow(db: ReturnType<typeof getDb>, org: typeof organizations.$inferSelect) {
-  const [studentRows, tutorRows, adminRows] = await Promise.all([
+  const [studentRows, tutorRows, adminRows, registeredRows] = await Promise.all([
     db
       .select({ c: sql<number>`count(*)` })
       .from(studentProfile)
@@ -38,6 +38,7 @@ async function orgRow(db: ReturnType<typeof getDb>, org: typeof organizations.$i
       .where(eq(users.orgId, org.id)),
     db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.orgId, org.id), eq(users.role, "tutor"))),
     db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.orgId, org.id), eq(users.role, "admin"))),
+    db.select({ c: sql<number>`count(*)` }).from(users).where(and(eq(users.orgId, org.id), eq(users.role, "user"))),
   ]);
   const admin = (
     await db
@@ -51,6 +52,7 @@ async function orgRow(db: ReturnType<typeof getDb>, org: typeof organizations.$i
     studentCount: Number((studentRows[0] as { c: number }).c ?? 0),
     tutorCount: Number((tutorRows[0] as { c: number }).c ?? 0),
     adminCount: Number((adminRows[0] as { c: number }).c ?? 0),
+    registeredAccountCount: Number((registeredRows[0] as { c: number }).c ?? 0),
     admin: admin ?? null,
   };
 }
@@ -127,6 +129,8 @@ export const orgRouter = createRouter({
           services?: unknown;
           /** v227：开放测评 kind 数组或 ["all"]；缺省/null=全部开放 */
           assessKinds?: unknown;
+          /** v254：仅校园版；学员注册账户上限，缺省 200，null=不限，不使用积分 */
+          campusUserLimit?: number | null;
         },
     )
     .mutation(async ({ ctx, input }) => {
@@ -146,10 +150,14 @@ export const orgRouter = createRouter({
       const services = normalizeServices(input.services);
       const assessKinds = input.assessKinds === undefined ? null : normalizeAssessKinds(input.assessKinds);
       if (input.assessKinds !== undefined && !assessKinds) throw new Error("开放测评格式不对（须为测评 kind 数组或 all）");
+      if (edition !== "school" && input.campusUserLimit !== undefined) throw new Error("只有校园版可以设置学员注册账户上限");
+      const schoolUserLimit = input.campusUserLimit === undefined ? DEFAULT_CAMPUS_USER_LIMIT : input.campusUserLimit;
+      if (edition === "school" && schoolUserLimit !== null && !isValidCampusUserLimit(schoolUserLimit)) throw new Error("校园学员注册账户上限须为 1～100 万的整数");
 
       const settings = {
         ...(services ? { services } : {}),
         ...(assessKinds ? { assess: { kinds: assessKinds } } : {}),
+        ...(edition === "school" && schoolUserLimit !== null ? { campusUserLimit: schoolUserLimit } : {}),
       };
       const [{ id }] = await db
         .insert(organizations)
@@ -205,6 +213,8 @@ export const orgRouter = createRouter({
           edition?: string | null;
           /** v227：功能开关 { key: boolean }；传 null 清除配置=恢复默认全开 */
           services?: unknown;
+          /** v254：校园学员注册账户上限；null=不限，切换到校园版且未传时默认 200 */
+          campusUserLimit?: number | null;
         },
     )
     .mutation(async ({ ctx, input }) => {
@@ -294,6 +304,21 @@ export const orgRouter = createRouter({
           const services = normalizeServices(input.services);
           if (!services) throw new Error("功能开关格式不对（须为 { 功能key: 布尔 } 或功能key数组）");
           patch.settings = { ...(prevSettings ?? {}), services };
+        }
+      }
+      /* v254：校园版只限制学员注册账户数，不使用积分。编辑存量校园未传值时保持原配置。 */
+      const nextEdition = patch.edition ?? org.edition;
+      const switchingToSchool = nextEdition === "school" && org.edition !== "school";
+      if (input.campusUserLimit !== undefined || switchingToSchool) {
+        if (nextEdition !== "school") throw new Error("只有校园版可以设置学员注册账户上限");
+        const prevSettings = (patch.settings ?? org.settings ?? {}) as NonNullable<typeof org.settings>;
+        if (input.campusUserLimit === null) {
+          const { campusUserLimit: _drop, ...rest } = prevSettings;
+          patch.settings = Object.keys(rest).length ? rest : null;
+        } else {
+          const limit = input.campusUserLimit ?? DEFAULT_CAMPUS_USER_LIMIT;
+          if (!isValidCampusUserLimit(limit)) throw new Error("校园学员注册账户上限须为 1～100 万的整数");
+          patch.settings = { ...prevSettings, campusUserLimit: limit };
         }
       }
       if (Object.keys(patch).length > 0) {

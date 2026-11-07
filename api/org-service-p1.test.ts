@@ -32,7 +32,7 @@ describe("新表时间一致性", () => {
 });
 
 describe("机构测评计价与课程节奏", () => {
-  it("完整理论覆盖每人 299，200 人 59,800，默认取整 60,000", () => {
+  it("完整理论覆盖每人 299，200 人 59,800，取整参考 60,000", () => {
     expect(fullCoverageCredits()).toBe(299);
     expect(fullCoverageCredits() * 200).toBe(59_800);
     expect(recommendedOrgPoints(200)).toBe(60_000);

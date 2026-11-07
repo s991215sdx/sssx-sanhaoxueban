@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { assessmentActivities, assessmentActivityItems, assessmentAssignments, assessmentResults, orgPointAccounts, studentProfile, studentTutor, users } from "@db/schema";
+import { assessmentActivities, assessmentActivityItems, assessmentAssignments, assessmentResults, organizations, orgPointAccounts, studentProfile, studentTutor, users } from "@db/schema";
 import { assessmentCredits } from "@contracts/orgService";
 import { getDb } from "./queries/connection";
 import { debitPoints, type PointTx } from "./orgPoints";
@@ -83,15 +83,16 @@ export async function persistAssessmentResult(
         }
         if (["cancelled", "completed"].includes(hit.assignment.status)) throw new TRPCError({ code: "CONFLICT", message: "该测评任务已结束，请让伴学师重新发起" });
       }
+      const [student] = await tx.select({ orgId: users.orgId, edition: organizations.edition }).from(users)
+        .leftJoin(organizations, eq(organizations.id, users.orgId)).where(eq(users.id, input.userId)).limit(1);
+      const schoolEdition = student?.edition === "school";
       const price = hit ? 0 : assessmentCredits(input.outcome.kind);
-      const payer = !hit && price > 0 ? await legacyPayer(tx, input.userId) : null;
-      if (!hit && price > 0) {
-        const [student] = await tx.select({ orgId: users.orgId }).from(users).where(eq(users.id, input.userId)).limit(1);
-        if (student?.orgId != null && !payer) {
-          const [pool] = await tx.select({ initialized: orgPointAccounts.initialized }).from(orgPointAccounts)
-            .where(and(eq(orgPointAccounts.orgId, student.orgId), eq(orgPointAccounts.ownerUserId, 0))).limit(1);
-          if (pool?.initialized) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "请联系伴学师先分配测评任务和积分" });
-        }
+      /* 校园版直接作答完全免费，不读取钱包，也不因未配置机构积分而拦截测评。 */
+      const payer = !hit && price > 0 && !schoolEdition ? await legacyPayer(tx, input.userId) : null;
+      if (!hit && price > 0 && !schoolEdition && student?.orgId != null && !payer) {
+        const [pool] = await tx.select({ initialized: orgPointAccounts.initialized }).from(orgPointAccounts)
+          .where(and(eq(orgPointAccounts.orgId, student.orgId), eq(orgPointAccounts.ownerUserId, 0))).limit(1);
+        if (pool?.initialized) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "请联系伴学师先分配测评任务和积分" });
       }
       if (payer) {
         await debitPoints(tx, { orgId: payer.orgId, payerUserId: payer.tutorId, actorUserId: input.actorUserId ?? payer.tutorId,

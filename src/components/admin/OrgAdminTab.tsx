@@ -2,7 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/providers/trpc";
 import { Building2, Plus, Power, KeyRound, PencilLine, X } from "lucide-react";
 import { INVITE_ASSESS_KINDS } from "@contracts/invite";
-import { ORG_EDITIONS, ORG_SERVICES } from "@contracts/edition";
+import { CAMPUS_USER_LIMIT_OPTIONS, DEFAULT_CAMPUS_USER_LIMIT, ORG_EDITIONS, ORG_SERVICES } from "@contracts/edition";
 import OrgPlatformPoints from "@/components/org/OrgPlatformPoints";
 
 type OrgRow = {
@@ -15,10 +15,11 @@ type OrgRow = {
   active: boolean;
   edition: "school" | "org";
   createdAt: Date;
-  settings?: { assess?: { kinds?: string[] }; services?: Record<string, boolean> } | null;
+  settings?: { assess?: { kinds?: string[] }; services?: Record<string, boolean>; campusUserLimit?: number } | null;
   studentCount: number;
   tutorCount: number;
   adminCount: number;
+  registeredAccountCount: number;
   admin: { id: number; phone: string | null; name: string | null; lastSignInAt: Date } | null;
 };
 
@@ -77,6 +78,11 @@ export default function OrgAdminTab() {
                 </div>
                 <div className="mono text-[12px] text-olive-soft">
                   学员 {o.studentCount} · 伴学师 {o.tutorCount} · 管理员 {o.adminCount}
+                  {o.edition === "school" && (
+                    <span className="mt-1 block text-brand">
+                      注册账户 {o.registeredAccountCount} / {o.settings?.campusUserLimit ?? "不限"} · 免积分
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -190,6 +196,24 @@ function EditionPicker({ value, onChange }: { value: "school" | "org"; onChange:
   );
 }
 
+function CampusUserLimitPicker({ value, onChange, registeredCount }: { value: string; onChange: (value: string) => void; registeredCount?: number }) {
+  const custom = value !== "unlimited" && !(CAMPUS_USER_LIMIT_OPTIONS as readonly number[]).includes(Number(value)) ? Number(value) : null;
+  const options = custom && Number.isSafeInteger(custom) && custom > 0 ? [...CAMPUS_USER_LIMIT_OPTIONS, custom].sort((a, b) => a - b) : CAMPUS_USER_LIMIT_OPTIONS;
+  return (
+    <div className="rounded-xl border border-border bg-butter-pale/35 p-3.5">
+      <label className="mb-1.5 block text-[12.5px] font-semibold text-olive">校园学员注册账户上限</label>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className={inputCls}>
+        {options.map((limit) => <option key={limit} value={String(limit)}>{limit.toLocaleString("zh-CN")} 人</option>)}
+        <option value="unlimited">不限人数（存量校园兼容）</option>
+      </select>
+      <p className="mt-1.5 text-[11.5px] leading-relaxed text-olive-mute">
+        校园版完全不使用积分。达到上限后只拦截新注册，老学员可正常回登；伴学师和管理员不占学员名额。
+        {registeredCount !== undefined && ` 当前已有 ${registeredCount} 个学员注册账户。`}
+      </p>
+    </div>
+  );
+}
+
 function ServiceChecklist({ offKeys, onToggle }: { offKeys: string[]; onToggle: (key: string) => void }) {
   return (
     <div className="rounded-xl border border-border bg-cream p-3.5">
@@ -247,6 +271,7 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
   const [adminPassword, setAdminPassword] = useState("");
   /* v227：版本二选一（默认机构版）+ 功能包（默认全开，记录关闭项）+ 开放测评（默认全选） */
   const [edition, setEdition] = useState<"school" | "org">("org");
+  const [campusLimit, setCampusLimit] = useState(String(DEFAULT_CAMPUS_USER_LIMIT));
   const [svcOff, setSvcOff] = useState<string[]>([]);
   const [allOpen, setAllOpen] = useState(true);
   const [openKinds, setOpenKinds] = useState<string[]>([]);
@@ -261,6 +286,7 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
     <Modal title="开通机构" onClose={onClose}>
       <div className="space-y-3">
         <EditionPicker value={edition} onChange={setEdition} />
+        {edition === "school" && <CampusUserLimitPicker value={campusLimit} onChange={setCampusLimit} />}
         <div>
           <label className="mb-1 block text-[12.5px] font-semibold text-olive">机构全称</label>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="如：东莞上上升学教育咨询有限公司" />
@@ -306,6 +332,7 @@ function CreateOrgModal({ onClose }: { onClose: () => void }) {
               edition,
               services: Object.fromEntries(ORG_SERVICES.map((s) => [s.key, !svcOff.includes(s.key)])),
               assessKinds: allOpen ? ["all"] : openKinds,
+              ...(edition === "school" ? { campusUserLimit: campusLimit === "unlimited" ? null : Number(campusLimit) } : {}),
             })
           }
           disabled={create.isPending || (!allOpen && openKinds.length === 0)}
@@ -328,6 +355,10 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
   const [portalFooter, setPortalFooter] = useState(org.portalFooter ?? "上上升学");
   /* v227：版本 + 功能包（默认全开，记录关闭项） */
   const [edition, setEdition] = useState<"school" | "org">(org.edition === "school" ? "school" : "org");
+  const [campusLimit, setCampusLimit] = useState(() => {
+    const saved = org.settings?.campusUserLimit;
+    return saved == null ? (org.edition === "school" ? "unlimited" : String(DEFAULT_CAMPUS_USER_LIMIT)) : String(saved);
+  });
   const [svcOff, setSvcOff] = useState<string[]>(() => {
     const stored = org.settings?.services ?? {};
     return ORG_SERVICES.filter((s) => stored[s.key] === false).map((s) => s.key);
@@ -347,6 +378,7 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
     <Modal title={`编辑机构 · ${org.brandName}`} onClose={onClose}>
       <div className="space-y-3">
         <EditionPicker value={edition} onChange={setEdition} />
+        {edition === "school" && <CampusUserLimitPicker value={campusLimit} onChange={setCampusLimit} />}
         <div>
           <label className="mb-1 block text-[12.5px] font-semibold text-olive">机构全称</label>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
@@ -396,6 +428,7 @@ function EditOrgModal({ org, onClose }: { org: OrgRow; onClose: () => void }) {
               edition,
               services: Object.fromEntries(ORG_SERVICES.map((s) => [s.key, !svcOff.includes(s.key)])),
               assessKinds: allOpen ? ["all"] : openKinds,
+              ...(edition === "school" ? { campusUserLimit: campusLimit === "unlimited" ? null : Number(campusLimit) } : {}),
             })
           }
           disabled={update.isPending || (!allOpen && openKinds.length === 0)}

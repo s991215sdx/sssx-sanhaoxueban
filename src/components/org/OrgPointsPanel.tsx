@@ -14,7 +14,10 @@ export default function OrgPointsPanel() {
   const [amount, setAmount] = useState(6000);
   const wallets = useMemo(() => new Map((points?.accounts ?? []).map((a) => [a.ownerUserId, a])), [points]);
   const allocate = trpc.orgService.allocatePoints.useMutation({ onSuccess: async () => { await utils.orgService.points.invalidate(); } });
-  const recipients = tutors.filter((t) => t.id !== user?.id);
+  const recipients = [
+    ...(user?.role === "admin" ? [{ id: user.id, name: `${user.name ?? "我"}（我 · 管理员）` }] : []),
+    ...tutors.filter((t) => t.id !== user?.id),
+  ];
   const personalTotal = (points?.totalBalance ?? 0) - (points?.poolBalance ?? 0);
 
   if (user?.role !== "admin") return <div className="rounded-2xl border border-border bg-white p-6 text-[13px] text-olive-mute">积分分配由机构管理员操作。你当前可用积分请见「测评中心」右上角。</div>;
@@ -27,8 +30,8 @@ export default function OrgPointsPanel() {
 
     <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
-        <h2 className="text-[16px] font-bold text-olive">给伴学师分配个人积分</h2>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-olive-mute">分配只是从未分配池转到个人钱包，不属于测评消耗。分配后不能自行回收已使用积分，请按实际服务量发放。</p>
+        <h2 className="text-[16px] font-bold text-olive">给伴学师／管理员分配个人积分</h2>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-olive-mute">分配只是从未分配池转到个人钱包，不属于测评消耗。管理员也可分给本人，用于本人建码的扫码注册和点选测评；注册或测评扣费时不会再扣机构池。请按实际服务量发放。</p>
         {!points?.initialized && !isLoading && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-800">本机构尚未初始化，请联系平台超管在「机构管理」中发放初始积分。</p>}
         <div className="mt-4 space-y-3">
           <label className="block text-[12px] font-semibold text-olive">伴学师<select value={tutorUserId} onChange={(e) => setTutorUserId(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-border bg-cream px-3 py-2.5 font-normal outline-none focus:border-[#0C7064]"><option value={0}>请选择接收人</option>{recipients.map((t) => <option key={t.id} value={t.id}>{t.name} · 当前 {(wallets.get(t.id)?.balance ?? 0).toLocaleString()} 积分</option>)}</select></label>

@@ -21,6 +21,19 @@ export const ORG_EDITIONS = [
 
 export type OrgEdition = (typeof ORG_EDITIONS)[number]["key"];
 
+/** 校园版免积分，以学员注册账户数控制开通规模；存量未配置的校园机构保持不限。 */
+export const DEFAULT_CAMPUS_USER_LIMIT = 200;
+export const CAMPUS_USER_LIMIT_OPTIONS = [200, 500, 1000, 2000, 5000] as const;
+
+export function isValidCampusUserLimit(raw: unknown): raw is number {
+  return typeof raw === "number" && Number.isSafeInteger(raw) && raw > 0 && raw <= 1_000_000;
+}
+
+export function campusUserLimit(settings: unknown): number | null {
+  const raw = (settings as { campusUserLimit?: unknown } | null | undefined)?.campusUserLimit;
+  return isValidCampusUserLimit(raw) ? raw : null;
+}
+
 /** 功能开关清单：key 全局统一，label/desc 给配置界面用。 */
 export const ORG_SERVICES = [
   { key: "assessCenter", label: "测评中心与批量推送", desc: "测评目录、组选推送、进度看板、预警中心" },

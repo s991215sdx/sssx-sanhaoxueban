@@ -1,11 +1,11 @@
-import { INVITE_ASSESS_KINDS } from "./invite";
+import { expandAssessKinds, INVITE_ASSESS_KINDS, normalizeAssessKinds } from "./invite";
 
 /** 机构测评计价：价格为积分快照，历史活动不随后续目录调整变化。 */
 export const COMPREHENSIVE_ASSESSMENT = "learning_comprehensive" as const;
 export const XUANKE_ASSESSMENT = "xuanke_free" as const;
 export const COMPREHENSIVE_KINDS = ["mbti", "disc", "e3", "multi5", "mentalsdq"] as const;
 export const FREE_ASSESSMENT_KINDS = ["mbti", "disc", "discparent"] as const;
-export const DEFAULT_ORG_POINTS = 60_000;
+export const DEFAULT_ORG_POINTS = 10_000;
 export const FULL_COVERAGE_STUDENTS = 200;
 
 export type AssessmentSelection = {
@@ -62,6 +62,29 @@ export const ASSESSMENT_PACKAGES: AssessmentSelection[] = [
 
 export function assessmentCredits(kind: string): number {
   return (FREE_ASSESSMENT_KINDS as readonly string[]).includes(kind) ? 0 : 10;
+}
+
+/**
+ * 渠道二维码每成功注册一位学员的测评费用。
+ * 注册流程始终包含学科四维； mental 按旧配置实际代表的四套心理量表展开。
+ * 这里只按单项合计，不把渠道的全部单项自动换算成学习力综合诊断包。
+ */
+export function inviteAssessmentQuote(assessmentAccess: boolean, rawKinds: unknown) {
+  const normalized = normalizeAssessKinds(rawKinds) ?? [];
+  const selected = assessmentAccess
+    ? normalized.includes("all")
+      ? INVITE_ASSESS_KINDS.map((item) => item.key)
+      : (expandAssessKinds(normalized) ?? [])
+    : [];
+  const kinds = [...new Set(["subject4d", ...selected])].filter((kind) =>
+    (INVITE_ASSESS_KINDS as readonly { key: string }[]).some((item) => item.key === kind),
+  );
+  const items = kinds.map((key) => ({
+    key,
+    label: INVITE_ASSESS_KINDS.find((item) => item.key === key)!.label,
+    credits: assessmentCredits(key),
+  }));
+  return { total: items.reduce((sum, item) => sum + item.credits, 0), kinds, items };
 }
 
 export function selectionFor(key: string): AssessmentSelection | null {
