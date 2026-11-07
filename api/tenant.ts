@@ -1,76 +1,88 @@
-import { and, eq, isNull, or } from "drizzle-orm";
-import { users, studentTutor, type User } from "@db/schema";
+import { and, eq, isNull } from "drizzle-orm";
+import { inviteChannels, inviteRegistrations, studentProfile, studentTutor, users, type User } from "@db/schema";
 import { getDb } from "./queries/connection";
 
-/**
- * V59/V60 SaaS 租户隔离约定：
- * - users.orgId = null → 平台超管（总系统）：可管理任意账号、查看全部机构数据（god mode）；
- * - 机构内所有账号（admin/tutor/student）共享同一 orgId，跨用户访问限本机构；
- * - 跨用户查询（学员列表、伴学师列表、统计、分配）按 orgId 过滤：number=本机构，null/undefined=全量（超管）；
- *   ctx.user.id 自用范围查询天然隔离，无需改动。
- */
+type Db = ReturnType<typeof getDb>;
 
-/** 机构 ID：null 表示平台超管（无机构）。 */
+/**
+ * SaaS 租户隔离约定：同手机号的每个机构身份是独立 users 行。
+ * 机构身份只能访问当前 orgId 的学员，历史跨机构分配记录不能突破这个边界。
+ * orgId = null 的学员只有在存在本机构邀请或分配关系时才可见；平台超管不受此限。
+ */
 export type OrgId = number | null;
 
-/** 当前用户所属机构。 */
 export function orgOf(user: Pick<User, "orgId">): OrgId {
   return user.orgId ?? null;
 }
 
-/** 是否平台超管（总系统账号）。 */
 export function isPlatformAdmin(user: Pick<User, "role" | "orgId">): boolean {
   return user.role === "admin" && (user.orgId ?? null) === null;
 }
 
 /**
- * 目标用户是否在当前用户可管理范围内：
- * - 平台超管（orgId=null）可管理任意账号（全系统 god mode）；
- * - 机构管理员/伴学师只能管理本机构账号。
- * 用于学员详情、AI 问诊带学员、分配校验、角色设置等跨用户访问点。
- * v179：不再对 org_id 为 NULL 的账号放行——新机构管理员绝不可见其他机构/平台直客数据。
- * v190：无机构（org_id IS NULL）的账号改为对本机构管理员可见——公开邀请码注册的学员
- * 不分机构，若继续隐藏会导致机构管理员「学生做了测评却在列表消失」；
- * 其他机构的账号仍严格隔离，不受影响。
+ * 找出通过本机构渠道注册、或分配给本机构伴学师的无机构旧学员。
+ * 只用于兼容历史空 org_id，不修改旧数据归属，也不把其他机构学员带入。
  */
-export async function sameOrg(db: ReturnType<typeof getDb>, me: Pick<User, "orgId">, targetUserId: number): Promise<boolean> {
+export async function listUnboundOrgStudentIds(db: Db, orgId: number): Promise<Set<number>> {
+  const [invited, assigned, primary] = await Promise.all([
+    db.select({ userId: inviteRegistrations.userId }).from(inviteRegistrations)
+      .innerJoin(inviteChannels, eq(inviteChannels.id, inviteRegistrations.channelId))
+      .where(eq(inviteChannels.orgId, orgId)),
+    db.select({ userId: studentTutor.studentUserId }).from(studentTutor)
+      .innerJoin(users, eq(users.id, studentTutor.tutorUserId))
+      .where(eq(users.orgId, orgId)),
+    db.select({ userId: studentProfile.userId }).from(studentProfile)
+      .innerJoin(users, eq(users.id, studentProfile.tutorId))
+      .where(eq(users.orgId, orgId)),
+  ]);
+  return new Set([...invited, ...assigned, ...primary].map((row) => row.userId));
+}
+
+/** 当前机构可见学员 ID；平台超管传 null 时不设限制。 */
+export async function listOrgStudentIds(db: Db, orgId: number | null): Promise<Set<number> | null> {
+  if (orgId == null) return null;
+  const [members, unboundCandidates] = await Promise.all([
+    db.select({ id: users.id }).from(users).where(and(eq(users.orgId, orgId), eq(users.role, "user"), isNull(users.deletedAt))),
+    listUnboundOrgStudentIds(db, orgId),
+  ]);
+  const ids = new Set(members.map((user) => user.id));
+  if (unboundCandidates.size) {
+    const legacy = await db.select({ id: users.id }).from(users)
+      .where(and(isNull(users.orgId), eq(users.role, "user"), isNull(users.deletedAt)));
+    for (const user of legacy) if (unboundCandidates.has(user.id)) ids.add(user.id);
+  }
+  return ids;
+}
+
+/** 本机构账号；历史无机构学员必须另有本机构邀请／分配关系。 */
+export async function sameOrg(db: Db, me: Pick<User, "orgId">, targetUserId: number): Promise<boolean> {
   if (me.orgId == null) return true;
-  const t = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, targetUserId)).limit(1))[0];
-  return !!t && (t.orgId === me.orgId || t.orgId == null);
+  const target = (await db.select({ orgId: users.orgId, role: users.role }).from(users).where(eq(users.id, targetUserId)).limit(1))[0];
+  if (!target) return false;
+  if (target.orgId != null) return target.orgId === me.orgId;
+  if (target.role !== "user") return false;
+  return (await listUnboundOrgStudentIds(db, me.orgId)).has(targetUserId);
 }
 
-/**
- * v230：目标用户是否可访问——sameOrg 的超集：
- * 平台超管放行；同机构放行；me→target 存在 student_tutor 分配记录也放行。
- * 跨机构分配记录只能由平台超管建立（机构管理员建分配仍走 sameOrg 双向校验），
- * 因此机构隔离不被破坏——这是「平台超管把任何学校/机构的学员分配给任何伴学师」的配套读取口径。
- * 用于跨用户数据读取点（报告数据、期望信息等）。
- */
-export async function canAccessUser(db: ReturnType<typeof getDb>, me: Pick<User, "id" | "orgId">, targetUserId: number): Promise<boolean> {
-  if (await sameOrg(db, me, targetUserId)) return true;
-  const link = (
-    await db
-      .select({ id: studentTutor.id })
-      .from(studentTutor)
-      .where(and(eq(studentTutor.tutorUserId, me.id), eq(studentTutor.studentUserId, targetUserId)))
-      .limit(1)
-  )[0];
-  return !!link;
+/** 管理员限本机构；伴学师还必须是学员的当前身份名下关系。 */
+export async function canAccessUser(
+  db: Db,
+  me: Pick<User, "id" | "orgId"> & { role: string },
+  targetUserId: number,
+): Promise<boolean> {
+  if (me.role === "tutor") {
+    const { isMyStudent } = await import("./tutorAccess");
+    return isMyStudent(db, me, targetUserId);
+  }
+  return sameOrg(db, me, targetUserId);
 }
 
-/**
- * v190：机构管理员的数据范围 SQL 条件 = 本机构 + 无机构（org_id IS NULL）用户。
- * 用法：db.select().from(users).where(orgScope(orgId))，或 and(orgScope(orgId), 其它条件)。
- * 仅适用机构管理员分支；平台超管（orgId=null）直接不加条件（全量）。
- */
+/** 普通职员／账号列表只取当前机构，不再把全体无机构账号混入。 */
 export function orgScope(orgId: number) {
-  return or(eq(users.orgId, orgId), isNull(users.orgId));
+  return eq(users.orgId, orgId);
 }
 
-/**
- * v200：手机号脱敏——教务可按手机号搜索学员，但任何列表/详情都看不到完整号码。
- * 保留前 3 + 后 4，中间打码：13537126329 → 135****6329。不足 7 位的整体打码。
- */
+/** 手机号脱敏：保留前 3 + 后 4，中间打码。 */
 export function maskPhone(phone: string | null): string | null {
   if (!phone) return phone;
   if (phone.length <= 6) return phone[0] + "****";

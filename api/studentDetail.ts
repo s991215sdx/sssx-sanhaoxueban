@@ -2,7 +2,7 @@
  * 学员数据聚合：管理员后台与伴学师工作台共用。
  * 隐私边界：树洞只返回心情分，不返回文字内容。
  */
-import { and, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import {
   assessmentResults,
   attempts,
@@ -19,7 +19,7 @@ import {
 import type { MbtiResult, DiscResult, E3V27Result, E3V37Result } from "@contracts/assessments";
 import type { MultiResult } from "@contracts/multi";
 import type { AcademicsData } from "@contracts/academics";
-import { orgScope } from "./tenant";
+import { listUnboundOrgStudentIds, sameOrg } from "./tenant";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -71,14 +71,20 @@ export type StudentListItem = {
  *  返回的号码是脱敏的，搜索必须在服务端用真实号码匹配。 */
 export async function listStudents(db: Db, orgId?: number | null, search?: string): Promise<StudentListItem[]> {
   const profiles = await db.select().from(studentProfile);
-  /* 机构范围：number=本机构+无机构（v190）；null/undefined=全量（平台超管 god mode） */
+  /* 机构身份严格限本机构；无机构旧学员需有本机构邀请／分配关系。 */
+  const legacyIds = orgId == null ? null : await listUnboundOrgStudentIds(db, orgId);
+  const scope = orgId == null
+    ? undefined
+    : or(
+        eq(users.orgId, orgId),
+        legacyIds?.size
+          ? and(isNull(users.orgId), inArray(users.id, [...legacyIds]))
+          : undefined,
+      );
   const kw = search?.trim();
   const likeKw = kw ? `%${kw.replace(/[\\%_]/g, (m) => "\\" + m)}%` : null;
   const searchCond = likeKw ? or(like(users.name, likeKw), like(users.phone, likeKw)) : undefined;
-  const allUsers =
-    orgId == null
-      ? await db.select().from(users).where(searchCond)
-      : await db.select().from(users).where(and(orgScope(orgId), searchCond));
+  const allUsers = await db.select().from(users).where(and(scope, searchCond));
   const userMap = new Map(allUsers.map((u) => [u.id, u]));
   /* V60：附带机构品牌名，超管看全量列表时可分辨学员归属 */
   const orgRows = await db.select().from(organizations);
@@ -131,9 +137,11 @@ export async function listStudents(db: Db, orgId?: number | null, search?: strin
   };
   const tutorsOf = (studentUserId: number, primaryTutorId: number | null) => {
     const ids: number[] = [];
-    if (primaryTutorId != null) ids.push(primaryTutorId);
+    if (primaryTutorId != null && (orgId == null || tutorNameMap.has(primaryTutorId))) ids.push(primaryTutorId);
     for (const l of links) {
-      if (l.studentUserId === studentUserId && !ids.includes(l.tutorUserId)) ids.push(l.tutorUserId);
+      if (l.studentUserId === studentUserId && (orgId == null || tutorNameMap.has(l.tutorUserId)) && !ids.includes(l.tutorUserId)) {
+        ids.push(l.tutorUserId);
+      }
     }
     return ids;
   };
@@ -154,8 +162,8 @@ export async function listStudents(db: Db, orgId?: number | null, search?: strin
         mbti: p.mbti,
         disc: p.disc,
         onboarded: p.onboarded,
-        tutorId: p.tutorId ?? null,
-        tutorName: p.tutorId != null ? (tutorNameMap.get(p.tutorId) ?? null) : null,
+        tutorId: tutorIds[0] ?? null,
+        tutorName: tutorIds[0] != null ? (tutorNameMap.get(tutorIds[0]) ?? null) : null,
         tutors: tutorIds.map((id) => ({ id, name: tutorNameMap.get(id) ?? `伴学师${id}`, ...accessOf(p.userId, id) })),
         tutorIds,
         enabledModules: p.enabledModules ?? null,
@@ -231,11 +239,8 @@ export async function getStudentDetail(
   orgId?: number | null,
   viewer?: { userId: number; role: string },
 ): Promise<StudentDetail> {
-  if (orgId != null) {
-    const target = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, userId)).limit(1))[0];
-    if (!target || (target.orgId !== orgId && target.orgId != null)) {
-      throw new Error("无权查看该学员");
-    }
+  if (orgId != null && !(await sameOrg(db, { orgId }, userId))) {
+    throw new Error("无权查看该学员");
   }
   const u = await db.query.users.findFirst({ where: eq(users.id, userId) });
   if (!u) throw new Error("用户不存在");

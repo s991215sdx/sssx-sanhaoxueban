@@ -21,19 +21,19 @@ describe("v179 机构数据严格隔离 + 报告排版", () => {
   const zhihui = readFileSync("src/pages/ZhihuiReport.tsx", "utf-8");
   const router = readFileSync("api/router.ts", "utf-8");
 
-  it("v190：listStudents 机构范围 = 本机构 + 无机构（历史直客由数据归位+v190 口径可见）", () => {
-    if (!/orgScope\(orgId\)/.test(detail)) throw new Error("缺：listStudents 使用 orgScope（本机构+无机构）");
-    if (/where\(eq\(users\.orgId, orgId\)\)/.test(detail)) throw new Error("残留 v179：listStudents 仍有 eq(orgId) 独占分支");
+  it("v256：listStudents 限当前机构及有本机构关系的无机构旧学员", () => {
+    if (!/listUnboundOrgStudentIds\(db, orgId\)/.test(detail)) throw new Error("缺：无机构旧学员按本机构关系过滤");
+    if (/where\(eq\(users\.orgId, orgId\)\)/.test(detail)) throw new Error("残留：listStudents 独占机构过滤");
   });
 
-  it("v190：sameOrg 无机构账号对本机构管理员放行", () => {
-    if (!/t\.orgId === me\.orgId \|\| t\.orgId == null/.test(tenant))
-      throw new Error("缺：sameOrg 放行 NULL 机构账号（v190 口径）");
+  it("v256：sameOrg 不公开无机构账号，只按本机构关系放行", () => {
+    if (!/target\.orgId === me\.orgId/.test(tenant) || !/listUnboundOrgStudentIds/.test(tenant))
+      throw new Error("缺：sameOrg 当前机构与旧关系校验");
   });
 
-  it("v190：getStudentDetail 无机构学员放行、跨机构拒绝", () => {
-    if (!/target\.orgId !== orgId && target\.orgId != null/.test(detail))
-      throw new Error("缺：getStudentDetail v190 放行口径");
+  it("v256：getStudentDetail 统一 sameOrg 校验", () => {
+    if (!/sameOrg\(db, \{ orgId \}, userId\)/.test(detail))
+      throw new Error("缺：getStudentDetail 当前机构校验");
   });
 
   it("智慧生涯接口带机构校验", () => {

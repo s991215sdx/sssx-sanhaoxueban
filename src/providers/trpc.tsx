@@ -5,10 +5,14 @@ import superjson from "superjson";
 import type { AppRouter } from "../../api/router";
 import type { ReactNode } from "react";
 import { clearAssessmentAssignment, prepareAssessmentSubmission } from "@/lib/assessmentSubmission";
+import { clearIdentityScopedState } from "@/lib/identitySwitch";
 
 export const trpc = createTRPCReact<AppRouter>();
 
 const queryClient = new QueryClient();
+
+/** 身份切换必须先清除上一机构的数据与在途请求，再刷新会话和页面。 */
+export const prepareIdentitySwitch = () => clearIdentityScopedState(queryClient);
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({

@@ -37,7 +37,7 @@ describe("v99 删除人与可见范围", () => {
     need(recycle, "deletedByName", "列表带删除人");
     need(recycle, "visibleDeletedStudentIds", "可见范围函数");
     const coach = read("api/coachRouter.ts");
-    need(coach, "visibleDeletedStudentIds(db, ctx.user.id)", "回收站按可见范围过滤");
+    need(coach, "visibleDeletedStudentIds(db, ctx.user)", "回收站按当前身份机构与可见范围过滤");
   });
 
   it("isMyStudent 追加扫码注册条件", () => {

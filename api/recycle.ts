@@ -98,13 +98,15 @@ export async function listDeletedStudents(db: Db, orgId?: number | null): Promis
     .from(users)
     .where(isNotNull(users.deletedAt));
   const profiles = await db.select().from(studentProfile);
+  const { listUnboundOrgStudentIds } = await import("./tenant");
+  const legacyIds = orgId == null ? null : await listUnboundOrgStudentIds(db, orgId);
   const profileByUser = new Map(profiles.map((p) => [p.userId, p]));
   const nameMap = new Map(deletedUsers.map((u) => [u.id, u.name ?? `用户${u.id}`]));
   const now = Date.now();
   return deletedUsers
     .filter((u) => u.deletedAt != null)
     .filter((u) => profileByUser.has(u.id))
-    .filter((u) => orgId == null || u.orgId === orgId || u.orgId == null) // v190：无机构学员对本机构管理员可见
+    .filter((u) => orgId == null || u.orgId === orgId || (u.orgId == null && legacyIds?.has(u.id)))
     .map((u) => {
       const p = profileByUser.get(u.id)!;
       const deletedAt = u.deletedAt!;
@@ -129,15 +131,23 @@ export async function listDeletedStudents(db: Db, orgId?: number | null): Promis
  * ② 名下学员（主管伴学师 或 student_tutor 分配）；
  * ③ 扫我自己的注册二维码注册的学员。
  */
-export async function visibleDeletedStudentIds(db: Db, tutorUserId: number): Promise<Set<number>> {
+export async function visibleDeletedStudentIds(
+  db: Db,
+  tutor: { id: number; orgId: number | null },
+): Promise<Set<number>> {
   const { listStudentTutorLinks, listInviteeStudentIds } = await import("./tutorAccess");
+  const tutorUserId = tutor.id;
   const visible = new Set<number>();
   const [links, invitees, deletedRows, profiles] = await Promise.all([
     listStudentTutorLinks(db),
     listInviteeStudentIds(db, tutorUserId),
-    db.select({ id: users.id, deletedBy: users.deletedBy }).from(users).where(isNotNull(users.deletedAt)),
+    db.select({ id: users.id, orgId: users.orgId, deletedBy: users.deletedBy }).from(users).where(isNotNull(users.deletedAt)),
     db.select({ userId: studentProfile.userId, tutorId: studentProfile.tutorId }).from(studentProfile),
   ]);
+  const inCurrentOrg = (userId: number) => {
+    const student = deletedRows.find((row) => row.id === userId);
+    return !!student && (tutor.orgId == null || student.orgId == null || student.orgId === tutor.orgId);
+  };
   const primaryOf = new Map(profiles.filter((p) => p.tutorId != null).map((p) => [p.userId, p.tutorId!]));
   for (const l of links) if (l.tutorUserId === tutorUserId) visible.add(l.studentUserId);
   for (const id of invitees) visible.add(id);
@@ -145,5 +155,5 @@ export async function visibleDeletedStudentIds(db: Db, tutorUserId: number): Pro
     if (r.deletedBy === tutorUserId) visible.add(r.id);
     if (primaryOf.get(r.id) === tutorUserId) visible.add(r.id);
   }
-  return visible;
+  return new Set([...visible].filter(inCurrentOrg));
 }

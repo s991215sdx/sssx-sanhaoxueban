@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
 import UpdateToast from "@/components/UpdateToast";
 import BackBar from "@/components/BackBar";
-import { trpc } from "@/providers/trpc";
+import { prepareIdentitySwitch, trpc } from "@/providers/trpc";
 import { visibleSchoolGroups, type SchoolItemKey } from "@/components/admin/schoolNav";
 
 /** 导航项所属学员端模块（测评中心恒可用；首页属 home，受限学员不显示）。 */
@@ -97,7 +97,13 @@ function OrgSwitcher() {
                 onClick={() =>
                   switchMut.mutate(
                     { userId: a.userId },
-                    { onSuccess: () => window.location.reload() },
+                    {
+                      onSuccess: async () => {
+                        setOpen(false);
+                        await prepareIdentitySwitch();
+                        window.location.reload();
+                      },
+                    },
                   )
                 }
                 className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${

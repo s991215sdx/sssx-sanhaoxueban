@@ -8,7 +8,8 @@ import { persistAssessmentResult } from "./assessmentPersistence";
 import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
 import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
-import { getTutorReportAccess, isMyStudent } from "./tutorAccess";
+import { getTutorReportAccess } from "./tutorAccess";
+import { canAccessUser } from "./tenant";
 import {
   MBTI_QUESTIONS,
   DISC_QUESTIONS,
@@ -1074,8 +1075,8 @@ export const assessmentRouter = createRouter({
       const db = getDb();
       const def = passDefOf(input.kind);
       if (!def) throw new TRPCError({ code: "BAD_REQUEST", message: "这项测评没有二维码" });
-      if (ctx.user.role !== "admin" && !(await isMyStudent(db, ctx.user.id, input.userId))) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "这不是你名下的学员" });
+      if (!(await canAccessUser(db, ctx.user, input.userId))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "这不是你当前机构名下的学员" });
       }
       const stu = await loadPassStudent(db, input.userId);
       if (!stu) throw new TRPCError({ code: "NOT_FOUND", message: "这个学员不在了，码出不了" });
@@ -1288,9 +1289,8 @@ export const assessmentRouter = createRouter({
     const userId = input?.userId ?? ctx.user.id;
     if (userId !== ctx.user.id) {
       const allowed =
-        ctx.user.role === "admin" ||
-        ((await isMyStudent(db, ctx.user.id, userId)) &&
-          (await getTutorReportAccess(db, ctx.user.id, userId)).allowed);
+        (await canAccessUser(db, ctx.user, userId)) &&
+        (ctx.user.role === "admin" || (await getTutorReportAccess(db, ctx.user.id, userId)).allowed);
       if (!allowed) {
         throw new TRPCError({ code: "FORBIDDEN", message: "没有查看该学员报告的权限" });
       }

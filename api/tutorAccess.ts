@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { inviteChannels, inviteRegistrations, studentProfile, studentTutor } from "@db/schema";
+import { inviteChannels, inviteRegistrations, studentProfile, studentTutor, users, type User } from "@db/schema";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -99,14 +99,18 @@ export async function listInviteeStudentIds(db: Db, tutorUserId: number): Promis
 }
 
 /**
- * V56：判定某学员是否在某伴学师名下。
- * 命中条件（任一）：student_profile.tutor_id 主管伴学师，或 student_tutor 多对多分配表中有记录，
- * 或学员扫的是该伴学师自己的注册二维码（渠道归属判定）。
- * v230：跨机构分配记录同样生效——跨机构分配只能由平台超管建立（机构管理员建分配仍双向 sameOrg 校验），
- * 因此此处按「关系命中即认」不会破坏机构隔离；平台超管把学校学员分配给机构伴学师后，
- * 该伴学师即可查看/管理这些学员（详情见 coach.studentDetail 的全量视图处理）。
+ * 判定某学员是否属于当前伴学师身份的名下。
+ * 先检查机构边界，再检查主管／分配／本身份邀请关系；旧跨机构关系不能越权。
+ * 无机构旧学员只对实际关联的当前身份可见，不会因关系查询而公开给其他机构。
  */
-export async function isMyStudent(db: Db, tutorUserId: number, studentUserId: number): Promise<boolean> {
+export async function isMyStudent(
+  db: Db,
+  tutor: Pick<User, "id" | "orgId">,
+  studentUserId: number,
+): Promise<boolean> {
+  const student = (await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, studentUserId)).limit(1))[0];
+  if (!student || (tutor.orgId != null && student.orgId != null && student.orgId !== tutor.orgId)) return false;
+  const tutorUserId = tutor.id;
   const p = (
     await db
       .select({ tutorId: studentProfile.tutorId })

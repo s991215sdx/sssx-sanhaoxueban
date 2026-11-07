@@ -1,6 +1,5 @@
-/* v230 冒烟：平台超管跨机构分配——学校/机构学员可分配给任意伴学师，伴学师跨机构可见可管。
-   安全口径：跨机构分配记录只能由平台超管建立（sameOrg 对机构管理员建分配仍双向校验），
-   因此「关系命中即认」不会破坏机构隔离；机构管理员原有权限一律不变。 */
+/* v230 的跨机构读取规则由 v256 修订：身份按机构隔离，历史关系不能绕过；
+   平台超管仍有独立全局管理视图，机构身份不继承这个权限。 */
 import { describe, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -13,30 +12,30 @@ function need(src: string, needle: string, label: string) {
   if (!src.includes(needle)) throw new Error(`缺 ${label}：${needle}`);
 }
 
-describe("v230 平台超管跨机构分配", () => {
-  it("tenant.canAccessUser：sameOrg 超集 + 分配记录放行", () => {
+describe("v256 多身份租户边界", () => {
+  it("tenant.canAccessUser：管理员限本机构，伴学师限当前身份名下", () => {
     const t = read("api/tenant.ts");
-    need(t, "canAccessUser", "新判定导出");
-    need(t, "sameOrg 的超集", "语义注释");
-    need(t, "studentTutor.tutorUserId, me.id", "分配记录命中即放行");
+    need(t, "canAccessUser", "统一访问判定");
+    need(t, "me.role === \"tutor\"", "伴学师名下校验");
+    need(t, "return sameOrg(db, me, targetUserId)", "管理员机构校验");
   });
 
-  it("isMyStudent：关系命中即认（跨机构分配生效）", () => {
+  it("isMyStudent：先检查机构边界，再检查分配关系", () => {
     const t = read("api/tutorAccess.ts");
-    need(t, "v230", "版本注释");
-    need(t, "跨机构分配只能由平台超管建立", "隔离不被破坏的论证");
+    need(t, "旧跨机构关系不能越权", "v256 边界注释");
+    need(t, "student.orgId !== tutor.orgId", "异机构拒绝");
   });
 
-  it("伴学师详情：跨机构学员按全量视图返回", () => {
+  it("伴学师详情：始终按当前机构校验", () => {
     const c = read("api/coachRouter.ts");
-    need(c, "跨机构分配（平台超管建立）的学员按全量视图返回", "orgParam 注释");
-    need(c, "const orgParam = same ? ctx.user.orgId : null", "跨机构时 orgParam=null");
-    need(c, "canAccessUser", "导入与使用");
+    need(c, "getStudentDetail(db, input.userId, ctx.user.orgId", "当前机构详情");
+    need(c, "isMyStudent(db, ctx.user", "当前 users.id 名下校验");
+    need(c, "canAccessUser", "管理员统一访问校验");
   });
 
-  it("报告数据：assertStaffIfOther 用 canAccessUser（跨机构名下学员可读报告）", () => {
+  it("报告数据：assertStaffIfOther 继续使用 canAccessUser", () => {
     const z = read("api/zhihuiRouter.ts");
-    need(z, "canAccessUser(db, ctx.user, studentId)", "报告数据放行口径");
+    need(z, "canAccessUser(db, ctx.user, studentId)", "报告机构边界");
   });
 
   it("建分配仍受保护：机构管理员双向 sameOrg 校验未动", () => {
