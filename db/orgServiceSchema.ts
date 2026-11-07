@@ -31,7 +31,8 @@ export const orgPointLedger = mysqlTable("org_point_ledger", {
 export const assessmentActivities = mysqlTable("assessment_activities", {
   id: id(), orgId: orgId(), createdBy: userId("created_by"), requestKey: varchar("request_key", { length: 64 }).notNull().unique(),
   title: varchar("title", { length: 128 }).notNull(), note: varchar("note", { length: 500 }).notNull().default(""),
-  dueAt: timestamp("due_at"), status: varchar("status", { length: 24 }).notNull().default("open"), createdAt: createdAt(),
+  dueAt: timestamp("due_at"), expiryPolicy: varchar("expiry_policy", { length: 24 }).notNull().default("auto_refund"),
+  status: varchar("status", { length: 24 }).notNull().default("open"), createdAt: createdAt(),
 });
 
 export const assessmentActivityItems = mysqlTable("assessment_activity_items", {
@@ -46,7 +47,15 @@ export const assessmentAssignments = mysqlTable("assessment_assignments", {
   studentUserId: userId("student_user_id"), tutorUserId: userId("tutor_user_id"), kind: varchar("kind", { length: 32 }).notNull(),
   status: varchar("status", { length: 24 }).notNull().default("pending"), resultId: bigint("result_id", { mode: "number", unsigned: true }),
   startedAt: timestamp("started_at"), completedAt: timestamp("completed_at"), cancelledAt: timestamp("cancelled_at"),
+  expiredAt: timestamp("expired_at"), cancelledReason: varchar("cancelled_reason", { length: 500 }).notNull().default(""),
+  retestOfAssignmentId: bigint("retest_of_assignment_id", { mode: "number", unsigned: true }),
   createdAt: createdAt(), updatedAt: updatedAt(),
+});
+
+export const coachingTaskVerifications = mysqlTable("coaching_task_verifications", {
+  id: id(), taskId: bigint("task_id", { mode: "number", unsigned: true }).notNull(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(),
+  version: int("version").notNull(), previousId: bigint("previous_id", { mode: "number", unsigned: true }),
+  evidence: text("evidence").notNull(), result: text("result").notNull(), verifierId: userId("verifier_id"), createdAt: createdAt(),
 });
 
 export const coachingCases = mysqlTable("coaching_cases", {

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { orgPointAccounts, orgPointLedger } from "@db/schema";
-import { organizations, users } from "@db/schema";
+import { coachingCases, organizations, users } from "@db/schema";
 import { DEFAULT_ORG_POINTS } from "@contracts/orgService";
 import type { getDb } from "./queries/connection";
 
@@ -99,6 +99,29 @@ export async function allocateOrgPoints(db: PointDb, input: { orgId: number; act
     const eventGroup = `allocation:${randomUUID()}`;
     await writeLedger(tx, pool, -input.amount, { actorUserId: input.actorUserId, type: "allocation_out", eventGroup, eventKey: `${eventGroup}:out`, relatedAccountId: target.id, reason: "分配给伴学师" });
     await writeLedger(tx, target, input.amount, { actorUserId: input.actorUserId, type: "allocation_in", eventGroup, eventKey: `${eventGroup}:in`, relatedAccountId: pool.id, reason: "机构分配积分" });
+    return { ok: true as const, balance: target.balance, poolBalance: pool.balance };
+  });
+}
+
+/** 只回收个人钱包里的未使用余额；历史消耗与退款流水保持不变。 */
+export async function reclaimOrgPoints(db: PointDb, input: { orgId: number; actorUserId: number; tutorUserId: number; amount: number; reason: string }) {
+  if (!Number.isSafeInteger(input.amount) || input.amount <= 0 || input.amount > 10_000_000) throw new TRPCError({ code: "BAD_REQUEST", message: "回收积分须为 1～1000 万的整数" });
+  if (!input.reason.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "回收积分必须填写原因" });
+  const [recipient] = await db.select({ id: users.id }).from(users)
+    .where(and(eq(users.id, input.tutorUserId), eq(users.orgId, input.orgId), inArray(users.role, ["tutor", "admin"]), isNull(users.deletedAt))).limit(1);
+  if (!recipient) throw new TRPCError({ code: "FORBIDDEN", message: "只能回收本机构伴学师或管理员的未用积分" });
+  const [openCase] = await db.select({ id: coachingCases.id }).from(coachingCases)
+    .where(and(eq(coachingCases.orgId, input.orgId), or(eq(coachingCases.coachId, input.tutorUserId), eq(coachingCases.supervisorId, input.tutorUserId)), inArray(coachingCases.status, ["active", "paused"]))).limit(1);
+  if (openCase) throw new TRPCError({ code: "CONFLICT", message: "该人员仍有服务中或暂停的陪跑主档，请先完成改派，再回收积分" });
+  return db.transaction(async (tx) => {
+    const accounts = await lockAccounts(tx, input.orgId, [0, input.tutorUserId]);
+    const pool = accounts.get(0);
+    const target = accounts.get(input.tutorUserId);
+    if (!pool?.initialized || !target) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "积分钱包尚未初始化" });
+    if (target.balance < input.amount) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "个人未用余额不足，已消耗积分不能回收" });
+    const eventGroup = `reclaim:${randomUUID()}`;
+    await writeLedger(tx, target, -input.amount, { actorUserId: input.actorUserId, type: "reclaim_out", eventGroup, eventKey: `${eventGroup}:out`, relatedAccountId: pool.id, reason: input.reason.trim() });
+    await writeLedger(tx, pool, input.amount, { actorUserId: input.actorUserId, type: "reclaim_in", eventGroup, eventKey: `${eventGroup}:in`, relatedAccountId: target.id, reason: input.reason.trim() });
     return { ok: true as const, balance: target.balance, poolBalance: pool.balance };
   });
 }

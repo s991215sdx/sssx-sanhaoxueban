@@ -49,14 +49,15 @@ export default function GrowEditor({ studentUserId, onOpenReport, onOpenCoaching
       <div className="text-[10px] font-semibold tracking-[.18em] text-white/60">GROW · 伴学路径</div>
       <div className="mt-1 flex items-center justify-between gap-2">
         <h2 className="text-[18px] font-bold">从测评走向行动</h2>
-        {onOpenReport && <button type="button" onClick={onOpenReport} className="inline-flex items-center gap-1 rounded-lg bg-white/12 px-2.5 py-1.5 text-[11px] font-semibold hover:bg-white/20"><FileText size={13} /> 完整报告</button>}
+        {onOpenReport && <button type="button" disabled={data?.reportAllowed === false} title={data?.reportAllowed === false ? "报告权限未开放或已到期" : "查看该学员完整报告"} onClick={onOpenReport} className="inline-flex items-center gap-1 rounded-lg bg-white/12 px-2.5 py-1.5 text-[11px] font-semibold hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"><FileText size={13} /> 完整报告</button>}
       </div>
     </header>
     {caseId > 0 && isLoading ? <div className="p-6 text-sm text-olive-mute">正在读取陪跑主档…</div> : <div className="space-y-4 p-4">
       <div className="grid grid-cols-2 gap-2">
         <label className="text-[11px] font-semibold text-olive-mute">服务场景<select value={scenario} onChange={(e) => setScenario(e.target.value as typeof scenario)} className="mt-1 w-full rounded-lg border border-border bg-cream px-2 py-2 text-[12px] text-olive"><option>新生接手</option><option>方案调整</option><option>结课复盘</option><option>回访</option></select></label>
-        <div className="rounded-lg bg-mint-pale/60 px-3 py-2 text-[11px] text-olive-soft">测评结果<div className="mt-1 text-[18px] font-bold text-olive">{data?.results.length ?? 0} 份</div></div>
+        <div className="rounded-lg bg-mint-pale/60 px-3 py-2 text-[11px] text-olive-soft">测评结果<div className="mt-1 text-[18px] font-bold text-olive">{data?.reportAllowed === false ? "未开放" : `${data?.results.length ?? 0} 份`}</div></div>
       </div>
+      {data?.reportAllowed === false && <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-[11.5px] leading-relaxed text-amber-800">该学员的报告权限未开放或已到期。这里不会把空列表当作“没有测评”；请联系机构管理员确认报告授权，已有 GROW 计划和督学记录不受影响。</p>}
       {!data && <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-olive-mute"><label>开始日期<input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-2 py-2 text-[12px]" /></label><label>结束日期<input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="mt-1 w-full rounded-lg border border-border px-2 py-2 text-[12px]" /></label></div>}
       <GrowField icon={<Target size={15} />} title="明确目标" subtitle="Goal · 将期待变成可验证的目标" value={goal} onChange={setGoal} placeholder="例：本学期数学从 82 分提升至 95 分，能独立讲解错题。" />
       <GrowField icon={<TrendingUp size={15} />} title="评估现状" subtitle="Reality · 结合报告、成绩与到店观察" value={situation} onChange={setSituation} placeholder="例：基础概念掌握不稳，作业拖延；已完成 E3，需进一步验证执行卡点。" />

@@ -30,9 +30,9 @@ export const ASSESSMENT_PACKAGES: AssessmentSelection[] = [
     key: XUANKE_ASSESSMENT,
     title: "选科及升学规划组合",
     kinds: ["subject4d", "holland"],
-    price: 0,
+    price: 20,
     category: "选科升学",
-    description: "沿用既有选科组合免费口径；脱离组合单独发起时按单项价格计费。",
+    description: "学科四维 10 积分＋霍兰德 10 积分，合计 20 积分／人；历史活动保留原价格快照。",
   },
   {
     key: "learning_suite",
