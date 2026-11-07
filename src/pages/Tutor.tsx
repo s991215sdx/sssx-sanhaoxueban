@@ -99,7 +99,20 @@ export default function Tutor() {
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const orgView = !campusView && user?.orgId != null;
-  const [section, setSection] = useState<"students" | "assessments" | "coaching" | "points" | "training">("students");
+  /* 支持左侧「积分管理」等深链直达；无权限的 section 参数回退学员管理。 */
+  const sectionOptions = ["students", "assessments", "coaching", "points", "training"] as const;
+  type TutorSection = (typeof sectionOptions)[number];
+  const requested = searchParams.get("section") as TutorSection | null;
+  const requestedSection: TutorSection = requested && sectionOptions.includes(requested) ? requested : "students";
+  const canOpenSection = requestedSection === "students" || requestedSection === "training"
+    || (orgView && (requestedSection !== "points" || user?.role === "admin"));
+  const section: TutorSection = canOpenSection ? requestedSection : "students";
+  const setSection = (next: TutorSection) => setSearchParams((prev) => {
+    const params = new URLSearchParams(prev);
+    if (next === "students") params.delete("section");
+    else params.set("section", next);
+    return params;
+  }, { replace: true });
   const [coachingCaseId, setCoachingCaseId] = useState<number | undefined>();
   const { data: students, isLoading } = trpc.coach.myStudents.useQuery(undefined, { enabled: allowed });
   // V56：学员查询（姓名/手机号）

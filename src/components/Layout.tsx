@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router";
-import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2 } from "lucide-react";
+import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2, Coins } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -153,6 +153,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   const campusMgr = isCampus && user?.orgId != null && (isAdmin || isJiaowu);
   /* v220.5：超管的「伴学工作台」称谓不跟校园版走 */
   const campusTutor = isCampus && user?.orgId != null;
+  /* 机构管理员直达积分分配；校园版无积分，平台超管仍走机构管理中的总积分调整。 */
+  const showOrgPoints = isAdmin && !isPlatformAdmin && user?.orgId != null && schoolCtx?.edition === "org" && schoolCtx.campus === false;
   /* v229：资料库功能被平台超管关闭时，学校版菜单同步隐藏该入口 */
   const schoolGroups = campusMgr
     ? (schoolCtx?.services?.library === false
@@ -166,6 +168,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     const first = schoolGroups[0]?.items[0]?.key;
     return (cur ?? first ?? "progress") === key;
   };
+  const orgPointsActive = location.pathname === "/tutor" && new URLSearchParams(location.search).get("section") === "points";
   /* 桌面侧边栏折叠态：记住用户选择，折叠后只留图标，给阅读区让出最大空间 */
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -249,11 +252,23 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
+                } ${isActive && !orgPointsActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <GraduationCap size={18} strokeWidth={2.2} />
               {!collapsed && (campusTutor ? "指导老师工作台" : "伴学工作台")}
+            </NavLink>
+          )}
+          {showOrgPoints && (
+            <NavLink
+              to="/tutor?section=points"
+              title={collapsed ? "积分管理" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${orgPointsActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <Coins size={18} strokeWidth={2.2} />
+              {!collapsed && "积分管理"}
             </NavLink>
           )}
           {campusMgr &&
