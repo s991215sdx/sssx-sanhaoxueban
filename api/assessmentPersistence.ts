@@ -38,7 +38,7 @@ async function resolveAssignment(tx: PointTx, userId: number, kind: string, assi
   return rows[0];
 }
 
-/** 旧入口的兼容收费：只从学员主管伴学师的钱包扣费，绝不使用机构未分配池。 */
+/** 旧入口的兼容收费：只从本机构有效伴学师的钱包扣费，绝不使用机构未分配池。 */
 async function legacyPayer(tx: PointTx, studentUserId: number) {
   const [student] = await tx.select({ orgId: users.orgId }).from(users).where(eq(users.id, studentUserId)).limit(1);
   const [profile] = await tx.select({ tutorId: studentProfile.tutorId }).from(studentProfile).where(eq(studentProfile.userId, studentUserId)).limit(1);
@@ -48,9 +48,11 @@ async function legacyPayer(tx: PointTx, studentUserId: number) {
     tutorId = link?.tutorId ?? null;
   }
   if (tutorId == null) return null;
-  const [tutor] = await tx.select({ orgId: users.orgId }).from(users).where(eq(users.id, tutorId)).limit(1);
+  const [tutor] = await tx.select({ orgId: users.orgId, role: users.role, deletedAt: users.deletedAt }).from(users).where(eq(users.id, tutorId)).limit(1);
   const orgId = student?.orgId ?? tutor?.orgId ?? null;
-  if (orgId == null) return null;
+  /* 与邀请渠道的 billingEnabled 口径一致：历史 user 归属账号不是新版可扣费伴学师。
+     未直接归属机构的存量学员因此保持旧流程，不能因该账号没有个人钱包而卡死 E3 提交。 */
+  if (orgId == null || !tutor || tutor.deletedAt || tutor.orgId !== orgId || !["tutor", "admin"].includes(tutor.role)) return null;
   const [pool] = await tx.select().from(orgPointAccounts).where(and(eq(orgPointAccounts.orgId, orgId), eq(orgPointAccounts.ownerUserId, 0))).limit(1).for("update");
   return pool?.initialized ? { orgId, tutorId } : null;
 }

@@ -118,6 +118,27 @@ describe("测评到期、取消和复测（模拟事务）", () => {
     expect(mock.inserts).toHaveLength(0);
   });
 
+  it("旧入口遇到有效本机构伴学师时仍按单项价格正常扣费", async () => {
+    const mock = mockDb([
+      [], [],
+      [{ orgId: 7, edition: "org" }],
+      [{ orgId: 7 }],
+      [{ tutorId: 9 }],
+      [{ orgId: 7, role: "tutor", deletedAt: null }],
+      [{ initialized: true }],
+    ]);
+    const saved = await persistAssessmentResult(mock.db, {
+      userId: 101,
+      outcome: { kind: "e3", result: {} },
+      answers: [1],
+      submissionKey: "current-tutor-debit-regression",
+    });
+    expect(saved.resultId).toBe(1);
+    expect(debitMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      orgId: 7, payerUserId: 9, studentUserId: 101, amount: 10, kind: "e3",
+    }));
+  });
+
   it("复测新建 20 积分组合任务并保留原结果与复测来源", async () => {
     const source = { assignment: { id: 40, status: "completed", studentUserId: 101, resultId: 88 }, selectionKey: "xuanke_free" };
     const mock = mockDb([[source], [], []]);
