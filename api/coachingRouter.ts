@@ -10,6 +10,7 @@ import {
   revokeGuardian, saveCoachingPlan, saveCourseSession, saveDailyCheckin, saveSupervision, setCoachingStatus, updateGrow, uploadCoachingDeliverable, verifyCoachingTask,
 } from "./coachingService";
 import { createCoachingException, recordCoachingException, revealCoachingException } from "./coachingExceptions";
+import { cancelReassignment, listIncomingHandoffs } from "./coachingLifecycle";
 
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const caseInput = z.object({ studentUserId: z.number().int().positive(), scenarios: z.array(z.enum(["A", "B", "C", "D"])).min(1).max(4),
@@ -31,6 +32,7 @@ const dailyCheckinInput = z.object({
 
 export const coachingRouter = createRouter({
   cases: tutorQuery.query(({ ctx }) => listCoachingCases(getDb(), ctx.user)),
+  incoming: tutorQuery.query(({ ctx }) => listIncomingHandoffs(getDb(), ctx.user)),
   staff: tutorQuery.query(({ ctx }) => {
     const orgId = requireOrgStaff(ctx.user);
     return getDb().select({ id: users.id, name: users.name, role: users.role }).from(users)
@@ -74,6 +76,8 @@ export const coachingRouter = createRouter({
     .mutation(({ ctx, input }) => setCoachingStatus(getDb(), ctx.user, input)),
   reassign: tutorQuery.input(z.object({ caseId: z.number().int().positive(), coachId: z.number().int().positive(), supervisorId: z.number().int().positive(), reason: z.string().trim().min(2).max(2000) }))
     .mutation(({ ctx, input }) => reassignCoachingCase(getDb(), ctx.user, input)),
+  cancelReassignment: tutorQuery.input(z.object({ handoffId: z.number().int().positive(), reason: z.string().trim().min(2).max(2000) }))
+    .mutation(({ ctx, input }) => cancelReassignment(getDb(), ctx.user, input)),
   saveCheckin: tutorQuery.input(dailyCheckinInput).mutation(({ ctx, input }) => saveDailyCheckin(getDb(), ctx.user, input)),
   saveSupervision: tutorQuery.input(z.object({ caseId: z.number().int().positive(), visitAt: z.date(), status: z.enum(["draft", "completed"]).default("completed") }).merge(supervisionInput))
     .mutation(({ ctx, input }) => saveSupervision(getDb(), ctx.user, input)),

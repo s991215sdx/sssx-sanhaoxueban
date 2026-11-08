@@ -125,7 +125,14 @@ export const coachingHandoffs = mysqlTable("coaching_handoffs", {
   fromUserId: userId("from_user_id"), toUserId: userId("to_user_id"), title: varchar("title", { length: 180 }).notNull(),
   content: text("content").notNull(), dueAt: timestamp("due_at"), status: varchar("status", { length: 24 }).notNull().default("pending"),
   acceptedAt: timestamp("accepted_at"), createdAt: createdAt(),
-});
+  fromCoachId: bigint("from_coach_id", { mode: "number", unsigned: true }),
+  fromSupervisorId: bigint("from_supervisor_id", { mode: "number", unsigned: true }),
+  nextCoachId: bigint("next_coach_id", { mode: "number", unsigned: true }),
+  nextSupervisorId: bigint("next_supervisor_id", { mode: "number", unsigned: true }),
+  appliedAt: timestamp("applied_at"),
+}, (table) => [
+  index("coaching_handoffs_recipient_status_idx").on(table.toUserId, table.status),
+]);
 
 export const coachingEvents = mysqlTable("coaching_events", {
   id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), actorUserId: userId("actor_user_id"),

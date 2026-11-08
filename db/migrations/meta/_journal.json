@@ -345,6 +345,13 @@
       "when": 1794057600000,
       "tag": "0050_coaching_service_exceptions",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "5",
+      "when": 1794096000000,
+      "tag": "0051_coaching_reassignment_handoffs",
+      "breakpoints": true
     }
   ]
 }
