@@ -10,6 +10,7 @@ import CoachingExceptions from "./CoachingExceptions";
 import CoachingHandoffInbox from "./CoachingHandoffInbox";
 import CoachingMonthlyQuality, { CoachingQualityInbox } from "./CoachingMonthlyQuality";
 import CoachingOperations from "./CoachingOperations";
+import { invalidateCoachingOperations } from "./coachingRefresh";
 import type { CoachingDetail } from "./coachingTypes";
 import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
 
@@ -103,7 +104,7 @@ function PlanPanel({ data }: { data: CoachingDetail }) {
   const [parentId, setParentId] = useState(0);
   const [sourceResultId, setSourceResultId] = useState(0);
   const [confirmed, setConfirmed] = useState(true);
-  const save = trpc.coaching.savePlan.useMutation({ onSuccess: async () => { setContent(""); await utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }); } });
+  const save = trpc.coaching.savePlan.useMutation({ onSuccess: async () => { setContent(""); await Promise.all([utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }), invalidateCoachingOperations(utils)]); } });
   const changeLevel = (value: typeof level) => { setLevel(value); setTitle(`${LEVEL[value]}陪跑计划`); setEndDate(today(value === "day" ? 0 : value === "week" ? 7 : value === "month" ? 30 : 180)); };
   return <Panel title="学期／月／周／日计划版本" icon={<CalendarDays size={16} />}>
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><label className={label}>层级<select value={level} onChange={(e) => changeLevel(e.target.value as typeof level)} className={input}>{Object.entries(LEVEL).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label className={label}>计划名称<input value={title} onChange={(e) => setTitle(e.target.value)} className={input} /></label><label className={label}>开始<input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={input} /></label><label className={label}>结束<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={input} /></label></div>
@@ -118,7 +119,7 @@ function PlanPanel({ data }: { data: CoachingDetail }) {
 function TaskPanel({ data }: { data: CoachingDetail }) {
   const utils = trpc.useUtils();
   const [title, setTitle] = useState(""); const [detail, setDetail] = useState(""); const [dueDate, setDueDate] = useState(today(7)); const [planId, setPlanId] = useState(0);
-  const add = trpc.coaching.addTask.useMutation({ onSuccess: async () => { setTitle(""); setDetail(""); await utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }); } });
+  const add = trpc.coaching.addTask.useMutation({ onSuccess: async () => { setTitle(""); setDetail(""); await Promise.all([utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }), invalidateCoachingOperations(utils)]); } });
   return <Panel title="行动任务与证据验收" icon={<ClipboardCheck size={16} />}>
     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_150px]"><input aria-label="行动标题" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例：连续三天完成错题三刷并能讲解" className={input} /><input aria-label="行动期限" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={input} /></div>
     <textarea aria-label="行动标准" value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} placeholder="完成标准、证据形式与家庭配合方式" className={`${input} mt-2`} />
@@ -131,7 +132,7 @@ function TaskCard({ data, task }: { data: CoachingDetail; task: CoachingDetail["
   const utils = trpc.useUtils(); const [evidence, setEvidence] = useState(""); const [result, setResult] = useState("");
   const history = data.verificationHistory.filter((v) => v.taskId === task.id);
   const latestVersion = history.reduce((max, v) => Math.max(max, v.version), 0);
-  const verify = trpc.coaching.verifyTask.useMutation({ onSuccess: async () => { setEvidence(""); setResult(""); await utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }); } });
+  const verify = trpc.coaching.verifyTask.useMutation({ onSuccess: async () => { setEvidence(""); setResult(""); await Promise.all([utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }), invalidateCoachingOperations(utils)]); } });
   return <article className="rounded-xl border border-border bg-cream/40 p-3">
     <div className="flex flex-wrap items-center gap-2"><b className="min-w-0 flex-1 text-[12.5px] text-olive">{task.title}</b><span className={`rounded-full px-2 py-0.5 text-[10px] ${task.status === "verified" ? "bg-mint-pale text-[#0C7064]" : "bg-butter-pale text-olive"}`}>{task.status === "verified" ? "已验收" : `截止 ${task.dueDate}`}</span></div>
     {task.detail && <p className="mt-1 whitespace-pre-wrap text-[11.5px] text-olive-mute">{task.detail}</p>}
@@ -148,7 +149,7 @@ function ReviewWorkspace({ data }: { data: CoachingDetail }) {
 }
 function ReviewPanel({ data }: { data: CoachingDetail }) {
   const utils = trpc.useUtils(); const [period, setPeriod] = useState<"day" | "week" | "month" | "term">("week"); const [periodKey, setPeriodKey] = useState(today().slice(0, 7)); const [content, setContent] = useState(""); const [nextActions, setNextActions] = useState("");
-  const save = trpc.coaching.addReview.useMutation({ onSuccess: async () => { setContent(""); setNextActions(""); await utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }); } });
+  const save = trpc.coaching.addReview.useMutation({ onSuccess: async () => { setContent(""); setNextActions(""); await Promise.all([utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }), invalidateCoachingOperations(utils)]); } });
   return <Panel title="日／周／月／学期复盘" icon={<History size={16} />}><div className="grid grid-cols-2 gap-2"><label className={label}>复盘周期<select value={period} onChange={(e) => { const value = e.target.value as typeof period; setPeriod(value); setPeriodKey(value === "month" || value === "term" ? today().slice(0, 7) : today()); }} className={input}>{Object.entries(PERIOD).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label className={label}>周期标识<input value={periodKey} onChange={(e) => setPeriodKey(e.target.value)} placeholder="例：2026-W45" className={input} /></label></div><textarea aria-label="复盘内容" value={content} onChange={(e) => setContent(e.target.value)} rows={4} placeholder="目标完成事实、行动证据、问题根因与需要调整的服务方式" className={`${input} mt-2`} /><textarea aria-label="下一步行动" value={nextActions} onChange={(e) => setNextActions(e.target.value)} rows={2} placeholder="下一步行动、责任人与验证时间" className={`${input} mt-2`} /><button type="button" disabled={save.isPending || periodKey.trim().length < 2 || content.trim().length < 2 || nextActions.trim().length < 2} onClick={() => save.mutate({ caseId: data.coachingCase.id, period, periodKey, content, nextActions })} className={`${primary} mt-2 w-full`}>保存复盘新版本</button><MutationMessage error={save.error} success={save.isSuccess} /><div className="mt-3 space-y-2">{data.reviews.map((r) => <details key={r.id} className="rounded-lg bg-cream/50 p-2.5 text-[11.5px]"><summary className="cursor-pointer font-semibold text-olive">{PERIOD[r.period]} · {r.periodKey} V{r.version}</summary><p className="mt-2 whitespace-pre-wrap text-olive-soft">{r.content}</p><p className="mt-2 whitespace-pre-wrap text-[#0C7064]">下一步：{r.nextActions}</p></details>)}</div></Panel>;
 }
 function HandoffPanel({ data }: { data: CoachingDetail }) {

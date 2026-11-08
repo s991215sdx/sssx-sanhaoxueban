@@ -111,9 +111,19 @@ async function operationSource(db: Db, cases: OperationCase[]): Promise<Coaching
 }
 
 export async function coachingOperations(db: Db, me: StaffUser) {
+  const orgId = requireOrgStaff(me);
   const visible = await listCoachingCases(db, me);
   const cases = visible.map((row) => ({ ...row.coachingCase, studentName: row.studentName ?? `学员 #${row.coachingCase.studentUserId}` }));
-  const source = await operationSource(db, cases);
+  /* 新接收人尚未进入主档名单，也必须看到分配给自己的交接；只补聚合范围，不开放主档权限。 */
+  const incoming = await db.select({ coachingCase: coachingCases, studentName: users.name }).from(coachingHandoffs)
+    .innerJoin(coachingCases, eq(coachingHandoffs.caseId, coachingCases.id))
+    .leftJoin(users, eq(coachingCases.studentUserId, users.id))
+    .where(and(eq(coachingHandoffs.toUserId, me.id), eq(coachingHandoffs.status, "pending"), eq(coachingCases.orgId, orgId)));
+  const caseMap = new Map(cases.map((row) => [row.id, row]));
+  for (const row of incoming) {
+    if (!caseMap.has(row.coachingCase.id)) caseMap.set(row.coachingCase.id, { ...row.coachingCase, studentName: row.studentName ?? `学员 #${row.coachingCase.studentUserId}` });
+  }
+  const source = await operationSource(db, [...caseMap.values()]);
   return { ...buildCoachingOperations(source, me.id), accessibleCaseIds: cases.map((row) => row.id) };
 }
 

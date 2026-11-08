@@ -153,6 +153,7 @@ function notificationDb(initial: Notice[] = [], extraRows = new Map<unknown, unk
         where(condition: unknown) { selected = sourceFor(table).filter((row) => matches(row, condition)); return query; },
         orderBy() { return query; },
         leftJoin() { return query; },
+        innerJoin() { return query; },
         limit(count: number) { return Promise.resolve(selected.slice(0, count)); },
         then(resolve: (value: unknown[]) => unknown, reject?: (reason: unknown) => unknown) {
           return Promise.resolve(selected).then(resolve, reject);

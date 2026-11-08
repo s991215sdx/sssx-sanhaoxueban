@@ -4,6 +4,7 @@ import { trpc } from "@/providers/trpc";
 import { phaseForVisit } from "@contracts/orgService";
 import { saveCoachingFile } from "@/lib/coachingDownload";
 import type { CoachingDetail } from "./coachingTypes";
+import { invalidateCoachingOperations } from "./coachingRefresh";
 
 const FORMAT_LABEL: Record<string, string> = { one_to_one: "一对一", salon: "小组沙龙", workshop: "学习坊", mixed: "混合小组", supervision: "纯督学" };
 const ATTENDANCE_LABEL: Record<string, string> = { present: "出席", late: "迟到", absent: "缺席", leave: "请假" };
@@ -37,7 +38,7 @@ export default function CoachingSessions({ data }: { data: CoachingDetail }) {
   const phase = phaseForVisit(data.coachingCase.serviceStart, new Date(startAt));
   const early = phase === "early";
   const groupFormat = format !== "one_to_one";
-  const refresh = async () => { await Promise.all([utils.coaching.detail.invalidate({ caseId }), utils.coaching.cases.invalidate()]); };
+  const refresh = async () => { await Promise.all([utils.coaching.detail.invalidate({ caseId }), utils.coaching.cases.invalidate(), invalidateCoachingOperations(utils)]); };
   const saveSession = trpc.coaching.saveSession.useMutation({ onSuccess: async () => {
     setSharedSummary(""); setSupervision({ selfStudyMinutes: 60, alignment: "", checks: "", exitCheck: "", followUp: "" });
     setUnits([{ courseKey: "mindset", lessonNo: null, title: "心法课·心智成长", learningPoints: "", practiceEvidence: "" }]);

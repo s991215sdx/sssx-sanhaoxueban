@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { COACHING_EXCEPTION_CATEGORIES, COACHING_EXCEPTION_SEVERITIES, coachingExceptionSensitive,
   defaultCoachingExceptionDueAt, type CoachingExceptionCategory, type CoachingExceptionSeverity } from "@contracts/orgService";
 import type { CoachingDetail } from "./coachingTypes";
+import { invalidateCoachingOperations } from "./coachingRefresh";
 
 type ExceptionItem = CoachingDetail["exceptions"][number];
 const input = "mt-1 w-full rounded-lg border border-border bg-white px-2.5 py-2 text-[12px] font-normal text-olive outline-none focus:border-[#0C7064]";
@@ -37,7 +38,7 @@ export default function CoachingExceptions({ data }: { data: CoachingDetail }) {
   const isSensitive = coachingExceptionSensitive(severity, category, sensitive);
   const admins = useMemo(() => staff.filter((person) => person.role === "admin"), [staff]);
   const openCount = data.exceptions.filter((item) => item.status !== "closed").length;
-  const refresh = () => utils.coaching.detail.invalidate({ caseId });
+  const refresh = () => Promise.all([utils.coaching.detail.invalidate({ caseId }), invalidateCoachingOperations(utils)]);
 
   useEffect(() => {
     setSeverity("S1"); setCategory("service"); setTitle(""); setDetail(""); setSensitive(false);
