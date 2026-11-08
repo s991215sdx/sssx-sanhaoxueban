@@ -8,6 +8,7 @@ import type { getDb } from "./queries/connection";
 import type { StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
 import { assertCaseAccess } from "./coachingAccess";
+import { queueFamilyCoachingNotification } from "./coachingNotifications";
 
 type Db = ReturnType<typeof getDb>;
 type QueryDb = Db | PointTx;
@@ -221,6 +222,9 @@ export async function pushCoachingMonthlyReport(db: Db, me: StaffUser, reportId:
     if (affectedRows !== 1) throw new TRPCError({ code: "CONFLICT", message: "报告推送状态已变化，请刷新" });
     await tx.insert(coachingEvents).values({ caseId: current.caseId, actorUserId: me.id, type: "monthly_report_pushed",
       content: `${current.month} 月度学习报告 V${current.version} 已正式推送家庭`, visibility: "internal" });
+    await queueFamilyCoachingNotification(tx, { caseId: current.caseId, type: "monthly_report_pushed",
+      title: "新的月度学习报告", body: `伴学师已正式推送 ${current.month} 月度学习报告，请在陪跑反馈中查看。`,
+      idempotencyKey: `monthly:${current.id}:v${current.version}`, createdBy: me.id });
     return { id: current.id, version: current.version, duplicate: false as const };
   });
 }

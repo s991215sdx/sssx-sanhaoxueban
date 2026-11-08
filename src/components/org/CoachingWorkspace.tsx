@@ -9,6 +9,7 @@ import CoachingCheckins from "./CoachingCheckins";
 import CoachingExceptions from "./CoachingExceptions";
 import CoachingHandoffInbox from "./CoachingHandoffInbox";
 import CoachingMonthlyQuality, { CoachingQualityInbox } from "./CoachingMonthlyQuality";
+import CoachingOperations from "./CoachingOperations";
 import type { CoachingDetail } from "./coachingTypes";
 import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
 
@@ -61,6 +62,7 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
     </aside>
 
     <div className="min-w-0 space-y-4">
+      <CoachingOperations onOpenCase={(id, kind) => { setScenarioFilter("all"); setCaseId(id); setNewStudentId(0); setTab(kind === "quality" ? "monthly" : kind === "session" || kind === "supervision" ? "sessions" : kind === "exception" || kind === "handoff" ? "review" : "plan"); }} />
       <CoachingHandoffInbox />
       <CoachingQualityInbox />
       {newStudentId > 0 ? <GrowEditor key={newStudentId} studentUserId={newStudentId} onOpenCoaching={(id) => { setCaseId(id); setNewStudentId(0); }} /> : activeCase ? <>
@@ -162,7 +164,7 @@ function HandoffPanel({ data }: { data: CoachingDetail }) {
   const refresh = () => utils.coaching.detail.invalidate({ caseId: data.coachingCase.id });
   const add = trpc.coaching.addHandoff.useMutation({ onSuccess: async () => { setTitle(""); setContent(""); await refresh(); } });
   const accept = trpc.coaching.acceptHandoff.useMutation({ onSuccess: async () => {
-    await Promise.all([refresh(), utils.coaching.cases.invalidate(), utils.coaching.incoming.invalidate()]);
+    await Promise.all([refresh(), utils.coaching.cases.invalidate(), utils.coaching.incoming.invalidate(), utils.coaching.operations.invalidate(), utils.coaching.staffWorkloads.invalidate()]);
   } });
   return <Panel title="H1—H4 服务交接" icon={<ArrowRightLeft size={16} />}>
     <p className="mb-3 rounded-lg bg-mint-pale/35 px-3 py-2 text-[10.5px] leading-relaxed text-olive-soft">普通交接由指定接收人确认；H5 人员改派须由管理员在右侧发起，不能在这里手工创建。</p>
@@ -187,6 +189,7 @@ function StatusPanel({ data }: { data: CoachingDetail }) {
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const { data: tutors = [] } = trpc.coaching.staff.useQuery();
+  const { data: workloadData } = trpc.coaching.staffWorkloads.useQuery(undefined, { enabled: user?.role === "admin" });
   const [status, setStatus] = useState<"active" | "paused" | "closed" | "archived">("paused");
   const [reason, setReason] = useState("");
   const [coachId, setCoachId] = useState(data.coachingCase.coachId);
@@ -201,11 +204,18 @@ function StatusPanel({ data }: { data: CoachingDetail }) {
   }, [data.coachingCase.id, data.coachingCase.coachId, data.coachingCase.supervisorId]);
   const pendingReassignment = data.handoffs.find((h) => h.type === "H5" && h.status === "pending");
   const staffName = (id: number | null | undefined) => tutors.find((t) => t.id === id)?.name ?? (id ? `员工 #${id}` : "未设置");
+  const staffLoad = (id: number) => workloadData?.staff.find((person) => person.userId === id);
+  const staffOption = (id: number, name: string | null) => {
+    const load = staffLoad(id);
+    return `${name ?? `员工 #${id}`}${load ? `（在读 ${load.activeCases} · 今日 ${load.todayTodos} · 逾期 ${load.overdueTodos}）` : ""}`;
+  };
   const refresh = async () => {
     await Promise.all([
       utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }),
       utils.coaching.cases.invalidate(),
       utils.coaching.incoming.invalidate(),
+      utils.coaching.operations.invalidate(),
+      utils.coaching.staffWorkloads.invalidate(),
     ]);
   };
   const change = trpc.coaching.setStatus.useMutation({ onSuccess: async () => { setReason(""); await refresh(); } });
@@ -240,10 +250,11 @@ function StatusPanel({ data }: { data: CoachingDetail }) {
         {cancel.isSuccess && <p className="mt-2 text-[11px] text-[#2F7A41]">改派已取消，原负责人保持不变。</p>}
       </div>}
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <label className={label}>新主教伴学师<select value={coachId} disabled={Boolean(pendingReassignment)} onChange={(e) => setCoachId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
-        <label className={label}>新督学负责人<select value={supervisorId} disabled={Boolean(pendingReassignment)} onChange={(e) => setSupervisorId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+        <label className={label}>新主教伴学师<select value={coachId} disabled={Boolean(pendingReassignment)} onChange={(e) => setCoachId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{staffOption(t.id, t.name)}</option>)}</select></label>
+        <label className={label}>新督学负责人<select value={supervisorId} disabled={Boolean(pendingReassignment)} onChange={(e) => setSupervisorId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{staffOption(t.id, t.name)}</option>)}</select></label>
       </div>
-      <textarea aria-label="改派原因" value={assignReason} disabled={Boolean(pendingReassignment)} onChange={(e) => setAssignReason(e.target.value)} rows={2} placeholder="改派原因、服务连续性与必须交接的事项" className={`${input} mt-2`} />
+      {[{ label: "主教", id: coachId }, { label: "督学", id: supervisorId }].map((assignment) => { const load = staffLoad(assignment.id); return load ? <div key={assignment.label} className={`mt-2 rounded-lg px-3 py-2 text-[10.5px] leading-relaxed ${load.overdue || load.caseOverload ? "bg-amber-50 text-amber-900" : "bg-mint-pale/30 text-olive-soft"}`}><b>{assignment.label}接收人：{load.name}</b> · 在读 {load.activeCases} 人 · 暂停 {load.pausedCases} 人 · 今日 {load.todayTodos} 项 · 逾期 {load.overdueTodos} 项<br />{load.message}</div> : null; })}
+      <textarea aria-label="改派原因" value={assignReason} disabled={Boolean(pendingReassignment)} onChange={(e) => setAssignReason(e.target.value)} rows={2} placeholder="改派原因、服务连续性与必须交接的事项；负荷预警不会强制阻止改派。" className={`${input} mt-2`} />
       <button type="button" disabled={reassign.isPending || Boolean(pendingReassignment) || sameAssignment || !coachId || !supervisorId || assignReason.trim().length < 2} onClick={() => reassign.mutate({ caseId: data.coachingCase.id, coachId, supervisorId, reason: assignReason })} className={`${primary} mt-2 w-full`}>{pendingReassignment ? "已有改派待接收" : "发起改派，待新督学接收"}</button>
       {reassign.isSuccess && !pendingReassignment && <p className="mt-2 text-[11px] text-[#2F7A41]">改派已发起，等待新督学接收。</p>}
       <MutationMessage error={reassign.error ?? cancel.error} />

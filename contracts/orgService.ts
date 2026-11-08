@@ -348,3 +348,71 @@ export function coachingQualityLevel(total: number): { key: "green" | "yellow" |
   if (total >= 75) return { key: "yellow", label: "黄 · 限期改进" };
   return { key: "red", label: "红 · 优先整改" };
 }
+
+export const DEFAULT_COACHING_NOTIFICATION_SETTINGS = { quietStart: "22:00", quietEnd: "07:00", suggestedCaseLoad: 20 } as const;
+const SHANGHAI_OFFSET = 8 * 60 * 60 * 1000;
+
+/** 不依赖服务器本地时区；任务日期与通知静默时段统一按上海时间解释。 */
+export function shanghaiDate(value: Date): string {
+  return new Date(value.getTime() + SHANGHAI_OFFSET).toISOString().slice(0, 10);
+}
+
+export function shiftShanghaiDate(date: string, days: number): string {
+  const value = new Date(`${date}T00:00:00+08:00`);
+  if (Number.isNaN(value.getTime())) throw new Error("上海日期无效");
+  value.setUTCDate(value.getUTCDate() + days);
+  return shanghaiDate(value);
+}
+
+export function shanghaiMinutes(value: Date): number {
+  const shifted = new Date(value.getTime() + SHANGHAI_OFFSET);
+  return shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
+}
+
+function clockMinutes(clock: string): number {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(clock);
+  if (!match) throw new Error("时间须为 HH:mm");
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+export function isShanghaiQuietTime(now: Date, quietStart: string, quietEnd: string): boolean {
+  const start = clockMinutes(quietStart);
+  const end = clockMinutes(quietEnd);
+  if (start === end) return false;
+  const current = shanghaiMinutes(now);
+  return start < end ? current >= start && current < end : current >= start || current < end;
+}
+
+/** 普通通知推迟到静默结束；紧急通知由调用方绕过此计算。 */
+export function nextShanghaiOpening(now: Date, quietStart: string, quietEnd: string): Date {
+  clockMinutes(quietStart);
+  clockMinutes(quietEnd);
+  if (!isShanghaiQuietTime(now, quietStart, quietEnd)) return now;
+  const today = shanghaiDate(now);
+  let opening = new Date(`${today}T${quietEnd}:00+08:00`);
+  if (opening.getTime() <= now.getTime()) opening = new Date(`${shiftShanghaiDate(today, 1)}T${quietEnd}:00+08:00`);
+  return opening;
+}
+
+export type CoachingOperationCategory = "overdue" | "today" | "upcoming" | "risk";
+export type CoachingOperationItem = {
+  key: string;
+  kind: "task" | "handoff" | "quality" | "exception" | "session" | "supervision";
+  title: string;
+  caseId: number;
+  studentName: string;
+  recipientId: number;
+  dueDate: string;
+  dueAt: string | null;
+  category: CoachingOperationCategory;
+  sensitive: boolean;
+};
+
+export function coachingOperationCategory(dueDate: string, today: string): "overdue" | "today" | "upcoming" {
+  return dueDate < today ? "overdue" : dueDate === today ? "today" : "upcoming";
+}
+
+export function coachingLoadWarning(activeCases: number, overdueTodos: number, suggestedCaseLoad: number) {
+  return { caseOverload: activeCases > suggestedCaseLoad, overdue: overdueTodos > 0,
+    message: overdueTodos > 0 ? `有 ${overdueTodos} 项逾期，请评估改派后的承接能力` : activeCases > suggestedCaseLoad ? `在读 ${activeCases} 人，超过建议负荷 ${suggestedCaseLoad} 人；仍可改派，但须确认服务安排` : "当前未触发负荷预警" };
+}

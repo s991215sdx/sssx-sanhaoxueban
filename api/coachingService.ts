@@ -15,6 +15,7 @@ import { assertAssessmentReportAccess, hasAssessmentReportAccess } from "./asses
 import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
 import { listCoachingExceptions } from "./coachingExceptions";
 import { getCoachingClosureReadiness } from "./coachingLifecycle";
+import { queueCoachingNotification, queueFamilyCoachingNotification } from "./coachingNotifications";
 
 export { assertCaseAccess } from "./coachingAccess";
 export { acceptHandoff, reassignCoachingCase, setCoachingStatus } from "./coachingLifecycle";
@@ -335,10 +336,17 @@ export async function addHandoff(db: Db, me: StaffUser, input: { caseId: number;
   if (!(HANDOFF_TYPES as readonly string[]).includes(input.type)) throw new TRPCError({ code: "BAD_REQUEST", message: "交接类型必须为 H1—H5" });
   if (input.type === "H5") throw new TRPCError({ code: "BAD_REQUEST", message: "H5 人员改派须由管理员从改派入口发起，并在新督学接收后生效" });
   await assertStaffRecipient(db, coachingCase.orgId, input.toUserId);
-  const [{ id }] = await db.insert(coachingHandoffs).values({ caseId: input.caseId, type: input.type, fromUserId: me.id, toUserId: input.toUserId,
-    title: required(input.title, "交接标题不能为空"), content: required(input.content, "交接内容不能为空"), dueAt: input.dueAt ?? null }).$returningId();
-  await db.insert(coachingEvents).values({ caseId: input.caseId, actorUserId: me.id, type: "handoff_created", content: `${input.type} ${input.title}` });
-  return { id };
+  const title = required(input.title, "交接标题不能为空");
+  const content = required(input.content, "交接内容不能为空");
+  return db.transaction(async (tx) => {
+    const [{ id }] = await tx.insert(coachingHandoffs).values({ caseId: input.caseId, type: input.type, fromUserId: me.id, toUserId: input.toUserId,
+      title, content, dueAt: input.dueAt ?? null }).$returningId();
+    await tx.insert(coachingEvents).values({ caseId: input.caseId, actorUserId: me.id, type: "handoff_created", content: `${input.type} ${title}` });
+    await queueCoachingNotification(tx, { orgId: coachingCase.orgId, caseId: input.caseId, recipientId: input.toUserId,
+      type: "handoff_assigned", title: "新的服务交接待接收", body: `你有一项 ${input.type} 服务交接待接收，请进入伴学工作台及时核对并处理。`,
+      idempotencyKey: `handoff:${id}:recipient:${input.toUserId}`, createdBy: me.id });
+    return { id };
+  });
 }
 
 async function insertSupervision(tx: PointTx, coachingCase: CaseRow, me: StaffUser, input: SessionInput["supervision"] & { visitAt: Date; format: SessionInput["format"] | "supervision"; status: "draft" | "completed"; hasCoachUnit: boolean }) {
@@ -472,6 +480,9 @@ export async function pushParticipantFeedback(db: Db, me: StaffUser, input: { pa
     await tx.update(coachingDeliverables).set({ visibility: "family", pushedAt: new Date() }).where(eq(coachingDeliverables.participantId, participant.id));
     await tx.update(courseParticipants).set({ feedbackText: text, feedbackVersion: version, feedbackAt: new Date() }).where(eq(courseParticipants.id, locked.id));
     await event(tx, ownerCase.id, me.id, "feedback_pushed", `家长反馈 V${version} 已推送`);
+    await queueFamilyCoachingNotification(tx, { caseId: ownerCase.id, studentUserId: participant.studentUserId,
+      type: "feedback_pushed", title: "新的课堂反馈", body: "伴学师已推送新的课堂反馈，请在陪跑反馈中查看文字、录音或图片。",
+      idempotencyKey: `feedback:${participant.id}:v${version}`, createdBy: me.id });
     return { ok: true as const, version };
   });
 }

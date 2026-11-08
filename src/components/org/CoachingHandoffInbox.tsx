@@ -24,6 +24,8 @@ export default function CoachingHandoffInbox() {
         utils.coaching.incoming.invalidate(),
         utils.coaching.cases.invalidate(),
         utils.coaching.detail.invalidate(),
+        utils.coaching.operations.invalidate(),
+        utils.coaching.staffWorkloads.invalidate(),
       ]);
     },
   });

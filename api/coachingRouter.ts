@@ -14,6 +14,11 @@ import { cancelReassignment, listIncomingHandoffs } from "./coachingLifecycle";
 import { getCoachingMonthlyPreview, listCoachingMonthlyReports, pushCoachingMonthlyReport, saveCoachingMonthlyReport } from "./coachingMonthly";
 import { assignQualityReview, closeQualityReview, qualityInbox, qualityReviews, submitQualityReview, submitSelfQualityReview } from "./coachingQuality";
 import { COACHING_QUALITY_FRAMEWORK } from "@contracts/orgService";
+import { coachingOperations, coachingStaffWorkloads, remindCoachingOperation } from "./coachingOperations";
+import {
+  coachingNotificationInbox, getCoachingNotificationSettings, markCoachingNotificationRead,
+  retryCoachingNotification, saveCoachingNotificationSettings, transferCoachingNotificationManual,
+} from "./coachingNotifications";
 
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const monthText = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
@@ -142,4 +147,19 @@ export const coachingRouter = createRouter({
   familyCases: authedQuery.query(({ ctx }) => listFamilyCoachingCases(getDb(), ctx.user)),
   familyFeedback: authedQuery.input(z.object({ caseId: z.number().int().positive() }).optional())
     .query(({ ctx, input }) => familyCoachingFeedback(getDb(), ctx.user, input?.caseId)),
+  operations: tutorQuery.query(({ ctx }) => coachingOperations(getDb(), ctx.user)),
+  staffWorkloads: tutorQuery.query(({ ctx }) => coachingStaffWorkloads(getDb(), ctx.user)),
+  remindOperation: tutorQuery.input(z.object({ itemKey: z.string().trim().min(3).max(80) }))
+    .mutation(({ ctx, input }) => remindCoachingOperation(getDb(), ctx.user, input.itemKey)),
+  notifications: authedQuery.query(({ ctx }) => coachingNotificationInbox(getDb(), ctx.user)),
+  readNotification: authedQuery.input(z.object({ notificationId: z.number().int().positive() }))
+    .mutation(({ ctx, input }) => markCoachingNotificationRead(getDb(), ctx.user, input.notificationId)),
+  retryNotification: tutorQuery.input(z.object({ notificationId: z.number().int().positive() }))
+    .mutation(({ ctx, input }) => retryCoachingNotification(getDb(), ctx.user, input.notificationId)),
+  manualNotification: tutorQuery.input(z.object({ notificationId: z.number().int().positive(), reason: z.string().trim().min(2).max(500) }))
+    .mutation(({ ctx, input }) => transferCoachingNotificationManual(getDb(), ctx.user, input)),
+  notificationSettings: tutorQuery.query(({ ctx }) => getCoachingNotificationSettings(getDb(), ctx.user)),
+  saveNotificationSettings: tutorQuery.input(z.object({ quietStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    quietEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), suggestedCaseLoad: z.number().int().min(1).max(200) }))
+    .mutation(({ ctx, input }) => saveCoachingNotificationSettings(getDb(), ctx.user, input)),
 });

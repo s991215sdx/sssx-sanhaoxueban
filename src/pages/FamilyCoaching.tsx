@@ -4,6 +4,7 @@ import { trpc } from "@/providers/trpc";
 import { saveCoachingFile } from "@/lib/coachingDownload";
 import { COACHING_MONTHLY_DIMENSIONS } from "@contracts/orgService";
 import type { FamilyFeedback } from "@/components/org/coachingTypes";
+import { CoachingNotificationCenter } from "@/components/org/CoachingOperations";
 
 const LEVEL: Record<string, string> = { term: "学期计划", month: "月计划", week: "周计划", day: "日计划" };
 const FORMAT: Record<string, string> = { one_to_one: "一对一教练课＋督学", salon: "小组沙龙＋督学", workshop: "学习坊＋督学", mixed: "混合课堂＋督学" };
@@ -23,12 +24,13 @@ export default function FamilyCoaching() {
     catch (reason) { setDownloadError(reason instanceof Error ? reason.message : "附件下载失败"); }
   };
 
-  if (!casesLoading && !cases.length) return <div className="mx-auto max-w-xl py-10"><div className="paper-card p-8 text-center"><Users className="mx-auto text-olive-mute" size={32} /><h1 className="mt-3 text-[19px] font-bold text-olive">陪跑反馈</h1><p className="mt-2 text-[13px] leading-relaxed text-olive-mute">当前账号还没有可查看的陪跑主档。学员建立主档后会自动可见；监护人需由伴学师逐位授权。</p></div></div>;
+  if (!casesLoading && !cases.length) return <div className="mx-auto max-w-xl space-y-4 py-10"><CoachingNotificationCenter family /><div className="paper-card p-8 text-center"><Users className="mx-auto text-olive-mute" size={32} /><h1 className="mt-3 text-[19px] font-bold text-olive">陪跑反馈</h1><p className="mt-2 text-[13px] leading-relaxed text-olive-mute">当前账号还没有可查看的陪跑主档。学员建立主档后会自动可见；监护人需由伴学师逐位授权。</p></div></div>;
   return <div className="space-y-5">
     <header className="rounded-2xl bg-[#0C7064] p-5 text-white shadow-sm">
       <div className="text-[10px] font-semibold tracking-[.18em] text-white/60">GROW · 家校同频</div>
       <div className="mt-1 flex flex-wrap items-end gap-3"><div className="min-w-0 flex-1"><h1 className="text-[22px] font-bold">{studentName ? `${studentName}的陪跑反馈` : "我的陪跑反馈"}</h1><p className="mt-1 text-[12px] text-white/75">看见目标与计划，了解每次课堂的真实表现，一起落实下一步行动。</p></div>{cases.length > 1 && <label className="text-[11px] font-semibold">选择学员<select value={caseId} onChange={(e) => setCaseId(Number(e.target.value))} className="mt-1 block rounded-lg border border-white/20 bg-white px-3 py-2 text-[12px] font-normal text-olive">{cases.map((item) => <option key={item.caseId} value={item.caseId}>{item.studentName}</option>)}</select></label>}</div>
     </header>
+    <CoachingNotificationCenter family />
     {isLoading && <div className="paper-card h-36 animate-pulse bg-cream-deep/40" />}
     {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-[12px] text-red-700">{error.message}</p>}
     {data && <>

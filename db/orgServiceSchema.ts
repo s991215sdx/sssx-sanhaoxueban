@@ -249,3 +249,28 @@ export const coachingGuardianGrants = mysqlTable("coaching_guardian_grants", {
   label: varchar("label", { length: 64 }).notNull(), active: boolean("active").notNull().default(true),
   createdBy: userId("created_by"), createdAt: createdAt(), updatedAt: updatedAt(),
 });
+
+/** 仅记录站内通知；sent 与 delivered 分开，未读不代表未送达。 */
+export const coachingNotifications = mysqlTable("coaching_notifications", {
+  id: id(), orgId: orgId(), caseId: bigint("case_id", { mode: "number", unsigned: true }), recipientId: userId("recipient_id"),
+  type: varchar("type", { length: 40 }).notNull(), channel: varchar("channel", { length: 16 }).notNull().default("in_app"),
+  title: varchar("title", { length: 180 }).notNull(), body: varchar("body", { length: 1000 }).notNull().default(""),
+  priority: varchar("priority", { length: 16 }).notNull().default("normal"), status: varchar("status", { length: 16 }).notNull().default("pending"),
+  notBefore: timestamp("not_before").notNull(), sentAt: timestamp("sent_at"), deliveredAt: timestamp("delivered_at"), readAt: timestamp("read_at"),
+  failedAt: timestamp("failed_at"), failureReason: varchar("failure_reason", { length: 500 }).notNull().default(""),
+  retryCount: int("retry_count").notNull().default(0), manualReason: varchar("manual_reason", { length: 500 }).notNull().default(""), manualAt: timestamp("manual_at"),
+  idempotencyKey: varchar("idempotency_key", { length: 191 }).notNull(), createdBy: bigint("created_by", { mode: "number", unsigned: true }),
+  createdAt: createdAt(), updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex("coaching_notifications_idempotency_unique").on(table.idempotencyKey),
+  index("coaching_notifications_recipient_status_idx").on(table.recipientId, table.status, table.notBefore),
+  index("coaching_notifications_org_created_idx").on(table.orgId, table.createdAt),
+  index("coaching_notifications_case_idx").on(table.caseId),
+]);
+
+/** 机构级提醒节奏与建议负荷；负荷只预警，不作为接案硬上限。 */
+export const coachingNotificationSettings = mysqlTable("coaching_notification_settings", {
+  id: id(), orgId: orgId(), quietStart: varchar("quiet_start", { length: 5 }).notNull().default("22:00"),
+  quietEnd: varchar("quiet_end", { length: 5 }).notNull().default("07:00"), suggestedCaseLoad: int("suggested_case_load").notNull().default(20),
+  updatedBy: bigint("updated_by", { mode: "number", unsigned: true }), createdAt: createdAt(), updatedAt: updatedAt(),
+}, (table) => [uniqueIndex("coaching_notification_settings_org_unique").on(table.orgId)]);
