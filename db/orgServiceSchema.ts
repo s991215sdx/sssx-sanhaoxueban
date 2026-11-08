@@ -133,6 +133,28 @@ export const coachingEvents = mysqlTable("coaching_events", {
   createdAt: createdAt(),
 });
 
+/** 异常主表只保存当前状态；每次处理与关闭证据追加到 actions，历史不覆盖。 */
+export const coachingExceptions = mysqlTable("coaching_exceptions", {
+  id: id(), orgId: orgId(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(),
+  severity: varchar("severity", { length: 4 }).notNull(), category: varchar("category", { length: 32 }).notNull(),
+  title: varchar("title", { length: 180 }).notNull(), detail: text("detail").notNull(), sensitive: boolean("sensitive").notNull().default(false),
+  status: varchar("status", { length: 16 }).notNull().default("open"), assigneeId: userId("assignee_id"), dueAt: timestamp("due_at").notNull(),
+  createdBy: userId("created_by"), createdAt: createdAt(), updatedAt: updatedAt(),
+  closedBy: bigint("closed_by", { mode: "number", unsigned: true }), closedAt: timestamp("closed_at"), closeEvidence: text("close_evidence"),
+}, (table) => [
+  index("coaching_exceptions_org_status_idx").on(table.orgId, table.status),
+  index("coaching_exceptions_case_status_idx").on(table.caseId, table.status),
+  index("coaching_exceptions_assignee_due_idx").on(table.assigneeId, table.dueAt),
+]);
+
+export const coachingExceptionActions = mysqlTable("coaching_exception_actions", {
+  id: id(), exceptionId: bigint("exception_id", { mode: "number", unsigned: true }).notNull(),
+  caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(),
+  action: varchar("action", { length: 16 }).notNull(), note: text("note").notNull(), evidence: text("evidence").notNull(),
+  actorUserId: userId("actor_user_id"), createdAt: createdAt(),
+}, (table) => [index("coaching_exception_actions_exception_idx").on(table.exceptionId, table.createdAt),
+  index("coaching_exception_actions_case_idx").on(table.caseId, table.exceptionId)]);
+
 export const courseCatalog = mysqlTable("course_catalog", {
   id: id(), orgId: orgId(), courseKey: varchar("course_key", { length: 24 }).notNull(), version: varchar("version", { length: 16 }).notNull().default("1.0"),
   title: varchar("title", { length: 64 }).notNull(), audience: varchar("audience", { length: 32 }).notNull(), purpose: varchar("purpose", { length: 64 }).notNull(),

@@ -12,9 +12,13 @@ import type { getDb } from "./queries/connection";
 import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
 import { assertAssessmentReportAccess, hasAssessmentReportAccess } from "./assessmentReports";
+import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
+import { listCoachingExceptions } from "./coachingExceptions";
+
+export { assertCaseAccess } from "./coachingAccess";
 
 type Db = ReturnType<typeof getDb>;
-type CaseRow = typeof coachingCases.$inferSelect;
+type CaseRow = CoachingCaseRow;
 type SessionInput = {
   caseId: number; startAt: Date; format: "one_to_one" | "salon" | "workshop" | "mixed";
   status: "draft" | "completed"; changeReason?: string; lateChangeConfirmed?: boolean; sharedSummary?: string;
@@ -32,14 +36,6 @@ function required(value: string | undefined, message: string): string {
 
 async function event(tx: PointTx, caseId: number, actorUserId: number, type: string, content: string, visibility = "internal") {
   await tx.insert(coachingEvents).values({ caseId, actorUserId, type, content, visibility });
-}
-
-export async function assertCaseAccess(db: Db, me: StaffUser, caseId: number): Promise<CaseRow> {
-  const orgId = requireOrgStaff(me);
-  const [row] = await db.select().from(coachingCases).where(eq(coachingCases.id, caseId)).limit(1);
-  if (!row || row.orgId !== orgId) throw new TRPCError({ code: "NOT_FOUND", message: "陪跑主档不存在" });
-  if (me.role !== "admin" && row.coachId !== me.id && row.supervisorId !== me.id) await assertStudentAccess(db, me, row.studentUserId);
-  return row;
 }
 
 export async function ensureCourseCatalog(db: Db, orgId: number) {
@@ -117,13 +113,14 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
       .leftJoin(users, eq(courseParticipants.studentUserId, users.id))
       .where(and(inArray(courseParticipants.sessionId, sessionIds), eq(courseParticipants.studentUserId, coachingCase.studentUserId))),
   ]) : [[], []];
-  const [reportAllowed, verificationHistory, scenarioHistory] = await Promise.all([
+  const [reportAllowed, verificationHistory, scenarioHistory, exceptions] = await Promise.all([
     hasAssessmentReportAccess(db, me, coachingCase.studentUserId),
     db.select().from(coachingTaskVerifications).where(eq(coachingTaskVerifications.caseId, caseId)).orderBy(asc(coachingTaskVerifications.taskId), desc(coachingTaskVerifications.version)),
     db.select().from(coachingCaseScenarios).where(eq(coachingCaseScenarios.caseId, caseId)).orderBy(desc(coachingCaseScenarios.startedAt), desc(coachingCaseScenarios.id)),
+    listCoachingExceptions(db, me, coachingCase),
   ]);
   const serviceScenarios = normalizeCoachingScenarios(scenarioHistory.filter((item) => !item.endedAt).map((item) => item.scenario));
-  return { coachingCase, serviceScenarios, scenarioHistory, plans, tasks, reviews, checkins, handoffs, events, supervisions,
+  return { coachingCase, serviceScenarios, scenarioHistory, plans, tasks, reviews, checkins, handoffs, events, exceptions, supervisions,
     sessions: sessions.map((session) => ({ ...session, units: units.filter((u) => u.sessionId === session.id),
       participants: participants.filter((p) => p.participant.sessionId === session.id) })),
     deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog };
@@ -199,10 +196,16 @@ async function saveCoachingPlanTx(tx: PointTx, me: StaffUser, coachingCase: Case
   return { id, version };
 }
 
+async function assertPlanInCase(db: Db, caseId: number, planId: number) {
+  const [plan] = await db.select({ id: coachingPlans.id, caseId: coachingPlans.caseId }).from(coachingPlans).where(eq(coachingPlans.id, planId)).limit(1);
+  if (plan?.caseId !== caseId) throw new TRPCError({ code: "BAD_REQUEST", message: "关联计划与当前陪跑主档不匹配" });
+}
+
 export async function saveCoachingPlan(db: Db, me: StaffUser, input: SaveCoachingPlanInput) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
   required(input.content, "计划内容不能为空");
   if (input.endDate < input.startDate) throw new TRPCError({ code: "BAD_REQUEST", message: "计划结束日期不能早于开始日期" });
+  if (input.parentId != null) await assertPlanInCase(db, input.caseId, input.parentId);
   if (input.sourceResultId) {
     const [result] = await db.select({ userId: assessmentResults.userId }).from(assessmentResults).where(eq(assessmentResults.id, input.sourceResultId)).limit(1);
     if (result?.userId !== coachingCase.studentUserId) throw new TRPCError({ code: "FORBIDDEN", message: "不能关联其他学员的测评结果" });
@@ -227,6 +230,7 @@ export async function updateGrow(db: Db, me: StaffUser, input: { caseId: number;
 
 export async function addCoachingTask(db: Db, me: StaffUser, input: { caseId: number; planId?: number | null; title: string; detail?: string; dueDate: string }) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
+  if (input.planId != null) await assertPlanInCase(db, input.caseId, input.planId);
   const [{ id }] = await db.insert(coachingTasks).values({ caseId: input.caseId, planId: input.planId ?? null, title: required(input.title, "请填写可验证行动"),
     detail: input.detail?.trim() ?? "", ownerId: coachingCase.studentUserId, verifierId: me.id, dueDate: input.dueDate, evidence: "", result: "", createdBy: me.id }).$returningId();
   await db.insert(coachingEvents).values({ caseId: input.caseId, actorUserId: me.id, type: "task_created", content: input.title });

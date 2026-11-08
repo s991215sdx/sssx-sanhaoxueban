@@ -123,7 +123,7 @@ describe("0049 日检验迁移与页面接线", () => {
     expect(migration).toContain("(`org_id`,`check_date`)");
     expect(migration).not.toMatch(/UPDATE\s+`coaching_checkins`/i);
     const journal = JSON.parse(readFileSync("db/migrations/meta/_journal.json", "utf8")) as { entries: { idx: number; tag: string }[] };
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 49, tag: "0049_coaching_daily_checkins" });
+    expect(journal.entries.find((entry) => entry.idx === 49)).toMatchObject({ idx: 49, tag: "0049_coaching_daily_checkins" });
     expect(readFileSync("api/migrationsEmbedded.ts", "utf8")).toContain('"0049_coaching_daily_checkins":');
     const table = getTableConfig(coachingCheckins);
     expect(table.indexes.map((item) => item.config.name)).toEqual(expect.arrayContaining(["coaching_checkins_case_date_version_unique", "coaching_checkins_case_date_version_idx", "coaching_checkins_org_date_idx"]));

@@ -9,6 +9,7 @@ import {
   ensureCourseCatalog, familyCoachingFeedback, grantGuardian, listCoachingCases, listFamilyCoachingCases, pushParticipantFeedback, reassignCoachingCase,
   revokeGuardian, saveCoachingPlan, saveCourseSession, saveDailyCheckin, saveSupervision, setCoachingStatus, updateGrow, uploadCoachingDeliverable, verifyCoachingTask,
 } from "./coachingService";
+import { createCoachingException, recordCoachingException, revealCoachingException } from "./coachingExceptions";
 
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const caseInput = z.object({ studentUserId: z.number().int().positive(), scenarios: z.array(z.enum(["A", "B", "C", "D"])).min(1).max(4),
@@ -36,6 +37,15 @@ export const coachingRouter = createRouter({
       .where(and(eq(users.orgId, orgId), or(eq(users.role, "tutor"), eq(users.role, "admin")), isNull(users.deletedAt))).orderBy(users.id);
   }),
   detail: tutorQuery.input(z.object({ caseId: z.number().int().positive() })).query(({ ctx, input }) => coachingCaseDetail(getDb(), ctx.user, input.caseId)),
+  createException: tutorQuery.input(z.object({ caseId: z.number().int().positive(), severity: z.enum(["S1", "S2", "S3", "S4"]),
+    category: z.enum(["service", "archive", "communication", "attendance", "complaint", "integrity", "wellbeing", "safety", "other"]),
+    title: z.string().trim().min(2).max(180), detail: z.string().trim().min(2).max(12000), sensitive: z.boolean().default(false),
+    assigneeId: z.number().int().positive(), dueAt: z.date() })).mutation(({ ctx, input }) => createCoachingException(getDb(), ctx.user, input)),
+  recordException: tutorQuery.input(z.object({ exceptionId: z.number().int().positive(), action: z.enum(["progress", "closed"]),
+    note: z.string().trim().min(2).max(12000), evidence: z.string().trim().max(12000).optional() }))
+    .mutation(({ ctx, input }) => recordCoachingException(getDb(), ctx.user, input)),
+  revealException: tutorQuery.input(z.object({ exceptionId: z.number().int().positive() }))
+    .mutation(({ ctx, input }) => revealCoachingException(getDb(), ctx.user, input.exceptionId)),
   createCase: tutorQuery.input(caseInput).mutation(({ ctx, input }) => createCoachingCase(getDb(), ctx.user, input)),
   updateGrow: tutorQuery.input(caseInput.omit({ studentUserId: true }).extend({ caseId: z.number().int().positive(), scenarioChangeReason: z.string().trim().max(500).optional() }))
     .mutation(({ ctx, input }) => updateGrow(getDb(), ctx.user, input)),
