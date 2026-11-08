@@ -1,9 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import {
   assessmentResults, coachingCases, coachingCaseScenarios, coachingCheckins, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
-  coachingPlans, coachingReviews, coachingTasks, coachingTaskVerifications, courseCatalog, courseParticipants, courseSessions, courseSessionUnits,
+  coachingMonthlyReports, coachingPlans, coachingReviews, coachingTasks, coachingTaskVerifications, courseCatalog, courseParticipants, courseSessions, courseSessionUnits,
   studentProfile, studentTutor, studySupervisionRecords, users,
 } from "@db/schema";
 import { COURSE_CATALOG, HANDOFF_TYPES, LEARNING_TRACE_KEYS, TECHNIQUE_LESSONS, coachingScenarioLabel, normalizeCoachingScenarios, phaseForVisit,
@@ -571,7 +571,7 @@ export async function listFamilyCoachingCases(db: Db, me: { id: number; role: st
 export async function familyCoachingFeedback(db: Db, me: { id: number; role: string }, caseId?: number) {
   if (me.role !== "user") throw new TRPCError({ code: "FORBIDDEN", message: "请以学员或监护人账号查看" });
   const coachingCase = await familyCase(db, me.id, caseId);
-  const [plans, tasks, sessions, attachments] = await Promise.all([
+  const [plans, tasks, sessions, attachments, monthlyReports] = await Promise.all([
     db.select({ level: coachingPlans.level, title: coachingPlans.title, content: coachingPlans.content, version: coachingPlans.version,
       startDate: coachingPlans.startDate, endDate: coachingPlans.endDate }).from(coachingPlans)
       .where(and(eq(coachingPlans.caseId, coachingCase.id), eq(coachingPlans.status, "confirmed"))).orderBy(desc(coachingPlans.id)),
@@ -592,6 +592,14 @@ export async function familyCoachingFeedback(db: Db, me: { id: number; role: str
     db.select({ id: coachingDeliverables.id, sessionId: coachingDeliverables.sessionId, kind: coachingDeliverables.kind,
       mimeType: coachingDeliverables.mimeType, version: coachingDeliverables.version, createdAt: coachingDeliverables.createdAt })
       .from(coachingDeliverables).where(and(eq(coachingDeliverables.caseId, coachingCase.id), eq(coachingDeliverables.visibility, "family"), isNull(coachingDeliverables.disposedAt))),
+    db.select({ id: coachingMonthlyReports.id, month: coachingMonthlyReports.month, version: coachingMonthlyReports.version,
+      metricSnapshot: coachingMonthlyReports.metricSnapshot, goalProgress: coachingMonthlyReports.goalProgress,
+      academicProgress: coachingMonthlyReports.academicProgress, taskExecution: coachingMonthlyReports.taskExecution,
+      learningMethod: coachingMonthlyReports.learningMethod, habitFamily: coachingMonthlyReports.habitFamily,
+      meetingNotes: coachingMonthlyReports.meetingNotes, nextActions: coachingMonthlyReports.nextActions,
+      familyAction: coachingMonthlyReports.familyAction, pushedAt: coachingMonthlyReports.pushedAt }).from(coachingMonthlyReports)
+      .where(and(eq(coachingMonthlyReports.caseId, coachingCase.id), isNotNull(coachingMonthlyReports.pushedAt)))
+      .orderBy(desc(coachingMonthlyReports.month), desc(coachingMonthlyReports.version)),
   ]);
   const sessionIds = sessions.map((s) => s.id);
   const feedback = sessionIds.length ? await db.select({ sessionId: courseParticipants.sessionId, feedbackText: courseParticipants.feedbackText,
@@ -599,7 +607,7 @@ export async function familyCoachingFeedback(db: Db, me: { id: number; role: str
     .where(and(inArray(courseParticipants.sessionId, sessionIds), eq(courseParticipants.studentUserId, coachingCase.studentUserId))) : [];
   return { coachingCase: { id: coachingCase.id, goal: coachingCase.goal, planSummary: coachingCase.planSummary, serviceStart: coachingCase.serviceStart, serviceEnd: coachingCase.serviceEnd },
     plans, tasks, sessions: sessions.map((s) => ({ ...s, feedback: feedback.filter((f) => f.sessionId === s.id && f.feedbackVersion > 0) })),
-    attachments: attachments.filter((a) => a.kind === "feedback" || sessions.some((s) => s.id === a.sessionId)) };
+    attachments: attachments.filter((a) => a.kind === "feedback" || sessions.some((s) => s.id === a.sessionId)), monthlyReports };
 }
 
 export async function downloadCoachingDeliverable(db: Db, me: { id: number; role: "tutor" | "user" | "admin" | "jiaowu"; orgId: number | null }, deliverableId: number) {

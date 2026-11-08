@@ -8,6 +8,7 @@ import CoachingSessions from "./CoachingSessions";
 import CoachingCheckins from "./CoachingCheckins";
 import CoachingExceptions from "./CoachingExceptions";
 import CoachingHandoffInbox from "./CoachingHandoffInbox";
+import CoachingMonthlyQuality, { CoachingQualityInbox } from "./CoachingMonthlyQuality";
 import type { CoachingDetail } from "./coachingTypes";
 import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
 
@@ -23,7 +24,7 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
   const [caseId, setCaseId] = useState(initialCaseId ?? 0);
   const [newStudentId, setNewStudentId] = useState(0);
   const [scenarioFilter, setScenarioFilter] = useState<"all" | CoachingScenarioKey>("all");
-  const [tab, setTab] = useState<"plan" | "sessions" | "review" | "family">("plan");
+  const [tab, setTab] = useState<"plan" | "sessions" | "review" | "monthly" | "family">("plan");
   const filteredCases = useMemo(() => scenarioFilter === "all" ? cases : cases.filter((row) => row.serviceScenarios.includes(scenarioFilter)), [cases, scenarioFilter]);
   const scenarioPersonTimes = useMemo(() => cases.reduce((sum, row) => sum + row.serviceScenarios.length, 0), [cases]);
   useEffect(() => { if (initialCaseId) { setCaseId(initialCaseId); setNewStudentId(0); } }, [initialCaseId]);
@@ -61,17 +62,19 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
 
     <div className="min-w-0 space-y-4">
       <CoachingHandoffInbox />
+      <CoachingQualityInbox />
       {newStudentId > 0 ? <GrowEditor key={newStudentId} studentUserId={newStudentId} onOpenCoaching={(id) => { setCaseId(id); setNewStudentId(0); }} /> : activeCase ? <>
         <header className="rounded-2xl bg-[#0C7064] px-5 py-4 text-white shadow-sm">
           <div className="flex flex-wrap items-center gap-3"><div className="min-w-0 flex-1"><div className="text-[10px] tracking-[.16em] text-white/60">独立陪跑 · 学员 {activeCase.coachingCase.studentUserId}</div><h2 className="mt-1 text-[20px] font-bold">{activeCase.studentName}的学业生涯陪跑</h2><p className="mt-1 text-[11.5px] text-white/75">{activeCase.coachingCase.serviceStart} 至 {activeCase.coachingCase.serviceEnd} · {STATUS[activeCase.coachingCase.status]}</p></div><span className="rounded-full bg-white/12 px-3 py-1.5 text-[11px]">主档 V{activeCase.coachingCase.version}</span></div>
           <div className="mt-2 flex flex-wrap gap-1.5">{activeCase.serviceScenarios.length ? activeCase.serviceScenarios.map((key) => <span key={key} className="rounded-full bg-white/12 px-2.5 py-1 text-[10.5px] text-white/90">{coachingScenarioLabel(key)}</span>) : <span className="rounded-full bg-amber-100/20 px-2.5 py-1 text-[10.5px] text-amber-50">待设置服务场景</span>}</div>
-          <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-white/10 p-1 sm:grid-cols-4">{([{ key: "plan", label: "目标与计划", icon: ClipboardCheck }, { key: "sessions", label: "到店与五课", icon: BookOpenCheck }, { key: "review", label: "复盘与交接", icon: ArrowRightLeft }, { key: "family", label: "家长反馈", icon: MessageSquareText }] as const).map((item) => <button type="button" key={item.key} onClick={() => setTab(item.key)} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11.5px] font-semibold ${tab === item.key ? "bg-white text-[#0C7064] shadow" : "text-white/80 hover:bg-white/10"}`}><item.icon size={14} />{item.label}</button>)}</div>
+          <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-white/10 p-1 sm:grid-cols-5">{([{ key: "plan", label: "目标与计划", icon: ClipboardCheck }, { key: "sessions", label: "到店与五课", icon: BookOpenCheck }, { key: "review", label: "复盘与交接", icon: ArrowRightLeft }, { key: "monthly", label: "月报与质量", icon: ShieldCheck }, { key: "family", label: "家长反馈", icon: MessageSquareText }] as const).map((item) => <button type="button" key={item.key} onClick={() => setTab(item.key)} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11.5px] font-semibold ${tab === item.key ? "bg-white text-[#0C7064] shadow" : "text-white/80 hover:bg-white/10"}`}><item.icon size={14} />{item.label}</button>)}</div>
         </header>
         {detailLoading && <div className="rounded-2xl border border-border bg-white p-8 text-center text-[13px] text-olive-mute">正在读取计划、课堂与反馈…</div>}
         {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-[12px] text-red-700">{error.message}</p>}
         {detail && tab === "plan" && <div className="grid items-start gap-4 2xl:grid-cols-[minmax(300px,4fr)_minmax(0,6fr)]"><GrowEditor studentUserId={detail.coachingCase.studentUserId} /><div className="space-y-4"><PlanPanel data={detail} /><TaskPanel data={detail} /></div></div>}
         {detail && tab === "sessions" && <CoachingSessions data={detail} />}
         {detail && tab === "review" && <ReviewWorkspace data={detail} />}
+        {detail && tab === "monthly" && <CoachingMonthlyQuality caseId={detail.coachingCase.id} coachId={detail.coachingCase.coachId} supervisorId={detail.coachingCase.supervisorId} />}
         {detail && tab === "family" && <GuardianPanel data={detail} />}
       </> : !isLoading && <div className="rounded-2xl border border-dashed border-border bg-white/50 p-12 text-center"><Users className="mx-auto text-olive-mute" size={30} /><h2 className="mt-3 text-[16px] font-bold text-olive">{cases.length && !filteredCases.length ? "当前筛选没有对应主档" : "选择主档，或先为学员建立 GROW 方案"}</h2><p className="mt-2 text-[12px] text-olive-mute">课堂、督学、验收、复盘和家校反馈都会归入同一个学员主档。</p></div>}
     </div>

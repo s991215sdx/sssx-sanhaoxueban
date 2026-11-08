@@ -241,7 +241,7 @@ describe("0051 改派迁移与页面接线", () => {
     for (const column of ["from_coach_id", "from_supervisor_id", "next_coach_id", "next_supervisor_id", "applied_at"]) expect(migration).toContain(column);
     expect(migration).toContain("(`to_user_id`,`status`)");
     const journal = JSON.parse(readFileSync("db/migrations/meta/_journal.json", "utf8")) as { entries: { idx: number; tag: string }[] };
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 51, tag: "0051_coaching_reassignment_handoffs" });
+    expect(journal.entries).toContainEqual(expect.objectContaining({ idx: 51, tag: "0051_coaching_reassignment_handoffs" }));
     expect(readFileSync("api/migrationsEmbedded.ts", "utf8")).toContain('"0051_coaching_reassignment_handoffs":');
     const table = getTableConfig(coachingHandoffs);
     expect(table.columns.map((column) => column.name)).toEqual(expect.arrayContaining(["from_coach_id", "next_supervisor_id", "applied_at"]));

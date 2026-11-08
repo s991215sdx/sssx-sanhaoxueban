@@ -99,6 +99,39 @@ export const coachingReviews = mysqlTable("coaching_reviews", {
   version: int("version").notNull().default(1), createdBy: userId("created_by"), createdAt: createdAt(),
 });
 
+/** 月报每次保存追加版本；数据快照、正文与推送对象均属于对应版本。 */
+export const coachingMonthlyReports = mysqlTable("coaching_monthly_reports", {
+  id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), orgId: orgId(),
+  month: varchar("month", { length: 7 }).notNull(), version: int("version").notNull(),
+  previousId: bigint("previous_id", { mode: "number", unsigned: true }),
+  metricSnapshot: json("metric_snapshot").$type<Record<string, unknown>>().notNull(),
+  goalProgress: text("goal_progress").notNull(), academicProgress: text("academic_progress").notNull(),
+  taskExecution: text("task_execution").notNull(), learningMethod: text("learning_method").notNull(), habitFamily: text("habit_family").notNull(),
+  meetingNotes: text("meeting_notes").notNull().default(""), nextActions: json("next_actions").$type<string[]>().notNull(), familyAction: text("family_action").notNull(),
+  createdBy: userId("created_by"), pushedBy: bigint("pushed_by", { mode: "number", unsigned: true }), pushedAt: timestamp("pushed_at"), createdAt: createdAt(),
+}, (table) => [
+  uniqueIndex("coaching_monthly_reports_case_month_version_unique").on(table.caseId, table.month, table.version),
+  index("coaching_monthly_reports_org_month_idx").on(table.orgId, table.month),
+]);
+
+/** 质量评分仅内部可见；pending 为待填写安排，提交后只允许追加新版本或记录整改关闭。 */
+export const coachingQualityReviews = mysqlTable("coaching_quality_reviews", {
+  id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), orgId: orgId(),
+  reviewType: varchar("review_type", { length: 16 }).notNull(), reviewerId: userId("reviewer_id"), periodKey: varchar("period_key", { length: 24 }).notNull(),
+  frameworkVersion: varchar("framework_version", { length: 16 }).notNull().default("1.0"), version: int("version").notNull().default(1),
+  previousId: bigint("previous_id", { mode: "number", unsigned: true }),
+  planScore: int("plan_score"), executionScore: int("execution_score"), archiveScore: int("archive_score"), familyScore: int("family_score"), reviewScore: int("review_score"),
+  findings: text("findings").notNull().default(""), improvementActions: text("improvement_actions").notNull().default(""),
+  status: varchar("status", { length: 16 }).notNull().default("pending"), dueAt: timestamp("due_at"),
+  assignedBy: userId("assigned_by"), submittedAt: timestamp("submitted_at"),
+  closedBy: bigint("closed_by", { mode: "number", unsigned: true }), closedAt: timestamp("closed_at"), closeEvidence: text("close_evidence").notNull().default(""),
+  createdAt: createdAt(), updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex("coaching_quality_reviews_version_unique").on(table.caseId, table.reviewType, table.reviewerId, table.periodKey, table.version),
+  index("coaching_quality_reviews_reviewer_status_idx").on(table.reviewerId, table.status),
+  index("coaching_quality_reviews_org_created_idx").on(table.orgId, table.createdAt),
+]);
+
 /** 同日检验只追加版本；机构与主档双重限定，避免跨机构串联。 */
 export const coachingCheckins = mysqlTable("coaching_checkins", {
   id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), orgId: orgId(),

@@ -352,6 +352,13 @@
       "when": 1794096000000,
       "tag": "0051_coaching_reassignment_handoffs",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "5",
+      "when": 1794139200000,
+      "tag": "0052_coaching_monthly_quality",
+      "breakpoints": true
     }
   ]
 }

@@ -208,12 +208,15 @@ describe("跨主档关联与家庭端隔离", () => {
       select: vi.fn((fields?: unknown) => ({ from: (table: unknown) => {
         if (table === coachingCases) return { innerJoin: () => ({ where: () => ({ limit: async () => [{ coachingCase }] }) }) };
         if (table === coachingPlans) return { where: () => ({ orderBy: async () => [] }) };
-        return { where: async () => [], innerJoin: () => ({ where: async () => [] }) };
+        const empty = { orderBy: async () => [], then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve([]).then(resolve) };
+        return { where: () => empty, innerJoin: () => ({ where: async () => [] }) };
       } })),
     } as unknown as Parameters<typeof familyCoachingFeedback>[0];
     const result = await familyCoachingFeedback(db, { id: 301, role: "user" }, 91);
-    expect(Object.keys(result)).toEqual(["coachingCase", "plans", "tasks", "sessions", "attachments"]);
+    expect(Object.keys(result)).toEqual(["coachingCase", "plans", "tasks", "sessions", "attachments", "monthlyReports"]);
+    expect(result.monthlyReports).toEqual([]);
     expect(JSON.stringify(result)).not.toContain("exceptions");
+    expect(JSON.stringify(result)).not.toContain("qualityReviews");
     expect(JSON.stringify(result)).not.toContain("敏感");
   });
 });
