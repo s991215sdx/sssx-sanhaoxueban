@@ -4,6 +4,7 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { COACHING_MONTHLY_DIMENSIONS, COACHING_QUALITY_FRAMEWORK, coachingQualityLevel, type CoachingQualityScores } from "@contracts/orgService";
 import type { CoachingMonthlyPreview, CoachingMonthlyReport, CoachingQualityInboxItem, CoachingQualityReview } from "./coachingTypes";
+import { invalidateCoachingOperations } from "./coachingRefresh";
 
 type DimensionKey = (typeof COACHING_MONTHLY_DIMENSIONS)[number]["key"];
 type ReviewType = "self" | "peer" | "supervisor";
@@ -104,7 +105,7 @@ function QualityPanel({ caseId, coachId, supervisorId, month }: { caseId: number
   useEffect(() => { setPeriodKey(month); }, [month]);
   useEffect(() => { setReviewerId(0); }, [reviewType, caseId]);
   const eligible = useMemo(() => staff.filter((person) => reviewType === "self" ? person.id === coachId || person.id === supervisorId : reviewType === "peer" ? person.id !== coachId && person.id !== supervisorId : person.role === "admin"), [staff, reviewType, coachId, supervisorId]);
-  const refresh = async () => { await Promise.all([utils.coaching.qualityReviews.invalidate({ caseId }), utils.coaching.qualityInbox.invalidate()]); };
+  const refresh = async () => { await Promise.all([utils.coaching.qualityReviews.invalidate({ caseId }), utils.coaching.qualityInbox.invalidate(), invalidateCoachingOperations(utils)]); };
   const assign = trpc.coaching.assignQualityReview.useMutation({ onSuccess: refresh });
   const self = trpc.coaching.submitSelfQualityReview.useMutation({ onSuccess: refresh });
   const canSelf = user?.id === coachId || user?.id === supervisorId;
@@ -146,7 +147,7 @@ export function CoachingQualityInbox() {
   const utils = trpc.useUtils();
   const { data: tasks = [], isLoading, error } = trpc.coaching.qualityInbox.useQuery();
   const { data: framework = COACHING_QUALITY_FRAMEWORK } = trpc.coaching.qualityFramework.useQuery();
-  const submit = trpc.coaching.submitQualityReview.useMutation({ onSuccess: async () => { await Promise.all([utils.coaching.qualityInbox.invalidate(), utils.coaching.qualityReviews.invalidate()]); } });
+  const submit = trpc.coaching.submitQualityReview.useMutation({ onSuccess: async () => { await Promise.all([utils.coaching.qualityInbox.invalidate(), utils.coaching.qualityReviews.invalidate(), invalidateCoachingOperations(utils)]); } });
   if (isLoading) return <section aria-label="待我质量检查" className="rounded-2xl border border-border bg-white p-4 text-[12px] text-olive-mute">正在读取质量检查任务…</section>;
   if (error) return <section aria-label="待我质量检查" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-[12px] text-red-700">质量检查任务读取失败：{error.message}</section>;
   if (!tasks.length) return null;

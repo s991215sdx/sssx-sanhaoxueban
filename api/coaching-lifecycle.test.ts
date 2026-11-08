@@ -24,11 +24,11 @@ function reassignDb(pending = false) {
   const inserted: { table: unknown; values: Record<string, unknown> }[] = [];
   const tx = {
     select: vi.fn(() => ({ from: (table: unknown) => ({ where: () => ({
-      limit: () => ({ for: async () => table === coachingCases ? [baseCase] : table === coachingHandoffs && pending ? [{ id: 500 }] : [] }),
+      limit: () => limit(table === coachingCases ? [baseCase] : table === coachingHandoffs && pending ? [{ id: 500 }] : []),
     }) }) })),
     insert: vi.fn((table: unknown) => ({ values: (values: Record<string, unknown>) => {
       inserted.push({ table, values });
-      return table === coachingHandoffs ? { $returningId: async () => [{ id: 501 }] } : Promise.resolve();
+      return { $returningId: async () => [{ id: table === coachingHandoffs ? 501 : 701 }] };
     } })),
   };
   const db = {

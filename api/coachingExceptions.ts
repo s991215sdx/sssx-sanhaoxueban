@@ -6,6 +6,7 @@ import { COACHING_EXCEPTION_CATEGORIES, COACHING_EXCEPTION_SEVERITIES, coachingE
 import type { getDb } from "./queries/connection";
 import { requireOrgStaff, type StaffUser } from "./orgAccess";
 import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
+import { queueCoachingNotification } from "./coachingNotifications";
 
 type Db = ReturnType<typeof getDb>;
 type ExceptionRow = typeof coachingExceptions.$inferSelect;
@@ -95,6 +96,11 @@ export async function createCoachingException(db: Db, me: StaffUser, input: {
     await tx.insert(coachingEvents).values({ caseId: coachingCase.id, actorUserId: me.id,
       type: "exception_created", visibility: "internal",
       content: `登记 ${input.severity} ${sensitive ? "敏感" : categoryLabel}异常 #${id}${input.severity === "S4" ? "，立即升级应急流程" : ""}` });
+    const urgent = input.severity === "S4" || input.category === "wellbeing" || input.category === "safety";
+    await queueCoachingNotification(tx, { orgId: coachingCase.orgId, caseId: coachingCase.id, recipientId: input.assigneeId,
+      type: "exception_assigned", title: urgent ? "需要立即处理的服务异常" : "新的服务异常待处理",
+      body: urgent ? "有一项需要立即处理的服务异常，请进入工作台按应急流程处理。通知不包含异常详情。" : "有一项服务异常待处理，请进入工作台查看权限范围内的内容并按期办结。",
+      priority: urgent ? "urgent" : "normal", idempotencyKey: `exception:${id}:recipient:${input.assigneeId}`, createdBy: me.id });
     return { id, sensitive, status: "open" as const };
   });
 }

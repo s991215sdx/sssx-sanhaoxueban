@@ -6,6 +6,7 @@ import type { getDb } from "./queries/connection";
 import type { PointTx } from "./orgPoints";
 import { requireOrgStaff, type StaffUser } from "./orgAccess";
 import { assertCaseAccess } from "./coachingAccess";
+import { queueCoachingNotification } from "./coachingNotifications";
 
 type Db = ReturnType<typeof getDb>;
 export type CoachingReviewType = "self" | "peer" | "supervisor";
@@ -120,6 +121,9 @@ export async function assignQualityReview(db: Db, me: StaffUser, input: {
       status: "pending", dueAt: input.dueAt, assignedBy: me.id,
     }).$returningId();
     await event(tx, input.caseId, me.id, "quality_review_assigned", `${TYPE_LABEL[input.reviewType]} ${periodKey} 已安排，任务 #${id} V${version}`);
+    await queueCoachingNotification(tx, { orgId: coachingCase.orgId, caseId: input.caseId, recipientId: input.reviewerId,
+      type: "quality_assigned", title: "新的质量检查待办", body: `你有一项${TYPE_LABEL[input.reviewType]}待完成，检查周期 ${periodKey}。请进入伴学工作台处理。`,
+      idempotencyKey: `quality:${id}:recipient:${input.reviewerId}`, createdBy: me.id });
     return { id, version, status: "pending" as const };
   });
 }

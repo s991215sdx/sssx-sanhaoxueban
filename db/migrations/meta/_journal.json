@@ -359,6 +359,13 @@
       "when": 1794139200000,
       "tag": "0052_coaching_monthly_quality",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "5",
+      "when": 1794182400000,
+      "tag": "0053_coaching_operations",
+      "breakpoints": true
     }
   ]
 }

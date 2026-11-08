@@ -253,7 +253,7 @@ describe("0052 迁移、页面接线与家庭隔离", () => {
     expect(migration).toContain("(`case_id`,`month`,`version`)");
     expect(migration).toContain("(`case_id`,`review_type`,`reviewer_id`,`period_key`,`version`)");
     const journal = JSON.parse(readFileSync("db/migrations/meta/_journal.json", "utf8")) as { entries: { idx: number; tag: string }[] };
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 52, tag: "0052_coaching_monthly_quality" });
+    expect(journal.entries.find((entry) => entry.idx === 52)).toMatchObject({ idx: 52, tag: "0052_coaching_monthly_quality" });
     expect(readFileSync("api/migrationsEmbedded.ts", "utf8")).toContain('"0052_coaching_monthly_quality":');
     expect(readFileSync("api/initDb.ts", "utf8")).toContain('"0052": async () =>');
     expect(getTableConfig(coachingMonthlyReports).indexes.map((index) => index.config.name)).toContain("coaching_monthly_reports_case_month_version_unique");
@@ -272,6 +272,6 @@ describe("0052 迁移、页面接线与家庭隔离", () => {
     expect(service).toContain("isNotNull(coachingMonthlyReports.pushedAt)");
     expect(service).not.toContain("coachingQualityReviews");
     for (const endpoint of ["monthlyPreview", "saveMonthlyReport", "pushMonthlyReport", "qualityInbox", "assignQualityReview", "submitSelfQualityReview", "submitQualityReview", "closeQualityReview"]) expect(router).toContain(`${endpoint}:`);
-    expect(readFileSync("api/router.ts", "utf8")).toContain('BUILD_TAG = "v263-2026-11-08"');
+    expect(readFileSync("api/router.ts", "utf8")).toContain('BUILD_TAG = "v264-2026-11-08"');
   });
 });

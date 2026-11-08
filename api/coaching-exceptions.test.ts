@@ -24,11 +24,13 @@ function exceptionRow(patch: Partial<ExceptionRow> = {}): ExceptionRow {
 
 function createDb(caseRow = coachingCase, receiver: { id: number; role: string } | null = { id: 9, role: "admin" }) {
   const inserted: { table: unknown; values: Record<string, unknown> }[] = [];
-  const tx = { insert: vi.fn((table: unknown) => ({ values: (values: Record<string, unknown>) => {
-    inserted.push({ table, values });
-    if (table === coachingExceptions) return { $returningId: async () => [{ id: 501 }] };
-    return Promise.resolve();
-  } })) };
+  const tx = {
+    select: vi.fn(() => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) })),
+    insert: vi.fn((table: unknown) => ({ values: (values: Record<string, unknown>) => {
+      inserted.push({ table, values });
+      return { $returningId: async () => [{ id: table === coachingExceptions ? 501 : 701 }] };
+    } })),
+  };
   const db = {
     select: vi.fn(() => ({ from: (table: unknown) => ({ where: () => ({ limit: async () => table === coachingCases ? [caseRow] : table === users ? (receiver ? [receiver] : []) : [] }) }) })),
     transaction: vi.fn(async (callback: (tx: unknown) => unknown) => callback(tx)),

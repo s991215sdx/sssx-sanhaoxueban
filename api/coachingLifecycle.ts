@@ -8,6 +8,7 @@ import type { getDb } from "./queries/connection";
 import { requireOrgStaff, type StaffUser } from "./orgAccess";
 import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
 import type { PointTx } from "./orgPoints";
+import { queueCoachingNotification } from "./coachingNotifications";
 
 type Db = ReturnType<typeof getDb>;
 type QueryDb = Db | PointTx;
@@ -68,6 +69,9 @@ export async function reassignCoachingCase(db: Db, me: StaffUser, input: { caseI
       toUserId: input.supervisorId, title: "人员改派 · 待新督学接收", content: reason, status: "pending",
       fromCoachId: current.coachId, fromSupervisorId: current.supervisorId, nextCoachId: input.coachId, nextSupervisorId: input.supervisorId }).$returningId();
     await event(tx, input.caseId, me.id, "case_reassignment_requested", `发起 H5 改派 #${id}，等待新督学接收：${reason}`);
+    await queueCoachingNotification(tx, { orgId: coachingCase.orgId, caseId: input.caseId, recipientId: input.supervisorId,
+      type: "handoff_assigned", title: "新的陪跑改派待接收", body: "你有一项人员改派待接收。请核对交接内容与当前负荷，接收后新安排才会生效。",
+      idempotencyKey: `handoff:${id}:recipient:${input.supervisorId}`, createdBy: me.id });
     return { id, status: "pending" as const };
   });
 }
