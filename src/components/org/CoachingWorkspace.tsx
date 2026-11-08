@@ -7,6 +7,7 @@ import GrowEditor from "./GrowEditor";
 import CoachingSessions from "./CoachingSessions";
 import CoachingCheckins from "./CoachingCheckins";
 import CoachingExceptions from "./CoachingExceptions";
+import CoachingHandoffInbox from "./CoachingHandoffInbox";
 import type { CoachingDetail } from "./coachingTypes";
 import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
 
@@ -59,6 +60,7 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
     </aside>
 
     <div className="min-w-0 space-y-4">
+      <CoachingHandoffInbox />
       {newStudentId > 0 ? <GrowEditor key={newStudentId} studentUserId={newStudentId} onOpenCoaching={(id) => { setCaseId(id); setNewStudentId(0); }} /> : activeCase ? <>
         <header className="rounded-2xl bg-[#0C7064] px-5 py-4 text-white shadow-sm">
           <div className="flex flex-wrap items-center gap-3"><div className="min-w-0 flex-1"><div className="text-[10px] tracking-[.16em] text-white/60">独立陪跑 · 学员 {activeCase.coachingCase.studentUserId}</div><h2 className="mt-1 text-[20px] font-bold">{activeCase.studentName}的学业生涯陪跑</h2><p className="mt-1 text-[11.5px] text-white/75">{activeCase.coachingCase.serviceStart} 至 {activeCase.coachingCase.serviceEnd} · {STATUS[activeCase.coachingCase.status]}</p></div><span className="rounded-full bg-white/12 px-3 py-1.5 text-[11px]">主档 V{activeCase.coachingCase.version}</span></div>
@@ -145,18 +147,105 @@ function ReviewPanel({ data }: { data: CoachingDetail }) {
   return <Panel title="日／周／月／学期复盘" icon={<History size={16} />}><div className="grid grid-cols-2 gap-2"><label className={label}>复盘周期<select value={period} onChange={(e) => { const value = e.target.value as typeof period; setPeriod(value); setPeriodKey(value === "month" || value === "term" ? today().slice(0, 7) : today()); }} className={input}>{Object.entries(PERIOD).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label className={label}>周期标识<input value={periodKey} onChange={(e) => setPeriodKey(e.target.value)} placeholder="例：2026-W45" className={input} /></label></div><textarea aria-label="复盘内容" value={content} onChange={(e) => setContent(e.target.value)} rows={4} placeholder="目标完成事实、行动证据、问题根因与需要调整的服务方式" className={`${input} mt-2`} /><textarea aria-label="下一步行动" value={nextActions} onChange={(e) => setNextActions(e.target.value)} rows={2} placeholder="下一步行动、责任人与验证时间" className={`${input} mt-2`} /><button type="button" disabled={save.isPending || periodKey.trim().length < 2 || content.trim().length < 2 || nextActions.trim().length < 2} onClick={() => save.mutate({ caseId: data.coachingCase.id, period, periodKey, content, nextActions })} className={`${primary} mt-2 w-full`}>保存复盘新版本</button><MutationMessage error={save.error} success={save.isSuccess} /><div className="mt-3 space-y-2">{data.reviews.map((r) => <details key={r.id} className="rounded-lg bg-cream/50 p-2.5 text-[11.5px]"><summary className="cursor-pointer font-semibold text-olive">{PERIOD[r.period]} · {r.periodKey} V{r.version}</summary><p className="mt-2 whitespace-pre-wrap text-olive-soft">{r.content}</p><p className="mt-2 whitespace-pre-wrap text-[#0C7064]">下一步：{r.nextActions}</p></details>)}</div></Panel>;
 }
 function HandoffPanel({ data }: { data: CoachingDetail }) {
-  const { user } = useAuth(); const utils = trpc.useUtils(); const { data: tutors = [] } = trpc.coaching.staff.useQuery();
-  const [type, setType] = useState<"H1" | "H2" | "H3" | "H4" | "H5">("H2"); const [toUserId, setToUserId] = useState(0); const [title, setTitle] = useState(""); const [content, setContent] = useState(""); const [dueAt, setDueAt] = useState("");
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const { data: tutors = [] } = trpc.coaching.staff.useQuery();
+  const [type, setType] = useState<"H1" | "H2" | "H3" | "H4">("H2");
+  const [toUserId, setToUserId] = useState(0);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const statusLabel: Record<string, string> = { pending: "待接收", accepted: "已接收", cancelled: "已取消", closed: "已办结" };
   const refresh = () => utils.coaching.detail.invalidate({ caseId: data.coachingCase.id });
-  const add = trpc.coaching.addHandoff.useMutation({ onSuccess: async () => { setTitle(""); setContent(""); await refresh(); } }); const accept = trpc.coaching.acceptHandoff.useMutation({ onSuccess: refresh });
-  return <Panel title="H1—H5 服务交接" icon={<ArrowRightLeft size={16} />}><div className="grid gap-2 sm:grid-cols-2"><label className={label}>类型<select value={type} onChange={(e) => setType(e.target.value as typeof type)} className={input}>{["H1", "H2", "H3", "H4", "H5"].map((key) => <option key={key}>{key}</option>)}</select></label><label className={label}>接收伴学师<select value={toUserId} onChange={(e) => setToUserId(Number(e.target.value))} className={input}><option value={0}>请选择</option>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label><label className={label}>标题<input value={title} onChange={(e) => setTitle(e.target.value)} className={input} /></label><label className={label}>办理期限（可选）<input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} className={input} /></label></div><textarea aria-label="交接内容" value={content} onChange={(e) => setContent(e.target.value)} rows={3} placeholder="事实、风险、待办、责任边界和必须保留的服务节奏" className={`${input} mt-2`} /><button type="button" disabled={add.isPending || !toUserId || title.trim().length < 2 || content.trim().length < 2} onClick={() => add.mutate({ caseId: data.coachingCase.id, type, toUserId, title, content, dueAt: dueAt ? new Date(dueAt) : null })} className={`${primary} mt-2 w-full`}>发起交接</button><MutationMessage error={add.error ?? accept.error} success={add.isSuccess || accept.isSuccess} /><div className="mt-3 space-y-2">{data.handoffs.map((h) => <article key={h.id} className="rounded-xl border border-border bg-cream/45 p-3 text-[11.5px]"><div className="flex flex-wrap items-center gap-2"><b className="text-olive">{h.type} · {h.title}</b><span className="ml-auto text-[10px] text-olive-mute">{h.status === "accepted" ? "已接收" : "待接收"}</span></div><p className="mt-1 whitespace-pre-wrap leading-relaxed text-olive-soft">{h.content}</p>{h.toUserId === user?.id && h.status === "pending" && <button type="button" disabled={accept.isPending} onClick={() => accept.mutate({ handoffId: h.id })} className="mt-2 rounded-lg border border-[#0C7064]/25 px-2.5 py-1.5 text-[11px] font-semibold text-[#0C7064]"><UserCheck size={13} className="mr-1 inline" />确认接收</button>}</article>)}</div></Panel>;
+  const add = trpc.coaching.addHandoff.useMutation({ onSuccess: async () => { setTitle(""); setContent(""); await refresh(); } });
+  const accept = trpc.coaching.acceptHandoff.useMutation({ onSuccess: async () => {
+    await Promise.all([refresh(), utils.coaching.cases.invalidate(), utils.coaching.incoming.invalidate()]);
+  } });
+  return <Panel title="H1—H4 服务交接" icon={<ArrowRightLeft size={16} />}>
+    <p className="mb-3 rounded-lg bg-mint-pale/35 px-3 py-2 text-[10.5px] leading-relaxed text-olive-soft">普通交接由指定接收人确认；H5 人员改派须由管理员在右侧发起，不能在这里手工创建。</p>
+    <div className="grid gap-2 sm:grid-cols-2">
+      <label className={label}>类型<select value={type} onChange={(e) => setType(e.target.value as typeof type)} className={input}>{["H1", "H2", "H3", "H4"].map((key) => <option key={key}>{key}</option>)}</select></label>
+      <label className={label}>接收伴学师<select value={toUserId} onChange={(e) => setToUserId(Number(e.target.value))} className={input}><option value={0}>请选择</option>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+      <label className={label}>标题<input value={title} onChange={(e) => setTitle(e.target.value)} className={input} /></label>
+      <label className={label}>办理期限（可选）<input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} className={input} /></label>
+    </div>
+    <textarea aria-label="交接内容" value={content} onChange={(e) => setContent(e.target.value)} rows={3} placeholder="事实、风险、待办、责任边界和必须保留的服务节奏" className={`${input} mt-2`} />
+    <button type="button" disabled={add.isPending || !toUserId || title.trim().length < 2 || content.trim().length < 2} onClick={() => add.mutate({ caseId: data.coachingCase.id, type, toUserId, title, content, dueAt: dueAt ? new Date(dueAt) : null })} className={`${primary} mt-2 w-full`}>发起普通交接</button>
+    <MutationMessage error={add.error ?? accept.error} success={add.isSuccess || accept.isSuccess} />
+    <div className="mt-3 space-y-2">{data.handoffs.map((h) => <article key={h.id} className="rounded-xl border border-border bg-cream/45 p-3 text-[11.5px]">
+      <div className="flex flex-wrap items-center gap-2"><b className="min-w-0 flex-1 break-words text-olive">{h.type} · {h.title}</b><span className={`rounded-full px-2 py-0.5 text-[10px] ${h.status === "pending" ? "bg-amber-50 text-amber-800" : h.status === "cancelled" ? "bg-gray-100 text-gray-600" : "bg-mint-pale text-[#0C7064]"}`}>{statusLabel[h.status] ?? h.status}</span></div>
+      <p className="mt-1 whitespace-pre-wrap break-words leading-relaxed text-olive-soft">{h.content}</p>
+      {h.type === "H5" && h.status === "pending" && <p className="mt-2 text-[10.5px] text-amber-800">待新督学接收，当前负责人尚未变更。</p>}
+      {h.toUserId === user?.id && h.status === "pending" && <button type="button" disabled={accept.isPending} onClick={() => accept.mutate({ handoffId: h.id })} className="mt-2 min-h-9 rounded-lg border border-[#0C7064]/25 px-2.5 py-1.5 text-[11px] font-semibold text-[#0C7064]"><UserCheck size={13} className="mr-1 inline" />{h.type === "H5" ? "接收并使改派生效" : "确认接收"}</button>}
+    </article>)}</div>
+  </Panel>;
 }
 function StatusPanel({ data }: { data: CoachingDetail }) {
-  const { user } = useAuth(); const utils = trpc.useUtils(); const { data: tutors = [] } = trpc.coaching.staff.useQuery();
-  const [status, setStatus] = useState<"active" | "paused" | "closed" | "archived">("paused"); const [reason, setReason] = useState(""); const [coachId, setCoachId] = useState(data.coachingCase.coachId); const [supervisorId, setSupervisorId] = useState(data.coachingCase.supervisorId); const [assignReason, setAssignReason] = useState("");
-  const refresh = () => utils.coaching.detail.invalidate({ caseId: data.coachingCase.id });
-  const change = trpc.coaching.setStatus.useMutation({ onSuccess: async () => { setReason(""); await Promise.all([refresh(), utils.coaching.cases.invalidate()]); } }); const reassign = trpc.coaching.reassign.useMutation({ onSuccess: async () => { setAssignReason(""); await Promise.all([refresh(), utils.coaching.cases.invalidate()]); } });
-  return <Panel title="暂停恢复、结课归档与人员改派" icon={<Archive size={16} />}><div className="grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)_auto]"><select aria-label="主档状态" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} className={input}><option value="active">恢复服务</option><option value="paused">暂停</option><option value="closed">结课</option>{user?.role === "admin" && <option value="archived">归档</option>}</select><input aria-label="状态变更原因" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="状态变更原因与后续安排" className={input} /><button type="button" disabled={change.isPending || reason.trim().length < 2} onClick={() => change.mutate({ caseId: data.coachingCase.id, status, reason })} className={primary}>确认变更</button></div><MutationMessage error={change.error} success={change.isSuccess} />{user?.role === "admin" && <div className="mt-4 border-t border-border pt-3"><h4 className="text-[12.5px] font-bold text-olive">管理员改派</h4><div className="mt-2 grid gap-2 sm:grid-cols-2"><label className={label}>主教伴学师<select value={coachId} onChange={(e) => setCoachId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label><label className={label}>督学负责人<select value={supervisorId} onChange={(e) => setSupervisorId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label></div><input aria-label="改派原因" value={assignReason} onChange={(e) => setAssignReason(e.target.value)} placeholder="改派原因；将自动生成 H5 交接" className={`${input} mt-2`} /><button type="button" disabled={reassign.isPending || !coachId || !supervisorId || assignReason.trim().length < 2} onClick={() => reassign.mutate({ caseId: data.coachingCase.id, coachId, supervisorId, reason: assignReason })} className={`${primary} mt-2 w-full`}>确认改派并生成交接</button><MutationMessage error={reassign.error} success={reassign.isSuccess} /></div>}</Panel>;
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const { data: tutors = [] } = trpc.coaching.staff.useQuery();
+  const [status, setStatus] = useState<"active" | "paused" | "closed" | "archived">("paused");
+  const [reason, setReason] = useState("");
+  const [coachId, setCoachId] = useState(data.coachingCase.coachId);
+  const [supervisorId, setSupervisorId] = useState(data.coachingCase.supervisorId);
+  const [assignReason, setAssignReason] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  useEffect(() => {
+    setCoachId(data.coachingCase.coachId);
+    setSupervisorId(data.coachingCase.supervisorId);
+    setAssignReason("");
+    setCancelReason("");
+  }, [data.coachingCase.id, data.coachingCase.coachId, data.coachingCase.supervisorId]);
+  const pendingReassignment = data.handoffs.find((h) => h.type === "H5" && h.status === "pending");
+  const staffName = (id: number | null | undefined) => tutors.find((t) => t.id === id)?.name ?? (id ? `员工 #${id}` : "未设置");
+  const refresh = async () => {
+    await Promise.all([
+      utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }),
+      utils.coaching.cases.invalidate(),
+      utils.coaching.incoming.invalidate(),
+    ]);
+  };
+  const change = trpc.coaching.setStatus.useMutation({ onSuccess: async () => { setReason(""); await refresh(); } });
+  const reassign = trpc.coaching.reassign.useMutation({ onSuccess: async () => { setAssignReason(""); await refresh(); } });
+  const cancel = trpc.coaching.cancelReassignment.useMutation({ onSuccess: async () => { setCancelReason(""); await refresh(); } });
+  const closureBlocked = status === "closed" && !data.closureReadiness.ready;
+  const sameAssignment = coachId === data.coachingCase.coachId && supervisorId === data.coachingCase.supervisorId;
+  return <Panel title="暂停恢复、结课归档与人员改派" icon={<Archive size={16} />}>
+    <section aria-label="结课完整性检查" className="rounded-xl border border-border bg-cream/40 p-3">
+      <div className="flex flex-wrap items-center gap-2"><h4 className="min-w-0 flex-1 text-[12.5px] font-bold text-olive">结课完整性检查</h4><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${data.closureReadiness.ready ? "bg-mint-pale text-[#0C7064]" : "bg-amber-50 text-amber-800"}`}>{data.closureReadiness.ready ? "已具备结课条件" : `还有 ${data.closureReadiness.blockers.length} 类待办`}</span></div>
+      <div className="mt-2 space-y-1.5">{data.closureReadiness.checks.map((check) => <div key={check.code} className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-[11px] leading-relaxed ${check.ok ? "bg-white text-olive-soft" : "bg-amber-50/70 text-amber-900"}`}>
+        {check.ok ? <Check size={14} className="mt-0.5 shrink-0 text-[#0C7064]" /> : <span className="mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[9px] font-bold">!</span>}
+        <span className="min-w-0 flex-1">{check.label}{!check.ok && <b className="ml-1 font-semibold">{check.count > 0 ? `（${check.count} 项待处理）` : "（尚未完成）"}</b>}</span>
+      </div>)}</div>
+      {!data.closureReadiness.ready && <p className="mt-2 text-[10.5px] leading-relaxed text-amber-800">请逐项补齐：{data.closureReadiness.blockers.map((item) => item.label).join("；")}。服务端提交时会按同一规则再次检查。</p>}
+    </section>
+    <div className="mt-3 grid gap-2 sm:grid-cols-[150px_minmax(0,1fr)]">
+      <select aria-label="主档状态" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} className={input}><option value="active">恢复服务</option><option value="paused">暂停</option><option value="closed">结课</option>{user?.role === "admin" && <option value="archived">归档</option>}</select>
+      <input aria-label="状态变更原因" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="状态变更原因与后续安排" className={input} />
+      <button type="button" disabled={change.isPending || reason.trim().length < 2 || closureBlocked} onClick={() => change.mutate({ caseId: data.coachingCase.id, status, reason })} className={`${primary} sm:col-span-2`}>{status === "closed" ? closureBlocked ? "补齐结课清单后才能结课" : "确认结课" : "确认状态变更"}</button>
+    </div>
+    <MutationMessage error={change.error} success={change.isSuccess} />
+    {user?.role === "admin" && <div className="mt-4 border-t border-border pt-3">
+      <h4 className="text-[12.5px] font-bold text-olive">管理员改派</h4>
+      <p className="mt-1 text-[10.5px] leading-relaxed text-olive-mute">发起只生成 H5 待接收记录，不立即换负责人；新督学接收后才同时更新主教与督学安排。</p>
+      {pendingReassignment && <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+        <div className="flex flex-wrap items-center gap-2"><b className="min-w-0 flex-1 text-[12px] text-amber-950">H5 改派 #{pendingReassignment.id} · 待新督学接收</b><span className="text-[10px] text-amber-800">负责人尚未变更</span></div>
+        <p className="mt-2 text-[11px] leading-relaxed text-amber-900">原安排：{staffName(pendingReassignment.fromCoachId)}（主教）／{staffName(pendingReassignment.fromSupervisorId)}（督学）<br />新安排：{staffName(pendingReassignment.nextCoachId)}（主教）／{staffName(pendingReassignment.nextSupervisorId)}（督学）</p>
+        <p className="mt-1 whitespace-pre-wrap break-words text-[11px] text-amber-900">改派原因：{pendingReassignment.content}</p>
+        <label className={`${label} mt-3 block`}>取消原因<textarea aria-label="取消改派原因" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={2} placeholder="说明为何取消本次待接收改派" className={input} /></label>
+        <button type="button" disabled={cancel.isPending || cancelReason.trim().length < 2} onClick={() => cancel.mutate({ handoffId: pendingReassignment.id, reason: cancelReason })} className="mt-2 min-h-10 w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-[11.5px] font-semibold text-amber-900 disabled:opacity-40">取消待接收改派，保留原负责人</button>
+        {cancel.isSuccess && <p className="mt-2 text-[11px] text-[#2F7A41]">改派已取消，原负责人保持不变。</p>}
+      </div>}
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <label className={label}>新主教伴学师<select value={coachId} disabled={Boolean(pendingReassignment)} onChange={(e) => setCoachId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+        <label className={label}>新督学负责人<select value={supervisorId} disabled={Boolean(pendingReassignment)} onChange={(e) => setSupervisorId(Number(e.target.value))} className={input}>{tutors.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+      </div>
+      <textarea aria-label="改派原因" value={assignReason} disabled={Boolean(pendingReassignment)} onChange={(e) => setAssignReason(e.target.value)} rows={2} placeholder="改派原因、服务连续性与必须交接的事项" className={`${input} mt-2`} />
+      <button type="button" disabled={reassign.isPending || Boolean(pendingReassignment) || sameAssignment || !coachId || !supervisorId || assignReason.trim().length < 2} onClick={() => reassign.mutate({ caseId: data.coachingCase.id, coachId, supervisorId, reason: assignReason })} className={`${primary} mt-2 w-full`}>{pendingReassignment ? "已有改派待接收" : "发起改派，待新督学接收"}</button>
+      {reassign.isSuccess && !pendingReassignment && <p className="mt-2 text-[11px] text-[#2F7A41]">改派已发起，等待新督学接收。</p>}
+      <MutationMessage error={reassign.error ?? cancel.error} />
+    </div>}
+  </Panel>;
 }
 
 function GuardianPanel({ data }: { data: CoachingDetail }) {

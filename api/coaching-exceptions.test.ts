@@ -227,7 +227,7 @@ describe("0050 异常迁移与页面接线", () => {
     expect(migration).toContain("(`assignee_id`,`due_at`)");
     expect(migration).not.toMatch(/UPDATE\s+`coaching_exception_actions`/i);
     const journal = JSON.parse(readFileSync("db/migrations/meta/_journal.json", "utf8")) as { entries: { idx: number; tag: string }[] };
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 50, tag: "0050_coaching_service_exceptions" });
+    expect(journal.entries.find((entry) => entry.idx === 50)).toMatchObject({ idx: 50, tag: "0050_coaching_service_exceptions" });
     expect(readFileSync("api/migrationsEmbedded.ts", "utf8")).toContain('"0050_coaching_service_exceptions":');
     expect(getTableConfig(coachingExceptions).indexes.map((item) => item.config.name)).toHaveLength(3);
     expect(getTableConfig(coachingExceptionActions).indexes.map((item) => item.config.name)).toHaveLength(2);

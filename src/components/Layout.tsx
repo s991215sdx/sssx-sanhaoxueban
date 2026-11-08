@@ -43,10 +43,10 @@ function LogoMark() {
 
 function Logo({ brand }: { brand: string }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <LogoMark />
-      <div>
-        <div className="font-bold text-[17px] leading-tight tracking-tight text-olive">{brand}</div>
+    <div className="flex min-w-0 items-center gap-2.5">
+      <div className="shrink-0"><LogoMark /></div>
+      <div className="min-w-0">
+        <div className="truncate font-bold text-[17px] leading-tight tracking-tight text-olive">{brand}</div>
         <div className="mono text-[10px] tracking-wider text-olive-mute">K12 · 个性化学习</div>
       </div>
     </div>
@@ -390,9 +390,9 @@ export default function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* 移动顶栏 */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
-        <Logo brand={brand} />
-        <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
+        <div className="min-w-0 flex-1"><Logo brand={brand} /></div>
+        <div className="flex shrink-0 items-center gap-2">
           {!isStaff && familyCases.length > 0 && (
             <NavLink to="/coaching" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title="陪跑反馈">
               <BookOpenCheck size={18} />

@@ -14,8 +14,10 @@ import type { PointTx } from "./orgPoints";
 import { assertAssessmentReportAccess, hasAssessmentReportAccess } from "./assessmentReports";
 import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
 import { listCoachingExceptions } from "./coachingExceptions";
+import { getCoachingClosureReadiness } from "./coachingLifecycle";
 
 export { assertCaseAccess } from "./coachingAccess";
+export { acceptHandoff, reassignCoachingCase, setCoachingStatus } from "./coachingLifecycle";
 
 type Db = ReturnType<typeof getDb>;
 type CaseRow = CoachingCaseRow;
@@ -113,17 +115,18 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
       .leftJoin(users, eq(courseParticipants.studentUserId, users.id))
       .where(and(inArray(courseParticipants.sessionId, sessionIds), eq(courseParticipants.studentUserId, coachingCase.studentUserId))),
   ]) : [[], []];
-  const [reportAllowed, verificationHistory, scenarioHistory, exceptions] = await Promise.all([
+  const [reportAllowed, verificationHistory, scenarioHistory, exceptions, closureReadiness] = await Promise.all([
     hasAssessmentReportAccess(db, me, coachingCase.studentUserId),
     db.select().from(coachingTaskVerifications).where(eq(coachingTaskVerifications.caseId, caseId)).orderBy(asc(coachingTaskVerifications.taskId), desc(coachingTaskVerifications.version)),
     db.select().from(coachingCaseScenarios).where(eq(coachingCaseScenarios.caseId, caseId)).orderBy(desc(coachingCaseScenarios.startedAt), desc(coachingCaseScenarios.id)),
     listCoachingExceptions(db, me, coachingCase),
+    getCoachingClosureReadiness(db, me, caseId),
   ]);
   const serviceScenarios = normalizeCoachingScenarios(scenarioHistory.filter((item) => !item.endedAt).map((item) => item.scenario));
   return { coachingCase, serviceScenarios, scenarioHistory, plans, tasks, reviews, checkins, handoffs, events, exceptions, supervisions,
     sessions: sessions.map((session) => ({ ...session, units: units.filter((u) => u.sessionId === session.id),
       participants: participants.filter((p) => p.participant.sessionId === session.id) })),
-    deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog };
+    deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog, closureReadiness };
 }
 
 export async function syncCoachingScenariosTx(tx: PointTx, input: { caseId: number; orgId: number; actorUserId: number; scenarios: string[]; reason?: string }) {
@@ -330,45 +333,12 @@ async function assertStaffRecipient(db: Db, orgId: number, userId: number) {
 export async function addHandoff(db: Db, me: StaffUser, input: { caseId: number; type: string; toUserId: number; title: string; content: string; dueAt?: Date | null }) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
   if (!(HANDOFF_TYPES as readonly string[]).includes(input.type)) throw new TRPCError({ code: "BAD_REQUEST", message: "交接类型必须为 H1—H5" });
+  if (input.type === "H5") throw new TRPCError({ code: "BAD_REQUEST", message: "H5 人员改派须由管理员从改派入口发起，并在新督学接收后生效" });
   await assertStaffRecipient(db, coachingCase.orgId, input.toUserId);
   const [{ id }] = await db.insert(coachingHandoffs).values({ caseId: input.caseId, type: input.type, fromUserId: me.id, toUserId: input.toUserId,
     title: required(input.title, "交接标题不能为空"), content: required(input.content, "交接内容不能为空"), dueAt: input.dueAt ?? null }).$returningId();
   await db.insert(coachingEvents).values({ caseId: input.caseId, actorUserId: me.id, type: "handoff_created", content: `${input.type} ${input.title}` });
   return { id };
-}
-
-export async function acceptHandoff(db: Db, me: StaffUser, handoffId: number) {
-  const [row] = await db.select().from(coachingHandoffs).where(eq(coachingHandoffs.id, handoffId)).limit(1);
-  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "交接记录不存在" });
-  await assertCaseAccess(db, me, row.caseId);
-  if (row.toUserId !== me.id || row.status !== "pending") throw new TRPCError({ code: "FORBIDDEN", message: "只能接收分配给自己的待交接事项" });
-  await db.update(coachingHandoffs).set({ status: "accepted", acceptedAt: new Date() }).where(eq(coachingHandoffs.id, row.id));
-  await db.insert(coachingEvents).values({ caseId: row.caseId, actorUserId: me.id, type: "handoff_accepted", content: `${row.type} ${row.title}` });
-  return { ok: true as const };
-}
-
-export async function setCoachingStatus(db: Db, me: StaffUser, input: { caseId: number; status: "active" | "paused" | "closed" | "archived"; reason: string }) {
-  const coachingCase = await assertCaseAccess(db, me, input.caseId);
-  if (input.status === "archived" && me.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "仅机构管理员可归档" });
-  await db.transaction(async (tx) => {
-    await tx.update(coachingCases).set({ status: input.status, scenario: input.status === "closed" ? "结课复盘" : coachingCase.scenario }).where(eq(coachingCases.id, input.caseId));
-    if (input.status === "closed") await tx.insert(coachingHandoffs).values({ caseId: input.caseId, type: "H4", fromUserId: me.id, toUserId: coachingCase.supervisorId,
-      title: "结课复盘与后续回访交接", content: required(input.reason, "请填写状态变更原因") });
-    await event(tx, input.caseId, me.id, "case_status", `${coachingCase.status} → ${input.status}：${input.reason}`);
-  });
-  return { ok: true as const };
-}
-
-export async function reassignCoachingCase(db: Db, me: StaffUser, input: { caseId: number; coachId: number; supervisorId: number; reason: string }) {
-  const coachingCase = await assertCaseAccess(db, me, input.caseId);
-  if (me.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "仅机构管理员可改派人员" });
-  await assertStaffRecipient(db, coachingCase.orgId, input.coachId);
-  await assertStaffRecipient(db, coachingCase.orgId, input.supervisorId);
-  await db.update(coachingCases).set({ coachId: input.coachId, supervisorId: input.supervisorId }).where(eq(coachingCases.id, input.caseId));
-  await db.insert(coachingHandoffs).values({ caseId: input.caseId, type: "H5", fromUserId: me.id, toUserId: input.coachId,
-    title: "人员改派与回访交接", content: required(input.reason, "请填写改派原因") });
-  await db.insert(coachingEvents).values({ caseId: input.caseId, actorUserId: me.id, type: "case_reassigned", content: input.reason });
-  return { ok: true as const };
 }
 
 async function insertSupervision(tx: PointTx, coachingCase: CaseRow, me: StaffUser, input: SessionInput["supervision"] & { visitAt: Date; format: SessionInput["format"] | "supervision"; status: "draft" | "completed"; hasCoachUnit: boolean }) {
