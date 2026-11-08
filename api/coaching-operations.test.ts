@@ -13,8 +13,8 @@ import {
   type CoachingOperationSource,
 } from "./coachingOperations";
 import {
-  coachingNotificationInbox, markCoachingNotificationRead, queueCoachingNotification,
-  retryCoachingNotification, transferCoachingNotificationManual,
+  coachingNotificationInbox, coachingNotificationTime, deliverDueCoachingNotifications,
+  markCoachingNotificationRead, queueCoachingNotification, retryCoachingNotification, transferCoachingNotificationManual,
 } from "./coachingNotifications";
 import { listCoachingCases } from "./coachingService";
 import type { StaffUser } from "./orgAccess";
@@ -137,7 +137,12 @@ function notificationDb(initial: Notice[] = [], extraRows = new Map<unknown, unk
         return values.includes(actual);
       }
       const expected = parsed.params[parameterIndex++];
-      if (lessOrEqual) return new Date(actual as string | Date).getTime() <= new Date(expected as string | Date).getTime();
+      if (lessOrEqual) {
+        /* Drizzle timestamp 的驱动值是无时区 UTC 文本；mock 与真实列一样按 UTC 解析。 */
+        const epoch = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(value)
+          ? Date.parse(`${value.replace(" ", "T")}Z`) : new Date(value as string | Date).getTime();
+        return epoch(actual) <= epoch(expected);
+      }
       return actual === expected;
     });
   }
@@ -197,6 +202,21 @@ describe("站内通知幂等、权限与状态记录", () => {
     await queueCoachingNotification(mock.db, { ...input, idempotencyKey: "exception:urgent", priority: "urgent", title: "需要立即处理的服务异常" });
     expect(mock.rows[1]).toMatchObject({ status: "sent", priority: "urgent" });
     expect(mock.rows[1].sentAt?.toISOString()).toBe(late.toISOString());
+  });
+
+  it("通知写入与到期比较统一为整秒，同一毫秒首次打开即可送达", async () => {
+    const at = new Date("2026-11-08T08:00:00.999+08:00");
+    const wholeSecond = new Date("2026-11-08T08:00:00.000+08:00");
+    expect(coachingNotificationTime(at).toISOString()).toBe(wholeSecond.toISOString());
+    const mock = notificationDb();
+    await queueCoachingNotification(mock.db, { orgId: 7, caseId: 91, recipientId: 19, type: "monthly_report_pushed",
+      title: "新的月度学习报告", body: "请查看家庭反馈", idempotencyKey: "monthly:immediate", now: at });
+    expect(mock.rows[0]).toMatchObject({ status: "sent" });
+    expect(mock.rows[0].notBefore.toISOString()).toBe(wholeSecond.toISOString());
+    expect(mock.rows[0].sentAt?.toISOString()).toBe(wholeSecond.toISOString());
+    await expect(deliverDueCoachingNotifications(mock.db as Parameters<typeof deliverDueCoachingNotifications>[0], tutor, at))
+      .resolves.toEqual({ delivered: 1 });
+    expect(mock.rows[0].status).toBe("delivered");
   });
 
   it("发送、送达、已读分别留痕；他人通知不可读", async () => {

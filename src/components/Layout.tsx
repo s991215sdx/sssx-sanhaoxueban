@@ -418,7 +418,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className={`pb-24 transition-all duration-200 md:pb-10 ${collapsed ? "md:pl-[68px]" : "md:pl-60"}`}>
+      {/* 折叠过渡只在桌面生效，避免跨断点时留白动画把手机内容瞬时挤出屏幕。 */}
+      <main className={`pb-24 md:pb-10 md:transition-all md:duration-200 ${collapsed ? "md:pl-[68px]" : "md:pl-60"}`}>
         {/* V59：机构被平台停用时的提示条（学员/伴学师/机构管理员都能看到） */}
         {orgPaused && (
           <div className="border-b border-terra/30 bg-terra/10 px-4 py-2.5 text-center text-[12.5px] text-terra">

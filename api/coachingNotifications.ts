@@ -26,6 +26,11 @@ export const COACHING_NOTIFICATION_STATUS: Record<string, string> = {
   pending: "待发送", sent: "已发送", delivered: "已送达", failed: "发送失败", manual: "已转人工",
 };
 
+/** timestamp 未声明小数秒；先截断毫秒，避免数据库四舍五入到下一秒而让已发送通知暂不可投递。 */
+export function coachingNotificationTime(value = new Date()): Date {
+  return new Date(Math.floor(value.getTime() / 1000) * 1000);
+}
+
 async function settingsFor(db: QueryDb, orgId: number) {
   const [row] = await db.select().from(coachingNotificationSettings).where(eq(coachingNotificationSettings.orgId, orgId)).limit(1);
   return row ?? { ...DEFAULT_COACHING_NOTIFICATION_SETTINGS };
@@ -33,7 +38,7 @@ async function settingsFor(db: QueryDb, orgId: number) {
 
 /** 在业务事务内写入站内通知；唯一键保证交接、月报与反馈重试不重复提醒。 */
 export async function queueCoachingNotification(db: QueryDb, input: NotificationInput) {
-  const now = input.now ?? new Date();
+  const now = coachingNotificationTime(input.now);
   const [existing] = await db.select({ id: coachingNotifications.id, status: coachingNotifications.status })
     .from(coachingNotifications).where(eq(coachingNotifications.idempotencyKey, input.idempotencyKey)).limit(1);
   if (existing) return { id: existing.id, status: existing.status, duplicate: true as const };
@@ -79,7 +84,8 @@ export async function queueFamilyCoachingNotification(db: QueryDb, input: Omit<N
 }
 
 /** 打开工作台或家庭通知中心时投递到期的站内通知，不伪造微信或短信送达。 */
-export async function deliverDueCoachingNotifications(db: Db, me: Recipient, now = new Date()) {
+export async function deliverDueCoachingNotifications(db: Db, me: Recipient, at = new Date()) {
+  const now = coachingNotificationTime(at);
   const base = [eq(coachingNotifications.recipientId, me.id), lte(coachingNotifications.notBefore, now)] as const;
   const pending = await db.select({ id: coachingNotifications.id }).from(coachingNotifications)
     .where(and(...base, eq(coachingNotifications.status, "pending"))).limit(200);
@@ -122,7 +128,7 @@ async function manageableNotification(db: Db, me: StaffUser, notificationId: num
 export async function retryCoachingNotification(db: Db, me: StaffUser, notificationId: number) {
   const row = await manageableNotification(db, me, notificationId);
   if (row.status !== "failed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "只有发送失败的通知可以重试" });
-  const now = new Date();
+  const now = coachingNotificationTime();
   const settings = await settingsFor(db, row.orgId);
   const notBefore = row.priority === "urgent" ? now : nextShanghaiOpening(now, settings.quietStart, settings.quietEnd);
   const sendNow = notBefore.getTime() <= now.getTime();
