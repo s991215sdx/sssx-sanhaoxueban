@@ -171,6 +171,7 @@ export async function reconcileMigrations(db: Db) {
     "0003": () => tableExists(db, "tutor_sessions"),
     "0004": async () => columnExists(db, "users", "phone"),
     "0007": async () => columnExists(db, "knowledge_points", "grade"),
+    "0050": async () => (await tableExists(db, "coaching_exceptions")) && (await tableExists(db, "coaching_exception_actions")),
   };
   for (const entry of entries) {
     const prefix = entry.tag.slice(0, 4);

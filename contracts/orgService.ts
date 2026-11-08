@@ -200,6 +200,35 @@ export function coachingScenarioLabel(key: string): string {
 }
 export const HANDOFF_TYPES = ["H1", "H2", "H3", "H4", "H5"] as const;
 
+export const COACHING_EXCEPTION_SEVERITIES = ["S1", "S2", "S3", "S4"] as const;
+export type CoachingExceptionSeverity = (typeof COACHING_EXCEPTION_SEVERITIES)[number];
+export const COACHING_EXCEPTION_CATEGORIES = [
+  { key: "service", label: "服务延误", sensitive: false },
+  { key: "archive", label: "档案缺项", sensitive: false },
+  { key: "communication", label: "家校沟通", sensitive: false },
+  { key: "attendance", label: "出勤异常", sensitive: false },
+  { key: "complaint", label: "投诉异议", sensitive: true },
+  { key: "integrity", label: "记录真实性", sensitive: true },
+  { key: "wellbeing", label: "心理状态", sensitive: true },
+  { key: "safety", label: "人身安全", sensitive: true },
+  { key: "other", label: "其他事项", sensitive: false },
+] as const;
+export type CoachingExceptionCategory = (typeof COACHING_EXCEPTION_CATEGORIES)[number]["key"];
+
+/** S4、心理与安全永远敏感；其他敏感类别不允许被前端取消保护。 */
+export function coachingExceptionSensitive(severity: string, category: string, requested = false): boolean {
+  return requested || severity === "S4" || Boolean(COACHING_EXCEPTION_CATEGORIES.find((item) => item.key === category)?.sensitive);
+}
+
+/** 仅作为可调整的页面默认值；真正期限随异常保存，不由列表临时推算。 */
+export function defaultCoachingExceptionDueAt(severity: CoachingExceptionSeverity, now = new Date()): Date {
+  const due = new Date(now);
+  if (severity === "S1") due.setHours(23, 59, 0, 0);
+  if (severity === "S2") due.setTime(now.getTime() + 2 * 60 * 60 * 1000);
+  if (severity === "S3") due.setTime(now.getTime() + 24 * 60 * 60 * 1000);
+  return due;
+}
+
 export const LEARNING_TRACE_KEYS = ["draft", "notes", "mindmap", "errorbook", "review"] as const;
 export type LearningTraceKey = (typeof LEARNING_TRACE_KEYS)[number];
 export const LEARNING_TRACES = [
