@@ -319,3 +319,32 @@ export function validateSessionPhase(input: {
   }
   return null;
 }
+
+/** 月报维度只描述已核实事实；成绩与排名不由课程、出勤或积分自动推断。 */
+export const COACHING_MONTHLY_DIMENSIONS = [
+  { key: "goalProgress", label: "目标", prompt: "本月目标推进事实、与起点或上月相比的变化" },
+  { key: "academicProgress", label: "成绩", prompt: "同口径考试、分数或排名事实；没有新数据须明确说明" },
+  { key: "taskExecution", label: "任务执行", prompt: "结合任务验收与日检验，说明执行亮点和未完成原因" },
+  { key: "learningMethod", label: "学习方法", prompt: "订正、费曼输出、五项痕迹等方法的真实使用情况" },
+  { key: "habitFamily", label: "习惯与家校协同", prompt: "作息、自主学习节奏及家庭配合的实际变化" },
+] as const;
+
+/** 质量框架集中配置，服务端和页面共用版本与分值；仅供内部质量管理。 */
+export const COACHING_QUALITY_FRAMEWORK = {
+  version: "1.0",
+  modules: [
+    { key: "plan", label: "计划质量", maxScore: 20 },
+    { key: "execution", label: "执行质量", maxScore: 20 },
+    { key: "archive", label: "档案质量", maxScore: 20 },
+    { key: "family", label: "家校质量", maxScore: 20 },
+    { key: "review", label: "复盘质量", maxScore: 20 },
+  ],
+} as const;
+
+export type CoachingQualityScores = Record<(typeof COACHING_QUALITY_FRAMEWORK.modules)[number]["key"], number>;
+
+export function coachingQualityLevel(total: number): { key: "green" | "yellow" | "red"; label: string } {
+  if (total >= 90) return { key: "green", label: "绿 · 保持并复核" };
+  if (total >= 75) return { key: "yellow", label: "黄 · 限期改进" };
+  return { key: "red", label: "红 · 优先整改" };
+}

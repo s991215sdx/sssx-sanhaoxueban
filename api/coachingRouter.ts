@@ -11,8 +11,21 @@ import {
 } from "./coachingService";
 import { createCoachingException, recordCoachingException, revealCoachingException } from "./coachingExceptions";
 import { cancelReassignment, listIncomingHandoffs } from "./coachingLifecycle";
+import { getCoachingMonthlyPreview, listCoachingMonthlyReports, pushCoachingMonthlyReport, saveCoachingMonthlyReport } from "./coachingMonthly";
+import { assignQualityReview, closeQualityReview, qualityInbox, qualityReviews, submitQualityReview, submitSelfQualityReview } from "./coachingQuality";
+import { COACHING_QUALITY_FRAMEWORK } from "@contracts/orgService";
 
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const monthText = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+const qualityScores = z.object({ plan: z.number().int().min(0).max(20), execution: z.number().int().min(0).max(20),
+  archive: z.number().int().min(0).max(20), family: z.number().int().min(0).max(20), review: z.number().int().min(0).max(20) });
+const qualityContent = z.object({ scores: qualityScores, findings: z.string().trim().min(2).max(12000),
+  improvementActions: z.string().trim().min(2).max(12000) });
+const monthlyContent = z.object({ caseId: z.number().int().positive(), month: monthText,
+  goalProgress: z.string().trim().min(2).max(12000), academicProgress: z.string().trim().min(2).max(12000),
+  taskExecution: z.string().trim().min(2).max(12000), learningMethod: z.string().trim().min(2).max(12000),
+  habitFamily: z.string().trim().min(2).max(12000), meetingNotes: z.string().max(15000).optional(),
+  nextActions: z.array(z.string().trim().min(2).max(2000)).min(1).max(3), familyAction: z.string().trim().min(2).max(4000) });
 const caseInput = z.object({ studentUserId: z.number().int().positive(), scenarios: z.array(z.enum(["A", "B", "C", "D"])).min(1).max(4),
   goal: z.string().trim().min(2).max(5000), currentSituation: z.string().trim().min(2).max(8000), planSummary: z.string().trim().min(2).max(10000),
   serviceStart: dateText, serviceEnd: dateText });
@@ -97,6 +110,26 @@ export const coachingRouter = createRouter({
     participantId: z.number().int().positive().nullable().optional(), taskId: z.number().int().positive().nullable().optional(),
     kind: z.enum(["text", "audio", "image"]), body: z.string().max(12000).optional(), mediaData: z.string().max(5_600_000).optional(), mimeType: z.string().max(80).optional() }))
     .mutation(({ ctx, input }) => uploadCoachingDeliverable(getDb(), ctx.user, input)),
+  monthlyPreview: tutorQuery.input(z.object({ caseId: z.number().int().positive(), month: monthText }))
+    .query(({ ctx, input }) => getCoachingMonthlyPreview(getDb(), ctx.user, input.caseId, input.month)),
+  monthlyReports: tutorQuery.input(z.object({ caseId: z.number().int().positive() }))
+    .query(({ ctx, input }) => listCoachingMonthlyReports(getDb(), ctx.user, input.caseId)),
+  saveMonthlyReport: tutorQuery.input(monthlyContent).mutation(({ ctx, input }) => saveCoachingMonthlyReport(getDb(), ctx.user, input)),
+  pushMonthlyReport: tutorQuery.input(z.object({ reportId: z.number().int().positive() }))
+    .mutation(({ ctx, input }) => pushCoachingMonthlyReport(getDb(), ctx.user, input.reportId)),
+  qualityFramework: tutorQuery.query(() => COACHING_QUALITY_FRAMEWORK),
+  qualityReviews: tutorQuery.input(z.object({ caseId: z.number().int().positive() }))
+    .query(({ ctx, input }) => qualityReviews(getDb(), ctx.user, input.caseId)),
+  qualityInbox: tutorQuery.query(({ ctx }) => qualityInbox(getDb(), ctx.user)),
+  assignQualityReview: tutorQuery.input(z.object({ caseId: z.number().int().positive(), reviewType: z.enum(["self", "peer", "supervisor"]),
+    reviewerId: z.number().int().positive(), periodKey: z.string().trim().min(2).max(24), dueAt: z.date() }))
+    .mutation(({ ctx, input }) => assignQualityReview(getDb(), ctx.user, input)),
+  submitSelfQualityReview: tutorQuery.input(qualityContent.extend({ caseId: z.number().int().positive(), periodKey: z.string().trim().min(2).max(24) }))
+    .mutation(({ ctx, input }) => submitSelfQualityReview(getDb(), ctx.user, input)),
+  submitQualityReview: tutorQuery.input(qualityContent.extend({ reviewId: z.number().int().positive() }))
+    .mutation(({ ctx, input }) => submitQualityReview(getDb(), ctx.user, input)),
+  closeQualityReview: tutorQuery.input(z.object({ reviewId: z.number().int().positive(), closeEvidence: z.string().trim().min(2).max(12000) }))
+    .mutation(({ ctx, input }) => closeQualityReview(getDb(), ctx.user, input)),
   download: authedQuery.input(z.object({ deliverableId: z.number().int().positive() })).query(({ ctx, input }) => downloadCoachingDeliverable(getDb(), ctx.user, input.deliverableId)),
   lookupGuardian: tutorQuery.input(z.object({ phone: z.string().trim().regex(/^1\d{10}$/) })).query(async ({ ctx, input }) => {
     const db = getDb(); const orgId = requireOrgStaff(ctx.user);
