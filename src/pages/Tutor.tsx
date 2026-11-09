@@ -162,14 +162,13 @@ export default function Tutor() {
             </button>
           )}
         </div>
-        {/* V57：两大专栏切换 */}
-        {/* v127：与后台统一——tab 条白底，选中=草绿色卡+白字 */}
+        {/* 桌面端的测评中心、陪跑中心收进全局左侧栏；手机端保留完整页签。 */}
         <div className="mt-3 flex rounded-xl border border-[#1E3530]/10 bg-white p-1 flex-wrap gap-1">
           {(
             [
               { key: "students", label: "学员管理", visible: true },
               { key: "assessments", label: "测评中心", visible: orgView || campusView },
-              { key: "coaching", label: "独立陪跑", visible: orgView },
+              { key: "coaching", label: "陪跑中心", visible: orgView },
               { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
               { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
@@ -179,8 +178,8 @@ export default function Tutor() {
               type="button"
               onClick={() => setSection(t.key)}
               className={`min-h-10 flex-1 rounded-lg px-3 py-2 text-[12px] font-semibold whitespace-nowrap transition ${
-                section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
-              }`}
+                t.key === "assessments" || t.key === "coaching" ? "md:hidden" : ""
+              } ${section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"}`}
             >
               {t.label}
             </button>

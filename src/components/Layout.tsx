@@ -141,9 +141,9 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { data: familyCases = [] } = trpc.coaching.familyCases.useQuery(undefined, { enabled: !isStaff });
   const navVisible = (m: string) => enabledModules === null || m === "assessments" || enabledModules.includes(m);
 
-  /* v220.3：校园机构判定（机构管理员/教务）——学校版后台菜单并入外层侧边栏，隐藏伴学工作台 */
+  /* 校园机构判定：管理员、教务与伴学师都需要识别版本，以显示对应的工作台左侧菜单。 */
   const { data: schoolCtx } = trpc.school.context.useQuery(undefined, {
-    enabled: (isAdmin && !isPlatformAdmin) || user?.role === "jiaowu",
+    enabled: isStaff && !isPlatformAdmin,
   });
   const isCampus = !!schoolCtx?.campus;
   const isJiaowu = user?.role === "jiaowu";
@@ -153,6 +153,9 @@ export default function Layout({ children }: { children: ReactNode }) {
   const campusMgr = isCampus && user?.orgId != null && (isAdmin || isJiaowu);
   /* v220.5：超管的「伴学工作台」称谓不跟校园版走 */
   const campusTutor = isCampus && user?.orgId != null;
+  /* 机构版与校园伴学师均可从左侧进入测评；独立陪跑仅机构版开放。 */
+  const showTutorAssessment = showCoach && !campusMgr && user?.orgId != null;
+  const showTutorCoaching = showCoach && !campusMgr && user?.orgId != null && schoolCtx?.campus === false;
   /* 机构管理员直达积分分配；校园版无积分，平台超管仍走机构管理中的总积分调整。 */
   const showOrgPoints = isAdmin && !isPlatformAdmin && user?.orgId != null && schoolCtx?.edition === "org" && schoolCtx.campus === false;
   /* v229：资料库功能被平台超管关闭时，学校版菜单同步隐藏该入口 */
@@ -168,7 +171,10 @@ export default function Layout({ children }: { children: ReactNode }) {
     const first = schoolGroups[0]?.items[0]?.key;
     return (cur ?? first ?? "progress") === key;
   };
-  const orgPointsActive = location.pathname === "/tutor" && new URLSearchParams(location.search).get("section") === "points";
+  const tutorSection = location.pathname === "/tutor" ? new URLSearchParams(location.search).get("section") : null;
+  const orgPointsActive = tutorSection === "points";
+  const orgAssessmentActive = tutorSection === "assessments";
+  const orgCoachingActive = tutorSection === "coaching";
   /* 桌面侧边栏折叠态：记住用户选择，折叠后只留图标，给阅读区让出最大空间 */
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -252,11 +258,35 @@ export default function Layout({ children }: { children: ReactNode }) {
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive && !orgPointsActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
+                } ${isActive && !orgPointsActive && !orgAssessmentActive && !orgCoachingActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
               <GraduationCap size={18} strokeWidth={2.2} />
               {!collapsed && (campusTutor ? "指导老师工作台" : "伴学工作台")}
+            </NavLink>
+          )}
+          {showTutorAssessment && (
+            <NavLink
+              to="/tutor?section=assessments"
+              title={collapsed ? "测评中心" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${orgAssessmentActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <ClipboardCheck size={18} strokeWidth={2.2} />
+              {!collapsed && "测评中心"}
+            </NavLink>
+          )}
+          {showTutorCoaching && (
+            <NavLink
+              to="/tutor?section=coaching"
+              title={collapsed ? "陪跑中心" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${orgCoachingActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <HeartHandshake size={18} strokeWidth={2.2} />
+              {!collapsed && "陪跑中心"}
             </NavLink>
           )}
           {showOrgPoints && (
