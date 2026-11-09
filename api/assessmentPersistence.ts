@@ -5,6 +5,7 @@ import { assessmentActivities, assessmentActivityItems, assessmentAssignments, a
 import { assessmentCredits } from "@contracts/orgService";
 import { getDb } from "./queries/connection";
 import { debitPoints, type PointTx } from "./orgPoints";
+import { syncAssessmentActivityStatus } from "./assessmentActivityStatus";
 
 type Db = ReturnType<typeof getDb>;
 type Outcome = { kind: (typeof assessmentResults.$inferInsert)["kind"]; result: Record<string, unknown> };
@@ -106,6 +107,7 @@ export async function persistAssessmentResult(
       if (hit) {
         await tx.update(assessmentAssignments).set({ status: "completed", resultId: id, completedAt: new Date() })
           .where(and(eq(assessmentAssignments.id, hit.assignment.id), inArray(assessmentAssignments.status, ["pending", "in_progress"])));
+        await syncAssessmentActivityStatus(tx, hit.activity.id);
       }
       return { ...input.outcome, resultId: id, assignmentId: hit?.assignment.id ?? null };
     });

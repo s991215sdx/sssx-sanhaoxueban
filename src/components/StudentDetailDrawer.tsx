@@ -191,6 +191,10 @@ export default function StudentDetailDrawer({
               <p className="mt-2 text-[12.5px] text-olive-soft">
                 {(() => {
                   const a = data.assessments;
+                  if (Array.isArray(data.campusReportKinds)) {
+                    const completed = (data.completedKinds ?? []).map((kind) => KIND_LABELS[kind] ?? kind);
+                    return completed.length ? `已测 ${completed.length} 项：${[...new Set(completed)].join("、")}。下方报告仅显示老师已授权的项目。` : "还没有测评结果。";
+                  }
                   const names: string[] = [];
                   if (a.mbti) names.push("MBTI 性格测评");
                   if (a.disc) names.push("DISC 行为风格");
@@ -226,6 +230,7 @@ export default function StudentDetailDrawer({
                         }}
                         profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as any }}
                         viewer="tutor"
+                        allowedKinds={data.campusReportKinds}
                         subject4d={data.assessments.optional?.subject4d ?? null}
                         studentUserId={userId}
                         onEditAcademics={() => {

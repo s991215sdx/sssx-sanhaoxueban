@@ -1,10 +1,12 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, lte, ne } from "drizzle-orm";
-import { assessmentActivities, assessmentActivityItems, assessmentAssignments, assessmentResults, users } from "@db/schema";
-import { selectionFor } from "@contracts/orgService";
+import { assessmentActivities, assessmentActivityEvents, assessmentActivityItems, assessmentAssignments, assessmentResults, users } from "@db/schema";
+import { selectionFor, shanghaiDate } from "@contracts/orgService";
 import type { getDb } from "./queries/connection";
 import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
 import { debitPoints, refundOriginalDebitTx } from "./orgPoints";
+import { syncAssessmentActivityStatus } from "./assessmentActivityStatus";
+import { queueCoachingNotification } from "./coachingNotifications";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -35,10 +37,30 @@ export async function createAssessmentActivity(db: Db, me: StaffUser, input: { r
     }
   }
   if (input.retestOfAssignmentId) {
-    const [source] = await db.select({ assignment: assessmentAssignments, selectionKey: assessmentActivityItems.selectionKey }).from(assessmentAssignments)
-      .innerJoin(assessmentActivityItems, eq(assessmentAssignments.activityItemId, assessmentActivityItems.id)).where(eq(assessmentAssignments.id, input.retestOfAssignmentId)).limit(1);
-    if (!source || source.assignment.status !== "completed" || source.assignment.studentUserId !== studentIds[0] || source.selectionKey !== selectionKeys[0]) {
-      throw new TRPCError({ code: "CONFLICT", message: "复测必须来自同一学员已完成项目的整包任务" });
+    const [source] = await db.select({ assignment: assessmentAssignments, selectionKey: assessmentActivityItems.selectionKey,
+      activityId: assessmentActivities.id, orgId: assessmentActivities.orgId }).from(assessmentAssignments)
+      .innerJoin(assessmentActivityItems, eq(assessmentAssignments.activityItemId, assessmentActivityItems.id))
+      .innerJoin(assessmentActivities, eq(assessmentActivityItems.activityId, assessmentActivities.id))
+      .where(eq(assessmentAssignments.id, input.retestOfAssignmentId)).limit(1);
+    if (!source || source.orgId !== orgId || source.assignment.status !== "completed" || !source.assignment.completedAt
+      || source.assignment.studentUserId !== studentIds[0] || source.selectionKey !== selectionKeys[0]) {
+      throw new TRPCError({ code: "CONFLICT", message: "复测必须来自本机构、同一学员已完成项目的整包任务" });
+    }
+    const sourcePackage = await db.select().from(assessmentAssignments)
+      .where(and(eq(assessmentAssignments.activityItemId, source.assignment.activityItemId), eq(assessmentAssignments.studentUserId, studentIds[0]!)));
+    if (!sourcePackage.length || sourcePackage.some((row) => row.status !== "completed" || !row.completedAt || !row.resultId)) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "原测评整包尚未全部完成，不能发起同项目复测" });
+    }
+    const packageCompletedAt = new Date(Math.max(...sourcePackage.map((row) => row.completedAt!.getTime())));
+    const sixMonthsLater = new Date(packageCompletedAt); sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+    let earlyRetest = false;
+    if (selections[0]!.kinds.length === 1 && sourcePackage.length === 1 && source.assignment.resultId) {
+      const [result] = await db.select({ result: assessmentResults.result }).from(assessmentResults).where(eq(assessmentResults.id, source.assignment.resultId)).limit(1);
+      const level = result?.result.level;
+      earlyRetest = level === "S3" || level === "S4" || level === "预警" || level === "高风险";
+    }
+    if (Date.now() < sixMonthsLater.getTime() && !earlyRetest) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: `同一项目原则上满六个月方可复测（${sixMonthsLater.toISOString().slice(0, 10)} 后）；单项量表达到预警等级才可提前，综合包不推定统一风险等级` });
     }
   }
   const ownedActivity = (activity: typeof assessmentActivities.$inferSelect | undefined) => {
@@ -119,9 +141,7 @@ export async function expireAssessmentActivity(db: Db, activityId: number, actor
     }
     if (expiredIds.length) await tx.update(assessmentAssignments).set({ status: "expired", expiredAt: new Date(), cancelledReason: "超过完成期限" })
       .where(and(inArray(assessmentAssignments.id, expiredIds), inArray(assessmentAssignments.status, ["pending", "in_progress"])));
-    if (!rows.some((r) => ["pending", "in_progress"].includes(r.assignment.status) && !expiredIds.includes(r.assignment.id))) {
-      await tx.update(assessmentActivities).set({ status: "expired" }).where(and(eq(assessmentActivities.id, activityId), eq(assessmentActivities.status, "open")));
-    }
+    await syncAssessmentActivityStatus(tx, activityId);
     return { expired: expiredIds.length, refunded };
   });
 }
@@ -160,10 +180,7 @@ export async function cancelAssessmentItem(db: Db, me: StaffUser, itemId: number
         await refundOriginalDebitTx(tx, { eventKey: `assessment:item:${itemId}:student:${studentId}`, actorUserId: me.id, reason: reason.trim() || "未开始取消测评" });
       }
     }
-    const remaining = await tx.select({ id: assessmentAssignments.id }).from(assessmentAssignments)
-      .innerJoin(assessmentActivityItems, eq(assessmentAssignments.activityItemId, assessmentActivityItems.id))
-      .where(and(eq(assessmentActivityItems.activityId, item.activityId), ne(assessmentAssignments.status, "cancelled"))).limit(1);
-    if (!remaining.length) await tx.update(assessmentActivities).set({ status: "cancelled" }).where(eq(assessmentActivities.id, item.activityId));
+    await syncAssessmentActivityStatus(tx, item.activityId);
     return { ok: true as const, count: new Set(open.map((a) => a.studentUserId)).size };
   });
 }
@@ -179,8 +196,45 @@ export async function cancelAssessmentStudent(db: Db, me: StaffUser, itemId: num
     await tx.update(assessmentAssignments).set({ status: "cancelled", cancelledAt: new Date(), cancelledReason: reason.trim() })
       .where(and(eq(assessmentAssignments.activityItemId, itemId), eq(assessmentAssignments.studentUserId, studentUserId), inArray(assessmentAssignments.status, ["pending", "expired"])));
     const refund = item.priceSnapshot > 0 ? await refundOriginalDebitTx(tx, { eventKey: `assessment:item:${itemId}:student:${studentUserId}`, actorUserId: me.id, reason: reason.trim() }) : { refunded: false };
+    await syncAssessmentActivityStatus(tx, item.activityId);
     return { ok: true as const, count: rows.length, refunded: refund.refunded };
   });
+}
+
+export async function remindAssessmentActivity(db: Db, me: StaffUser, activityId: number) {
+  const activity = await assertActivityAccess(db, me, activityId);
+  if (activity.status !== "open") throw new TRPCError({ code: "CONFLICT", message: "只有进行中的活动可以提醒" });
+  const rows = await db.select({ studentUserId: assessmentAssignments.studentUserId }).from(assessmentAssignments)
+    .innerJoin(assessmentActivityItems, eq(assessmentAssignments.activityItemId, assessmentActivityItems.id))
+    .where(and(eq(assessmentActivityItems.activityId, activityId), inArray(assessmentAssignments.status, ["pending", "in_progress"])));
+  const recipients = [...new Set(rows.map((row) => row.studentUserId))];
+  if (!recipients.length) throw new TRPCError({ code: "CONFLICT", message: "当前没有待提醒的学员" });
+  const today = shanghaiDate(new Date());
+  for (const studentUserId of recipients) {
+    await queueCoachingNotification(db, { orgId: activity.orgId, recipientId: studentUserId, type: "assessment_reminder",
+      title: "你有一项待完成测评", body: `请完成「${activity.title}」。${activity.dueAt ? `截止时间：${activity.dueAt.toLocaleString("zh-CN")}。` : ""}如遇问题请联系伴学师。`,
+      idempotencyKey: `assessment-reminder:${activityId}:${studentUserId}:${today}`, createdBy: me.id });
+  }
+  await db.insert(assessmentActivityEvents).values({ activityId, actorUserId: me.id, type: "reminder", detail: `向 ${recipients.length} 名未完成学员发送站内提醒` });
+  return { ok: true as const, count: recipients.length };
+}
+
+export async function rescheduleAssessmentActivity(db: Db, me: StaffUser, input: { activityId: number; dueAt: Date; reason: string }) {
+  await assertActivityAccess(db, me, input.activityId);
+  if (input.dueAt.getTime() <= Date.now()) throw new TRPCError({ code: "BAD_REQUEST", message: "新截止时间必须晚于当前时间" });
+  return db.transaction(async (tx) => {
+    const [activity] = await tx.select().from(assessmentActivities).where(eq(assessmentActivities.id, input.activityId)).limit(1).for("update");
+    if (!activity || activity.status !== "open") throw new TRPCError({ code: "CONFLICT", message: "已结束活动不能直接改期，请按未完成学员重新发起" });
+    await tx.update(assessmentActivities).set({ dueAt: input.dueAt }).where(eq(assessmentActivities.id, input.activityId));
+    await tx.insert(assessmentActivityEvents).values({ activityId: input.activityId, actorUserId: me.id, type: "rescheduled",
+      detail: input.reason.trim(), previousDueAt: activity.dueAt, nextDueAt: input.dueAt });
+    return { ok: true as const };
+  });
+}
+
+export async function listAssessmentActivityEvents(db: Db, me: StaffUser, activityId: number) {
+  await assertActivityAccess(db, me, activityId);
+  return db.select().from(assessmentActivityEvents).where(eq(assessmentActivityEvents.activityId, activityId)).orderBy(desc(assessmentActivityEvents.id)).limit(50);
 }
 
 export async function myAssessmentAssignments(db: Db, studentUserId: number) {

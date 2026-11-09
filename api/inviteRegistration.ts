@@ -105,6 +105,7 @@ export async function createInviteRegistrationTx(tx: PointTx, channel: InviteReg
     tutorId: channel.tutorId ?? null,
     onboarded: true,
     reportReleased: input.campus,
+    campusReportKinds: input.campus ? [] : null,
   });
   if (channel.tutorId != null) {
     const [tutor] = await tx.select({ inviteReportDefault: users.inviteReportDefault })

@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import {
-  coachingCases, coachingExceptions, coachingHandoffs, coachingQualityReviews, coachingTasks,
-  courseSessions, studySupervisionRecords, users,
+  coachingCases, coachingCrisisFollowups, coachingExceptions, coachingExtendedRecords, coachingHandoffs, coachingPlans,
+  coachingQualityReviews, coachingTasks, courseSessions, studySupervisionRecords, users,
 } from "@db/schema";
 import {
   coachingLoadWarning, coachingOperationCategory, shanghaiDate, shiftShanghaiDate,
@@ -23,6 +23,9 @@ export type CoachingOperationSource = {
   exceptions: Pick<typeof coachingExceptions.$inferSelect, "id" | "caseId" | "severity" | "category" | "sensitive" | "status" | "assigneeId" | "dueAt" | "createdAt">[];
   sessions: Pick<typeof courseSessions.$inferSelect, "id" | "caseId" | "coachId" | "startAt" | "status" | "format">[];
   supervisions: Pick<typeof studySupervisionRecords.$inferSelect, "id" | "caseId" | "supervisorId" | "visitAt" | "status">[];
+  records?: Pick<typeof coachingExtendedRecords.$inferSelect, "id" | "caseId" | "recordType" | "title" | "sensitive" | "status" | "ownerId" | "dueAt" | "createdAt">[];
+  plans?: Pick<typeof coachingPlans.$inferSelect, "id" | "caseId" | "title" | "status" | "endDate" | "createdBy">[];
+  crisisFollowups?: Pick<typeof coachingCrisisFollowups.$inferSelect, "id" | "caseId" | "exceptionId" | "kind" | "status" | "ownerId" | "dueAt">[];
 };
 
 function endOfShanghaiDate(date: string): string {
@@ -64,16 +67,36 @@ export function buildCoachingOperations(source: CoachingOperationSource, recipie
       recipientId: row.assigneeId, dueDate: shanghaiDate(row.dueAt), dueAt: row.dueAt.toISOString(), sensitive: row.sensitive, risk: true });
   }
   for (const row of source.sessions) {
+    if (row.status === "cancelled") continue;
     const dueDate = shanghaiDate(row.startAt);
     if (row.status === "completed" && dueDate < today) continue;
     add({ key: `session:${row.id}`, kind: "session", title: row.status === "draft" ? "课堂草稿与交付待完成" : "近期课堂交付", caseId: row.caseId,
       recipientId: row.coachId, dueDate, dueAt: row.startAt.toISOString(), sensitive: false });
   }
   for (const row of source.supervisions) {
+    if (row.status === "cancelled") continue;
     const dueDate = shanghaiDate(row.visitAt);
     if (row.status === "completed" && dueDate < today) continue;
     add({ key: `supervision:${row.id}`, kind: "supervision", title: row.status === "draft" ? "督学草稿与离店验收待完成" : "到店督学交付", caseId: row.caseId,
       recipientId: row.supervisorId, dueDate, dueAt: row.visitAt.toISOString(), sensitive: false });
+  }
+  const caseCoaches = new Map(source.cases.map((row) => [row.id, row.coachId]));
+  for (const row of source.records ?? []) {
+    const awaitingVerification = row.recordType === "family_action" && row.status === "completed";
+    if (!awaitingVerification && ["completed", "verified", "closed", "cancelled"].includes(row.status)) continue;
+    const dueAt = row.dueAt ?? row.createdAt;
+    add({ key: `record:${row.id}`, kind: "record", title: row.sensitive ? "敏感过程记录待办理" : awaitingVerification ? `家庭行动待核验 · ${row.title}` : `${row.recordType} · ${row.title}`,
+      caseId: row.caseId, recipientId: row.ownerId, dueDate: shanghaiDate(dueAt), dueAt: dueAt.toISOString(), sensitive: row.sensitive });
+  }
+  for (const row of source.plans ?? []) {
+    if (row.status !== "awaiting_family") continue;
+    add({ key: `plan:${row.id}`, kind: "plan", title: `计划待学生与至少一位监护人会签 · ${row.title}`, caseId: row.caseId,
+      recipientId: caseCoaches.get(row.caseId) ?? row.createdBy, dueDate: row.endDate, dueAt: endOfShanghaiDate(row.endDate), sensitive: false });
+  }
+  for (const row of source.crisisFollowups ?? []) {
+    if (row.status === "completed") continue;
+    add({ key: `crisis:${row.id}`, kind: "crisis", title: "S4 危机后续待闭环", caseId: row.caseId,
+      recipientId: row.ownerId, dueDate: shanghaiDate(row.dueAt), dueAt: row.dueAt.toISOString(), sensitive: true, risk: true });
   }
   const rank = { overdue: 0, risk: 1, today: 2, upcoming: 3 };
   items.sort((a, b) => rank[a.category] - rank[b.category] || a.dueDate.localeCompare(b.dueDate) || a.key.localeCompare(b.key));
@@ -91,8 +114,8 @@ export function buildCoachingOperations(source: CoachingOperationSource, recipie
 
 async function operationSource(db: Db, cases: OperationCase[]): Promise<CoachingOperationSource> {
   const caseIds = cases.map((row) => row.id);
-  if (!caseIds.length) return { cases, tasks: [], handoffs: [], quality: [], exceptions: [], sessions: [], supervisions: [] };
-  const [tasks, handoffs, quality, exceptions, sessions, supervisions] = await Promise.all([
+  if (!caseIds.length) return { cases, tasks: [], handoffs: [], quality: [], exceptions: [], sessions: [], supervisions: [], records: [], plans: [], crisisFollowups: [] };
+  const [tasks, handoffs, quality, exceptions, sessions, supervisions, records, plans, crisisFollowups] = await Promise.all([
     db.select().from(coachingTasks).where(inArray(coachingTasks.caseId, caseIds)),
     db.select().from(coachingHandoffs).where(inArray(coachingHandoffs.caseId, caseIds)),
     db.select().from(coachingQualityReviews).where(inArray(coachingQualityReviews.caseId, caseIds)),
@@ -106,8 +129,17 @@ async function operationSource(db: Db, cases: OperationCase[]): Promise<Coaching
     db.select({ id: studySupervisionRecords.id, caseId: studySupervisionRecords.caseId, supervisorId: studySupervisionRecords.supervisorId,
       visitAt: studySupervisionRecords.visitAt, status: studySupervisionRecords.status })
       .from(studySupervisionRecords).where(inArray(studySupervisionRecords.caseId, caseIds)),
+    db.select({ id: coachingExtendedRecords.id, caseId: coachingExtendedRecords.caseId, recordType: coachingExtendedRecords.recordType,
+      title: coachingExtendedRecords.title, sensitive: coachingExtendedRecords.sensitive, status: coachingExtendedRecords.status,
+      ownerId: coachingExtendedRecords.ownerId, dueAt: coachingExtendedRecords.dueAt, createdAt: coachingExtendedRecords.createdAt })
+      .from(coachingExtendedRecords).where(inArray(coachingExtendedRecords.caseId, caseIds)),
+    db.select({ id: coachingPlans.id, caseId: coachingPlans.caseId, title: coachingPlans.title, status: coachingPlans.status,
+      endDate: coachingPlans.endDate, createdBy: coachingPlans.createdBy }).from(coachingPlans).where(inArray(coachingPlans.caseId, caseIds)),
+    db.select({ id: coachingCrisisFollowups.id, caseId: coachingCrisisFollowups.caseId, exceptionId: coachingCrisisFollowups.exceptionId,
+      kind: coachingCrisisFollowups.kind, status: coachingCrisisFollowups.status, ownerId: coachingCrisisFollowups.ownerId, dueAt: coachingCrisisFollowups.dueAt })
+      .from(coachingCrisisFollowups).where(inArray(coachingCrisisFollowups.caseId, caseIds)),
   ]);
-  return { cases, tasks, handoffs, quality, exceptions, sessions, supervisions };
+  return { cases, tasks, handoffs, quality, exceptions, sessions, supervisions, records, plans, crisisFollowups };
 }
 
 export async function coachingOperations(db: Db, me: StaffUser) {

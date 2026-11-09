@@ -13,6 +13,7 @@ export const env = {
   appSecret: required("APP_SECRET"),
   isProduction: process.env.NODE_ENV === "production",
   databaseUrl: required("DATABASE_URL"),
+  coachingDataKey: process.env.COACHING_DATA_KEY ?? "",
   kimiAuthUrl: required("KIMI_AUTH_URL"),
   kimiOpenUrl: required("KIMI_OPEN_URL"),
   ownerUnionId: process.env.OWNER_UNION_ID ?? "",

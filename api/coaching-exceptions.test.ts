@@ -19,7 +19,7 @@ function exceptionRow(patch: Partial<ExceptionRow> = {}): ExceptionRow {
   return { id: 501, orgId: 7, caseId: 91, severity: "S2", category: "service", title: "周复盘延迟",
     detail: "周总结超过约定节点", sensitive: false, status: "open", assigneeId: 9, dueAt,
     createdBy: 19, createdAt: new Date("2026-11-07T10:00:00+08:00"), updatedAt: new Date("2026-11-07T10:00:00+08:00"),
-    closedBy: null, closedAt: null, closeEvidence: null, ...patch };
+    closedBy: null, closedAt: null, closeEvidence: null, detailCiphertext: null, closeEvidenceCiphertext: null, ...patch };
 }
 
 function createDb(caseRow = coachingCase, receiver: { id: number; role: string } | null = { id: 9, role: "admin" }) {
@@ -42,11 +42,13 @@ describe("S1—S4 异常登记与敏感规则", () => {
   it.each(["S1", "S2", "S3", "S4"] as const)("%s 均创建接收人、期限、初始处理记录和非敏感事件", async (severity) => {
     const mock = createDb();
     const result = await createCoachingException(mock.db, tutor, { ...baseInput, severity, category: "service" });
-    expect(result).toEqual({ id: 501, sensitive: severity === "S4", status: "open" });
+    expect(result).toMatchObject({ id: 501, sensitive: severity === "S4", status: "open" });
+    if (severity === "S4") expect(Math.abs(result.dueAt.getTime() - Date.now())).toBeLessThan(5000);
+    else expect(result.dueAt).toBe(dueAt);
     const main = mock.inserted.find((entry) => entry.table === coachingExceptions)!;
     const action = mock.inserted.find((entry) => entry.table === coachingExceptionActions)!;
     const event = mock.inserted.find((entry) => entry.table === coachingEvents)!;
-    expect(main.values).toMatchObject({ orgId: 7, caseId: 91, severity, assigneeId: 9, dueAt, status: "open" });
+    expect(main.values).toMatchObject({ orgId: 7, caseId: 91, severity, assigneeId: 9, dueAt: result.dueAt, status: "open" });
     expect(action.values).toMatchObject({ exceptionId: 501, caseId: 91, action: "created" });
     expect(event.values.content).not.toContain(baseInput.title);
     expect(event.values.content).not.toContain(baseInput.detail);
@@ -136,7 +138,7 @@ describe("异常处理、关闭与敏感授权", () => {
   it("普通详情对管理员和非管理员都不携带敏感正文，授权投影才包含处理历史", () => {
     const secret = "仅用于测试的敏感事实，不得进入普通响应";
     const row = exceptionRow({ severity: "S4", category: "safety", sensitive: true, title: "敏感标题", detail: secret, closeEvidence: "敏感关闭证据" });
-    const action = { id: 1, exceptionId: 501, caseId: 91, action: "progress", note: "敏感处理正文", evidence: "敏感过程证据", actorUserId: 9, createdAt: new Date() };
+    const action: typeof coachingExceptionActions.$inferSelect = { id: 1, exceptionId: 501, caseId: 91, action: "progress", note: "敏感处理正文", evidence: "敏感过程证据", actorUserId: 9, createdAt: new Date(), noteCiphertext: null, evidenceCiphertext: null };
     const joined = { exception: row, assigneeName: "机构管理员" };
     const actions = [{ action, actorName: "机构管理员" }];
     const masked = projectCoachingException(joined, actions);
@@ -202,6 +204,16 @@ describe("跨主档关联与家庭端隔离", () => {
   it("任务引用另一主档计划时，拒绝写入任务", async () => {
     const db = crossPlanDb();
     await expect(addCoachingTask(db, admin, { caseId: 91, planId: 88, title: "错误关联任务", dueDate: "2026-11-08" })).rejects.toThrow("主档不匹配");
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("任务不能关联尚未完成三方会签的计划", async () => {
+    const db = {
+      select: vi.fn(() => ({ from: (table: unknown) => ({ where: () => ({ limit: async () => table === coachingCases
+        ? [coachingCase] : [{ id: 88, caseId: 91, status: "awaiting_family", issuedAt: null }] }) }) })),
+      insert: vi.fn(),
+    } as unknown as Db;
+    await expect(addCoachingTask(db, admin, { caseId: 91, planId: 88, title: "提前关联任务", dueDate: "2026-11-08" })).rejects.toThrow("三方会签");
     expect(db.insert).not.toHaveBeenCalled();
   });
 

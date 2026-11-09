@@ -119,6 +119,7 @@ import FamilyReport from "@/components/reports/FamilyReport";
 import FamilyCommKit from "@/components/reports/FamilyCommKit";
 import { AssessmentPassProvider } from "@/components/coach/AssessmentPassDialog";
 import { useAssessmentPass } from "@/components/coach/passRequest";
+import { campusTabAllowed } from "@contracts/campusReports";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
 export type ReportAssessmentData = {
@@ -2316,6 +2317,8 @@ type ReportViewProps = {
   subject4d?: unknown;
   /** v176：伴学师查看学员时的学员 userId（选科及升学规划报告栏目直达完整页用） */
   studentUserId?: number;
+  /** 校园逐报告授权；null/undefined 供非校园旧逻辑使用。 */
+  allowedKinds?: string[] | null;
 };
 
 /**
@@ -2342,39 +2345,41 @@ function ReportViewInner({
   viewer,
   onEditAcademics,
   studentUserId,
+  allowedKinds,
 }: ReportViewProps) {
   const navigate = useNavigate();
   /* 有这层 Provider（= 伴学师看学员）时，receive 到的是「出码」；学生端为 null，还是老样子跳页 */
   const openPass = useAssessmentPass();
   const [params, setParams] = useSearchParams();
-  const tab: Tab = (params.get("tab") as Tab) || "combined";
-  /* V79：我的档案/成绩与目标移出栏目框（学生端置顶「基本信息」区）；伴学师端保留「成绩与目标」栏目 */
-  /* v199：查看对象（或本人）是校园渠道学生（粤华版）时，栏目只保留 选科及升学规划 / 职业兴趣 / 成绩与目标 */
+  const requestedTab = (params.get("tab") as Tab | null) ?? "combined";
   const { data: campusInfo } = trpc.invite.studentCampus.useQuery(
     { userId: viewer === "tutor" ? (studentUserId ?? undefined) : undefined },
     { enabled: viewer === "student" || studentUserId != null },
   );
-  const campusView = !!campusInfo?.campus;
-  /* v208：粤华学生所有报告页脚统一挂学校品牌（如「东莞粤华学校 · 生涯规划测评」）；非校园学生为 null，报告版式不变 */
+  const campusView = !!campusInfo?.campus || Array.isArray(allowedKinds);
+  const campusAllowed = Array.isArray(allowedKinds) ? allowedKinds : [];
+  /* 校园频道只渲染已授权报告；教师仍保留成绩录入，但它不替代 career 授权。 */
   const reportBrand = campusView ? (campusInfo?.brand ?? null) : null;
   const tabs = useMemo(() => {
     const base: { key: Tab; label: string }[] =
       viewer === "tutor" ? [...TABS, { key: "academics" as Tab, label: "成绩与目标" }] : [...TABS];
-    return campusView ? base.filter((t) => t.key === "zhihui" || t.key === "holland" || t.key === "academics") : base;
-  }, [viewer, campusView]);
-  /* 校园版当前栏目不在保留列表（如旧链接带 tab=combined）时，自动落到选科及升学规划 */
+    return campusView
+      ? base.filter((t) => (t.key === "academics" && viewer === "tutor") || campusTabAllowed(t.key, campusAllowed))
+      : base;
+  }, [viewer, campusView, allowedKinds]);
+  const tab: Tab | "locked" = campusView
+    ? (tabs.some((t) => t.key === requestedTab) ? requestedTab : (tabs[0]?.key ?? "locked"))
+    : requestedTab;
+  /* 旧深链指向未授权栏目时，落到第一个已授权栏目。 */
   useEffect(() => {
-    if (campusView && !tabs.some((t) => t.key === tab)) {
-      setParams(
-        (p) => {
-          const n = new URLSearchParams(p);
-          n.set("tab", "zhihui");
-          return n;
-        },
-        { replace: true },
-      );
+    if (campusView && tabs.length > 0 && requestedTab !== tab) {
+      setParams((p) => {
+        const n = new URLSearchParams(p);
+        n.set("tab", tab);
+        return n;
+      }, { replace: true });
     }
-  }, [campusView, tab, tabs, setParams]);
+  }, [campusView, requestedTab, tab, tabs, setParams]);
 
   /** V3.7 判定：有 e3 但不是 V3.7 结果 → 旧版数据，提示重测。 */
   const e3v37 = isE3V37Result(data?.e3) ? data.e3 : null;
@@ -2897,6 +2902,12 @@ function ReportViewInner({
           </button>
         ))}
       </div>
+      {campusView && tabs.length === 0 && (
+        <div className="paper-card p-8 text-center">
+          <h3 className="text-[16px] font-bold text-olive">报告暂未开放</h3>
+          <p className="mt-2 text-[13px] leading-relaxed text-olive-mute">老师会根据你的测评与学习情况开放报告，开放后学生和家长即可在这里查看。</p>
+        </div>
+      )}
 
       {/* 下载当前 tab 的报告 */}
       {canDownload && (

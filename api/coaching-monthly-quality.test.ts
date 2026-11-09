@@ -35,7 +35,7 @@ function insertMock() {
   const inserted: { table: unknown; values: Record<string, unknown> }[] = [];
   const insert = vi.fn((table: unknown) => ({ values: (values: Record<string, unknown>) => {
     inserted.push({ table, values });
-    return Object.assign(Promise.resolve(), { $returningId: async () => [{ id: 601 }] });
+    return Object.assign(Promise.resolve(), { $returningId: async () => [{ id: 601 }], onDuplicateKeyUpdate: async () => ({ affectedRows: 1 }) });
   } }));
   return { insert, inserted };
 }
@@ -142,15 +142,15 @@ describe("月报版本与家庭推送", () => {
   it("重复推送幂等，不写第二次推送事件", async () => {
     const report = { id: 601, caseId: 91, month: "2026-11", version: 2, pushedAt: new Date() } as typeof coachingMonthlyReports.$inferSelect;
     const mock = dbMock((table) => table === coachingMonthlyReports ? [report] : table === coachingCases ? [baseCase] : [], () => []);
-    await expect(pushCoachingMonthlyReport(mock.db, tutor, 601)).resolves.toEqual({ id: 601, version: 2, duplicate: true });
+    await expect(pushCoachingMonthlyReport(mock.db, tutor, { reportId: 601, recipientUserIds: [301] })).resolves.toEqual({ id: 601, version: 2, duplicate: true });
     expect(mock.transaction).not.toHaveBeenCalled();
   });
 
   it("首次推送锁定版本并写入家庭可见时间", async () => {
     const report = { id: 601, caseId: 91, month: "2026-11", version: 2, pushedAt: null } as typeof coachingMonthlyReports.$inferSelect;
-    const rows = (table: unknown) => table === coachingMonthlyReports ? [report] : table === coachingCases ? [baseCase] : [];
+    const rows = (table: unknown) => table === coachingMonthlyReports ? [report] : table === coachingCases ? [baseCase] : table === users ? [{ id: 301, name: "测试学员" }] : [];
     const mock = dbMock(rows, rows);
-    await expect(pushCoachingMonthlyReport(mock.db, tutor, 601)).resolves.toEqual({ id: 601, version: 2, duplicate: false });
+    await expect(pushCoachingMonthlyReport(mock.db, tutor, { reportId: 601, recipientUserIds: [301] })).resolves.toEqual({ id: 601, version: 2, duplicate: false });
     expect(mock.tx.patches[0].pushedAt).toBeInstanceOf(Date);
     expect(mock.tx.inserted.find((row) => row.table === coachingEvents)?.values.content).toContain("V2");
   });
@@ -272,6 +272,6 @@ describe("0052 迁移、页面接线与家庭隔离", () => {
     expect(service).toContain("isNotNull(coachingMonthlyReports.pushedAt)");
     expect(service).not.toContain("coachingQualityReviews");
     for (const endpoint of ["monthlyPreview", "saveMonthlyReport", "pushMonthlyReport", "qualityInbox", "assignQualityReview", "submitSelfQualityReview", "submitQualityReview", "closeQualityReview"]) expect(router).toContain(`${endpoint}:`);
-    expect(readFileSync("api/router.ts", "utf8")).toContain('BUILD_TAG = "v264-2026-11-08"');
+    expect(readFileSync("api/router.ts", "utf8")).toContain('BUILD_TAG = "v265-2026-11-09"');
   });
 });

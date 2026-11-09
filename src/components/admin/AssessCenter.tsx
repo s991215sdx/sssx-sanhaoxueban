@@ -8,6 +8,9 @@ import { useMemo, useState } from "react";
 import { Layers, Plus, Check, X, Search, Send, Clock, Users as UsersIcon, FileText, ChevronDown, ChevronUp, ChevronRight, History } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { expandAssessKinds } from "@contracts/invite";
+import { CAMPUS_ASSESS_CATALOG_KEYS } from "@contracts/campusReports";
+import CampusReportAccessPanel from "./CampusReportAccessPanel";
+import type { CampusReportTarget } from "./CampusReportAccessPanel";
 import { G, Card, SecTitle, Pill } from "./SchoolConsole";
 
 /* ---------------------------------- 测评目录（静态物料） ---------------------------------- */
@@ -282,7 +285,8 @@ function ShotSwitch({ imgs, name }: { imgs: [string, string]; name: string }) {
 
 /* ---------------------------------- 组件 ---------------------------------- */
 
-export default function AssessCenter({ canManage }: { canManage: boolean }) {
+export default function AssessCenter({ canManage, onOpenReport }: { canManage: boolean; onOpenReport?: (userId: number) => void }) {
+  const [reportFor, setReportFor] = useState<CampusReportTarget | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("all");
   const [detail, setDetail] = useState<CatalogItem | null>(null);
   const [picked, setPicked] = useState<string[]>([]); // catalog keys
@@ -316,7 +320,8 @@ export default function AssessCenter({ canManage }: { canManage: boolean }) {
     return expanded ? new Set(expanded) : null;
   }, [openKinds]);
   const items = useMemo(() => {
-    const byTab = CATALOG.filter((c) => (tab === "all" ? true : c.cat === tab));
+    const campusKeys = new Set<string>(CAMPUS_ASSESS_CATALOG_KEYS);
+    const byTab = CATALOG.filter((c) => campusKeys.has(c.key) && (tab === "all" ? true : c.cat === tab));
     if (!openSet) return byTab;
     return byTab.filter((c) => c.kinds.every((k) => openSet.has(k)));
   }, [tab, openSet]);
@@ -338,11 +343,12 @@ export default function AssessCenter({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="flex flex-col gap-4 xl:flex-row">
+      {reportFor && <CampusReportAccessPanel student={reportFor} onClose={() => setReportFor(null)} onSaved={() => void utils.school.assessCenter.targets.invalidate()} />}
       {/* 左：测评目录 */}
       <div className="min-w-0 flex-1 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          {TABS.map((t) => (
-            <Pill key={t.key} active={tab === t.key} onClick={() => setTab(t.key)}>{t.label}</Pill>
+          {TABS.filter((t) => t.key !== "jiating").map((t) => (
+            <Pill key={t.key} active={tab === t.key} onClick={() => setTab(t.key)}>{t.key === "shengxue" ? "选科及升学测评" : t.label}</Pill>
           ))}
           <span className="ml-auto text-[11.5px]" style={{ color: G.mute }}>勾选测评 → 右侧选择学生 → 一键推送，学生端立即可测</span>
         </div>
@@ -437,15 +443,22 @@ export default function AssessCenter({ canManage }: { canManage: boolean }) {
                   const on = checked.has(t.userId);
                   const allDone = pushKinds.length > 0 && pushKinds.every((k) => t.doneKinds.includes(k));
                   return (
-                    <label key={t.userId} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[12.5px]" style={{ background: on ? G.brandSoft : "transparent", color: G.ink }}>
-                      <input type="checkbox" checked={on} onChange={() => toggleCheck(t.userId)} className="accent-[#0E7A5F]" />
-                      <span className="min-w-0 flex-1 truncate">{t.name}<span className="ml-1.5 text-[11px]" style={{ color: G.mute }}>{t.className ?? "未分班"}</span></span>
-                      {pushKinds.length > 0 && (
-                        <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px]" style={{ background: allDone ? "#E3F1EB" : "#FBF1EC", color: allDone ? G.brand : G.danger }}>
-                          {allDone ? "已完成" : "待测"}
-                        </span>
-                      )}
-                    </label>
+                    <div key={t.userId} className="rounded-lg px-2 py-2 text-[12.5px]" style={{ background: on ? G.brandSoft : "transparent", color: G.ink }}>
+                      <div className="flex items-center gap-2">
+                        <input aria-label={`选择${t.name}`} type="checkbox" checked={on} onChange={() => toggleCheck(t.userId)} className="shrink-0 accent-[#0E7A5F]" />
+                        <span className="min-w-0 flex-1 truncate font-semibold">{t.name}<span className="ml-1.5 text-[11px] font-normal" style={{ color: G.mute }}>{t.className ?? "未分班"}</span></span>
+                        {pushKinds.length > 0 && (
+                          <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px]" style={{ background: allDone ? "#E3F1EB" : "#FBF1EC", color: allDone ? G.brand : G.danger }}>
+                            {allDone ? "已完成" : "待测"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 pl-5 text-[10.5px]" style={{ color: G.mute }}>
+                        <span>已测 {t.doneKinds.length} 项</span><span>·</span><span>已开放 {t.campusReportKinds.length} 份</span>
+                        {canManage && <button type="button" onClick={() => setReportFor(t)} className="ml-auto rounded-md border px-1.5 py-0.5 font-semibold" style={{ borderColor: G.line, color: G.brand }}>报告授权</button>}
+                        {onOpenReport && <button type="button" onClick={() => onOpenReport(t.userId)} className="rounded-md border px-1.5 py-0.5 font-semibold" style={{ borderColor: G.line, color: G.ink }}>查看报告</button>}
+                      </div>
+                    </div>
                   );
                 })}
                 {!isLoading && !filtered.length && <p className="py-3 text-center text-[12px]" style={{ color: G.mute }}>没有匹配的学生</p>}
