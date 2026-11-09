@@ -124,7 +124,7 @@ export const zhihuiRouter = createRouter({
       const [user] = await db.select({ name: users.name, phone: users.phone }).from(users).where(eq(users.id, sid)).limit(1);
       const profile = await db.query.studentProfile.findFirst({ where: eq(studentProfile.userId, sid) });
       const campusReportKinds = await getCampusReportKinds(db, sid);
-      if (campusReportKinds && !campusReportKinds.includes("career")) {
+      if (sid === ctx.user.id && campusReportKinds && !campusReportKinds.includes("career")) {
         throw new TRPCError({ code: "FORBIDDEN", message: "选科及升学规划综合报告尚未由老师开放" });
       }
 

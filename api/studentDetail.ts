@@ -21,7 +21,6 @@ import type { MultiResult } from "@contracts/multi";
 import type { AcademicsData } from "@contracts/academics";
 import { listUnboundOrgStudentIds, sameOrg } from "./tenant";
 import { getCampusReportKinds } from "./campusReports";
-import { campusResultAllowed } from "@contracts/campusReports";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -274,11 +273,10 @@ export async function getStudentDetail(
     /* 无报告权限：只下发「做了哪些测评」清单（名称+时间），结果/作答一律不带 */
     assessments.raw = rows.map((r) => ({ kind: r.kind, answers: null, createdAt: r.createdAt }));
   } else {
-  // 选做测评（multi5/职业锚/霍兰德/心理健康三套）也一并带出，供伴学师查看完整报告与综合分析
+  // B 端有权限时返回全部已测报告；campusReportKinds 只约束学生／家长前台，不过滤老师和管理员后台。
   const OPTIONAL_KINDS = ["multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "subject", "subject4d"] as const;
   for (const row of rows) {
     const kind = row.kind;
-    if (!campusResultAllowed(kind, campusReportKinds)) continue;
     if (kind === "discparent") {
       // 家长版 DISC 可多次/多人填写，全部收集（answers.label 作为家长标签）
       const a = row.answers as { label?: string } | null;
