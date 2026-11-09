@@ -2317,7 +2317,7 @@ type ReportViewProps = {
   subject4d?: unknown;
   /** v176：伴学师查看学员时的学员 userId（选科及升学规划报告栏目直达完整页用） */
   studentUserId?: number;
-  /** 校园逐报告授权；null/undefined 供非校园旧逻辑使用。 */
+  /** 学生／家长前台的校园逐报告授权；教师后台传 null，不按前台授权过滤。 */
   allowedKinds?: string[] | null;
 };
 
@@ -2356,15 +2356,15 @@ function ReportViewInner({
     { userId: viewer === "tutor" ? (studentUserId ?? undefined) : undefined },
     { enabled: viewer === "student" || studentUserId != null },
   );
-  const campusView = !!campusInfo?.campus || Array.isArray(allowedKinds);
+  /* 逐报告授权只限制学生／家长前台；老师和管理员后台在原有 B 端权限内查看全部已测报告。 */
+  const campusView = viewer === "student" && (!!campusInfo?.campus || Array.isArray(allowedKinds));
   const campusAllowed = Array.isArray(allowedKinds) ? allowedKinds : [];
-  /* 校园频道只渲染已授权报告；教师仍保留成绩录入，但它不替代 career 授权。 */
-  const reportBrand = campusView ? (campusInfo?.brand ?? null) : null;
+  const reportBrand = campusInfo?.campus ? (campusInfo.brand ?? null) : null;
   const tabs = useMemo(() => {
     const base: { key: Tab; label: string }[] =
       viewer === "tutor" ? [...TABS, { key: "academics" as Tab, label: "成绩与目标" }] : [...TABS];
     return campusView
-      ? base.filter((t) => (t.key === "academics" && viewer === "tutor") || campusTabAllowed(t.key, campusAllowed))
+      ? base.filter((t) => campusTabAllowed(t.key, campusAllowed))
       : base;
   }, [viewer, campusView, allowedKinds]);
   const tab: Tab | "locked" = campusView

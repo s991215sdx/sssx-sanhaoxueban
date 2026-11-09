@@ -272,6 +272,6 @@ describe("0052 迁移、页面接线与家庭隔离", () => {
     expect(service).toContain("isNotNull(coachingMonthlyReports.pushedAt)");
     expect(service).not.toContain("coachingQualityReviews");
     for (const endpoint of ["monthlyPreview", "saveMonthlyReport", "pushMonthlyReport", "qualityInbox", "assignQualityReview", "submitSelfQualityReview", "submitQualityReview", "closeQualityReview"]) expect(router).toContain(`${endpoint}:`);
-    expect(readFileSync("api/router.ts", "utf8")).toContain('BUILD_TAG = "v265-2026-11-09"');
+    expect(readFileSync("api/router.ts", "utf8")).toContain('BUILD_TAG = "v266-2026-11-09"');
   });
 });

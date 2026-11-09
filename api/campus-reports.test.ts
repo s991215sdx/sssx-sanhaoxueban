@@ -114,16 +114,18 @@ describe("校园逐报告白名单", () => {
   });
 });
 
-describe("教师查看仍受 B 端报告权限与校园授权双重约束", () => {
-  it("B 端有权限时，已完成清单完整保留，但只下发已授权报告内容和原始答案", async () => {
+describe("教师后台只受原有 B 端报告权限约束", () => {
+  it("历史校园学生即使前台授权为空，教师仍可查看全部已测报告和原始答案", async () => {
     const db = mockDb([
-      [profile], resultRows, [{ campus: true, kinds: ["e3"] }], ...emptyLearningReads,
+      [profile], resultRows, [{ campus: true, kinds: null }], ...emptyLearningReads,
     ], true);
     const detail = await getStudentDetail(db, 101, undefined, { userId: 9, role: "tutor" });
+    expect(detail.campusReportKinds).toEqual([]);
     expect(detail.completedKinds).toEqual(["mentalsdq", "e3"]);
     expect(detail.assessments.e3).toEqual({ version: "3.7" });
-    expect(detail.assessments.optional?.mentalsdq).toBeUndefined();
-    expect(detail.assessments.raw.map((r) => r.kind)).toEqual(["e3"]);
+    expect(detail.assessments.optional?.mentalsdq).toEqual({ level: "正常" });
+    expect(detail.assessments.raw.map((r) => r.kind)).toEqual(["mentalsdq", "e3"]);
+    expect(detail.assessments.raw.every((r) => r.answers != null)).toBe(true);
     expect(tutorReportAccessMock).toHaveBeenCalledWith(expect.anything(), 9, 101);
   });
 
@@ -163,14 +165,17 @@ describe("校园授权迁移和前后端接入契约", () => {
     expect(readFileSync("src/components/admin/AssessCenter.tsx", "utf8")).toContain("CampusReportAccessPanel");
   });
 
-  it("机构版旧 OPEN_TABS、reportReleased、渠道授权规则仍保留，升学接口保留 B 端权限检查", () => {
+  it("机构版旧规则保留，校园前台授权不再过滤老师后台和升学接口", () => {
     const reportDetail = readFileSync("src/pages/ReportDetail.tsx", "utf8");
     expect(reportDetail).toContain("const OPEN_TABS");
     expect(reportDetail).toContain("profile.reportReleased");
     expect(reportDetail).toContain("channelGranted");
     expect(reportDetail).toContain("campus ?");
+    expect(readFileSync("api/profileRouter.ts", "utf8")).toContain("campusResultAllowed(row.kind, campusReportKinds)");
     const zhihui = readFileSync("api/zhihuiRouter.ts", "utf8");
     expect(zhihui).toContain("getTutorReportAccess(db, ctx.user.id, studentId)");
-    expect(zhihui).toContain('campusReportKinds.includes("career")');
+    expect(zhihui).toContain('sid === ctx.user.id && campusReportKinds && !campusReportKinds.includes("career")');
+    expect(readFileSync("src/components/StudentDetailDrawer.tsx", "utf8")).toContain("allowedKinds={null}");
+    expect(readFileSync("src/components/reports/ReportView.tsx", "utf8")).toContain('viewer === "student" && (!!campusInfo?.campus || Array.isArray(allowedKinds))');
   });
 });
