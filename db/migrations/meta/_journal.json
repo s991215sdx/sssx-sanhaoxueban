@@ -380,6 +380,13 @@
       "when": 1794384000000,
       "tag": "0055_campus_report_kinds",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "5",
+      "when": 1794470400000,
+      "tag": "0056_coaching_stage_handoffs",
+      "breakpoints": true
     }
   ]
 }

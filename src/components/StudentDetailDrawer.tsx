@@ -227,6 +227,7 @@ export default function StudentDetailDrawer({
                           mentalScl90: (a.optional?.scl90 as any) ?? null,
                           subject: (a.optional?.subject as any) ?? null,
                           e3parent: a.e3parent, discParents: (a.discParents ?? []) as any, raw: a.raw ?? [],
+                          completedRecords: data.completedRecords,
                         }}
                         profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as any }}
                         viewer="tutor"

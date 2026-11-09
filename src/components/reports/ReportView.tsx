@@ -110,7 +110,7 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
@@ -120,6 +120,7 @@ import FamilyCommKit from "@/components/reports/FamilyCommKit";
 import { AssessmentPassProvider } from "@/components/coach/AssessmentPassDialog";
 import { useAssessmentPass } from "@/components/coach/passRequest";
 import { campusTabAllowed } from "@contracts/campusReports";
+import { getReportTabCompletion, type ReportCompletionRecord } from "@contracts/reportCompletion";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
 export type ReportAssessmentData = {
@@ -135,6 +136,8 @@ export type ReportAssessmentData = {
   /** V78 学科能力测评结果（9 科听懂/记住/运用自评）。 */
   subject?: SubjectAssessmentResult | null;
   raw?: { kind: string; answers: unknown; createdAt: Date | string }[];
+  /** 当前学员已保存的全部结果；仅用于栏目完成状态，不影响历次报告与授权。 */
+  completedRecords?: ReportCompletionRecord[];
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
@@ -2885,22 +2888,44 @@ function ReportViewInner({
         </section>
       )}
 
-      {/* Tab 切换（v143：轨道=白色，选中=白底+墨绿字+墨绿框，未选中=白底墨绿灰字；
-          v176c→v180：「选科及升学规划（高一）」改为内嵌直开，与其他栏目一致不切页面） */}
-      <div className="flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`grow basis-[30%] rounded-lg border px-2 py-2 text-[12.5px] font-semibold transition ${
-              tab === t.key
-                ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
-                : "border-transparent bg-white text-olive hover:border-[#1E3530]/15"
-            }`}
-          >
-            {t.key === "zhihui" ? `选科及升学规划（${profile?.grade || "高一"}）` : t.label}
-          </button>
-        ))}
+      {/* 已完成报告用薄荷绿、勾选图标和文字三重标识；综合报告另显示前置测评进度。 */}
+      <div className="flex flex-wrap gap-1.5 rounded-xl border border-[#1E3530]/10 bg-white p-1.5" aria-label="测评报告栏目">
+        {tabs.map((t) => {
+          const label = t.key === "zhihui" ? `选科及升学规划（${profile?.grade || "高一"}）` : t.label;
+          const completion = getReportTabCompletion(t.key, data?.completedRecords ?? data?.raw ?? [], !!academics?.subjects.length);
+          const latestDate = completion.latestCompletedAt ? new Date(completion.latestCompletedAt).toLocaleDateString("zh-CN") : "";
+          return (
+            <button
+              type="button"
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              aria-current={tab === t.key ? "page" : undefined}
+              aria-label={`${label}，${completion.label}${completion.highlighted ? "，查看报告" : ""}`}
+              data-completion={completion.complete ? "complete" : completion.highlighted ? "partial" : "none"}
+              title={`${label} · ${completion.label}${latestDate ? ` · 最近完成 ${latestDate}` : ""}`}
+              className={`flex min-h-[52px] grow basis-full flex-col justify-center rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0C7064] focus-visible:ring-offset-2 sm:basis-[30%] ${
+                completion.highlighted
+                  ? tab === t.key
+                    ? "border-[#0C7064] bg-[#DDF3E8] text-[#075E4F] shadow-sm"
+                    : "border-[#8AC3AD]/70 bg-[#EFF8F1] text-[#155E4B] hover:border-[#0C7064] hover:bg-[#E4F4E9]"
+                  : tab === t.key
+                    ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
+                    : "border-transparent bg-white text-olive hover:border-[#1E3530]/15 hover:bg-cream/50"
+              }`}
+            >
+              <span className="flex w-full items-center justify-between gap-2 text-[12.5px] font-semibold leading-5">
+                <span>{label}</span>
+                {completion.highlighted && <CheckCircle2 size={17} className="shrink-0 text-[#0C7064]" aria-hidden="true" />}
+              </span>
+              {completion.highlighted && (
+                <span className="mt-0.5 flex w-full items-center justify-between gap-2 text-[10.5px] font-semibold text-[#0C7064]">
+                  <span>{completion.label}</span>
+                  <span>{t.key === "academics" ? "查看内容" : "查看报告"} →</span>
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
       {campusView && tabs.length === 0 && (
         <div className="paper-card p-8 text-center">

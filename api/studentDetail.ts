@@ -21,6 +21,7 @@ import type { MultiResult } from "@contracts/multi";
 import type { AcademicsData } from "@contracts/academics";
 import { listUnboundOrgStudentIds, sameOrg } from "./tenant";
 import { getCampusReportKinds } from "./campusReports";
+import { completedRecordsForStudent, type ReportCompletionRecord } from "@contracts/reportCompletion";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -228,7 +229,7 @@ export type StudentDetail = {
   /** null = 非校园；数组 = 校园已授权报告。completedRecords 只提供测评名称与时间，不含结果。 */
   campusReportKinds: string[] | null;
   completedKinds: string[];
-  completedRecords: { kind: string; createdAt: Date }[];
+  completedRecords: ReportCompletionRecord[];
 };
 
 /** 单个学员详情：档案 + 学业目标 + 全部测评（含原始作答）+ 学习数据。
@@ -266,8 +267,8 @@ export async function getStudentDetail(
     db.select().from(assessmentResults).where(eq(assessmentResults.userId, userId)).orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id)),
     getCampusReportKinds(db, userId),
   ]);
-  const completedKinds = [...new Set(rows.map((r) => r.kind))];
-  const completedRecords = rows.map((r) => ({ kind: r.kind, createdAt: r.createdAt }));
+  const completedRecords = completedRecordsForStudent(rows, userId);
+  const completedKinds = [...new Set(completedRecords.map((r) => r.kind))];
   const assessments: StudentDetail["assessments"] = { raw: [], discParents: [] };
   if (reportAccess && !reportAccess.allowed) {
     /* 无报告权限：只下发「做了哪些测评」清单（名称+时间），结果/作答一律不带 */

@@ -84,6 +84,7 @@ import {
   passPath,
 } from "@contracts/passCode";
 import { env } from "./lib/env";
+import { completedRecordsForStudent } from "@contracts/reportCompletion";
 import { MULTI5_QUESTIONS, MULTI5_COMMON_STAGE, multi5QuestionsFor, scoreMulti5For, toMulti5Public, type Multi5PublicQuestion, type Multi5Result } from "@contracts/multi5";
 import { ANCHOR_RATINGS, scoreAnchor, type AnchorResult } from "@contracts/careerAnchor";
 import { HOLLAND_RATINGS, scoreHolland, type HollandResult } from "@contracts/holland";
@@ -1193,7 +1194,8 @@ export const assessmentRouter = createRouter({
       db.select().from(assessmentResults).where(eq(assessmentResults.userId, userId)).orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id)),
       getCampusReportKinds(db, userId),
     ]);
-    const completedKinds = [...new Set(rows.map((r) => r.kind))];
+    const completedRecords = completedRecordsForStudent(rows, userId);
+    const completedKinds = [...new Set(completedRecords.map((r) => r.kind))];
     const latest: {
       mbti?: MbtiResult;
       disc?: DiscResult;
@@ -1275,7 +1277,7 @@ export const assessmentRouter = createRouter({
       latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
       if (latest.mbti && latest.disc && latest.e3 && latest.multi && latest.multi5 && latest.anchor && latest.holland && latest.mental) break;
     }
-    return { ...latest, campusReportKinds, completedKinds };
+    return { ...latest, campusReportKinds, completedKinds, completedRecords };
   }),
 
   /**

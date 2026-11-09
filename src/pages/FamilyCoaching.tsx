@@ -6,6 +6,7 @@ import { COACHING_MONTHLY_DIMENSIONS } from "@contracts/orgService";
 import type { FamilyFeedback } from "@/components/org/coachingTypes";
 import { CoachingNotificationCenter } from "@/components/org/CoachingOperations";
 import { FamilyActionList, FamilyPlanConfirmations } from "@/components/org/FamilyCoachingActions";
+import FamilyStageHandoffs from "@/components/org/FamilyStageHandoffs";
 
 const LEVEL: Record<string, string> = { term: "学期计划", month: "月计划", week: "周计划", day: "日计划" };
 const FORMAT: Record<string, string> = { one_to_one: "一对一教练课＋督学", salon: "小组沙龙＋督学", workshop: "学习坊＋督学", mixed: "混合课堂＋督学" };
@@ -41,6 +42,7 @@ export default function FamilyCoaching() {
       </section>
 
       <FamilyPlanConfirmations caseId={caseId} />
+      <FamilyStageHandoffs caseId={caseId} />
 
       <section className="rounded-2xl border border-border bg-white p-4 shadow-sm"><h2 className="flex items-center gap-2 text-[16px] font-bold text-olive"><CalendarCheck size={17} />当前计划与历史版本</h2><div className="mt-3 space-y-2">{data.plans.map((plan, index) => <details key={`${plan.title}-${plan.version}-${index}`} open={index === 0} className="rounded-xl border border-border bg-cream/40 p-3"><summary className="cursor-pointer text-[12.5px] font-semibold text-olive">{LEVEL[plan.level] ?? plan.level} · {plan.title} <span className="font-normal text-olive-mute">V{plan.version} · {plan.startDate}～{plan.endDate}</span></summary><p className="mt-2 whitespace-pre-wrap text-[12px] leading-relaxed text-olive-soft">{plan.content}</p></details>)}{!data.plans.length && <p className="py-5 text-center text-[12px] text-olive-mute">确认后的计划会显示在这里。</p>}</div></section>
 

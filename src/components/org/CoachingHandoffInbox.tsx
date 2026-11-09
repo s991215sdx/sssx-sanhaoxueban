@@ -47,7 +47,7 @@ export default function CoachingHandoffInbox() {
     </header>
     <div className="divide-y divide-border px-4">
       {incoming.map(({ handoff, studentName, goal, currentSituation, planSummary }) => {
-        const isReassignment = handoff.type === "H5" || handoff.type === "REASSIGN";
+        const isReassignment = handoff.type === "REASSIGN" || (handoff.type === "H5" && handoff.nextSupervisorId != null);
         const confirming = confirmId === handoff.id;
         return <article key={handoff.id} className="py-4">
           <div className="flex flex-wrap items-start gap-2">

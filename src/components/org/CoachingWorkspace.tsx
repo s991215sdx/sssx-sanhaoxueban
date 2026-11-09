@@ -14,6 +14,7 @@ import CoachingPlanning from "./CoachingPlanning";
 import CoachingRecords from "./CoachingRecords";
 import CoachingRecipients from "./CoachingRecipients";
 import CoachingScenarioEnd from "./CoachingScenarioEnd";
+import CoachingStageHandoffs from "./CoachingStageHandoffs";
 import { invalidateCoachingOperations } from "./coachingRefresh";
 import type { CoachingDetail } from "./coachingTypes";
 import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
@@ -146,7 +147,7 @@ function TaskCard({ data, task }: { data: CoachingDetail; task: CoachingDetail["
 }
 
 function ReviewWorkspace({ data }: { data: CoachingDetail }) {
-  return <div className="space-y-4"><CoachingCheckins data={data} /><CoachingExceptions data={data} /><div className="grid items-start gap-4 2xl:grid-cols-2"><div className="space-y-4"><ReviewPanel data={data} /><HandoffPanel data={data} /></div><div className="space-y-4"><StatusPanel data={data} /><Panel title="主档事件时间线" icon={<History size={16} />}><div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">{data.events.map((event) => <div key={event.id} className="border-l-2 border-[#0C7064]/20 pl-3 text-[11.5px]"><time className="text-[10px] text-olive-mute">{new Date(event.createdAt).toLocaleString("zh-CN")}</time><p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-olive-soft">{event.content}</p></div>)}</div></Panel></div></div></div>;
+  return <div className="space-y-4"><CoachingCheckins data={data} /><CoachingExceptions data={data} /><CoachingStageHandoffs data={data} /><div className="grid items-start gap-4 2xl:grid-cols-2"><div className="space-y-4"><ReviewPanel data={data} /><HandoffPanel data={data} /></div><div className="space-y-4"><StatusPanel data={data} /><Panel title="主档事件时间线" icon={<History size={16} />}><div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">{data.events.map((event) => <div key={event.id} className="border-l-2 border-[#0C7064]/20 pl-3 text-[11.5px]"><time className="text-[10px] text-olive-mute">{new Date(event.createdAt).toLocaleString("zh-CN")}</time><p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-olive-soft">{event.content}</p></div>)}</div></Panel></div></div></div>;
 }
 function ReviewPanel({ data }: { data: CoachingDetail }) {
   const utils = trpc.useUtils(); const [period, setPeriod] = useState<"day" | "week" | "month" | "term">("week"); const [periodKey, setPeriodKey] = useState(today().slice(0, 7)); const [content, setContent] = useState(""); const [nextActions, setNextActions] = useState("");
@@ -179,7 +180,7 @@ function HandoffPanel({ data }: { data: CoachingDetail }) {
     <textarea aria-label="交接内容" value={content} onChange={(e) => setContent(e.target.value)} rows={3} placeholder="事实、风险、待办、责任边界和必须保留的服务节奏" className={`${input} mt-2`} />
     <button type="button" disabled={add.isPending || !toUserId || title.trim().length < 2 || content.trim().length < 2} onClick={() => add.mutate({ caseId: data.coachingCase.id, type, toUserId, title, content, dueAt: dueAt ? new Date(dueAt) : null })} className={`${primary} mt-2 w-full`}>发起普通交接</button>
     <MutationMessage error={add.error ?? accept.error} success={add.isSuccess || accept.isSuccess} />
-    <div className="mt-3 space-y-2">{data.handoffs.map((h) => { const reassignment = h.type === "REASSIGN" || h.type === "H5"; return <article key={h.id} className="rounded-xl border border-border bg-cream/45 p-3 text-[11.5px]">
+    <div className="mt-3 space-y-2">{data.handoffs.filter((h) => h.type !== "H5" || h.nextSupervisorId != null).map((h) => { const reassignment = h.type === "REASSIGN" || (h.type === "H5" && h.nextSupervisorId != null); return <article key={h.id} className="rounded-xl border border-border bg-cream/45 p-3 text-[11.5px]">
       <div className="flex flex-wrap items-center gap-2"><b className="min-w-0 flex-1 break-words text-olive">{reassignment ? h.type === "H5" ? "REASSIGN（历史 H5）" : "REASSIGN" : h.type} · {h.title}</b><span className={`rounded-full px-2 py-0.5 text-[10px] ${h.status === "pending" ? "bg-amber-50 text-amber-800" : h.status === "cancelled" ? "bg-gray-100 text-gray-600" : "bg-mint-pale text-[#0C7064]"}`}>{statusLabel[h.status] ?? h.status}</span></div>
       <p className="mt-1 whitespace-pre-wrap break-words leading-relaxed text-olive-soft">{h.content}</p>
       {reassignment && h.status === "pending" && <p className="mt-2 text-[10.5px] text-amber-800">待新督学接收，当前负责人尚未变更。</p>}
@@ -198,7 +199,7 @@ function StatusPanel({ data }: { data: CoachingDetail }) {
   const [supervisorId, setSupervisorId] = useState(data.coachingCase.supervisorId);
   const [assignReason, setAssignReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
-  const pendingReassignment = data.handoffs.find((h) => (h.type === "REASSIGN" || h.type === "H5") && h.status === "pending");
+  const pendingReassignment = data.handoffs.find((h) => (h.type === "REASSIGN" || (h.type === "H5" && h.nextSupervisorId != null)) && h.status === "pending");
   const staffName = (id: number | null | undefined) => tutors.find((t) => t.id === id)?.name ?? (id ? `员工 #${id}` : "未设置");
   const staffLoad = (id: number) => workloadData?.staff.find((person) => person.userId === id);
   const staffOption = (id: number, name: string | null) => {

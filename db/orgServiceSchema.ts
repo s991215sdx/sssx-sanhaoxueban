@@ -170,6 +170,14 @@ export const coachingHandoffs = mysqlTable("coaching_handoffs", {
   nextCoachId: bigint("next_coach_id", { mode: "number", unsigned: true }),
   nextSupervisorId: bigint("next_supervisor_id", { mode: "number", unsigned: true }),
   appliedAt: timestamp("applied_at"),
+  /** H5 且 nextSupervisorId 为空：主管→指定学生／监护人的阶段交接，不是人员改派。 */
+  monthlyReportId: bigint("monthly_report_id", { mode: "number", unsigned: true }),
+  nextPlanId: bigint("next_plan_id", { mode: "number", unsigned: true }),
+  familyActionId: bigint("family_action_id", { mode: "number", unsigned: true }),
+  attachmentId: bigint("attachment_id", { mode: "number", unsigned: true }),
+  familySnapshot: json("family_snapshot").$type<Record<string, unknown>>(),
+  acceptedChannel: varchar("accepted_channel", { length: 32 }),
+  acceptedComment: text("accepted_comment"),
 }, (table) => [
   index("coaching_handoffs_recipient_status_idx").on(table.toUserId, table.status),
 ]);

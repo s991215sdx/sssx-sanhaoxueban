@@ -383,7 +383,8 @@ async function assertStaffRecipient(db: Db, orgId: number, userId: number) {
 export async function addHandoff(db: Db, me: StaffUser, input: { caseId: number; type: string; toUserId: number; title: string; content: string; dueAt?: Date | null }) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
   if (!(HANDOFF_TYPES as readonly string[]).includes(input.type)) throw new TRPCError({ code: "BAD_REQUEST", message: "交接类型必须为 H1—H4 或 REASSIGN" });
-  if (["H5", "REASSIGN"].includes(input.type)) throw new TRPCError({ code: "BAD_REQUEST", message: "人员改派须由管理员从改派入口发起，并在新督学接收后生效" });
+  if (input.type === "H5") throw new TRPCError({ code: "BAD_REQUEST", message: "H5 不能从普通交接入口创建：家庭阶段交接须走家庭交接入口；人员改派须由管理员从改派入口发起，两者不能混用" });
+  if (input.type === "REASSIGN") throw new TRPCError({ code: "BAD_REQUEST", message: "人员改派须由管理员从改派入口发起，并在新督学接收后生效" });
   await assertStaffRecipient(db, coachingCase.orgId, input.toUserId);
   const title = required(input.title, "交接标题不能为空");
   const content = required(input.content, "交接内容不能为空");

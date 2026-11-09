@@ -142,6 +142,16 @@ describe("H5 人员改派接收闭环", () => {
     expect(mock.updates[0]).toMatchObject({ table: coachingHandoffs, patch: { status: "accepted", appliedAt: null } });
   });
 
+  it("员工不能接收家庭阶段 H5，历史 H5 人员改派仍可接收", async () => {
+    const family = { ...baseHandoff, fromCoachId: null, fromSupervisorId: null, nextCoachId: null, nextSupervisorId: null };
+    const denied = acceptDb(family);
+    await expect(acceptHandoff(denied.db, newSupervisor, 501)).rejects.toThrow("家庭阶段交接须由指定学生或监护人");
+    expect(denied.transaction).not.toHaveBeenCalled();
+    const historical = acceptDb();
+    await expect(acceptHandoff(historical.db, newSupervisor, 501)).resolves.toEqual({ ok: true, reassigned: true });
+    expect(historical.updates[0]).toMatchObject({ table: coachingCases, patch: { coachId: 39, supervisorId: 29 } });
+  });
+
   it("管理员可取消待接收改派，取消后不能再接收", async () => {
     const mock = cancelDb();
     await expect(cancelReassignment(mock.db, admin, { handoffId: 501, reason: "调整后仍由原团队服务" })).resolves.toEqual({ ok: true });
@@ -238,6 +248,18 @@ describe("结课完整性检查", () => {
     const cancelled = closureSource();
     cancelled.handoffs = [{ ...baseHandoff, status: "cancelled" }];
     expect(buildCoachingClosureReadiness(cancelled).ready).toBe(true);
+  });
+
+  it("家庭 H5 待本人确认阻断结课，确认后解除且不改变负责人", () => {
+    const family = { ...baseHandoff, fromCoachId: null, fromSupervisorId: null, nextCoachId: null, nextSupervisorId: null };
+    const pending = closureSource();
+    pending.handoffs = [{ ...family, status: "pending" }];
+    expect(buildCoachingClosureReadiness(pending).blockers.map((item) => item.code)).toContain("handoffs");
+    const accepted = closureSource();
+    accepted.handoffs = [{ ...family, status: "accepted", acceptedAt: new Date() }];
+    expect(buildCoachingClosureReadiness(accepted).ready).toBe(true);
+    expect(accepted.coachingCase.coachId).toBe(19);
+    expect(accepted.coachingCase.supervisorId).toBe(19);
   });
 });
 

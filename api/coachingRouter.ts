@@ -25,6 +25,7 @@ import { coachingRecordInput, familyCoachingActions, listCoachingExtendedRecords
 import { cancelCourseSession, cancelSupervision, courseSessionForEdit, courseSessionHistory, courseSessionRecipients, rescheduleCourseSession, rescheduleSupervision } from "./coachingSchedule";
 import { revokeFamilyResourceAccess } from "./coachingRecipients";
 import { getCoachingDeliverySettings, saveCoachingDeliverySettings } from "./coachingDelivery";
+import { acceptFamilyCoachingStageHandoff, createCoachingStageHandoff, familyCoachingStageHandoffs } from "./coachingStageHandoffs";
 
 const id = z.number().int().positive();
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -118,6 +119,14 @@ export const coachingRouter = createRouter({
     .mutation(({ ctx, input }) => addHandoff(getDb(), ctx.user, input)),
   acceptHandoff: tutorQuery.input(z.object({ handoffId: id, capacityOverrideReason: z.string().trim().max(1000).optional() }))
     .mutation(({ ctx, input }) => acceptHandoff(getDb(), ctx.user, input.handoffId, input.capacityOverrideReason)),
+  createStageHandoff: tutorQuery.input(z.object({
+    caseId: id, monthlyReportId: id, nextPlanId: id, recipientUserId: id,
+    title: z.string().trim().min(2).max(180), familyAction: z.string().trim().min(2).max(4000), dueAt: z.date(),
+  })).mutation(({ ctx, input }) => createCoachingStageHandoff(getDb(), ctx.user, input)),
+  familyStageHandoffs: authedQuery.input(z.object({ caseId: id }))
+    .query(({ ctx, input }) => familyCoachingStageHandoffs(getDb(), ctx.user, input.caseId)),
+  acceptFamilyStageHandoff: authedQuery.input(z.object({ handoffId: id, comment: z.string().trim().max(2000).optional() }))
+    .mutation(({ ctx, input }) => acceptFamilyCoachingStageHandoff(getDb(), ctx.user, input)),
   endScenarios: tutorQuery.input(z.object({ caseId: id, scenarios: z.array(z.enum(["A", "B", "C", "D"])).min(1).max(4), reason: z.string().trim().min(2).max(2000) }))
     .mutation(({ ctx, input }) => endCoachingScenarios(getDb(), ctx.user, input)),
   setStatus: tutorQuery.input(z.object({ caseId: id, status: z.enum(["active", "paused", "closed", "archived"]), reason: z.string().trim().min(2).max(2000) }))

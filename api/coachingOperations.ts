@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm";
 import {
   coachingCases, coachingCrisisFollowups, coachingExceptions, coachingExtendedRecords, coachingHandoffs, coachingPlans,
   coachingQualityReviews, coachingTasks, courseSessions, studySupervisionRecords, users,
@@ -150,7 +150,8 @@ export async function coachingOperations(db: Db, me: StaffUser) {
   const incoming = await db.select({ coachingCase: coachingCases, studentName: users.name }).from(coachingHandoffs)
     .innerJoin(coachingCases, eq(coachingHandoffs.caseId, coachingCases.id))
     .leftJoin(users, eq(coachingCases.studentUserId, users.id))
-    .where(and(eq(coachingHandoffs.toUserId, me.id), eq(coachingHandoffs.status, "pending"), eq(coachingCases.orgId, orgId)));
+    .where(and(eq(coachingHandoffs.toUserId, me.id), eq(coachingHandoffs.status, "pending"), eq(coachingCases.orgId, orgId),
+      or(ne(coachingHandoffs.type, "H5"), isNotNull(coachingHandoffs.nextSupervisorId))));
   const caseMap = new Map(cases.map((row) => [row.id, row]));
   for (const row of incoming) {
     if (!caseMap.has(row.coachingCase.id)) caseMap.set(row.coachingCase.id, { ...row.coachingCase, studentName: row.studentName ?? `学员 #${row.coachingCase.studentUserId}` });

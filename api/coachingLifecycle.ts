@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm";
 import {
   coachingCases, coachingCaseScenarios, coachingCrisisFollowups, coachingDeliverables, coachingEvents, coachingExceptions, coachingExtendedRecords,
   coachingGrowProfiles, coachingHandoffs, coachingPlans, coachingReviews, coachingTasks, courseParticipants, courseSessions, studySupervisionRecords, users,
@@ -16,7 +16,6 @@ type QueryDb = Db | PointTx;
 type HandoffRow = typeof coachingHandoffs.$inferSelect;
 type ClosureCheck = { code: string; label: string; ok: boolean; count: number };
 export type CoachingClosureReadiness = { ready: boolean; checks: ClosureCheck[]; blockers: ClosureCheck[] };
-const REASSIGN_TYPES = ["H5", "REASSIGN"];
 
 function required(value: string | undefined, message: string): string {
   const text = value?.trim() ?? "";
@@ -38,16 +37,20 @@ function assertAffected(result: unknown, message: string) {
   const count = changedRows(result);
   if (count !== null && count !== 1) throw new TRPCError({ code: "CONFLICT", message });
 }
-const isReassign = (type: string) => REASSIGN_TYPES.includes(type);
+/** H5 同时存在两种历史语义：有改派快照才是人员改派；无快照是家庭阶段交接。 */
+const isReassign = (type: string, nextSupervisorId: number | null) => type === "REASSIGN" || (type === "H5" && nextSupervisorId != null);
+const isFamilyStage = (type: string, nextSupervisorId: number | null) => type === "H5" && nextSupervisorId == null;
+const reassignmentRows = or(eq(coachingHandoffs.type, "REASSIGN"), and(eq(coachingHandoffs.type, "H5"), isNotNull(coachingHandoffs.nextSupervisorId)));
 
-/** 新督学在接收前可阅读必要的 GROW 背景，但不能借此修改主档或查看敏感正文。 */
+/** 新督学在接收前可阅读必要的 GROW 背景，但不能借此修改主档或查看敏感正文。家庭 H5 只在家庭端办理。 */
 export async function listIncomingHandoffs(db: Db, me: StaffUser) {
   const orgId = requireOrgStaff(me);
   return db.select({ handoff: coachingHandoffs, studentName: users.name,
     goal: coachingCases.goal, currentSituation: coachingCases.currentSituation, planSummary: coachingCases.planSummary })
     .from(coachingHandoffs).innerJoin(coachingCases, eq(coachingHandoffs.caseId, coachingCases.id))
     .innerJoin(users, eq(coachingCases.studentUserId, users.id))
-    .where(and(eq(coachingHandoffs.toUserId, me.id), eq(coachingHandoffs.status, "pending"), eq(coachingCases.orgId, orgId)))
+    .where(and(eq(coachingHandoffs.toUserId, me.id), eq(coachingHandoffs.status, "pending"), eq(coachingCases.orgId, orgId),
+      or(ne(coachingHandoffs.type, "H5"), isNotNull(coachingHandoffs.nextSupervisorId))))
     .orderBy(desc(coachingHandoffs.id)).limit(100);
 }
 
@@ -66,7 +69,7 @@ export async function reassignCoachingCase(db: Db, me: StaffUser, input: { caseI
     const [current] = await tx.select().from(coachingCases).where(eq(coachingCases.id, input.caseId)).limit(1).for("update");
     if (!current || current.orgId !== coachingCase.orgId) throw new TRPCError({ code: "NOT_FOUND", message: "陪跑主档不存在" });
     const pending = await tx.select({ id: coachingHandoffs.id }).from(coachingHandoffs)
-      .where(and(eq(coachingHandoffs.caseId, input.caseId), inArray(coachingHandoffs.type, REASSIGN_TYPES), eq(coachingHandoffs.status, "pending"))).limit(1).for("update");
+      .where(and(eq(coachingHandoffs.caseId, input.caseId), reassignmentRows, eq(coachingHandoffs.status, "pending"))).limit(1).for("update");
     if (pending.length) throw new TRPCError({ code: "CONFLICT", message: "已有待接收改派，请先由新督学接收或由管理员取消" });
     await assertCoachingCapacity(tx, { orgId: coachingCase.orgId, staffIds: nextStaff, actor: me, overrideReason: input.capacityOverrideReason });
     const [{ id }] = await tx.insert(coachingHandoffs).values({ caseId: input.caseId, type: "REASSIGN", fromUserId: me.id,
@@ -86,13 +89,19 @@ export async function acceptHandoff(db: Db, me: StaffUser, handoffId: number, ca
   const [row] = await db.select({ handoff: coachingHandoffs, coachingCase: coachingCases }).from(coachingHandoffs)
     .innerJoin(coachingCases, eq(coachingHandoffs.caseId, coachingCases.id)).where(eq(coachingHandoffs.id, handoffId)).limit(1);
   if (!row || row.coachingCase.orgId !== orgId) throw new TRPCError({ code: "NOT_FOUND", message: "交接记录不存在" });
+  if (isFamilyStage(row.handoff.type, row.handoff.nextSupervisorId)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "家庭阶段交接须由指定学生或监护人在家庭端确认" });
+  }
   if (row.handoff.toUserId !== me.id || row.handoff.status !== "pending") throw new TRPCError({ code: "FORBIDDEN", message: "只能接收分配给自己的待交接事项" });
   return db.transaction(async (tx) => {
     const [handoff] = await tx.select().from(coachingHandoffs).where(eq(coachingHandoffs.id, handoffId)).limit(1).for("update");
     if (!handoff || handoff.toUserId !== me.id || handoff.status !== "pending") throw new TRPCError({ code: "CONFLICT", message: "交接状态已变化，请刷新后再操作" });
+    if (isFamilyStage(handoff.type, handoff.nextSupervisorId)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "家庭阶段交接须由指定学生或监护人在家庭端确认" });
+    }
     let reassigned = false;
     const now = new Date();
-    if (isReassign(handoff.type) && handoff.nextSupervisorId != null) {
+    if (isReassign(handoff.type, handoff.nextSupervisorId) && handoff.nextSupervisorId != null) {
       if (handoff.fromCoachId == null || handoff.fromSupervisorId == null || handoff.nextCoachId == null) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "改派快照不完整，请管理员取消后重新发起" });
       await assertStaffRecipient(tx, orgId, handoff.nextCoachId);
       await assertStaffRecipient(tx, orgId, handoff.nextSupervisorId);
@@ -120,7 +129,7 @@ export async function acceptHandoff(db: Db, me: StaffUser, handoffId: number, ca
 export async function cancelReassignment(db: Db, me: StaffUser, input: { handoffId: number; reason: string }) {
   if (me.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "仅机构管理员可取消改派" });
   const [handoff] = await db.select().from(coachingHandoffs).where(eq(coachingHandoffs.id, input.handoffId)).limit(1);
-  if (!handoff || !isReassign(handoff.type) || handoff.nextSupervisorId == null) throw new TRPCError({ code: "NOT_FOUND", message: "待接收改派不存在" });
+  if (!handoff || !isReassign(handoff.type, handoff.nextSupervisorId) || handoff.nextSupervisorId == null) throw new TRPCError({ code: "NOT_FOUND", message: "待接收改派不存在" });
   await assertCaseAccess(db, me, handoff.caseId);
   const reason = required(input.reason, "请填写取消改派原因");
   return db.transaction(async (tx) => {
