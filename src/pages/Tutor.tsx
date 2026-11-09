@@ -14,6 +14,7 @@ import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import OrgAssessmentCenter from "@/components/org/OrgAssessmentCenter";
 import OrgPointsPanel from "@/components/org/OrgPointsPanel";
 import CoachingWorkspace from "@/components/org/CoachingWorkspace";
+import AssessCenter from "@/components/admin/AssessCenter";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
@@ -104,7 +105,8 @@ export default function Tutor() {
   type TutorSection = (typeof sectionOptions)[number];
   const requested = searchParams.get("section") as TutorSection | null;
   const requestedSection: TutorSection = requested && sectionOptions.includes(requested) ? requested : "students";
-  const canOpenSection = requestedSection === "students" || requestedSection === "training"
+  const canOpenSection = requestedSection === "students" || requestedSection === "assessments"
+    || (!campusView && requestedSection === "training")
     || (orgView && (requestedSection !== "points" || user?.role === "admin"));
   const section: TutorSection = canOpenSection ? requestedSection : "students";
   const setSection = (next: TutorSection) => setSearchParams((prev) => {
@@ -166,10 +168,10 @@ export default function Tutor() {
           {(
             [
               { key: "students", label: "学员管理", visible: true },
-              { key: "assessments", label: "测评中心", visible: orgView },
+              { key: "assessments", label: "测评中心", visible: orgView || campusView },
               { key: "coaching", label: "独立陪跑", visible: orgView },
               { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
-              { key: "training", label: "陪跑训练专栏", visible: true },
+              { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
           ).filter((t) => t.visible).map((t) => (
             <button
@@ -251,7 +253,7 @@ export default function Tutor() {
                     {/* V53：重置该学员登录密码（默认 123456） */}
                     <ResetPasswordButton userId={s.userId} name={s.name} compact />
                     {/* V54：报告推送开关（默认未推送，家长不可见） */}
-                    <ReportAccessButton userId={s.userId} released={s.reportReleased} compact />
+                    {!campusView && <ReportAccessButton userId={s.userId} released={s.reportReleased} compact />}
                     {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
                     <DeleteStudentButton userId={s.userId} name={s.name} compact />
                     {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
@@ -321,7 +323,7 @@ export default function Tutor() {
           <Pager page={pager.page} totalPages={pager.totalPages} total={pager.total} onChange={pager.setPage} />
 
           {/* 邀请注册：伴学师自己的二维码（经此码注册的学员自动归到名下） */}
-          <section className="pt-3">
+          {!campusView && <section className="pt-3">
             <h2 className="text-[17px] font-bold text-olive">邀请注册 · 我的二维码</h2>
             <p className="mt-1 text-[12.5px] leading-relaxed text-olive-mute">
               生成你自己的注册二维码发给家长（可打印、可复制链接）：通过你的码注册的学员<b className="text-olive">自动归到你名下</b>。学员注册后默认只显示测评中心，在上方学员卡里可以逐人开启更多功能。
@@ -329,9 +331,11 @@ export default function Tutor() {
             <div className="mt-3">
               <InviteChannelsTab />
             </div>
-          </section>
+          </section>}
         </>
       )}
+
+      {campusView && section === "assessments" && <AssessCenter canManage onOpenReport={openDetail} />}
 
       {orgView && section === "assessments" && (
         <OrgAssessmentCenter
@@ -340,7 +344,7 @@ export default function Tutor() {
         />
       )}
 
-      {orgView && section === "coaching" && <CoachingWorkspace initialCaseId={coachingCaseId} />}
+      {orgView && section === "coaching" && <CoachingWorkspace key={coachingCaseId ?? "workspace"} initialCaseId={coachingCaseId} />}
 
       {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
 

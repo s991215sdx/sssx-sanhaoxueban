@@ -20,6 +20,8 @@ import type { MbtiResult, DiscResult, E3V27Result, E3V37Result } from "@contract
 import type { MultiResult } from "@contracts/multi";
 import type { AcademicsData } from "@contracts/academics";
 import { listUnboundOrgStudentIds, sameOrg } from "./tenant";
+import { getCampusReportKinds } from "./campusReports";
+import { campusResultAllowed } from "@contracts/campusReports";
 
 type Db = ReturnType<typeof import("./queries/connection").getDb>;
 
@@ -224,6 +226,10 @@ export type StudentDetail = {
   /** v169：报告查看权限（null=管理员/学生本人/未启用视角，不限制）；
    *  allowed=false 时 assessments 只含测评清单（名称+时间），报告内容不下发。 */
   reportAccess: { allowed: boolean; expiresAt: Date | null } | null;
+  /** null = 非校园；数组 = 校园已授权报告。completedRecords 只提供测评名称与时间，不含结果。 */
+  campusReportKinds: string[] | null;
+  completedKinds: string[];
+  completedRecords: { kind: string; createdAt: Date }[];
 };
 
 /** 单个学员详情：档案 + 学业目标 + 全部测评（含原始作答）+ 学习数据。
@@ -257,11 +263,12 @@ export async function getStudentDetail(
   }
 
   // 测评：每种取最新一条（含原始作答）
-  const rows = await db
-    .select()
-    .from(assessmentResults)
-    .where(eq(assessmentResults.userId, userId))
-    .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
+  const [rows, campusReportKinds] = await Promise.all([
+    db.select().from(assessmentResults).where(eq(assessmentResults.userId, userId)).orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id)),
+    getCampusReportKinds(db, userId),
+  ]);
+  const completedKinds = [...new Set(rows.map((r) => r.kind))];
+  const completedRecords = rows.map((r) => ({ kind: r.kind, createdAt: r.createdAt }));
   const assessments: StudentDetail["assessments"] = { raw: [], discParents: [] };
   if (reportAccess && !reportAccess.allowed) {
     /* 无报告权限：只下发「做了哪些测评」清单（名称+时间），结果/作答一律不带 */
@@ -271,6 +278,7 @@ export async function getStudentDetail(
   const OPTIONAL_KINDS = ["multi5", "anchor", "holland", "mental", "mentalsdq", "mentalpa", "scl90", "subject", "subject4d"] as const;
   for (const row of rows) {
     const kind = row.kind;
+    if (!campusResultAllowed(kind, campusReportKinds)) continue;
     if (kind === "discparent") {
       // 家长版 DISC 可多次/多人填写，全部收集（answers.label 作为家长标签）
       const a = row.answers as { label?: string } | null;
@@ -354,5 +362,8 @@ export async function getStudentDetail(
       planCount: Number((planC[0] as { c: number })?.c ?? 0),
     },
     reportAccess,
+    campusReportKinds,
+    completedKinds,
+    completedRecords,
   };
 }

@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import ReportView from "@/components/reports/ReportView";
 import { ReportLockedPanel } from "@/components/ReportLockedPanel";
 import type { ReportAssessmentData, ReportProfileInfo } from "@/components/reports/ReportView";
+import { campusTabAllowed, campusTabsFor } from "@contracts/campusReports";
 
 /** 测评详细报告页（学生端数据壳）：/report-detail?tab=combined|e3|mbti|disc|...
  *  渲染逻辑全部在 ReportView（与伴学师端共用）；这里只负责取数与加载骨架。
@@ -17,28 +18,30 @@ export default function ReportDetail() {
   const { data: profile, isLoading: profileLoading } = trpc.profile.get.useQuery();
   const { data: access, isLoading: accessLoading } = trpc.invite.myReportAccess.useQuery();
   const [searchParams] = useSearchParams();
-  const tab = searchParams.get("tab") ?? "combined";
-  /* 与 ReportLockedGate 同口径：无档案行视为未推送限制不生效（fail-open），
-     避免老学员缺档案行时被永久锁死、推送也无法解除。 */
+  const campusKinds = data?.campusReportKinds;
+  const campus = Array.isArray(campusKinds);
+  const requestedTab = searchParams.get("tab");
+  const tab = requestedTab ?? (campus ? (campusTabsFor(campusKinds)[0] ?? "academics") : "combined");
+  /* 机构版继续原 reportReleased + 渠道 + OPEN_TABS；校园版只认逐报告白名单。
+     成绩与基本信息不属于测评结果，校园未授权报告时仍可填写。 */
   const released = !profile || !!profile.reportReleased;
-  /* v80 渠道放行：扫码注册 + 渠道开了测评报告 + 勾选了本栏目（"all"=全部） */
-  const channelGranted =
-    !!access?.enabled && (access.kinds.includes("all") || access.kinds.includes(tab));
-  const locked = !released && !channelGranted && !OPEN_TABS.includes(tab);
+  const channelGranted = !!access?.enabled && (access.kinds.includes("all") || access.kinds.includes(tab));
+  const locked = campus ? tab !== "academics" && !campusTabAllowed(tab, campusKinds) : !released && !channelGranted && !OPEN_TABS.includes(tab);
 
   if (isLoading || profileLoading || accessLoading) {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
   }
   if (locked) {
-    return <ReportLockedPanel what="这份测评报告" />;
+    return <ReportLockedPanel what={campus && !campusKinds.length ? "测评报告（老师开放后即可在这里查看）" : "这份测评报告"} />;
   }
   return (
     <div>
-      <ZhihuiReportCard />
+      {(!campus || campusKinds.includes("career")) && <ZhihuiReportCard />}
       <ReportView
         data={data as unknown as ReportAssessmentData | undefined}
         profile={profile as unknown as ReportProfileInfo | undefined}
         viewer="student"
+        allowedKinds={campusKinds}
       />
     </div>
   );

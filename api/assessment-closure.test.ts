@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { assessmentActivities, assessmentActivityItems, assessmentAssignments, coachingEvents, coachingTaskVerifications, orgPointAccounts, orgPointLedger } from "@db/schema";
+import { assessmentActivityItems, assessmentAssignments, coachingEvents, coachingTaskVerifications, orgPointAccounts, orgPointLedger } from "@db/schema";
 import { cancelAssessmentStudent, createAssessmentActivity, expireAssessmentActivity, startAssessmentAssignment } from "./assessmentActivities";
 import { persistAssessmentResult } from "./assessmentPersistence";
 import { listAssessmentReports } from "./assessmentReports";
@@ -140,8 +140,18 @@ describe("测评到期、取消和复测（模拟事务）", () => {
   });
 
   it("复测新建 20 积分组合任务并保留原结果与复测来源", async () => {
-    const source = { assignment: { id: 40, status: "completed", studentUserId: 101, resultId: 88 }, selectionKey: "xuanke_free" };
-    const mock = mockDb([[source], [], []]);
+    const completedAt = new Date(Date.now() - 210 * 24 * 60 * 60 * 1000);
+    const source = {
+      orgId: 7,
+      activityId: 1,
+      assignment: { id: 40, activityItemId: 10, status: "completed", studentUserId: 101, completedAt, resultId: 88 },
+      selectionKey: "xuanke_free",
+    };
+    const sourcePackage = [
+      source.assignment,
+      { id: 41, activityItemId: 10, status: "completed", studentUserId: 101, completedAt, resultId: 89 },
+    ];
+    const mock = mockDb([[source], sourcePackage, []]);
     const result = await createAssessmentActivity(mock.db, me, { requestKey: "retest-request-001", studentIds: [101], selections: ["xuanke_free"], title: "选科复测", retestOfAssignmentId: 40 });
     expect(result).toEqual({ activityId: 1, duplicate: false });
     expect(mock.inserts.find((row) => row.table === assessmentActivityItems)?.values.priceSnapshot).toBe(20);

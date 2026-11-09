@@ -8,7 +8,7 @@ import type { getDb } from "./queries/connection";
 import type { StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
 import { assertCaseAccess } from "./coachingAccess";
-import { queueFamilyCoachingNotification } from "./coachingNotifications";
+import { grantFamilyResourcesTx, queueFamilyResourceNotifications } from "./coachingRecipients";
 
 type Db = ReturnType<typeof getDb>;
 type QueryDb = Db | PointTx;
@@ -206,24 +206,25 @@ export async function listCoachingMonthlyReports(db: Db, me: StaffUser, caseId: 
     .orderBy(desc(coachingMonthlyReports.month), desc(coachingMonthlyReports.version), desc(coachingMonthlyReports.id)).limit(36);
 }
 
-export async function pushCoachingMonthlyReport(db: Db, me: StaffUser, reportId: number) {
-  const [report] = await db.select().from(coachingMonthlyReports).where(eq(coachingMonthlyReports.id, reportId)).limit(1);
+export async function pushCoachingMonthlyReport(db: Db, me: StaffUser, input: { reportId: number; recipientUserIds: number[] }) {
+  const [report] = await db.select().from(coachingMonthlyReports).where(eq(coachingMonthlyReports.id, input.reportId)).limit(1);
   if (!report) throw new TRPCError({ code: "NOT_FOUND", message: "月度报告不存在" });
-  await assertCaseAccess(db, me, report.caseId);
+  const coachingCase = await assertCaseAccess(db, me, report.caseId);
   if (report.pushedAt) return { id: report.id, version: report.version, duplicate: true as const };
   return db.transaction(async (tx) => {
-    const [current] = await tx.select().from(coachingMonthlyReports).where(eq(coachingMonthlyReports.id, reportId)).limit(1).for("update");
+    const [current] = await tx.select().from(coachingMonthlyReports).where(eq(coachingMonthlyReports.id, input.reportId)).limit(1).for("update");
     if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "月度报告不存在" });
     if (current.pushedAt) return { id: current.id, version: current.version, duplicate: true as const };
     const now = new Date();
+    await grantFamilyResourcesTx(tx, { coachingCase, resourceType: "monthly_report", resourceIds: [current.id], recipientUserIds: input.recipientUserIds, actorUserId: me.id });
     const result = await tx.update(coachingMonthlyReports).set({ pushedAt: now, pushedBy: me.id })
-      .where(and(eq(coachingMonthlyReports.id, reportId), isNull(coachingMonthlyReports.pushedAt)));
+      .where(and(eq(coachingMonthlyReports.id, input.reportId), isNull(coachingMonthlyReports.pushedAt)));
     const affectedRows = typeof result === "object" && result !== null && "affectedRows" in result ? Number(result.affectedRows) : 1;
     if (affectedRows !== 1) throw new TRPCError({ code: "CONFLICT", message: "报告推送状态已变化，请刷新" });
     await tx.insert(coachingEvents).values({ caseId: current.caseId, actorUserId: me.id, type: "monthly_report_pushed",
-      content: `${current.month} 月度学习报告 V${current.version} 已正式推送家庭`, visibility: "internal" });
-    await queueFamilyCoachingNotification(tx, { caseId: current.caseId, type: "monthly_report_pushed",
-      title: "新的月度学习报告", body: `伴学师已正式推送 ${current.month} 月度学习报告，请在陪跑反馈中查看。`,
+      content: `${current.month} 月度学习报告 V${current.version} 已按 ${new Set(input.recipientUserIds).size} 位指定接收人推送`, visibility: "internal" });
+    await queueFamilyResourceNotifications(tx, { coachingCase, resourceType: "monthly_report", resourceId: current.id,
+      type: "monthly_report_pushed", title: "新的月度学习报告", body: `伴学师已正式推送 ${current.month} 月度学习报告，请在陪跑反馈中查看。`,
       idempotencyKey: `monthly:${current.id}:v${current.version}`, createdBy: me.id });
     return { id: current.id, version: current.version, duplicate: false as const };
   });

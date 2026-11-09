@@ -25,6 +25,7 @@ function reassignDb(pending = false) {
   const tx = {
     select: vi.fn(() => ({ from: (table: unknown) => ({ where: () => ({
       limit: () => limit(table === coachingCases ? [baseCase] : table === coachingHandoffs && pending ? [{ id: 500 }] : []),
+      then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve(table === coachingCases ? [baseCase] : []).then(resolve),
     }) }) })),
     insert: vi.fn((table: unknown) => ({ values: (values: Record<string, unknown>) => {
       inserted.push({ table, values });
@@ -34,6 +35,7 @@ function reassignDb(pending = false) {
   const db = {
     select: vi.fn(() => ({ from: (table: unknown) => ({ where: () => ({
       limit: async () => table === coachingCases ? [baseCase] : table === users ? [{ id: 1 }] : [],
+      then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve(table === coachingCases ? [baseCase] : []).then(resolve),
     }) }) })),
     transaction: vi.fn(async (callback: (tx: unknown) => unknown) => callback(tx)),
   };
@@ -46,6 +48,7 @@ function acceptDb(handoff = baseHandoff, current = baseCase) {
   const tx = {
     select: vi.fn(() => ({ from: (table: unknown) => ({ where: () => ({
       limit: () => limit(table === coachingHandoffs ? [handoff] : table === coachingCases ? [current] : table === users ? [{ id: 1 }] : []),
+      then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve(table === coachingCases ? [current] : []).then(resolve),
     }) }) })),
     update: vi.fn((table: unknown) => ({ set: (patch: Record<string, unknown>) => ({ where: async () => {
       updates.push({ table, patch });
@@ -92,7 +95,7 @@ describe("H5 人员改派接收闭环", () => {
     await expect(reassignCoachingCase(mock.db, admin, { caseId: 91, coachId: 39, supervisorId: 29, reason: "加强后期学习坊服务" })).resolves.toEqual({ id: 501, status: "pending" });
     expect(mock.tx).not.toHaveProperty("update");
     const handoff = mock.inserted.find((row) => row.table === coachingHandoffs)!;
-    expect(handoff.values).toMatchObject({ type: "H5", status: "pending", toUserId: 29,
+    expect(handoff.values).toMatchObject({ type: "REASSIGN", status: "pending", toUserId: 29,
       fromCoachId: 19, fromSupervisorId: 19, nextCoachId: 39, nextSupervisorId: 29 });
     expect(mock.inserted.find((row) => row.table === coachingEvents)?.values.content).toContain("等待新督学接收");
   });
@@ -169,10 +172,13 @@ describe("H5 人员改派接收闭环", () => {
 
 type ClosureSource = Parameters<typeof buildCoachingClosureReadiness>[0];
 function closureSource(): ClosureSource {
+  const finalRecord = (recordType: string) => ({ id: 1, recordType, version: 1, status: "completed" });
   return {
     coachingCase: { ...baseCase, goal: "提升数学自主学习", currentSituation: "当前错题复验不足", planSummary: "每周复验并回顾" },
-    scenarioHistory: [{ endedAt: null }], plans: [{ status: "confirmed" }], tasks: [],
+    scenarioHistory: [{ endedAt: new Date() }], plans: [{ status: "confirmed", issuedAt: new Date() }], tasks: [],
     reviews: [{ period: "term", content: "目标已基本达成", nextActions: "寒暑假每周复验" }],
+    growProfiles: [{ version: 1, studentGoal: "学生自己的目标", parentExpectation: "家长独立期待", currentSituation: "现状", evidence: "作业与测评事实", followUpActions: "后续行动" }],
+    extendedRecords: ["four_line_review", "closure_assessment", "closure_interview", "termination"].map(finalRecord),
     exceptions: [], handoffs: [], supervisions: [], sessions: [], participants: [], deliverables: [],
   } as unknown as ClosureSource;
 }
@@ -183,9 +189,9 @@ describe("结课完整性检查", () => {
   });
 
   it.each([
-    ["grow", (source: ClosureSource) => { source.coachingCase.goal = ""; }],
+    ["structuredGrow", (source: ClosureSource) => { source.growProfiles = []; }],
     ["plans", (source: ClosureSource) => { source.plans = [{ status: "draft" }] as ClosureSource["plans"]; }],
-    ["scenarios", (source: ClosureSource) => { source.scenarioHistory = [{ endedAt: new Date() }] as ClosureSource["scenarioHistory"]; }],
+    ["scenarios", (source: ClosureSource) => { source.scenarioHistory = [{ endedAt: null }] as ClosureSource["scenarioHistory"]; }],
     ["drafts", (source: ClosureSource) => { source.sessions = [{ id: 1, status: "draft" }] as ClosureSource["sessions"]; }],
     ["supervisions", (source: ClosureSource) => { source.supervisions = [{ status: "completed", alignment: "", checks: "已检查", exitCheck: "已验收" }] as ClosureSource["supervisions"]; }],
     ["feedback", (source: ClosureSource) => {

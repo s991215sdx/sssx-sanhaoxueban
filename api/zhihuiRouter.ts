@@ -17,6 +17,9 @@ import { gdScores, majorLib, universityLib, careerLib } from "../db/schema";
 import { inviteChannels, inviteRegistrations, organizations } from "../db/schema";
 import { like, or, asc, sql } from "drizzle-orm";
 import { orgXuankeWeights } from "./schoolRouter";
+import { getCampusReportKinds } from "./campusReports";
+import { getTutorReportAccess } from "./tutorAccess";
+import { campusCareerPrerequisites } from "@contracts/campusReports";
 
 /** 查看/代编他人数据须为伴学师或管理员；v179：且目标学员须在本机构内
  *  （平台超管 orgId=null 放行；机构管理员/伴学师跨机构一律拒绝）。
@@ -32,6 +35,9 @@ async function assertStaffIfOther(
     const db = getDb();
     if (!(await canAccessUser(db, ctx.user, studentId))) {
       throw new TRPCError({ code: "FORBIDDEN", message: "该学员不在你的机构内" });
+    }
+    if (ctx.user.role === "tutor" && !(await getTutorReportAccess(db, ctx.user.id, studentId)).allowed) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "没有查看该学员报告的权限" });
     }
   }
 }
@@ -117,6 +123,10 @@ export const zhihuiRouter = createRouter({
 
       const [user] = await db.select({ name: users.name, phone: users.phone }).from(users).where(eq(users.id, sid)).limit(1);
       const profile = await db.query.studentProfile.findFirst({ where: eq(studentProfile.userId, sid) });
+      const campusReportKinds = await getCampusReportKinds(db, sid);
+      if (campusReportKinds && !campusReportKinds.includes("career")) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "选科及升学规划综合报告尚未由老师开放" });
+      }
 
       /* v206：学生归属的校园渠道信息（报告封面「学校/班级/校徽」用，伴学师内嵌查看同样生效；非校园渠道学生不受影响） */
       const reg = (
@@ -181,6 +191,20 @@ export const zhihuiRouter = createRouter({
 
       // 成绩档案（contracts/academics 结构：subjects: [{name,lastScore,targetScore,...}]）
       const academics = (profile?.academics ?? null) as { subjects?: { name?: string; lastScore?: number | null; targetScore?: number | null }[] } | null;
+      const prerequisites = campusCareerPrerequisites({ hasSubject4d: !!s4d, hasHolland: !!hol, academics, expectations: exp ?? null });
+      if (stuCampus && !prerequisites.ready) {
+        return {
+          student: { id: sid, name: profile?.name || user?.name || "", grade: (profile?.grade as string | null) ?? null, className: profile?.className ?? null, campus: true, schoolName, schoolBrand, schoolLogo },
+          xuankeScoreWeight,
+          subject4d: s4d ? { result: s4d.result, answers: s4d.answers, createdAt: s4d.createdAt } : null,
+          holland: hol ? { result: hol.result, createdAt: hol.createdAt } : null,
+          multi5: null,
+          academics,
+          expectations: exp ?? null,
+          targetSchool: null, targetMajor: null, targetUniversity: null,
+          majorCats: [], careerPicks: [], menleiW: {}, menleiCats: [], prerequisites,
+        };
+      }
 
       // 目标院校近三年数据（期望院校匹配）
       let gdResults: (typeof gdScores.$inferSelect)[] = [];
@@ -419,6 +443,7 @@ export const zhihuiRouter = createRouter({
         careerPicks,
         menleiW,
         menleiCats,
+        prerequisites,
       };
     }),
 });

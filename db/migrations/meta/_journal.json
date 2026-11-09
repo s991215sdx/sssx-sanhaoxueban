@@ -366,6 +366,20 @@
       "when": 1794182400000,
       "tag": "0053_coaching_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1794300000000,
+      "tag": "0054_coaching_service_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "5",
+      "when": 1794384000000,
+      "tag": "0055_campus_report_kinds",
+      "breakpoints": true
     }
   ]
 }

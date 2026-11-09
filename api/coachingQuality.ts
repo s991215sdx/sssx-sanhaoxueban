@@ -7,6 +7,7 @@ import type { PointTx } from "./orgPoints";
 import { requireOrgStaff, type StaffUser } from "./orgAccess";
 import { assertCaseAccess } from "./coachingAccess";
 import { queueCoachingNotification } from "./coachingNotifications";
+import { getCoachingDeliverySettings } from "./coachingDelivery";
 
 type Db = ReturnType<typeof getDb>;
 export type CoachingReviewType = "self" | "peer" | "supervisor";
@@ -104,6 +105,7 @@ export async function assignQualityReview(db: Db, me: StaffUser, input: {
   const reviewer = await staffRecipient(db, coachingCase.orgId, input.reviewerId);
   assertReviewerRole(input.reviewType, reviewer, coachingCase);
   const periodKey = required(input.periodKey, "请填写检查周期");
+  const { qualityVersion: frameworkVersion } = await getCoachingDeliverySettings(db, me);
   return db.transaction(async (tx) => {
     const duplicate = await tx.select({ id: coachingQualityReviews.id }).from(coachingQualityReviews)
       .where(and(eq(coachingQualityReviews.caseId, input.caseId), eq(coachingQualityReviews.reviewType, input.reviewType),
@@ -117,7 +119,7 @@ export async function assignQualityReview(db: Db, me: StaffUser, input: {
     const version = (latest[0]?.version ?? 0) + 1;
     const [{ id }] = await tx.insert(coachingQualityReviews).values({
       caseId: input.caseId, orgId: coachingCase.orgId, reviewType: input.reviewType, reviewerId: input.reviewerId,
-      periodKey, frameworkVersion: COACHING_QUALITY_FRAMEWORK.version, version, previousId: latest[0]?.id ?? null,
+      periodKey, frameworkVersion, version, previousId: latest[0]?.id ?? null,
       status: "pending", dueAt: input.dueAt, assignedBy: me.id,
     }).$returningId();
     await event(tx, input.caseId, me.id, "quality_review_assigned", `${TYPE_LABEL[input.reviewType]} ${periodKey} 已安排，任务 #${id} V${version}`);
@@ -158,9 +160,10 @@ export async function submitSelfQualityReview(db: Db, me: StaffUser, input: Qual
       return { id: current.id, version: current.version, status: "submitted" as const };
     }
     const version = (current?.version ?? 0) + 1;
+    const frameworkVersion = current?.frameworkVersion ?? (await getCoachingDeliverySettings(tx, me)).qualityVersion;
     const [{ id }] = await tx.insert(coachingQualityReviews).values({
       caseId: input.caseId, orgId: coachingCase.orgId, reviewType: "self", reviewerId: me.id, periodKey,
-      frameworkVersion: COACHING_QUALITY_FRAMEWORK.version, version, previousId: current?.id ?? null,
+      frameworkVersion, version, previousId: current?.id ?? null,
       ...fields, status: "submitted", submittedAt: now, assignedBy: me.id,
     }).$returningId();
     await event(tx, input.caseId, me.id, "quality_review_submitted", `质量自查 ${periodKey} V${version} 已提交`);
@@ -198,7 +201,7 @@ export async function submitQualityReview(db: Db, me: StaffUser, input: QualityI
     const version = latest.version + 1;
     const [{ id }] = await tx.insert(coachingQualityReviews).values({
       caseId: latest.caseId, orgId: latest.orgId, reviewType: latest.reviewType, reviewerId: latest.reviewerId,
-      periodKey: latest.periodKey, frameworkVersion: COACHING_QUALITY_FRAMEWORK.version, version, previousId: latest.id,
+      periodKey: latest.periodKey, frameworkVersion: latest.frameworkVersion, version, previousId: latest.id,
       ...fields, status: "submitted", dueAt: latest.dueAt, submittedAt: now, assignedBy: latest.assignedBy,
     }).$returningId();
     await event(tx, latest.caseId, me.id, "quality_review_corrected", `质量检查 ${latest.periodKey} 已更正并追加 V${version}`);

@@ -35,6 +35,12 @@ export const assessmentActivities = mysqlTable("assessment_activities", {
   status: varchar("status", { length: 24 }).notNull().default("open"), createdAt: createdAt(),
 });
 
+export const assessmentActivityEvents = mysqlTable("assessment_activity_events", {
+  id: id(), activityId: bigint("activity_id", { mode: "number", unsigned: true }).notNull(),
+  actorUserId: userId("actor_user_id"), type: varchar("type", { length: 32 }).notNull(),
+  detail: text("detail").notNull(), previousDueAt: timestamp("previous_due_at"), nextDueAt: timestamp("next_due_at"), createdAt: createdAt(),
+});
+
 export const assessmentActivityItems = mysqlTable("assessment_activity_items", {
   id: id(), activityId: bigint("activity_id", { mode: "number", unsigned: true }).notNull(),
   selectionKey: varchar("selection_key", { length: 48 }).notNull(), title: varchar("title", { length: 160 }).notNull(),
@@ -82,6 +88,7 @@ export const coachingPlans = mysqlTable("coaching_plans", {
   startDate: varchar("start_date", { length: 10 }).notNull(), endDate: varchar("end_date", { length: 10 }).notNull(),
   sourceResultId: bigint("source_result_id", { mode: "number", unsigned: true }), status: varchar("status", { length: 24 }).notNull().default("draft"),
   version: int("version").notNull().default(1), confirmedBy: bigint("confirmed_by", { mode: "number", unsigned: true }), confirmedAt: timestamp("confirmed_at"),
+  issuedAt: timestamp("issued_at"), cancelledAt: timestamp("cancelled_at"),
   createdBy: userId("created_by"), createdAt: createdAt(),
 });
 
@@ -181,6 +188,7 @@ export const coachingExceptions = mysqlTable("coaching_exceptions", {
   status: varchar("status", { length: 16 }).notNull().default("open"), assigneeId: userId("assignee_id"), dueAt: timestamp("due_at").notNull(),
   createdBy: userId("created_by"), createdAt: createdAt(), updatedAt: updatedAt(),
   closedBy: bigint("closed_by", { mode: "number", unsigned: true }), closedAt: timestamp("closed_at"), closeEvidence: text("close_evidence"),
+  detailCiphertext: text("detail_ciphertext"), closeEvidenceCiphertext: text("close_evidence_ciphertext"),
 }, (table) => [
   index("coaching_exceptions_org_status_idx").on(table.orgId, table.status),
   index("coaching_exceptions_case_status_idx").on(table.caseId, table.status),
@@ -191,6 +199,7 @@ export const coachingExceptionActions = mysqlTable("coaching_exception_actions",
   id: id(), exceptionId: bigint("exception_id", { mode: "number", unsigned: true }).notNull(),
   caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(),
   action: varchar("action", { length: 16 }).notNull(), note: text("note").notNull(), evidence: text("evidence").notNull(),
+  noteCiphertext: text("note_ciphertext"), evidenceCiphertext: text("evidence_ciphertext"),
   actorUserId: userId("actor_user_id"), createdAt: createdAt(),
 }, (table) => [index("coaching_exception_actions_exception_idx").on(table.exceptionId, table.createdAt),
   index("coaching_exception_actions_case_idx").on(table.caseId, table.exceptionId)]);
@@ -208,6 +217,9 @@ export const studySupervisionRecords = mysqlTable("study_supervision_records", {
   signInAt: timestamp("sign_in_at"), selfStudyMinutes: int("self_study_minutes").notNull().default(0), alignment: text("alignment").notNull(),
   checks: text("checks").notNull(), exitCheck: text("exit_check").notNull(), followUp: text("follow_up").notNull(),
   status: varchar("status", { length: 24 }).notNull().default("draft"), createdAt: createdAt(), updatedAt: updatedAt(),
+  timeBlocks: json("time_blocks").$type<Record<string, unknown>[]>(),
+  signOutAt: timestamp("sign_out_at"), leaveReason: text("leave_reason"), makeupPlan: text("makeup_plan"), handoffNote: text("handoff_note"),
+  cancelledAt: timestamp("cancelled_at"), cancelReason: varchar("cancel_reason", { length: 1000 }).notNull().default(""),
 });
 
 export const courseSessions = mysqlTable("course_sessions", {
@@ -216,6 +228,7 @@ export const courseSessions = mysqlTable("course_sessions", {
   format: varchar("format", { length: 24 }).notNull(), status: varchar("status", { length: 24 }).notNull().default("draft"),
   changeReason: varchar("change_reason", { length: 500 }).notNull().default(""), changeConfirmedBy: bigint("change_confirmed_by", { mode: "number", unsigned: true }),
   sharedSummary: text("shared_summary").notNull(), createdAt: createdAt(), updatedAt: updatedAt(),
+  cancelledAt: timestamp("cancelled_at"), cancelReason: varchar("cancel_reason", { length: 1000 }).notNull().default(""), cancelledBy: bigint("cancelled_by", { mode: "number", unsigned: true }),
 });
 
 export const courseSessionUnits = mysqlTable("course_session_units", {
@@ -227,7 +240,8 @@ export const courseSessionUnits = mysqlTable("course_session_units", {
 
 export const courseParticipants = mysqlTable("course_participants", {
   id: id(), sessionId: bigint("session_id", { mode: "number", unsigned: true }).notNull(), studentUserId: userId("student_user_id"),
-  guardianLabel: varchar("guardian_label", { length: 64 }).notNull().default(""), attendance: varchar("attendance", { length: 24 }).notNull().default("present"),
+  guardianLabel: varchar("guardian_label", { length: 64 }).notNull().default(""), guardianUserId: bigint("guardian_user_id", { mode: "number", unsigned: true }),
+  attendance: varchar("attendance", { length: 24 }).notNull().default("present"),
   personalObservation: text("personal_observation").notNull(), privateNote: text("private_note").notNull(), actionTaskId: bigint("action_task_id", { mode: "number", unsigned: true }),
   feedbackText: text("feedback_text").notNull(), feedbackAt: timestamp("feedback_at"), feedbackVersion: int("feedback_version").notNull().default(0),
   createdAt: createdAt(), updatedAt: updatedAt(),
@@ -240,7 +254,8 @@ export const coachingDeliverables = mysqlTable("coaching_deliverables", {
   kind: varchar("kind", { length: 24 }).notNull(), body: text("body").notNull(), mediaData: longtext("media_data"), mimeType: varchar("mime_type", { length: 80 }),
   sizeBytes: int("size_bytes").notNull().default(0), visibility: varchar("visibility", { length: 24 }).notNull().default("internal"),
   version: int("version").notNull().default(1), previousId: bigint("previous_id", { mode: "number", unsigned: true }),
-  uploadedBy: userId("uploaded_by"), pushedAt: timestamp("pushed_at"), expiresAt: timestamp("expires_at"), disposedAt: timestamp("disposed_at"), createdAt: createdAt(),
+  uploadedBy: userId("uploaded_by"), pushedAt: timestamp("pushed_at"), expiresAt: timestamp("expires_at"), disposedAt: timestamp("disposed_at"),
+  disposalReason: varchar("disposal_reason", { length: 1000 }).notNull().default(""), disposedBy: bigint("disposed_by", { mode: "number", unsigned: true }), createdAt: createdAt(),
 });
 
 /** 多监护人逐个账号授权；不共享学生密码，撤销后下载权限立即失效。 */
@@ -274,3 +289,5 @@ export const coachingNotificationSettings = mysqlTable("coaching_notification_se
   quietEnd: varchar("quiet_end", { length: 5 }).notNull().default("07:00"), suggestedCaseLoad: int("suggested_case_load").notNull().default(20),
   updatedBy: bigint("updated_by", { mode: "number", unsigned: true }), createdAt: createdAt(), updatedAt: updatedAt(),
 }, (table) => [uniqueIndex("coaching_notification_settings_org_unique").on(table.orgId)]);
+
+export * from "./coachingDeliverySchema";

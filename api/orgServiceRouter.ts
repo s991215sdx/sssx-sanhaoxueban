@@ -6,7 +6,7 @@ import { isPlatformAdmin } from "./tenant";
 import { ASSESSMENT_PACKAGES, COURSE_CATALOG, DEFAULT_ORG_POINTS, fullCoverageCredits, recommendedOrgPoints, selectionFor } from "@contracts/orgService";
 import { INVITE_ASSESS_KINDS } from "@contracts/invite";
 import { adjustOrgPoints, allocateOrgPoints, initializeOrgPoints, pointOverview, reclaimOrgPoints, walletBalance } from "./orgPoints";
-import { cancelAssessmentItem, cancelAssessmentStudent, createAssessmentActivity, listAssessmentActivities, myAssessmentAssignments, startAssessmentAssignment } from "./assessmentActivities";
+import { cancelAssessmentItem, cancelAssessmentStudent, createAssessmentActivity, listAssessmentActivities, listAssessmentActivityEvents, myAssessmentAssignments, remindAssessmentActivity, rescheduleAssessmentActivity, startAssessmentAssignment } from "./assessmentActivities";
 import { listAssessmentReports } from "./assessmentReports";
 import { requireOrgStaff } from "./orgAccess";
 
@@ -62,6 +62,15 @@ export const orgServiceRouter = createRouter({
   })).mutation(({ ctx, input }) => createAssessmentActivity(getDb(), ctx.user, input)),
 
   activities: tutorQuery.query(({ ctx }) => listAssessmentActivities(getDb(), ctx.user)),
+
+  activityEvents: tutorQuery.input(z.object({ activityId: z.number().int().positive() }))
+    .query(({ ctx, input }) => listAssessmentActivityEvents(getDb(), ctx.user, input.activityId)),
+
+  remindActivity: tutorQuery.input(z.object({ activityId: z.number().int().positive() }))
+    .mutation(({ ctx, input }) => remindAssessmentActivity(getDb(), ctx.user, input.activityId)),
+
+  rescheduleActivity: tutorQuery.input(z.object({ activityId: z.number().int().positive(), dueAt: z.date(), reason: z.string().trim().min(2).max(500) }))
+    .mutation(({ ctx, input }) => rescheduleAssessmentActivity(getDb(), ctx.user, input)),
 
   reports: tutorQuery.input(z.object({ studentUserId: z.number().int().positive().optional(), activityId: z.number().int().positive().optional(),
     kind: z.string().max(32).optional(), from: z.date().optional(), to: z.date().optional(), query: z.string().trim().max(100).optional() }))

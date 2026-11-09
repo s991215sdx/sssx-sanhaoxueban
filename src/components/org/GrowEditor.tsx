@@ -9,10 +9,11 @@ function dateAfter(days: number): string {
 const KIND: Record<string, string> = { mbti: "MBTI", disc: "DISC", e3: "E3 学习力", multi5: "多元智能", mentalsdq: "心理健康 A 版", mentalpa: "心理健康 B 版", scl90: "SCL-90", mental: "心理健康通用版", subject4d: "学科四维", holland: "霍兰德", anchor: "职业锚", subject: "学科能力", e3parent: "家长认知", discparent: "家长 DISC", familystudent: "家庭关系·学生", familyparent: "家庭关系·家长" };
 
 /** 测评右侧与独立陪跑共用的 GROW 编辑器；实际数据来自共享陪跑主档。 */
-export default function GrowEditor({ studentUserId, onOpenReport, onOpenCoaching }: { studentUserId: number; onOpenReport?: () => void; onOpenCoaching?: (caseId: number) => void }) {
+export default function GrowEditor({ studentUserId, initialResultId, onOpenReport, onOpenCoaching }: { studentUserId: number; initialResultId?: number; onOpenReport?: () => void; onOpenCoaching?: (caseId: number) => void }) {
   const utils = trpc.useUtils();
   const { data: cases } = trpc.coaching.cases.useQuery();
   const [createdCaseId, setCreatedCaseId] = useState<number | null>(null);
+  const [, setEditorOpen] = useState(false);
   const current = useMemo(() => cases?.find((c) => c.coachingCase.studentUserId === studentUserId), [cases, studentUserId]);
   const caseId = current?.coachingCase.id ?? createdCaseId ?? 0;
   const { data, isLoading } = trpc.coaching.detail.useQuery({ caseId }, { enabled: caseId > 0 });
@@ -22,6 +23,7 @@ export default function GrowEditor({ studentUserId, onOpenReport, onOpenCoaching
   const [start, setStart] = useState(dateAfter(0)); const [end, setEnd] = useState(dateAfter(180));
   useEffect(() => {
     setCreatedCaseId(null);
+    setEditorOpen(false);
   }, [studentUserId]);
   useEffect(() => {
     setGoal(data?.coachingCase.goal ?? ""); setSituation(data?.coachingCase.currentSituation ?? ""); setPlan(data?.coachingCase.planSummary ?? "");
@@ -50,7 +52,8 @@ export default function GrowEditor({ studentUserId, onOpenReport, onOpenCoaching
     else create.mutate({ studentUserId, scenarios, goal, currentSituation: situation, planSummary: plan, serviceStart: start, serviceEnd: end });
   };
   const pending = data?.tasks.filter((t) => t.status !== "verified").length ?? 0;
-  const latest = data?.results.slice(0, 4) ?? [];
+  const selectedResult = data?.results.find((result) => result.id === initialResultId);
+  const latest = selectedResult ? [selectedResult, ...(data?.results.filter((result) => result.id !== initialResultId) ?? [])].slice(0, 4) : data?.results.slice(0, 4) ?? [];
   return <section className="overflow-hidden rounded-2xl border border-[#0C7064]/15 bg-white shadow-sm">
     <header className="bg-[#0C7064] px-5 py-4 text-white">
       <div className="text-[10px] font-semibold tracking-[.18em] text-white/60">GROW · 伴学路径</div>
@@ -83,12 +86,13 @@ export default function GrowEditor({ studentUserId, onOpenReport, onOpenCoaching
       <div className="rounded-xl border border-[#0C7064]/15 bg-mint-pale/40 p-3">
         <div className="flex items-center gap-2 text-[13px] font-bold text-olive"><ClipboardCheck size={15} /> 督学陪跑</div>
         <div className="mt-2 grid grid-cols-2 gap-2 text-center text-[11px] text-olive-mute sm:grid-cols-4"><span className="rounded-lg bg-white p-2"><b className="block text-[17px] text-olive">{data?.supervisions.length ?? 0}</b>到店督学</span><span className="rounded-lg bg-white p-2"><b className="block text-[17px] text-olive">{data?.checkins.length ?? 0}</b>日检验</span><span className="rounded-lg bg-white p-2"><b className="block text-[17px] text-olive">{data?.sessions.length ?? 0}</b>课堂记录</span><span className="rounded-lg bg-white p-2"><b className="block text-[17px] text-olive">{pending}</b>待验收</span></div>
-        {latest.length > 0 && <div className="mt-2 space-y-1">{latest.map((r) => <div key={r.id} className="flex items-center justify-between text-[11px] text-olive-soft"><span>{KIND[r.kind] ?? r.kind}</span><time>{new Date(r.createdAt).toLocaleDateString("zh-CN")}</time></div>)}</div>}
+        {latest.length > 0 && <div className="mt-2 space-y-1">{latest.map((r) => <div key={r.id} className={`flex items-center justify-between rounded-lg px-2 py-1 text-[11px] ${r.id === initialResultId ? "bg-white font-semibold text-[#0C7064]" : "text-olive-soft"}`}><span>{r.id === initialResultId ? "本次纳入 · " : ""}{KIND[r.kind] ?? r.kind}</span><time>{new Date(r.createdAt).toLocaleDateString("zh-CN")}</time></div>)}</div>}
         {data && onOpenCoaching && <button type="button" onClick={() => onOpenCoaching(data.coachingCase.id)} className="mt-3 w-full rounded-lg border border-[#0C7064]/20 bg-white py-2 text-[12px] font-semibold text-[#0C7064] hover:bg-mint-pale">进入独立陪跑：计划、课堂、验收与反馈 →</button>}
       </div>
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-700">{error}</p>}
-      <button type="button" onClick={save} disabled={saving || !formValid} className="w-full rounded-xl bg-[#0C7064] py-2.5 text-[13px] font-semibold text-white hover:bg-[#095c53] disabled:opacity-40">{saving ? "正在保存…" : data ? "保存 GROW 并生成新计划版本" : "确认方案，建立陪跑主档"}</button>
-      {(create.isSuccess || update.isSuccess) && <p className="text-center text-[11px] text-[#2F7A41]">已保存；历史计划版本与服务场景周期均保留。</p>}
+      <button type="button" onClick={save} disabled={saving || !formValid} className="w-full rounded-xl bg-[#0C7064] py-2.5 text-[13px] font-semibold text-white hover:bg-[#095c53] disabled:opacity-40">{saving ? "正在保存…" : data ? "保存 GROW 草稿与计划版本" : "保存方案草稿，建立陪跑主档"}</button>
+      <p className="text-center text-[10.5px] leading-relaxed text-olive-mute">此快捷入口只保存内部草稿；请继续在“计划三方会签”中由教练提交、学生与至少一位监护人本人确认后，计划才正式生效。</p>
+      {(create.isSuccess || update.isSuccess) && <p className="text-center text-[11px] text-[#2F7A41]">草稿已保存，历史计划版本与服务场景周期均保留；仍需完成三方会签。</p>}
     </div>}
   </section>;
 }

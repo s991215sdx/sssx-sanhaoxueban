@@ -225,7 +225,7 @@ describe("站内通知幂等、权限与状态记录", () => {
       notification({ id: 2, status: "sent", sentAt: new Date("2026-11-08T08:30:00+08:00"), idempotencyKey: "notice:2" }),
       notification({ id: 3, status: "pending", notBefore: new Date("2026-11-09T08:00:00+08:00"), idempotencyKey: "notice:3" }),
     ]);
-    const inbox = await coachingNotificationInbox(mock.db as Parameters<typeof coachingNotificationInbox>[0], tutor);
+    const inbox = await coachingNotificationInbox(mock.db as Parameters<typeof coachingNotificationInbox>[0], tutor, now);
     expect(inbox.items.filter((item) => item.status === "delivered")).toHaveLength(2);
     expect(mock.rows.find((row) => row.id === 1)).toMatchObject({ status: "delivered" });
     expect(mock.rows.find((row) => row.id === 1)?.sentAt).not.toBeNull();
@@ -234,10 +234,10 @@ describe("站内通知幂等、权限与状态记录", () => {
     expect(mock.rows.find((row) => row.id === 3)?.status).toBe("pending");
     expect(inbox.unread).toBe(2);
     expect(inbox.channelNote).toContain("不代表已发送微信或短信");
-    await markCoachingNotificationRead(mock.db as Parameters<typeof markCoachingNotificationRead>[0], tutor, 1);
+    await markCoachingNotificationRead(mock.db as Parameters<typeof markCoachingNotificationRead>[0], tutor, 1, now);
     expect(mock.rows.find((row) => row.id === 1)?.readAt).toBeInstanceOf(Date);
-    await expect(markCoachingNotificationRead(mock.db as Parameters<typeof markCoachingNotificationRead>[0], { id: 29, role: "tutor", orgId: 7 }, 1)).rejects.toThrow("通知不存在");
-    await expect(markCoachingNotificationRead(mock.db as Parameters<typeof markCoachingNotificationRead>[0], tutor, 3)).rejects.toThrow("尚未送达");
+    await expect(markCoachingNotificationRead(mock.db as Parameters<typeof markCoachingNotificationRead>[0], { id: 29, role: "tutor", orgId: 7 }, 1, now)).rejects.toThrow("通知不存在");
+    await expect(markCoachingNotificationRead(mock.db as Parameters<typeof markCoachingNotificationRead>[0], tutor, 3, now)).rejects.toThrow("尚未送达");
   });
 
   it("失败通知可重试或转人工，正常通知不能伪造失败处置", async () => {
@@ -283,7 +283,7 @@ describe("0053 迁移与页面接线", () => {
     expect(migration).toContain("(`recipient_id`,`status`,`not_before`)");
     expect(migration).toContain("(`idempotency_key`)");
     const journal = JSON.parse(readFileSync("db/migrations/meta/_journal.json", "utf8")) as { entries: { idx: number; tag: string }[] };
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 53, tag: "0053_coaching_operations" });
+    expect(journal.entries).toContainEqual(expect.objectContaining({ idx: 53, tag: "0053_coaching_operations" }));
     expect(readFileSync("api/migrationsEmbedded.ts", "utf8")).toContain('"0053_coaching_operations":');
     expect(readFileSync("api/initDb.ts", "utf8")).toContain('"0053": async () =>');
     expect(getTableConfig(coachingNotifications).indexes.map((index) => index.config.name)).toContain("coaching_notifications_recipient_status_idx");

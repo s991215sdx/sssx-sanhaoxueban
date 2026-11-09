@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { BookOpenCheck, CalendarCheck, CheckCircle2, ClipboardCheck, Download, FileAudio, FileImage, FileText, MessageSquareText, Target, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { saveCoachingFile } from "@/lib/coachingDownload";
 import { COACHING_MONTHLY_DIMENSIONS } from "@contracts/orgService";
 import type { FamilyFeedback } from "@/components/org/coachingTypes";
 import { CoachingNotificationCenter } from "@/components/org/CoachingOperations";
+import { FamilyActionList, FamilyPlanConfirmations } from "@/components/org/FamilyCoachingActions";
 
 const LEVEL: Record<string, string> = { term: "学期计划", month: "月计划", week: "周计划", day: "日计划" };
 const FORMAT: Record<string, string> = { one_to_one: "一对一教练课＋督学", salon: "小组沙龙＋督学", workshop: "学习坊＋督学", mixed: "混合课堂＋督学" };
@@ -13,9 +14,9 @@ const FORMAT: Record<string, string> = { one_to_one: "一对一教练课＋督�
 export default function FamilyCoaching() {
   const utils = trpc.useUtils();
   const { data: cases = [], isLoading: casesLoading } = trpc.coaching.familyCases.useQuery();
-  const [caseId, setCaseId] = useState(0);
+  const [selectedCaseId, setCaseId] = useState(0);
+  const caseId = cases.some((item) => item.caseId === selectedCaseId) ? selectedCaseId : cases[0]?.caseId ?? 0;
   const [downloadError, setDownloadError] = useState("");
-  useEffect(() => { if (!caseId && cases[0]) setCaseId(cases[0].caseId); }, [caseId, cases]);
   const { data, isLoading, error } = trpc.coaching.familyFeedback.useQuery({ caseId }, { enabled: caseId > 0 });
   const studentName = cases.find((item) => item.caseId === caseId)?.studentName;
   const download = async (deliverableId: number) => {
@@ -39,9 +40,12 @@ export default function FamilyCoaching() {
         <div className="rounded-2xl border border-[#0C7064]/15 bg-mint-pale/30 p-5 shadow-sm"><h2 className="flex items-center gap-2 text-[16px] font-bold text-olive"><ClipboardCheck size={18} className="text-[#0C7064]" />定制计划</h2><p className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-olive-soft">{data.coachingCase.planSummary}</p></div>
       </section>
 
+      <FamilyPlanConfirmations caseId={caseId} />
+
       <section className="rounded-2xl border border-border bg-white p-4 shadow-sm"><h2 className="flex items-center gap-2 text-[16px] font-bold text-olive"><CalendarCheck size={17} />当前计划与历史版本</h2><div className="mt-3 space-y-2">{data.plans.map((plan, index) => <details key={`${plan.title}-${plan.version}-${index}`} open={index === 0} className="rounded-xl border border-border bg-cream/40 p-3"><summary className="cursor-pointer text-[12.5px] font-semibold text-olive">{LEVEL[plan.level] ?? plan.level} · {plan.title} <span className="font-normal text-olive-mute">V{plan.version} · {plan.startDate}～{plan.endDate}</span></summary><p className="mt-2 whitespace-pre-wrap text-[12px] leading-relaxed text-olive-soft">{plan.content}</p></details>)}{!data.plans.length && <p className="py-5 text-center text-[12px] text-olive-mute">确认后的计划会显示在这里。</p>}</div></section>
 
       <MonthlyReports reports={data.monthlyReports} />
+      <FamilyActionList caseId={caseId} />
 
       <section className="rounded-2xl border border-border bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><h2 className="flex items-center gap-2 text-[16px] font-bold text-olive"><CheckCircle2 size={17} />下一步行动</h2><span className="text-[11px] text-olive-mute">完成不只看签到，要有实际证据</span></div><div className="mt-3 grid gap-2 md:grid-cols-2">{data.tasks.map((task) => <article key={task.id} className="rounded-xl border border-border bg-cream/40 p-3"><div className="flex items-center gap-2"><h3 className="min-w-0 flex-1 text-[13px] font-semibold text-olive">{task.title}</h3><span className={`rounded-full px-2 py-0.5 text-[10px] ${task.status === "verified" ? "bg-mint-pale text-[#0C7064]" : "bg-butter-pale text-olive"}`}>{task.status === "verified" ? "已验收" : `截止 ${task.dueDate}`}</span></div>{task.detail && <p className="mt-2 whitespace-pre-wrap text-[11.5px] leading-relaxed text-olive-mute">{task.detail}</p>}{task.result && <p className="mt-2 rounded-lg bg-white p-2 text-[11.5px] text-[#0C7064]">验收结果：{task.result}</p>}</article>)}{!data.tasks.length && <p className="col-span-full py-5 text-center text-[12px] text-olive-mute">伴学师布置行动后会显示在这里。</p>}</div></section>
 

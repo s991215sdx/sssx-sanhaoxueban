@@ -10,6 +10,8 @@ import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
 import { getTutorReportAccess } from "./tutorAccess";
 import { canAccessUser } from "./tenant";
+import { getCampusReportKinds } from "./campusReports";
+import { campusResultAllowed } from "@contracts/campusReports";
 import {
   MBTI_QUESTIONS,
   DISC_QUESTIONS,
@@ -1187,11 +1189,11 @@ export const assessmentRouter = createRouter({
   latest: authedQuery.query(async ({ ctx }) => {
     const userId = ctx.user.id;
     const db = getDb();
-    const rows = await db
-      .select()
-      .from(assessmentResults)
-      .where(eq(assessmentResults.userId, userId))
-      .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id));
+    const [rows, campusReportKinds] = await Promise.all([
+      db.select().from(assessmentResults).where(eq(assessmentResults.userId, userId)).orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id)),
+      getCampusReportKinds(db, userId),
+    ]);
+    const completedKinds = [...new Set(rows.map((r) => r.kind))];
     const latest: {
       mbti?: MbtiResult;
       disc?: DiscResult;
@@ -1224,6 +1226,7 @@ export const assessmentRouter = createRouter({
       raw: { kind: string; answers: unknown; createdAt: Date }[];
     } = { raw: [], discParents: [], familyParents: [] };
     for (const row of rows) {
+      if (!campusResultAllowed(row.kind, campusReportKinds)) continue;
       if (row.kind === "discparent") {
         // 家长版 DISC 可多次/多人填写，全部收集
         const a = row.answers as { label?: string } | null;
@@ -1272,7 +1275,7 @@ export const assessmentRouter = createRouter({
       latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
       if (latest.mbti && latest.disc && latest.e3 && latest.multi && latest.multi5 && latest.anchor && latest.holland && latest.mental) break;
     }
-    return latest;
+    return { ...latest, campusReportKinds, completedKinds };
   }),
 
   /**
@@ -1294,6 +1297,9 @@ export const assessmentRouter = createRouter({
       if (!allowed) {
         throw new TRPCError({ code: "FORBIDDEN", message: "没有查看该学员报告的权限" });
       }
+    }
+    if ((await getCampusReportKinds(db, userId)) !== null) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "校园版未开放家庭教育报告" });
     }
     const rows = await db
       .select({

@@ -198,7 +198,8 @@ export function coachingScenarioLabel(key: string): string {
   const item = COACHING_SCENARIOS.find((scenario) => scenario.key === key);
   return item ? `${item.key} ${item.name}` : key;
 }
-export const HANDOFF_TYPES = ["H1", "H2", "H3", "H4", "H5"] as const;
+/** H5 为早期改派记录保留兼容；新记录统一写 REASSIGN。 */
+export const HANDOFF_TYPES = ["H1", "H2", "H3", "H4", "H5", "REASSIGN"] as const;
 
 export const COACHING_EXCEPTION_SEVERITIES = ["S1", "S2", "S3", "S4"] as const;
 export type CoachingExceptionSeverity = (typeof COACHING_EXCEPTION_SEVERITIES)[number];
@@ -312,7 +313,7 @@ export function validateSessionPhase(input: {
 }): string | null {
   if (!input.hasSupervision) return "每次到店都必须保留督学记录";
   if (input.phase === "early" && (!input.hasCoachUnit || input.format !== "one_to_one")) {
-    return "前三个月每次均为一对一教练课＋督学";
+    return "前三个月须安排一对一教练课与督学，不能仅安排督学";
   }
   if (input.phase === "late" && !["one_to_one", "supervision"].includes(input.format) && (!input.lateChangeReason?.trim() || !input.lateChangeConfirmedBy)) {
     return "后三个月改为小组／学习坊须填写变更原因与确认人";
@@ -397,7 +398,7 @@ export function nextShanghaiOpening(now: Date, quietStart: string, quietEnd: str
 export type CoachingOperationCategory = "overdue" | "today" | "upcoming" | "risk";
 export type CoachingOperationItem = {
   key: string;
-  kind: "task" | "handoff" | "quality" | "exception" | "session" | "supervision";
+  kind: "task" | "handoff" | "quality" | "exception" | "session" | "supervision" | "record" | "plan" | "crisis";
   title: string;
   caseId: number;
   studentName: string;

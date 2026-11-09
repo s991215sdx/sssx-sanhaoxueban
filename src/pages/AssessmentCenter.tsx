@@ -24,6 +24,7 @@ import ZhihuiSuite from "@/components/assessment/ZhihuiSuite";
 import { isE3V37Result, isE3V37ParentResult } from "@contracts/assessments";
 import { isMentalV2 } from "@contracts/mentalHealth";
 import { expandAssessKinds } from "@contracts/invite";
+import { campusResultAllowed } from "@contracts/campusReports";
 import { ClipboardCheck, Sparkles, Target, Compass, Rocket, RotateCcw, GraduationCap, LayoutGrid, Pointer, Users } from "lucide-react";
 
 /** 测评中心管理的测评项。anchor/holland/mental/discparent 为并行任务新增的选做测评；v246 心理健康拆为四套量表四个独立测评。 */
@@ -343,6 +344,9 @@ export default function AssessmentCenter() {
     else setTesting(null);
   };
   const hasResult = (kind: TestKind) => {
+    if (access?.campus && Array.isArray(data?.completedKinds)) {
+      return data.completedKinds.includes(kind);
+    }
     const def = TESTS.find((t) => t.kind === kind);
     return def?.doneOf ? def.doneOf(latest) : !!latest[kind];
   };
@@ -355,8 +359,10 @@ export default function AssessmentCenter() {
   const released: string[] = Array.isArray(profile?.releasedAssessments) ? (profile!.releasedAssessments as string[]) : [];
   const restricted = !!access?.enabled && !(access?.kinds ?? []).includes("all");
   const visibleSet = restricted ? new Set<string>(expandAssessKinds([...(access?.kinds ?? []), ...released]) ?? []) : null;
-  const visibleTests = visibleSet ? TESTS.filter((t) => visibleSet.has(t.kind)) : TESTS;
-  const hiddenCount = TESTS.length - visibleTests.length;
+  const campusKinds = new Set<TestKind>(["e3", "mbti", "disc", "subject4d", "holland", "mental", "mentalsdq", "mentalpa", "scl90"]);
+  const channelTests = visibleSet ? TESTS.filter((t) => visibleSet.has(t.kind)) : TESTS;
+  const visibleTests = access?.campus ? channelTests.filter((t) => campusKinds.has(t.kind)) : channelTests;
+  const hiddenCount = (access?.campus ? TESTS.filter((t) => campusKinds.has(t.kind)).length : TESTS.length) - visibleTests.length;
 
   if (isLoading) {
     return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
@@ -378,15 +384,13 @@ export default function AssessmentCenter() {
      老用户/后台建号不限制（fail-open）。
      学习力测评的套件口径 = 渠道可勾选的四种核心测评（MBTI/DISC/E3/智能五项）；
      心理健康A版在向导内可跳过、且不是渠道可单独勾选的种类，不计入门槛。 */
-  const suiteVisible = !visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k));
+  const suiteVisible = !access?.campus && (!visibleSet || ["mbti", "disc", "e3", "multi5"].every((k) => visibleSet.has(k)));
   /* v194：选科组合门槛 = 学科四维 + 霍兰德（核心两项；职业锚/多元智能为可选增量，校园渠道可不含） */
   const zhihuiSuiteVisible = !visibleSet || ["subject4d", "holland"].every((k) => visibleSet.has(k));
-  /* v238：家庭教育测评入口与前两个组合并列常驻。
-     只有校园渠道仍按套餐走——学校没安排家长问卷，不该被系统塞一份进去；
-     普通渠道与机构版一律显示，家长卷本身走公开页、不占学生测评名额。 */
-  const familySuiteVisible = !access?.campus || !visibleSet || visibleSet.has("familystudent");
-  /* v191：学习力系列任一测评在套餐内 → 展示「综合学习力报告」入口；套餐不含学习力（如校园选科版）则隐藏，避免引导做未开放测评 */
-  const suiteGranted = !visibleSet || ["mbti", "disc", "e3"].some((k) => visibleSet.has(k));
+  /* 校园目录只保留策划约定的学习力、选科及升学、心理健康三类。 */
+  const familySuiteVisible = !access?.campus && (!visibleSet || visibleSet.has("familystudent"));
+  /* 校园按单项报告授权，不展示机构版综合学习力入口。 */
+  const suiteGranted = !access?.campus && (!visibleSet || ["mbti", "disc", "e3"].some((k) => visibleSet.has(k)));
 
   return (
     <div className="space-y-4">
@@ -593,7 +597,7 @@ export default function AssessmentCenter() {
           </button>
           )}
           {/* V72：升学指导综合报告（霍兰德×职业锚×MBTI×DISC×五项智能）；v192：纯选科套餐（如校园模式）不展示 */}
-          {(!zhihuiSuiteVisible || suiteVisible) && (
+          {!access?.campus && (!zhihuiSuiteVisible || suiteVisible) && (
           <button
             onClick={() => navigate("/report-detail?tab=guidance")}
             className="paper-card accent-l flex items-center gap-3.5 border-lime p-5 text-left shadow-sm hover:bg-butter-pale/40"
@@ -631,6 +635,7 @@ export default function AssessmentCenter() {
           {visibleTests.map((t) => {
             const done = hasResult(t.kind);
             const core = done ? t.summary?.(latest) : null;
+            const reportGranted = !access?.campus || campusResultAllowed(t.kind, data?.campusReportKinds ?? []);
             return (
               <div key={t.kind} className="paper-card p-5">
                 <div className="flex items-center justify-between gap-2">
@@ -656,10 +661,12 @@ export default function AssessmentCenter() {
                   {done ? (
                     <>
                       <button
+                        disabled={!reportGranted}
+                        title={!reportGranted ? "老师开放后，学生和家长即可查看" : undefined}
                         onClick={() => navigate(`/report-detail?tab=${t.tab}`)}
-                        className="flex-1 rounded-xl bg-brand py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep"
+                        className="flex-1 rounded-xl bg-brand py-2 text-[13px] font-semibold text-cream hover:bg-lime-deep disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        查看报告
+                        {reportGranted ? "查看报告" : "待老师开放"}
                       </button>
                       <button
                         onClick={() => openTest(t.kind)}

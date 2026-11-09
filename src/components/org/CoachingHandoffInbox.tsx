@@ -7,7 +7,8 @@ const TYPE_LABEL: Record<string, string> = {
   H2: "阶段服务交接",
   H3: "课后督学交接",
   H4: "结课与回访交接",
-  H5: "人员改派",
+  H5: "人员改派（历史）",
+  REASSIGN: "人员改派",
 };
 
 /** 新督学即使尚未进入主档名单，也能从这里查看必要背景并完成接收。 */
@@ -46,7 +47,7 @@ export default function CoachingHandoffInbox() {
     </header>
     <div className="divide-y divide-border px-4">
       {incoming.map(({ handoff, studentName, goal, currentSituation, planSummary }) => {
-        const isReassignment = handoff.type === "H5";
+        const isReassignment = handoff.type === "H5" || handoff.type === "REASSIGN";
         const confirming = confirmId === handoff.id;
         return <article key={handoff.id} className="py-4">
           <div className="flex flex-wrap items-start gap-2">

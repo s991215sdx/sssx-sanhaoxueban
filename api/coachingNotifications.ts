@@ -98,20 +98,21 @@ export async function deliverDueCoachingNotifications(db: Db, me: Recipient, at 
   return { delivered: pending.length + sent.length };
 }
 
-export async function coachingNotificationInbox(db: Db, me: Recipient) {
-  await deliverDueCoachingNotifications(db, me);
+export async function coachingNotificationInbox(db: Db, me: Recipient, at = new Date()) {
+  await deliverDueCoachingNotifications(db, me, at);
   const items = await db.select().from(coachingNotifications).where(eq(coachingNotifications.recipientId, me.id))
     .orderBy(desc(coachingNotifications.id)).limit(100);
   return { items, unread: items.filter((row) => row.status === "delivered" && !row.readAt).length,
     channelNote: "当前仅提供站内通知，不代表已发送微信或短信。待发送通知会在静默时段结束后、打开通知中心时投递。" };
 }
 
-export async function markCoachingNotificationRead(db: Db, me: Recipient, notificationId: number) {
-  await deliverDueCoachingNotifications(db, me);
+export async function markCoachingNotificationRead(db: Db, me: Recipient, notificationId: number, at = new Date()) {
+  const now = coachingNotificationTime(at);
+  await deliverDueCoachingNotifications(db, me, now);
   const [row] = await db.select().from(coachingNotifications).where(eq(coachingNotifications.id, notificationId)).limit(1);
   if (!row || row.recipientId !== me.id) throw new TRPCError({ code: "NOT_FOUND", message: "通知不存在" });
   if (row.status !== "delivered") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "通知尚未送达，不能提前标记已读" });
-  if (!row.readAt) await db.update(coachingNotifications).set({ readAt: new Date(), updatedAt: new Date() })
+  if (!row.readAt) await db.update(coachingNotifications).set({ readAt: now, updatedAt: now })
     .where(and(eq(coachingNotifications.id, row.id), eq(coachingNotifications.recipientId, me.id)));
   return { ok: true as const };
 }
