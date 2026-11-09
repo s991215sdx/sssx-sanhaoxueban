@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router";
-import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2, Coins } from "lucide-react";
+import { Home, BookOpen, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2, Coins, Users, NotebookPen } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -153,9 +153,11 @@ export default function Layout({ children }: { children: ReactNode }) {
   const campusMgr = isCampus && user?.orgId != null && (isAdmin || isJiaowu);
   /* v220.5：超管的「伴学工作台」称谓不跟校园版走 */
   const campusTutor = isCampus && user?.orgId != null;
-  /* 机构版与校园伴学师均可从左侧进入测评；独立陪跑仅机构版开放。 */
+  /* 工作台各功能统一进入桌面左侧栏；校园管理者沿用自己的控制台菜单。 */
   const showTutorAssessment = showCoach && !campusMgr && user?.orgId != null;
   const showTutorCoaching = showCoach && !campusMgr && user?.orgId != null && schoolCtx?.campus === false;
+  const showTutorTraining = showCoach && !campusMgr && !campusTutor;
+  const showTutorLibrary = showCoach && !campusMgr && schoolCtx?.services?.library !== false;
   /* 机构管理员直达积分分配；校园版无积分，平台超管仍走机构管理中的总积分调整。 */
   const showOrgPoints = isAdmin && !isPlatformAdmin && user?.orgId != null && schoolCtx?.edition === "org" && schoolCtx.campus === false;
   /* v229：资料库功能被平台超管关闭时，学校版菜单同步隐藏该入口 */
@@ -172,6 +174,8 @@ export default function Layout({ children }: { children: ReactNode }) {
     return (cur ?? first ?? "progress") === key;
   };
   const tutorSection = location.pathname === "/tutor" ? new URLSearchParams(location.search).get("section") : null;
+  const tutorStudentsActive = location.pathname === "/tutor" && (tutorSection === null || tutorSection === "students");
+  const tutorTrainingActive = tutorSection === "training";
   const orgPointsActive = tutorSection === "points";
   const orgAssessmentActive = tutorSection === "assessments";
   const orgCoachingActive = tutorSection === "coaching";
@@ -250,19 +254,17 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && "陪跑反馈"}
             </NavLink>
           )}
-          {/* v220.3：学校版管理者隐藏「伴学工作台」，侧边栏直接列出学校版控制台菜单（与回收站并列） */}
+          {/* 学员管理是工作台主页；校园管理者仍使用学校控制台菜单。 */}
           {showCoach && !campusMgr && (
             <NavLink
               to="/tutor"
-              title={collapsed ? (campusTutor ? "指导老师工作台" : "伴学工作台") : undefined}
-              className={({ isActive }) =>
-                `group flex items-center rounded-xl transition-colors ${
-                  collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-                } ${isActive && !orgPointsActive && !orgAssessmentActive && !orgCoachingActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
-              }
+              title={collapsed ? (campusTutor ? "指导老师工作台" : "学员管理") : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${tutorStudentsActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
             >
-              <GraduationCap size={18} strokeWidth={2.2} />
-              {!collapsed && (campusTutor ? "指导老师工作台" : "伴学工作台")}
+              <Users size={18} strokeWidth={2.2} />
+              {!collapsed && (campusTutor ? "指导老师工作台" : "学员管理")}
             </NavLink>
           )}
           {showTutorAssessment && (
@@ -299,6 +301,30 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <Coins size={18} strokeWidth={2.2} />
               {!collapsed && "积分管理"}
+            </NavLink>
+          )}
+          {showTutorTraining && (
+            <NavLink
+              to="/tutor?section=training"
+              title={collapsed ? "陪跑训练专栏" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${tutorTrainingActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <NotebookPen size={18} strokeWidth={2.2} />
+              {!collapsed && "陪跑训练专栏"}
+            </NavLink>
+          )}
+          {showTutorLibrary && (
+            <NavLink
+              to="/library"
+              title={collapsed ? "资料库" : undefined}
+              className={({ isActive }) => `group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <BookOpen size={18} strokeWidth={2.2} />
+              {!collapsed && "资料库"}
             </NavLink>
           )}
           {campusMgr &&

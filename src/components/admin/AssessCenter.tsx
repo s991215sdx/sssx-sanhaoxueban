@@ -558,3 +558,7 @@ export default function AssessCenter({ canManage, onOpenReport }: { canManage: b
     </div>
   );
 }
+
+/* 机构版复用同一套目录说明与报告效果图，确保两个版本的测评中心视觉一致。 */
+export { CATALOG, KIND_LABEL, ShotSwitch };
+export type { CatalogItem };

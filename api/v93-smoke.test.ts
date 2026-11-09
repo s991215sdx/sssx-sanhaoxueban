@@ -18,10 +18,13 @@ describe("v93 去留白提亮", () => {
     if (!src.includes("2xl:max-w-[1560px]")) throw new Error("缺 2xl:max-w-[1560px]");
   });
 
-  it("后台与伴学工作台 tab 条统一淡绿底", () => {
+  it("后台与伴学工作台 tab 条统一白底，工作台仅在手机端显示", () => {
     for (const f of ["src/pages/Admin.tsx", "src/pages/Tutor.tsx"]) {
       const src = read(f);
-      if (!/flex rounded-xl (border .* )?bg-white p-1/.test(src)) throw new Error(f + " tab 条非白底");
+      if (!/flex[^"\n]*rounded-xl[^"\n]*bg-white p-1/.test(src)) throw new Error(f + " tab 条非白底");
+      if (f === "src/pages/Tutor.tsx" && !/bg-white p-1 md:hidden/.test(src)) {
+        throw new Error("伴学工作台桌面页签未收进左侧栏，或手机页签被误删");
+      }
     }
   });
 });

@@ -109,6 +109,17 @@ export default function Tutor() {
     || (!campusView && requestedSection === "training")
     || (orgView && (requestedSection !== "points" || user?.role === "admin"));
   const section: TutorSection = canOpenSection ? requestedSection : "students";
+  const sectionTitle = section === "assessments" ? "测评中心"
+    : section === "coaching" ? "陪跑中心"
+      : section === "points" ? "积分管理"
+        : section === "training" ? "陪跑训练专栏"
+          : campusView ? "指导老师工作台" : "学员管理";
+  const sectionDescription = section === "assessments"
+    ? "点选测评并推送给学员，查看报告，把结果转化为目标、计划与持续陪跑。"
+    : section === "coaching" ? "围绕明确目标、评估现状、定制计划与督学陪跑，沉淀每一次服务过程。"
+      : section === "points" ? "管理机构积分池与伴学师个人积分，分配、回收和流水一目了然。"
+        : section === "training" ? "按学员问题匹配训练方案，结合 AI 陪练与三阶九能训练内容。"
+          : "名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。";
   const setSection = (next: TutorSection) => setSearchParams((prev) => {
     const params = new URLSearchParams(prev);
     if (next === "students") params.delete("section");
@@ -146,24 +157,22 @@ export default function Tutor() {
       <header>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-[22px] font-bold tracking-tight text-olive">{campusView ? "指导老师工作台" : "伴学工作台"}</h1>
-            <p className="mt-1 text-[13px] text-olive-mute">
-              名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。
-            </p>
+            <h1 className="text-[22px] font-bold tracking-tight text-olive">{sectionTitle}</h1>
+            <p className="mt-1 text-[13px] text-olive-mute">{sectionDescription}</p>
           </div>
-          {/* v229：资料库功能被平台超管关闭时隐藏入口（服务端同步 403） */}
+          {/* 桌面资料库在全局左侧栏；手机端保留本入口。 */}
           {schoolCtx?.services?.library !== false && (
             <button
               type="button"
               onClick={() => navigate("/library")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60 md:hidden"
             >
               <LibraryIcon size={14} /> 资料库
             </button>
           )}
         </div>
-        {/* 桌面端的测评中心、陪跑中心收进全局左侧栏；手机端保留完整页签。 */}
-        <div className="mt-3 flex rounded-xl border border-[#1E3530]/10 bg-white p-1 flex-wrap gap-1">
+        {/* 桌面全部入口收进全局左侧栏；手机端保留完整页签。 */}
+        <div className="mt-3 flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1 md:hidden">
           {(
             [
               { key: "students", label: "学员管理", visible: true },
@@ -178,8 +187,7 @@ export default function Tutor() {
               type="button"
               onClick={() => setSection(t.key)}
               className={`min-h-10 flex-1 rounded-lg px-3 py-2 text-[12px] font-semibold whitespace-nowrap transition ${
-                t.key === "assessments" || t.key === "coaching" ? "md:hidden" : ""
-              } ${section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"}`}
+                section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"}`}
             >
               {t.label}
             </button>
