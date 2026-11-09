@@ -22,6 +22,22 @@ const CATALOG_ALIAS: Record<string, string> = {
   mental: "mental-c",
   scl90: "mental-d",
 };
+const SINGLE_CATALOG_OVERRIDE: Record<string, Partial<CatalogItem>> = {
+  familystudent: {
+    purpose: "从学生视角呈现家庭沟通台阶、安全感与冲突场景，可与家长卷进行对照",
+    crowd: "学生",
+    minutes: 4,
+    why: ["先看清孩子视角下的家庭互动，再决定如何改善沟通"],
+    gain: ["学生视角的家庭关系测评结果", "亲子沟通台阶与冲突场景提示", "与家长卷对照，定位双方认知差异"],
+  },
+  familyparent: {
+    purpose: "从家长视角呈现家庭沟通、管教方式与冲突场景，可与学生卷进行对照",
+    crowd: "家长（爸爸、妈妈可分别填写）",
+    minutes: 7,
+    why: ["先看清家长视角下的家庭互动，再决定如何改善沟通"],
+    gain: ["家长视角的家庭关系测评结果", "家庭沟通、管教方式与冲突场景提示", "与学生卷对照，定位双方认知差异"],
+  },
+};
 const CATEGORY_TABS = [
   { key: "", label: "全部" },
   { key: "学习力", label: "学习力测评" },
@@ -33,7 +49,14 @@ const CATEGORY_TABS = [
 /** 使用校园版同一份目录物料；机构版的名称、计价与问卷范围仍以服务端目录为准。 */
 function catalogFor(item: AssessmentSelection): CatalogItem {
   const source = CATALOG.find((entry) => entry.key === (CATALOG_ALIAS[item.key] ?? item.key));
-  if (source) return { ...source, key: item.key, name: item.title, kinds: item.kinds };
+  if (source) return {
+    ...source,
+    key: item.key,
+    name: item.title,
+    kinds: item.kinds,
+    combo: item.kinds.length > 1,
+    ...(SINGLE_CATALOG_OVERRIDE[item.key] ?? {}),
+  };
   return {
     key: item.key,
     combo: item.kinds.length > 1,
