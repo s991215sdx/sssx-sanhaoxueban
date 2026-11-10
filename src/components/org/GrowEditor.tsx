@@ -108,7 +108,6 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
     const parts = [situationAuto, situationNote.trim()].filter(Boolean);
     return parts.join(situationNote.trim() && situationAuto ? `\n补充观察：${situationNote.trim()}` : "");
   }, [situationAuto, situationNote]);
-  const planText = useMemo(() => composePlanText(form, COURSE_OUTLINE), [form]);
 
   const weeklyFilled = form.weekly.filter((w) => w.item.trim());
   const formValid = scenarios.length > 0
@@ -119,7 +118,9 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
     && end >= start && (!removingScenario || scenarioChangeReason.trim().length >= 2);
   const save = () => {
     if (!formValid) return;
-    const payload = { scenarios, goal: goalText || "（待补充目标）", currentSituation: situationText || "（到店观察后补充现状评估）", planSummary: planText || "（待补充计划）", growForm: { ...form, subjects: form.subjects.filter((s) => s.name.trim()), weekly: weeklyFilled, exams: form.exams.filter((e) => e.name.trim()) }, serviceStart: start, serviceEnd: end };
+    /* 已勾选但未单独设置的课程，按默认频次/形式补齐后再合成与入库 */
+    const coursePlans = form.courses.map((c) => form.coursePlans.find((p) => p.course === c) ?? { course: c, ...defaultCoursePlan(c) });
+    const payload = { scenarios, goal: goalText || "（待补充目标）", currentSituation: situationText || "（到店观察后补充现状评估）", planSummary: composePlanText({ ...form, coursePlans }, COURSE_OUTLINE) || "（待补充计划）", growForm: { ...form, coursePlans, subjects: form.subjects.filter((s) => s.name.trim()), weekly: weeklyFilled, exams: form.exams.filter((e) => e.name.trim()) }, serviceStart: start, serviceEnd: end };
     if (data) update.mutate({ caseId: data.coachingCase.id, scenarioChangeReason: scenarioChangeReason || undefined, ...payload });
     else create.mutate({ studentUserId, capacityOverrideReason: undefined, ...payload });
   };
