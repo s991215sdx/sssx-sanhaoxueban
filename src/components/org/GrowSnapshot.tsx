@@ -1,5 +1,5 @@
 import { ArrowRight, ClipboardCheck, Compass, Target, TrendingUp } from "lucide-react";
-import { parseGrowForm } from "./growPlan";
+import { courseGoal, parseGrowForm } from "./growPlan";
 import type { CoachingDetail } from "./coachingTypes";
 
 const LEVEL: Record<string, string> = { term: "学期", month: "月", week: "周", day: "日" };
@@ -42,7 +42,7 @@ export default function GrowSnapshot({ data, onEdit, onOpenCoaching }: {
     </GrowCard>
     <GrowCard letter="O" title="定制计划" subtitle="学期—月—周—日，措施经确认后执行" tone="amber" icon={<Compass size={17} />}>
       {growForm ? <div className="space-y-2">
-        {growForm.courses.length > 0 && <div className="flex flex-wrap items-center gap-1.5"><span className="text-[10.5px] text-olive-mute">策略·课程</span>{growForm.courses.map((c) => <span key={c} className="rounded-full bg-butter-pale px-2 py-0.5 text-[10.5px] font-semibold text-[#9A7622]">{c}</span>)}</div>}
+        {growForm.courses.length > 0 && <div className="space-y-1"><span className="text-[10.5px] text-olive-mute">策略·课程</span><div className="flex flex-wrap gap-1.5">{growForm.courses.map((c) => { const goal = courseGoal(c); const plan = growForm.coursePlans.find((p) => p.course === c); return <span key={c} className="rounded-full bg-butter-pale px-2 py-0.5 text-[10.5px] font-semibold text-[#9A7622]">{c}{goal ? ` · ${goal}` : ""}{plan && (plan.frequency || plan.format) ? `〔${[plan.frequency, plan.format].filter(Boolean).join(" · ")}〕` : ""}</span>; })}</div></div>}
         {growForm.strategyNote && <p className="text-[11px] leading-relaxed text-olive-soft">{growForm.strategyNote}</p>}
         {growForm.weekly.filter((w) => w.item).length > 0 && <div className="space-y-1"><span className="text-[10.5px] text-olive-mute">衡量·每周修正项</span>{growForm.weekly.filter((w) => w.item).slice(0, 4).map((w, index) => <div key={index} className="flex items-baseline gap-1.5 text-[11px]"><span className="min-w-0 flex-1 text-olive-soft">· {w.item}</span>{w.metric && <span className="shrink-0 font-semibold text-[#0C7064]">{w.metric}</span>}</div>)}</div>}
         {growForm.exams.filter((e) => e.name).length > 0 && <div className="space-y-1"><span className="text-[10.5px] text-olive-mute">衡量·大考成绩</span>{growForm.exams.filter((e) => e.name).slice(0, 3).map((e, index) => <div key={index} className="text-[11px] text-olive-soft">· {e.name}{e.date ? `（${e.date}）` : ""}：<b className="text-olive">{e.scores || "待记录"}</b></div>)}</div>}
