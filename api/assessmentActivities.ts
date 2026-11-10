@@ -253,6 +253,19 @@ export async function myAssessmentAssignments(db: Db, studentUserId: number) {
     .orderBy(desc(assessmentAssignments.id));
 }
 
+/** v272：学员端「已完成任务」历史——myAssignments 只查进行中活动，做完即消失；
+ * 这里按完成时间倒序返回最近完成的一批（不限活动状态，排除已取消），让学员端保留完成记录。 */
+export async function myCompletedAssignments(db: Db, studentUserId: number, limit = 10) {
+  return db.select({ assignment: assessmentAssignments, title: assessmentActivityItems.title, selectionKey: assessmentActivityItems.selectionKey,
+    activityTitle: assessmentActivities.title, dueAt: assessmentActivities.dueAt, tutorName: users.name })
+    .from(assessmentAssignments).innerJoin(assessmentActivityItems, eq(assessmentAssignments.activityItemId, assessmentActivityItems.id))
+    .innerJoin(assessmentActivities, eq(assessmentActivityItems.activityId, assessmentActivities.id))
+    .leftJoin(users, eq(assessmentAssignments.tutorUserId, users.id))
+    .where(and(eq(assessmentAssignments.studentUserId, studentUserId), eq(assessmentAssignments.status, "completed")))
+    .orderBy(desc(assessmentAssignments.completedAt), desc(assessmentAssignments.id))
+    .limit(limit);
+}
+
 export async function startAssessmentAssignment(db: Db, studentUserId: number, assignmentId: number) {
   return db.transaction(async (tx) => {
     const [row] = await tx.select({ assignment: assessmentAssignments, activityStatus: assessmentActivities.status, dueAt: assessmentActivities.dueAt })

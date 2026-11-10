@@ -6,7 +6,7 @@ import { isPlatformAdmin } from "./tenant";
 import { ASSESSMENT_PACKAGES, COURSE_CATALOG, DEFAULT_ORG_POINTS, fullCoverageCredits, recommendedOrgPoints, selectionFor } from "@contracts/orgService";
 import { INVITE_ASSESS_KINDS } from "@contracts/invite";
 import { adjustOrgPoints, allocateOrgPoints, initializeOrgPoints, pointOverview, reclaimOrgPoints, walletBalance } from "./orgPoints";
-import { cancelAssessmentItem, cancelAssessmentStudent, createAssessmentActivity, listAssessmentActivities, listAssessmentActivityEvents, myAssessmentAssignments, remindAssessmentActivity, rescheduleAssessmentActivity, startAssessmentAssignment } from "./assessmentActivities";
+import { cancelAssessmentItem, cancelAssessmentStudent, createAssessmentActivity, listAssessmentActivities, listAssessmentActivityEvents, myAssessmentAssignments, myCompletedAssignments, remindAssessmentActivity, rescheduleAssessmentActivity, startAssessmentAssignment } from "./assessmentActivities";
 import { listAssessmentReports } from "./assessmentReports";
 import { requireOrgStaff } from "./orgAccess";
 
@@ -85,6 +85,12 @@ export const orgServiceRouter = createRouter({
   myAssignments: authedQuery.query(({ ctx }) => {
     if (ctx.user.role !== "user") throw new TRPCError({ code: "FORBIDDEN", message: "请以学员身份查看测评任务" });
     return myAssessmentAssignments(getDb(), ctx.user.id);
+  }),
+
+  /** v272：已完成任务历史（学员端任务区保留完成记录，不受活动状态过滤影响）。 */
+  myAssignmentHistory: authedQuery.query(({ ctx }) => {
+    if (ctx.user.role !== "user") throw new TRPCError({ code: "FORBIDDEN", message: "请以学员身份查看测评任务" });
+    return myCompletedAssignments(getDb(), ctx.user.id);
   }),
 
   startAssignment: authedQuery.input(z.object({ assignmentId: z.number().int().positive() })).mutation(({ ctx, input }) => {

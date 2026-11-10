@@ -262,6 +262,8 @@ export default function AssessmentCenter() {
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.assessment.latest.useQuery();
   const { data: assignments = [] } = trpc.orgService.myAssignments.useQuery();
+  // v272：已完成任务历史——进行中的活动做完后状态变 completed 会被 myAssignments 过滤掉，这里单独保留记录
+  const { data: assignmentHistory = [] } = trpc.orgService.myAssignmentHistory.useQuery();
   const [testing, setTesting] = useState<TestKind | null>(null);
   // V56/v181：学习力测评（一条龙向导）
   const [suiteOpen, setSuiteOpen] = useState(false);
@@ -285,6 +287,7 @@ export default function AssessmentCenter() {
       setSuiteOpen(false); setZhihuiOpen(false); setFamilyOpen(false);
       setTesting(result.kind as TestKind);
       await utils.orgService.myAssignments.invalidate();
+      await utils.orgService.myAssignmentHistory.invalidate();
     },
   });
   const openTest = (kind: TestKind) => {
@@ -300,6 +303,7 @@ export default function AssessmentCenter() {
   const refreshResults = () => {
     void utils.assessment.latest.invalidate();
     void utils.orgService.myAssignments.invalidate();
+    void utils.orgService.myAssignmentHistory.invalidate();
   };
   useEffect(() => {
     const q = params.get("queue");
@@ -574,6 +578,29 @@ export default function AssessmentCenter() {
             })}
           </div>
           {startTask.error && <p role="alert" className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[11.5px] text-red-700">{startTask.error.message}</p>}
+        </section>
+      )}
+
+      {/* v272：已完成任务历史——活动整体完成后 myAssignments 不再返回，这里保留最近完成记录 */}
+      {!testing && assignmentHistory.length > 0 && (
+        <section className="rounded-2xl border border-border bg-white/70 p-4 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="flex-1 text-[16px] font-bold text-olive">已完成的测评任务</h2>
+            <span className="rounded-full bg-mint-pale px-2.5 py-1 text-[11px] font-semibold text-[#0C7064]">最近完成 {assignmentHistory.length} 项</span>
+          </div>
+          <div className="mt-3 space-y-2">
+            {assignmentHistory.map((row) => {
+              const def = TESTS.find((test) => test.kind === row.assignment.kind);
+              const doneAt = row.assignment.completedAt ? new Date(row.assignment.completedAt) : null;
+              return <div key={row.assignment.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-white px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12.5px] font-semibold text-olive">{def?.name ?? row.title}<span className="ml-1.5 rounded-full bg-mint-pale px-2 py-0.5 text-[10px] font-medium text-[#0C7064]">已完成 ✓</span></div>
+                  <div className="mt-0.5 text-[10.5px] text-olive-mute">{row.activityTitle} · {row.tutorName ?? "伴学师"}{doneAt ? ` · 完成于 ${doneAt.toLocaleDateString("zh-CN")}` : ""}</div>
+                </div>
+                <button type="button" onClick={() => navigate("/report-detail")} className="rounded-lg border border-[#0C7064]/30 px-3 py-2 text-[11.5px] font-semibold text-[#0C7064] hover:bg-mint-pale">查看报告</button>
+              </div>;
+            })}
+          </div>
         </section>
       )}
 
