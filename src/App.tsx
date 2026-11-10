@@ -86,18 +86,11 @@ function BasicsGate({ children }: { children: React.ReactNode }) {
   if (isLoading) return <FullScreenLoading text="正在打开你的学习档案…" />;
   if (!profile || isPlaceholderName(profile.name)) {
     return (
+      // v271：标题卡片由 ProfileStage 自带，这里不再重复渲染「先认识一下你」
       <div className="mx-auto max-w-xl px-4 py-10">
-        <div className="paper-card p-6">
-          <h2 className="text-lg font-bold text-olive">先认识一下你</h2>
-          <p className="mt-1 text-[14px] text-olive-soft">
-            测评需要基于你的基本情况才能给出贴合的解读。花两分钟填好基本信息，就能开始测评。
-          </p>
-        </div>
-        <div className="mt-4">
-          {/* v181e：基本信息完成后落到测评中心（不带 queue 参数），由学员自己选要做的测评组合；
-             用整页跳转而非 reload，避免重新触发注册套餐的连测队列。 */}
-          <ProfileStage onNext={() => window.location.replace("/assessments")} />
-        </div>
+        {/* v181e：基本信息完成后落到测评中心（不带 queue 参数），由学员自己选要做的测评组合；
+           用整页跳转而非 reload，避免重新触发注册套餐的连测队列。 */}
+        <ProfileStage onNext={() => window.location.replace("/assessments")} />
       </div>
     );
   }

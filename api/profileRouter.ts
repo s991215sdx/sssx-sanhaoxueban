@@ -366,6 +366,11 @@ export const profileRouter = createRouter({
       } else {
         await db.insert(studentProfile).values({ userId, ...values });
       }
+      // v271：档案姓名与账号姓名同源。不同步时，头像、伴学名单、测评活动里的学员快照
+      // 会一直停留在注册占位名（如「同学0123」），伴学师端看到的也是占位名。
+      if (ctx.user.name !== input.name) {
+        await db.update(users).set({ name: input.name }).where(eq(users.id, userId));
+      }
       return { ok: true as const };
     }),
 
