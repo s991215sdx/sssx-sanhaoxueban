@@ -39,8 +39,19 @@ const monthlyContent = z.object({ caseId: id, month: monthText,
   taskExecution: z.string().trim().min(2).max(12000), learningMethod: z.string().trim().min(2).max(12000),
   habitFamily: z.string().trim().min(2).max(12000), meetingNotes: z.string().max(15000).optional(),
   nextActions: z.array(z.string().trim().min(2).max(2000)).min(1).max(3), familyAction: z.string().trim().min(2).max(4000) });
+const growFormInput = z.object({
+  purpose: z.array(z.enum(["分数提升", "综合成长"])).min(1).max(2),
+  purposeNote: z.string().trim().max(2000).default(""),
+  targetSchool: z.string().trim().max(180).default(""),
+  subjects: z.array(z.object({ name: z.string().trim().min(1).max(60), baseline: z.number().min(0).max(1000).nullable(), target: z.number().min(0).max(1000).nullable() })).max(20),
+  courses: z.array(z.string().trim().min(1).max(20)).min(1).max(5),
+  strategyNote: z.string().trim().max(4000).default(""),
+  weekly: z.array(z.object({ item: z.string().trim().min(1).max(200), metric: z.string().trim().max(200).default("") })).min(1).max(12),
+  exams: z.array(z.object({ name: z.string().trim().min(1).max(80), date: z.string().trim().max(10).default(""), scores: z.string().trim().max(2000).default("") })).max(12),
+});
 const caseInput = z.object({ studentUserId: id, scenarios: z.array(z.enum(["A", "B", "C", "D"])).min(1).max(4),
   goal: z.string().trim().min(2).max(5000), currentSituation: z.string().trim().min(2).max(8000), planSummary: z.string().trim().min(2).max(10000),
+  growForm: growFormInput.nullable().optional(),
   serviceStart: dateText, serviceEnd: dateText, capacityOverrideReason: z.string().trim().max(1000).optional() });
 const supervisionInput = z.object({ selfStudyMinutes: z.number().int().min(0).max(1440).default(0),
   alignment: z.string().max(6000).default(""), checks: z.string().max(6000).default(""), exitCheck: z.string().max(6000).default(""), followUp: z.string().max(6000).default(""),
