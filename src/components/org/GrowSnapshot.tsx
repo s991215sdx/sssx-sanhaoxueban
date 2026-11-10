@@ -1,4 +1,5 @@
 import { ArrowRight, ClipboardCheck, Compass, Target, TrendingUp } from "lucide-react";
+import { parseGrowForm } from "./growPlan";
 import type { CoachingDetail } from "./coachingTypes";
 
 const LEVEL: Record<string, string> = { term: "学期", month: "月", week: "周", day: "日" };
@@ -10,6 +11,7 @@ export default function GrowSnapshot({ data, onEdit, onOpenCoaching }: {
   onEdit?: () => void;
   onOpenCoaching?: (caseId: number) => void;
 }) {
+  const growForm = parseGrowForm(data?.coachingCase.growForm);
   const profile = data?.planning.growProfiles[0];
   const goal = profile?.studentGoal || data?.coachingCase.goal || "";
   const parentGoal = profile?.parentExpectation || "";
@@ -23,7 +25,12 @@ export default function GrowSnapshot({ data, onEdit, onOpenCoaching }: {
   const nextContact = profile?.nextContactAt ? new Date(profile.nextContactAt).toLocaleString("zh-CN") : "";
   return <div className="grid gap-4 md:grid-cols-2" aria-label="GROW 伴学四象限">
     <GrowCard letter="G" title="明确目标" subtitle="学生目标与家长期待分别呈现" tone="green" icon={<Target size={17} />}>
-      <Fact label="学生目标" value={goal} strong />
+      {growForm ? <div className="space-y-2">
+        {growForm.purpose.length > 0 && <div className="flex flex-wrap items-center gap-1.5"><span className="text-[10.5px] text-olive-mute">目的</span>{growForm.purpose.map((p) => <span key={p} className="rounded-full bg-mint-pale px-2 py-0.5 text-[10.5px] font-semibold text-[#0C7064]">{p}</span>)}{growForm.purposeNote && <span className="text-[10.5px] text-olive-soft">{growForm.purposeNote}</span>}</div>}
+        {growForm.targetSchool && <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-2 text-[11.5px]"><span className="shrink-0 text-olive-mute">升学目标</span><b className="font-semibold text-olive">{growForm.targetSchool}</b></div>}
+        {growForm.subjects.filter((s) => s.name && (s.baseline != null || s.target != null)).length > 0 && <div className="space-y-1">{growForm.subjects.filter((s) => s.name && (s.baseline != null || s.target != null)).slice(0, 5).map((s, index) => <div key={index} className="grid grid-cols-[48px_minmax(0,1fr)] gap-2 text-[11px]"><span className="text-olive-mute">{s.name}</span><span className="text-olive">{s.baseline ?? "?"} <b className="mx-1 text-[#0C7064]">→</b> {s.target ?? "?"}</span></div>)}</div>}
+        {!growForm.purpose.length && !growForm.targetSchool && !growForm.subjects.length && <p className="text-[11px] text-olive-mute">{EMPTY}</p>}
+      </div> : <Fact label="学生目标" value={goal} strong />}
       <Fact label="家长期待" value={parentGoal} />
       {profile && asSubjects(profile.targetSubjects).length > 0 && <div className="mt-3 space-y-2">{asSubjects(profile.targetSubjects).slice(0, 3).map((item, index) => <div key={index} className="grid grid-cols-[48px_minmax(0,1fr)] gap-2 text-[11px]"><span className="text-olive-mute">{item.subject}</span><span className="text-olive">{item.baseline} <b className="mx-1 text-[#0C7064]">→</b> {item.target}</span></div>)}</div>}
       <p className="mt-auto pt-3 text-[10.5px] text-olive-mute">目标须由伴学师与学生、家长分别核对</p>
@@ -34,7 +41,13 @@ export default function GrowSnapshot({ data, onEdit, onOpenCoaching }: {
       {data?.reportAllowed === false ? <p className="mt-3 rounded-lg bg-amber-50 px-2.5 py-2 text-[10.5px] text-amber-800">报告权限未开放或已到期，不以空列表代替测评结论。</p> : <p className="mt-auto pt-3 text-[10.5px] text-olive-mute">已关联 {data?.results.length ?? 0} 份可见测评结果</p>}
     </GrowCard>
     <GrowCard letter="O" title="定制计划" subtitle="学期—月—周—日，措施经确认后执行" tone="amber" icon={<Compass size={17} />}>
-      <Fact label="方案摘要" value={plan} strong />
+      {growForm ? <div className="space-y-2">
+        {growForm.courses.length > 0 && <div className="flex flex-wrap items-center gap-1.5"><span className="text-[10.5px] text-olive-mute">策略·课程</span>{growForm.courses.map((c) => <span key={c} className="rounded-full bg-butter-pale px-2 py-0.5 text-[10.5px] font-semibold text-[#9A7622]">{c}</span>)}</div>}
+        {growForm.strategyNote && <p className="text-[11px] leading-relaxed text-olive-soft">{growForm.strategyNote}</p>}
+        {growForm.weekly.filter((w) => w.item).length > 0 && <div className="space-y-1"><span className="text-[10.5px] text-olive-mute">衡量·每周修正项</span>{growForm.weekly.filter((w) => w.item).slice(0, 4).map((w, index) => <div key={index} className="flex items-baseline gap-1.5 text-[11px]"><span className="min-w-0 flex-1 text-olive-soft">· {w.item}</span>{w.metric && <span className="shrink-0 font-semibold text-[#0C7064]">{w.metric}</span>}</div>)}</div>}
+        {growForm.exams.filter((e) => e.name).length > 0 && <div className="space-y-1"><span className="text-[10.5px] text-olive-mute">衡量·大考成绩</span>{growForm.exams.filter((e) => e.name).slice(0, 3).map((e, index) => <div key={index} className="text-[11px] text-olive-soft">· {e.name}{e.date ? `（${e.date}）` : ""}：<b className="text-olive">{e.scores || "待记录"}</b></div>)}</div>}
+        {!growForm.courses.length && !growForm.weekly.some((w) => w.item) && !growForm.exams.some((e) => e.name) && <p className="text-[11px] text-olive-mute">{EMPTY}</p>}
+      </div> : <Fact label="方案摘要" value={plan} strong />}
       <div className="mt-3 space-y-1.5">{data?.plans.slice(0, 3).map((item) => <div key={item.id} className="flex items-center gap-2 rounded-lg bg-cream/60 px-2.5 py-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-butter-pale text-[10px] font-bold text-olive">{LEVEL[item.level] ?? item.level}</span><span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold text-olive">{item.title}</span><span className="text-[9.5px] text-olive-mute">{item.status === "confirmed" && item.issuedAt ? "已会签" : item.status === "awaiting_family" ? "待会签" : "草稿"}</span></div>)}{!data?.plans.length && <p className="rounded-lg border border-dashed border-border px-3 py-3 text-[11px] text-olive-mute">尚未建立四级计划</p>}</div>
       {onEdit && <button type="button" onClick={onEdit} className="mt-3 inline-flex min-h-9 items-center gap-1 rounded-lg border border-[#0C7064]/25 px-3 text-[11px] font-semibold text-[#0C7064]">调整目标与训练方案<ArrowRight size={12} /></button>}
     </GrowCard>

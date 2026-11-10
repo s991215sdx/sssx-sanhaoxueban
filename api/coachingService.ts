@@ -200,7 +200,7 @@ export async function endCoachingScenarios(db: Db, me: StaffUser, input: { caseI
   });
 }
 
-export async function createCoachingCase(db: Db, me: StaffUser, input: { studentUserId: number; scenarios: string[]; goal: string; currentSituation: string; planSummary: string; serviceStart: string; serviceEnd: string; capacityOverrideReason?: string }) {
+export async function createCoachingCase(db: Db, me: StaffUser, input: { studentUserId: number; scenarios: string[]; goal: string; currentSituation: string; planSummary: string; growForm?: Record<string, unknown> | null; serviceStart: string; serviceEnd: string; capacityOverrideReason?: string }) {
   const orgId = requireOrgStaff(me);
   await assertStudentAccess(db, me, input.studentUserId);
   if (Date.parse(input.serviceEnd) < Date.parse(input.serviceStart)) throw new TRPCError({ code: "BAD_REQUEST", message: "结束日期不能早于开始日期" });
@@ -212,7 +212,8 @@ export async function createCoachingCase(db: Db, me: StaffUser, input: { student
     await assertCoachingCapacity(tx, { orgId, staffIds: [me.id], actor: me, overrideReason: input.capacityOverrideReason });
     const [{ id }] = await tx.insert(coachingCases).values({ orgId, studentUserId: input.studentUserId, coachId: me.id, supervisorId: me.id,
       scenario: "新生接手", goal: required(input.goal, "请先明确陪跑目标"), currentSituation: required(input.currentSituation, "请评估学员现状"),
-      planSummary: required(input.planSummary, "请定制陪跑计划"), serviceStart: input.serviceStart, serviceEnd: input.serviceEnd }).$returningId();
+      planSummary: required(input.planSummary, "请定制陪跑计划"), growForm: input.growForm ?? null,
+      serviceStart: input.serviceStart, serviceEnd: input.serviceEnd }).$returningId();
     await syncCoachingScenariosTx(tx, { caseId: id, orgId, actorUserId: me.id, scenarios: input.scenarios, reason: "建立陪跑主档" });
     const [plan] = await tx.insert(coachingPlans).values({ caseId: id, level: "term", title: "学期陪跑方案", content: input.planSummary,
       startDate: input.serviceStart, endDate: input.serviceEnd, status: "awaiting_family", confirmedBy: me.id, confirmedAt: new Date(), createdBy: me.id }).$returningId();
@@ -267,12 +268,13 @@ export async function saveCoachingPlan(db: Db, me: StaffUser, input: SaveCoachin
   return db.transaction((tx) => saveCoachingPlanTx(tx, me, coachingCase, input));
 }
 
-export async function updateGrow(db: Db, me: StaffUser, input: { caseId: number; goal: string; currentSituation: string; planSummary: string; scenarios: string[]; scenarioChangeReason?: string; serviceStart: string; serviceEnd: string }) {
+export async function updateGrow(db: Db, me: StaffUser, input: { caseId: number; goal: string; currentSituation: string; planSummary: string; growForm?: Record<string, unknown> | null; scenarios: string[]; scenarioChangeReason?: string; serviceStart: string; serviceEnd: string }) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
   required(input.goal, "目标不能为空"); required(input.currentSituation, "现状评估不能为空"); required(input.planSummary, "计划不能为空");
   if (input.serviceEnd < input.serviceStart) throw new TRPCError({ code: "BAD_REQUEST", message: "结束日期不能早于开始日期" });
   return db.transaction(async (tx) => {
     await tx.update(coachingCases).set({ goal: input.goal.trim(), currentSituation: input.currentSituation.trim(),
+      growForm: input.growForm ?? null,
       serviceStart: input.serviceStart, serviceEnd: input.serviceEnd, scenario: "方案调整", version: coachingCase.version + 1 }).where(eq(coachingCases.id, input.caseId));
     await syncCoachingScenariosTx(tx, { caseId: input.caseId, orgId: coachingCase.orgId, actorUserId: me.id,
       scenarios: input.scenarios, reason: input.scenarioChangeReason });

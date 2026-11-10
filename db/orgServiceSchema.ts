@@ -68,6 +68,7 @@ export const coachingCases = mysqlTable("coaching_cases", {
   id: id(), orgId: orgId(), studentUserId: userId("student_user_id"), coachId: userId("coach_id"), supervisorId: userId("supervisor_id"),
   scenario: varchar("scenario", { length: 24 }).notNull().default("新生接手"), status: varchar("status", { length: 24 }).notNull().default("active"),
   goal: text("goal").notNull(), currentSituation: text("current_situation").notNull(), planSummary: text("plan_summary").notNull(),
+  growForm: json("grow_form").$type<Record<string, unknown>>(),
   serviceStart: varchar("service_start", { length: 10 }).notNull(), serviceEnd: varchar("service_end", { length: 10 }).notNull(),
   phaseMode: varchar("phase_mode", { length: 24 }).notNull().default("one_to_one"), phaseChangeReason: varchar("phase_change_reason", { length: 500 }).notNull().default(""),
   phaseChangeConfirmedBy: bigint("phase_change_confirmed_by", { mode: "number", unsigned: true }), version: int("version").notNull().default(1),
