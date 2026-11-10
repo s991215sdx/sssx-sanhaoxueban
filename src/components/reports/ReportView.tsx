@@ -2910,17 +2910,23 @@ function ReportViewInner({
                     : "border-[#8AC3AD]/70 bg-[#EFF8F1] text-[#155E4B] hover:border-[#0C7064] hover:bg-[#E4F4E9]"
                   : tab === t.key
                     ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
-                    : "border-transparent bg-white text-olive hover:border-[#1E3530]/15 hover:bg-cream/50"
+                    : "border-[#1E3530]/15 bg-white text-olive hover:border-[#0C7064]/40 hover:bg-cream/50"
               }`}
             >
               <span className="flex w-full items-center justify-between gap-2 text-[12.5px] font-semibold leading-5">
                 <span>{label}</span>
                 {completion.highlighted && <CheckCircle2 size={17} className="shrink-0 text-[#0C7064]" aria-hidden="true" />}
               </span>
-              {completion.highlighted && (
+              {completion.highlighted ? (
                 <span className="mt-0.5 flex w-full items-center justify-between gap-2 text-[10.5px] font-semibold text-[#0C7064]">
                   <span>{completion.label}</span>
                   <span>{t.key === "academics" ? "查看内容" : "查看报告"} →</span>
+                </span>
+              ) : (
+                /* v273：未测评栏目也加边框（不突出底色），并补一行「未完成」字样，排版与已完成项对齐 */
+                <span className="mt-0.5 flex w-full items-center justify-between gap-2 text-[10.5px] text-olive-mute/80">
+                  <span>未完成</span>
+                  <span>测评后生成报告 →</span>
                 </span>
               )}
             </button>

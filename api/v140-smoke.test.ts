@@ -10,9 +10,9 @@ describe("v140 收起按钮去底 + 未选中卡简化", () => {
     if (/text-\[11\.5px\] font-medium text-\[#1E3530\]\/70/.test(src)) throw new Error("残留：v140 简版次要按钮");
   });
 
-  it("未选中卡断言随 v143 更新：白底无边框", () => {
+  it("未选中卡断言随 v273 更新：白底浅边框（未测评栏目也带边框）", () => {
     const src = readFileSync("src/components/reports/ReportView.tsx", "utf-8");
-    const n = (src.match(/: "border-transparent bg-white text-olive hover:border-\[#1E3530\]\/15/g) || []).length;
+    const n = (src.match(/: "border-\[#1E3530\]\/15 bg-white text-olive hover:border-\[#0C7064\]\/40 hover:bg-cream\/50/g) || []).length;
     if (n < 1) throw new Error("缺：白底未选中（栏目宫格）");
   });
 
