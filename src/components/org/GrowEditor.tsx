@@ -3,24 +3,7 @@ import { BookOpen, ClipboardCheck, Compass, FileText, Plus, Target, Trash2, Tren
 import { trpc } from "@/providers/trpc";
 import { COACHING_SCENARIOS, coachingScenarioLabel, type CoachingScenarioKey } from "@contracts/orgService";
 import { isE3V37Result } from "@contracts/e3v37";
-import { PURPOSE_OPTIONS, composeGoalText, composePlanText, emptyGrowPlan, parseGrowForm, type GrowPlanForm } from "./growPlan";
-
-/** v273：五大课课纲重点（源自《学业生涯陪跑·五大课程大纲》），用于把测评短板映射到课程落点。 */
-const COURSE_OUTLINE: { course: string; aim: string; outline: string }[] = [
-  { course: "规划课", aim: "找准方向：看清真实水平与升学路径", outline: "全维度测评 · 考情解读 · 升学目标定位与拆分 · 学业＋升学双方案（每学期滚动修订）" },
-  { course: "心法课", aim: "愿学习：点燃内驱、重建恒定评价标准", outline: "立志（修齐治平）· 三观 · 秀塔 · 三个钱袋子 · 三大主义 · 教育选型 · 楼层驱动 · 心力能量训练" },
-  { course: "技法课", aim: "会学习：三阶九能与全学科方法策略", outline: "12 次课：综合测评与立志 → 全科学习策略 → 计划与总结 → 复盘与费曼输出 → 高效作业 → 预习与听课 → 笔记与思维导图 → 错题整理 → 试卷分析 → 专注力与时间管理 → 记忆流程与技巧 → 考前心态与考场策略" },
-  { course: "督学课", aim: "真学习：把计划变成结果", outline: "周计划落地 · 日检验·周复盘·月家长会 · 费曼输出训练 · 痕迹管理 · 试卷分析" },
-  { course: "亲子课", aim: "改善支持系统：亲子沟通与家庭氛围", outline: "YES 模型（接纳→探索→解决）· 亲子美言 · 五型防御机制 · 家访" },
-];
-
-/** 九能 → 课程映射：乐学进心法课，会学进技法课，善学进督学课＋技法课，条件系统进亲子课。 */
-const ABILITY_TO_COURSE: Record<string, string[]> = {
-  动力: ["心法课"], 信心: ["心法课"], 韧劲: ["心法课"],
-  学懂: ["技法课"], 记住: ["技法课"], 会用: ["技法课"],
-  计划: ["督学课", "技法课"], 复盘: ["督学课", "技法课"], 智学: ["技法课", "督学课"],
-  状态: ["亲子课"], 关系: ["亲子课"], 资源: ["亲子课"],
-};
+import { PURPOSE_OPTIONS, ABILITY_TO_COURSE, COURSE_FORMATS, COURSE_OUTLINE, composeGoalText, composePlanText, defaultCoursePlan, emptyGrowPlan, parseGrowForm, type GrowPlanForm } from "./growPlan";
 
 const RAG: Record<string, { label: string; dot: string; text: string; bg: string; border: string }> = {
   red: { label: "问题明显", dot: "#DD3534", text: "#A82524", bg: "#F9E4E1", border: "#DD3534" },
@@ -223,18 +206,44 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
           <textarea value={situationNote} onChange={(e) => setSituationNote(e.target.value)} placeholder="现状补充观察（可选）：到店表现、作业与考试细节等，会与上方测评基线一起存入评估现状。" rows={2} maxLength={4000} className="mt-2 w-full resize-y rounded-lg border border-border bg-white px-3 py-2 text-[12px] leading-relaxed text-olive outline-none placeholder:text-olive-mute/60 focus:border-[#0C7064]" />
         </section>
 
-        {/* ③ 策略 */}
+        {/* ③ 策略（v275：表格化，课程/目标/针对问题/课纲/频次/形式） */}
         <section className="rounded-xl border border-border bg-cream/60 p-3">
-          <h4 className="flex items-center gap-1.5 text-[13px] font-bold text-olive"><ClipboardCheck size={15} />③ 策略 <span className="text-[10.5px] font-normal text-olive-mute">用哪些课程来指导（五大课，按孩子的问题勾选）</span></h4>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {COURSE_OUTLINE.map((c) => {
-              const matched = weakLabels.filter((label) => (ABILITY_TO_COURSE[label] ?? []).includes(c.course));
-              const checked = form.courses.includes(c.course);
-              return <label key={c.course} className={`cursor-pointer rounded-xl border p-2.5 transition-colors ${checked ? "border-[#0C7064]/45 bg-mint-pale/55" : "border-border bg-white hover:border-[#0C7064]/25"}`}>
-                <span className="flex flex-wrap items-center gap-1.5"><input type="checkbox" checked={checked} onChange={() => set({ courses: checked ? form.courses.filter((x) => x !== c.course) : [...form.courses, c.course] })} className="h-4 w-4 accent-[#0C7064]" /><b className="text-[12px] text-olive">{c.course}</b><span className="text-[9.5px] text-olive-mute">{c.aim}</span>{matched.length > 0 && <span className="ml-auto rounded-full bg-[#F9E4E1] px-1.5 text-[9.5px] font-semibold text-[#A82524]">针对 {matched.join("、")}</span>}</span>
-                <span className="mt-1 block pl-6 text-[10.5px] leading-relaxed text-olive-mute">{c.outline}</span>
-              </label>;
-            })}
+          <h4 className="flex items-center gap-1.5 text-[13px] font-bold text-olive"><ClipboardCheck size={15} />③ 策略 <span className="text-[10.5px] font-normal text-olive-mute">用哪些课程来指导（五大课表格，勾选并按孩子情况调整频次与形式）</span></h4>
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full min-w-[860px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-border text-[10.5px] text-olive-mute">
+                  <th className="w-8 py-1.5 font-semibold">选</th>
+                  <th className="w-24 py-1.5 font-semibold">课程</th>
+                  <th className="w-36 py-1.5 font-semibold">目标</th>
+                  <th className="w-32 py-1.5 font-semibold">针对问题</th>
+                  <th className="py-1.5 font-semibold">课纲重点</th>
+                  <th className="w-32 py-1.5 font-semibold">频次安排</th>
+                  <th className="w-28 py-1.5 font-semibold">形式</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COURSE_OUTLINE.map((c) => {
+                  const matched = weakLabels.filter((label) => (ABILITY_TO_COURSE[label] ?? []).includes(c.course));
+                  const checked = form.courses.includes(c.course);
+                  const plan = form.coursePlans.find((p) => p.course === c.course) ?? defaultCoursePlan(c.course);
+                  const setPlan = (patch: Partial<{ frequency: string; format: string }>) => set({ coursePlans: [...form.coursePlans.filter((p) => p.course !== c.course), { course: c.course, frequency: plan.frequency, format: plan.format, ...patch }] });
+                  const toggle = () => set({
+                    courses: checked ? form.courses.filter((x) => x !== c.course) : [...form.courses, c.course],
+                    coursePlans: checked ? form.coursePlans.filter((p) => p.course !== c.course) : (form.coursePlans.some((p) => p.course === c.course) ? form.coursePlans : [...form.coursePlans, { course: c.course, ...defaultCoursePlan(c.course) }]),
+                  });
+                  return <tr key={c.course} className={`border-b border-border/60 align-top transition-colors ${checked ? "bg-mint-pale/40" : "hover:bg-white/60"}`}>
+                    <td className="py-2"><input type="checkbox" aria-label={`选择${c.course}`} checked={checked} onChange={toggle} className="h-4 w-4 accent-[#0C7064]" /></td>
+                    <td className="py-2 pr-2"><b className="text-[12px] text-olive">{c.course}</b><span className="ml-1 rounded-full bg-butter-pale px-1.5 text-[9.5px] font-semibold text-[#9A7622]">{c.system}</span></td>
+                    <td className="py-2 pr-2 text-[11px] font-semibold leading-relaxed text-[#0C7064]">{c.goal}</td>
+                    <td className="py-2 pr-2">{matched.length > 0 ? <span className="rounded-full bg-[#F9E4E1] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#A82524]">针对 {matched.join("、")}</span> : <span className="text-[10.5px] text-olive-mute">—</span>}</td>
+                    <td className="py-2 pr-2 text-[10.5px] leading-relaxed text-olive-mute">{c.outline}</td>
+                    <td className="py-2 pr-1"><input value={plan.frequency} onChange={(e) => setPlan({ frequency: e.target.value })} placeholder="如：每周 1 次" maxLength={40} disabled={!checked} className="w-full rounded-md border border-border bg-white px-1.5 py-1 text-[11px] text-olive outline-none focus:border-[#0C7064] disabled:opacity-40" /></td>
+                    <td className="py-2"><select value={plan.format} onChange={(e) => setPlan({ format: e.target.value })} disabled={!checked} className="w-full rounded-md border border-border bg-white px-1 py-1 text-[11px] text-olive outline-none focus:border-[#0C7064] disabled:opacity-40">{COURSE_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}</select></td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
           </div>
           {!form.courses.length && <p className="mt-2 text-[10.5px] text-amber-700">请至少勾选一门课程；系统已按测评短板给出「针对」建议。</p>}
           <textarea value={form.strategyNote} onChange={(e) => set({ strategyNote: e.target.value })} placeholder="策略补充（可选）：课程组合节奏、一对一/沙龙/督学安排、前三个月与后三个月的过渡等。" rows={2} maxLength={2000} className="mt-2 w-full resize-y rounded-lg border border-border bg-white px-3 py-2 text-[12px] leading-relaxed text-olive outline-none placeholder:text-olive-mute/60 focus:border-[#0C7064]" />
