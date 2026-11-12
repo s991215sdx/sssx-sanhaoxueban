@@ -113,6 +113,25 @@ div[id*="kimi-widget" i] {
   @page {
     margin: 12mm;
   }
+  /* v253：人才测评报告打印——侧栏/顶栏/按钮不进纸面，正文占满版心。
+     用 body 上的类而不是 :has()，老一点的 Chrome/微信内核也能命中。 */
+  body.talent-print aside,
+  body.talent-print header,
+  body.talent-print .no-print {
+    display: none !important;
+  }
+  body.talent-print main {
+    padding-left: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  body.talent-print .paper-card,
+  body.talent-print section,
+  body.talent-print .rounded-xl,
+  body.talent-print .rounded-2xl {
+    break-inside: avoid;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
   /* 保留页面配色（图表颜色、分级底色） */
   * {
     print-color-adjust: exact;

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router";
-import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2 } from "lucide-react";
+import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2, Target } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -237,6 +237,22 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <GraduationCap size={18} strokeWidth={2.2} />
               {!collapsed && (campusTutor ? "指导老师工作台" : "伴学工作台")}
+            </NavLink>
+          )}
+          {/* v253：人才测评（四类岗位评估 + 候选人扫码）——放在伴学工作台与后台之间，
+              与学员端的「测评中心」分属两条线：一个是孩子的学习测评，一个是员工的岗位评估 */}
+          {showCoach && (
+            <NavLink
+              to="/talent"
+              title={collapsed ? "人才测评" : undefined}
+              className={({ isActive }) =>
+                `group flex items-center rounded-xl transition-colors ${
+                  collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+                } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
+              }
+            >
+              <Target size={18} strokeWidth={2.2} />
+              {!collapsed && "人才测评"}
             </NavLink>
           )}
           {campusMgr &&

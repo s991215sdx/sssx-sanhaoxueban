@@ -23,9 +23,10 @@ import { ssoRouter } from "./ssoRouter";
 import { libraryRouter } from "./libraryRouter";
 import { zhihuiRouter } from "./zhihuiRouter";
 import { schoolRouter } from "./schoolRouter";
+import { talentRouter } from "./talentRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v252-2026-11-12";
+const BUILD_TAG = "v253-2026-11-12";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),
@@ -236,6 +237,8 @@ export const appRouter = createRouter({
   zhihui: zhihuiRouter,
   /** v220：学校版专版（粤华打样）——选科意向/预警中心/团体统计/催办/成长档案 */
   school: schoolRouter,
+  /** v253：人才测评（销售咨询师 / 教学服务 / 行政 / 管理）——与测评中心并列的独立栏目 */
+  talent: talentRouter,
   analyze: analyzeRouter,
   graph: graphRouter,
   preview: previewRouter,

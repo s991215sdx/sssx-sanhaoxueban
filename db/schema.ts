@@ -268,6 +268,29 @@ export const assessmentResults = mysqlTable("assessment_results", {
 
 export type AssessmentResult = typeof assessmentResults.$inferSelect;
 
+/* ---------------------------------- 人才测评 ---------------------------------- */
+/* v253：四类岗位（销售咨询师 / 教学服务 / 行政 / 管理）的人才评估记录。
+ * 与 assessment_results 分开：那张表按「孩子」组织且 kind 是学生量表的枚举，
+ * 人才测评多出「岗位」「候选人」两维，报告的体量与查询方式也不同（按机构/发起人列表查）。 */
+export const talentAssessments = mysqlTable("talent_assessments", {
+  id: serial("id").primaryKey(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  /** 发起人（HR / 伴学师 / 本人自测）：报告归属与列表可见性都看这一列 */
+  ownerId: bigint("owner_id", { mode: "number", unsigned: true }).notNull().default(0),
+  candidateName: varchar("candidate_name", { length: 64 }).notNull().default(""),
+  position: mysqlEnum("position", ["sales", "service", "admin", "mgmt"]).notNull(),
+  /** self = 本人登录自测；invite = 扫码作答（候选人 / 员工未登录） */
+  source: mysqlEnum("source", ["self", "invite"]).notNull().default("self"),
+  /** 完成度与当前岗位匹配度，落成列是为了列表页不解析整份报告 */
+  completeness: int("completeness").notNull().default(0),
+  fitScore: int("fit_score").notNull().default(0),
+  report: json("report").$type<Record<string, unknown>>().notNull(),
+  answers: json("answers").$type<Record<string, unknown> | number[]>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type TalentAssessment = typeof talentAssessments.$inferSelect;
+
 /* ---------------------------------- 试卷分析 ---------------------------------- */
 
 export type PaperItemSeed = {
