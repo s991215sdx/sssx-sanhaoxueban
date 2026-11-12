@@ -35,20 +35,17 @@ async function call(path: string, input?: unknown, method: "GET" | "POST" = "GET
   return body.result?.data?.json;
 }
 
-/** 目标岗位要的维度给「很像我」，不要的给「不太像我」——不是全选满分，那样反而失真。 */
+/**
+ * 目标岗位要的维度给「很像我」，不要的给「不太像我」——不是全选满分，那样反而失真。
+ *
+ * SAMPLE_MODE=low 时反过来：把这一岗最看重的几维答低，用来生成一份「暂不匹配」的
+ * 对照样本。报告只有在「不合适」的时候说的话最需要被审——不能只留好看的样例。
+ */
+const LOW = process.env.SAMPLE_MODE === "low";
 const w = JOB_WEIGHTS[JOB];
-const want: Record<TalentDim, boolean> = {
-  influence: w.influence >= 2,
-  empathy: w.empathy >= 2,
-  order: w.order >= 2,
-  drive: w.drive >= 2,
-  stable: w.stable >= 2,
-  duty: w.duty >= 2,
-  achieve: w.achieve >= 2,
-  rule: w.rule >= 2,
-  lead: w.lead >= 2,
-  detail: w.detail >= 2,
-};
+const want = Object.fromEntries(
+  (Object.keys(w) as TalentDim[]).map((d) => [d, LOW ? w[d] === 0 : w[d] >= 2]),
+) as Record<TalentDim, boolean>;
 
 /* 维度 → 大五题：只给「要的维度」对应的题打高分 */
 const BF_TARGET: Record<string, TalentDim[]> = { N: ["stable"], C: ["duty", "detail"], E: ["influence"], A: ["empathy"], O: ["achieve"] };
@@ -86,7 +83,9 @@ function eqAnswers() {
   for (const it of EQ_ITEMS) {
     const seed = [...it.dim].reduce((a, c) => a + c.charCodeAt(0), 0);
     const wave = ((seed * 37) % 100) / 100;
-    const base = focus.has(it.dim) ? 5.4 + wave : 3.2 + wave * 3;
+    const base = focus.has(it.dim)
+      ? (LOW ? 1.8 + wave * 1.6 : 5.4 + wave)
+      : (LOW ? 4.4 + wave * 2.2 : 3.2 + wave * 3);
     const likert = Math.max(1, Math.min(7, Math.round(base)));
     out[it.id] = it.reverse ? 8 - likert : likert;
   }
@@ -107,7 +106,11 @@ const DISC_PERSONA: Record<JobKey, { like: ["D" | "I" | "S" | "C", "D" | "I" | "
 };
 
 function discAnswers() {
-  const persona = DISC_PERSONA[JOB];
+  /* low 模式把原型反过来：这个岗需要的 D/I，他恰好最不像 */
+  const base = DISC_PERSONA[JOB];
+  const persona = LOW
+    ? { like: base.unlike, unlike: base.like }
+    : base;
   const most: number[] = [];
   const least: number[] = [];
   WORK_DISC_GROUPS.forEach((g, i) => {
@@ -130,8 +133,12 @@ function dutyAnswers() {
   for (const it of pack.items) {
     if (it.kind === "likert") out[it.id] = it.reverse ? 2 : 5;
     else {
-      const best = it.options.reduce((bi, o, i) => (o.score > it.options[bi].score ? i : bi), 0);
-      out[it.id] = best;
+      /* low 模式挑最差项：这一岗的情境判断，他每次都选错的那个 */
+      const pick = it.options.reduce(
+        (bi, o, i) => ((LOW ? o.score < it.options[bi].score : o.score > it.options[bi].score) ? i : bi),
+        0,
+      );
+      out[it.id] = pick;
     }
   }
   return out;
