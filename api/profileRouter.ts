@@ -766,6 +766,29 @@ async function applySubmission(
     answers: (opts?.via ? { ...(rawAnswers as object), via: opts.via } : rawAnswers) as unknown as number[],
   });
 
+  /* 家庭码里那 24 组 DISC 也是这位家长的 DISC：另存一条 discparent。
+     冲突报告与沟通锦囊读的是 discparent——不落这一条，妈妈扫码补填之后，
+     那两份报告看不到她，只有家庭教育报告会变。 */
+  if (outcome.kind === "familyparent") {
+    const fa = input.answers as { disc?: { most: number[]; least: number[] }; label?: string; respondent?: string };
+    const d = fa.disc;
+    if (d?.most?.length === DISC_PARENT_V2_GROUPS.length && d.least?.length === d.most.length) {
+      const discResult = scoreDiscV2(d, DISC_PARENT_V2_GROUPS);
+      await db.insert(assessmentResults).values({
+        userId,
+        kind: "discparent",
+        result: discResult as unknown as Record<string, unknown>,
+        answers: {
+          answers: d,
+          label: fa.label || (fa.respondent === "mom" ? "妈妈" : fa.respondent === "dad" ? "爸爸" : "家长"),
+          respondent: fa.respondent ?? "other",
+          from: "familyparent",
+          ...(opts?.via ? { via: opts.via } : {}),
+        } as unknown as number[],
+      });
+    }
+  }
+
   // 同步到档案对应字段；没有档案则先建一条默认档案
   let profile = await getProfile(userId);
   if (!profile) {
@@ -1236,6 +1259,16 @@ export const assessmentRouter = createRouter({
       latest.raw.push({ kind: row.kind, answers: row.answers ?? null, createdAt: row.createdAt });
       if (latest.mbti && latest.disc && latest.e3 && latest.multi && latest.multi5 && latest.anchor && latest.holland && latest.mental) break;
     }
+    /* 同一位家长可能在测评中心答过一次 DISC、用家庭码补卷时又带了一次：
+       按称谓只留最新一条（rows 已按时间倒序，首次出现即最新），
+       否则锦囊会给她出两本、冲突报告会把她算成两个人。 */
+    const seenDisc = new Set<string>();
+    latest.discParents = latest.discParents.filter((p) => {
+      if (p.label === "家长") return true;
+      if (seenDisc.has(p.label)) return false;
+      seenDisc.add(p.label);
+      return true;
+    });
     return latest;
   }),
 
@@ -1386,7 +1419,13 @@ export const assessmentRouter = createRouter({
             };
           }),
       );
-      const p0 = parents[0] ?? null;
+      /* 主口径固定「爸爸优先」：妈妈后补一份，只加对照列，不能把报告的主角换掉——
+         parents 是按提交时间倒序的，直接取 [0] 会让最后填的人变成「你」。 */
+      const byRespondent = (k: string) => parents.find((p) => p.respondent === k) ?? null;
+      const p0 = byRespondent("dad") ?? byRespondent("mom") ?? parents[0] ?? null;
+      const p1 = parents.find((p) => p !== p0) ?? null;
+      const labelOf = (p: (typeof parents)[number] | null) =>
+        p ? p.label || (p.respondent === "mom" ? "妈妈" : p.respondent === "dad" ? "爸爸" : "其他家人") : "";
 
       const discRow = latest("disc");
       const discParentRow = latest("discparent");
@@ -1422,6 +1461,8 @@ export const assessmentRouter = createRouter({
         },
         studentRel,
         parentItems: p0?.items ?? {},
+        parent2Items: p1?.items ?? null,
+        parent2Label: labelOf(p1),
         parentScene: p0?.scene ?? null,
         studentDiscDims: discDims(discRow),
         parentDiscDims: discDims(discParentRow),
@@ -1435,12 +1476,14 @@ export const assessmentRouter = createRouter({
         has: {
           student: Object.keys(studentRel).length > 0,
           parent: !!p0,
+          /** 第二位家长到了没有：报告据此决定要不要出「对照列」 */
+          parent2: !!p1,
           disc: !!discDims(discRow),
           discParent: !!discDims(discParentRow),
           e3: !!e3Ratings,
           mental: !!mental,
         },
-        parents: parents.map((p) => p.label || p.respondent),
+        parents: parents.map((p) => ({ respondent: p.respondent, label: labelOf(p) })),
       };
     }),
 
@@ -1453,19 +1496,34 @@ export const assessmentRouter = createRouter({
    * 家长卷的结果本来就是孩子档案的一部分，多一个账号只是多一道门槛。
    * 同时回传已经收到的家长卷（按填卷人去重），学生一眼能看到「妈妈还没填」。
    */
-  familyCode: authedQuery.query(async ({ ctx }) => {
-    const db = getDb();
-    const userId = ctx.user.id;
-    const me = await getProfile(userId);
-    const ver = me?.familyCodeVer ?? 0;
-    const parents = await familyParentRespondents(db, userId);
-    return {
-      code: encodeFamilyCode(userId, ver, env.appSecret),
-      parents,
-      /** 家长端路径：前端据此拼二维码（/f/<code>） */
-      fullName: ctx.user.name ?? "",
-    };
-  }),
+  /**
+   * 家庭码：一张码，爸妈各扫一次。
+   *
+   * `userId` 只给伴学师用——他看的是学员的报告，报告页上的「邀请另一位家长」
+   * 必须出学员那张码，不能出伴学师自己的码。权限与 familyFull 同一套。
+   */
+  familyCode: authedQuery
+    .input(z.object({ userId: z.number().int().positive().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const userId = input?.userId ?? ctx.user.id;
+      if (userId !== ctx.user.id) {
+        const allowed =
+          ctx.user.role === "admin" ||
+          ((await isMyStudent(db, ctx.user.id, userId)) &&
+            (await getTutorReportAccess(db, ctx.user.id, userId)).allowed);
+        if (!allowed) throw new TRPCError({ code: "FORBIDDEN", message: "没有查看该学员报告的权限" });
+      }
+      const me = await getProfile(userId);
+      const ver = me?.familyCodeVer ?? 0;
+      const parents = await familyParentRespondents(db, userId);
+      return {
+        code: encodeFamilyCode(userId, ver, env.appSecret),
+        parents,
+        /** 家长端路径：前端据此拼二维码（/f/<code>） */
+        fullName: me?.name ?? ctx.user.name ?? "",
+      };
+    }),
 
   /** 学生端：换一张码（码被转发到群里时用；旧码立即失效，已收到的答卷不受影响）。 */
   rotateFamilyCode: authedQuery.mutation(async ({ ctx }) => {

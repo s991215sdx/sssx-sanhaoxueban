@@ -8,10 +8,13 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { buildFamilyFullReport } from "@contracts/familyFullReport";
 import { renderFamilyReportPages, FAM_REPORT_CSS } from "../src/pages/famReportHtml";
-import { SAMPLE_INPUT } from "./fam-sample";
+import { SAMPLE_INPUT, SAMPLE_PARENT2 } from "./fam-sample";
 
 const r = buildFamilyFullReport(SAMPLE_INPUT);
-const html = `<!DOCTYPE html>
+/* 第二位家长（妈妈）：只用来验「对照列」，页数必须还是 13 页 */
+const alt = buildFamilyFullReport({ ...SAMPLE_INPUT, parent2Items: SAMPLE_PARENT2, parent2Label: "妈妈" });
+
+const page = (report: ReturnType<typeof buildFamilyFullReport>) => `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -24,13 +27,17 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
 <div class="famrpt">
-${renderFamilyReportPages(r)}
+${renderFamilyReportPages(report)}
 </div>
 </body>
 </html>`;
 
+const html = page(r);
+const htmlAlt = page(alt);
+
 mkdirSync("out", { recursive: true });
 writeFileSync("out/fam-report-preview.html", html, "utf-8");
+writeFileSync("out/fam-report-preview-alt.html", htmlAlt, "utf-8");
 
 /* 顺带把关键数字打出来，方便和原版样例对数 */
 console.log("台阶：", r.ladder.rows.map((x) => `${x.level}=${x.verdict}`).join(" "));
@@ -41,3 +48,4 @@ console.log("偏离题：", r.deviation.total, "项 →", r.deviation.groups.map
 console.log("动力四问命中：", r.motive.hit);
 console.log("安全感：", JSON.stringify(r.security));
 console.log("附录学生行：", r.appendix.studentRows.length);
+console.log("对照（妈妈）：", alt.alt ? `台阶首断 ${alt.alt.firstBroken ?? "无"} · 安全感 ${alt.alt.security?.avoid}/${alt.alt.security?.anxiety} ${alt.alt.zone} · 盲区 ${alt.alt.blind.map((b) => `${b.label}:${b.parentGuess}`).join(" ")}` : "无");

@@ -76,6 +76,9 @@ export type FullReportInput = {
   studentRel: Record<string, number>;
   /** 家长卷：P01—P55 → 选值（mirror 0—5；其余 1—5；choice 为下标 0 起） */
   parentItems: Record<string, number>;
+  /** 第二位家长的同一份卷（爸爸或妈妈各填一份）；没填传 null */
+  parent2Items?: Record<string, number> | null;
+  parent2Label?: string;
   /** 家长卷场景题（P55）所选场景 key */
   parentScene?: string | null;
   /** 亲子 DISC：优先用原始作答（most/least），没有就直传已算好的四维分 */
@@ -117,6 +120,24 @@ export type DeviationItem = { no: number; text: string; choice: string; score: n
 export type DeviationGroup = { name: string; items: DeviationItem[] };
 
 export type BlindRow = { key: string; label: string; parentGuess: string; childReal: string; low: boolean };
+
+/**
+ * 第二位家长的对照数据（多为妈妈）。
+ *
+ * 只用于报告里的「对照列」：台阶、安全感那个点、三条盲区、投入。
+ * **不参与主判定**——主口径仍是第一位填卷人，否则同一页会出现两套结论，
+ * 家长不知道该听谁的。页脚与附录会写清「另一列是谁填的」。
+ */
+export type ParentAlt = {
+  label: string;
+  ladder: LadderRow[];
+  firstBroken: string | null;
+  security: { avoid: number; anxiety: number } | null;
+  zone: string;
+  blind: BlindRow[];
+  invest: { q: string; score: number; count: number };
+  stage: { demand: number; warmth: number; styleLine: string };
+};
 
 export type SceneRow = {
   key: string;
@@ -177,6 +198,8 @@ export type FamilyFullReport = {
   deviation: { groups: DeviationGroup[]; total: number; summary: string; hasData: boolean };
   motive: { rows: { key: string; label: string; now: string; plain: string; ok: boolean }[]; hit: number; verdict: string };
   blind: BlindRow[];
+  /** 另一位家长（多为妈妈）的对照；没填就是 null，报告里对应位置整块不出现 */
+  alt: ParentAlt | null;
   /** PART00「日常在场」用的那条投入证据：分最高的一项 */
   invest: { q: string; score: number; count: number };
   scenes: SceneRow[];
@@ -189,7 +212,7 @@ export type FamilyFullReport = {
   };
   appendix: {
     studentRows: { no: number; area: string; text: string; score: number; note: string }[];
-    parentRows: { text: string; choice: string; gap: string; bad: boolean }[];
+    parentRows: { text: string; choice: string; gap: string; bad: boolean; altChoice?: string }[];
     parentDisc: string;
     childDisc: string;
     mental: string;
@@ -602,6 +625,46 @@ function buildBlind(parentItems: Record<string, number>, ratings: number[] | nul
   ];
 }
 
+/* ---------------------------- 第二位家长（对照列） ---------------------------- */
+
+/**
+ * 把第二份家长卷压成「一列对照」。
+ *
+ * 只算报告里用得到的那几样：台阶、安全感坐标、三条盲区、投入、管教风格。
+ * 不重算 DISC——家长的 DISC 走 discparent 多人链路，报告 PART02 已经按人取。
+ */
+function buildParentAlt(
+  age: number | null,
+  studentRel: Record<string, number>,
+  items: Record<string, number>,
+  ratings: number[] | null | undefined,
+  label: string,
+): ParentAlt {
+  const ladder = buildLadder(studentRel, items);
+  const sec = buildSecurity(studentRel, items);
+  const p = sec.parent;
+  const zone = !p
+    ? "未测"
+    : p.anxiety >= 50
+      ? p.avoid >= 50
+        ? "混乱型"
+        : "焦虑型"
+      : p.avoid >= 50
+        ? "回避型"
+        : "安全型";
+  const st = buildStage(age, items);
+  return {
+    label,
+    ladder: ladder.rows,
+    firstBroken: ladder.firstBroken,
+    security: p,
+    zone,
+    blind: buildBlind(items, ratings),
+    invest: buildInvest(items),
+    stage: { demand: st.demand, warmth: st.warmth, styleLine: st.styleLine },
+  };
+}
+
 /* ---------------------------- 六句话（PART08） ---------------------------- */
 
 const SCENE_SCRIPT: Record<string, Omit<SceneRow, "key" | "name" | "hot">> = {
@@ -676,6 +739,54 @@ export function moodBand(score: number): string {
 /* 四、总装                                                            */
 /* ------------------------------------------------------------------ */
 
+/**
+ * 附录里那 6 行家长题（3 条「他这项你怎么看」+ 3 条管教来源）。
+ *
+ * 抽出来是为了第二位家长能用同一套口径算一遍——两列必须是同一批题、同一批选项，
+ * 否则家长会拿两列数字直接比较，而它们其实问的不是一件事。
+ */
+function buildParentRows(
+  items: Record<string, number>,
+  ratings: number[] | null | undefined,
+): { text: string; choice: string; gap: string; bad: boolean }[] {
+  const mirrorPairs: { pid: string; sno: number; label: string }[] = [
+    { pid: "P17", sno: 1, label: "对某些学科本身感兴趣" },
+    { pid: "P20", sno: 13, label: "相信自己努力就能学好" },
+    { pid: "P22", sno: 18, label: "考试失利后能较快调整" },
+  ];
+  return [
+    ...mirrorPairs.map((m) => {
+      const pv = items[m.pid] ?? 0;
+      const sv = ratings?.[m.sno - 1] ?? 0;
+      const gap = pv && sv ? Math.abs(pv - sv) : 0;
+      return {
+        text: `他${m.label}`,
+        choice: pv ? String(pv) : "—",
+        gap: gap >= 1.5 ? `差 ${gap.toFixed(1)}，最大盲区` : gap > 0 ? `差 ${gap.toFixed(1)}` : "基本一致",
+        bad: gap >= 1.5,
+      };
+    }),
+    {
+      text: "我会规定每天的学习时间",
+      choice: String(items.P39 ?? 0) || "—",
+      gap: `要求 ${Math.round(avg4(items, ["P38", "P39", "P40", "P41"]) * 20)} 的来源`,
+      bad: false,
+    },
+    {
+      text: "我会先听他说完再回应",
+      choice: String(items.P42 ?? 0) || "—",
+      gap: `回应 ${Math.round(avg4(items, ["P42", "P43", "P44"]) * 20)} 的来源`,
+      bad: false,
+    },
+    {
+      text: "成绩一不好，我会立刻给他加任务",
+      choice: String(items.P40 ?? 0) || "—",
+      gap: "「有条件的肯定」",
+      bad: false,
+    },
+  ];
+}
+
 export function buildFamilyFullReport(input: FullReportInput): FamilyFullReport {
   const stage = input.stage ?? "junior";
   const ladder = buildLadder(input.studentRel, input.parentItems);
@@ -689,6 +800,17 @@ export function buildFamilyFullReport(input: FullReportInput): FamilyFullReport 
   const blind = buildBlind(input.parentItems, input.e3Ratings);
   const invest = buildInvest(input.parentItems);
   const scenes = buildScenes(input.parentScene);
+  /* 第二位家长：报告不重排、不换主口径，只在四处补一列对照 */
+  const alt =
+    input.parent2Items && Object.keys(input.parent2Items).length
+      ? buildParentAlt(
+          input.meta.age,
+          input.studentRel,
+          input.parent2Items,
+          input.e3Ratings,
+          input.parent2Label || "另一位家长",
+        )
+      : null;
 
   const respondentLabel =
     input.meta.respondentLabel ?? (input.meta.respondent === "dad" ? "爸爸" : input.meta.respondent === "mom" ? "妈妈" : "家长");
@@ -719,43 +841,15 @@ export function buildFamilyFullReport(input: FullReportInput): FamilyFullReport 
         }))
     : [];
 
-  /* 附录家长表：三条「家长猜 vs 孩子答」的差 + 三条管教的来源，与原版结构一致 */
-  const mirrorPairs: { pid: string; sno: number; label: string }[] = [
-    { pid: "P17", sno: 1, label: "对某些学科本身感兴趣" },
-    { pid: "P20", sno: 13, label: "相信自己努力就能学好" },
-    { pid: "P22", sno: 18, label: "考试失利后能较快调整" },
-  ];
-  const parentRows = [
-    ...mirrorPairs.map((m) => {
-      const pv = input.parentItems[m.pid] ?? 0;
-      const sv = input.e3Ratings?.[m.sno - 1] ?? 0;
-      const gap = pv && sv ? Math.abs(pv - sv) : 0;
-      return {
-        text: `他${m.label}`,
-        choice: pv ? String(pv) : "—",
-        gap: gap >= 1.5 ? `差 ${gap.toFixed(1)}，最大盲区` : gap > 0 ? `差 ${gap.toFixed(1)}` : "基本一致",
-        bad: gap >= 1.5,
-      };
-    }),
-    {
-      text: "我会规定每天的学习时间",
-      choice: String(input.parentItems.P39 ?? 0) || "—",
-      gap: `要求 ${Math.round(avg4(input.parentItems, ["P38", "P39", "P40", "P41"]) * 20)} 的来源`,
-      bad: false,
-    },
-    {
-      text: "我会先听他说完再回应",
-      choice: String(input.parentItems.P42 ?? 0) || "—",
-      gap: `回应 ${Math.round(avg4(input.parentItems, ["P42", "P43", "P44"]) * 20)} 的来源`,
-      bad: false,
-    },
-    {
-      text: "成绩一不好，我会立刻给他加任务",
-      choice: String(input.parentItems.P40 ?? 0) || "—",
-      gap: "「有条件的肯定」",
-      bad: false,
-    },
-  ];
+  /* 附录家长表：主列 + 第二位家长列（两列同一批题、同一套选项，才能并排看） */
+  const altParentRows =
+    input.parent2Items && Object.keys(input.parent2Items).length
+      ? buildParentRows(input.parent2Items, input.e3Ratings)
+      : null;
+  const parentRows = buildParentRows(input.parentItems, input.e3Ratings).map((row, i) => ({
+    ...row,
+    altChoice: altParentRows ? altParentRows[i]?.choice ?? "—" : undefined,
+  }));
 
   const reportNo =
     input.meta.reportNo ??
@@ -782,6 +876,7 @@ export function buildFamilyFullReport(input: FullReportInput): FamilyFullReport 
     deviation,
     motive,
     blind,
+    alt,
     invest,
     scenes,
     plan: {

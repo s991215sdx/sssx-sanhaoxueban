@@ -13,6 +13,7 @@ import { Link } from "react-router";
 import { Printer } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAssessmentPass } from "@/components/coach/passRequest";
+import InviteParentButton from "@/components/family/InviteParentCard";
 import { FAM_REPORT_CSS, renderFamilyReportPages } from "./famReportHtml";
 
 const STYLE_ID = "fam-report-full-style";
@@ -27,7 +28,11 @@ export default function FamilyReportFull({
 }) {
   const { data, isLoading } = trpc.assessment.familyFull.useQuery(
     studentId != null ? { userId: studentId } : undefined,
-    { retry: false },
+    {
+      retry: false,
+      /* 另一位家长可能在手机上刚提交：没齐就每 20 秒重取一次，齐了停 */
+      refetchInterval: (q) => (q.state.data?.has.parent2 ? false : 20000),
+    },
   );
   const openPass = useAssessmentPass();
 
@@ -103,7 +108,8 @@ export default function FamilyReportFull({
               : "四份作答齐了，13 页全部可核对。"}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <InviteParentButton studentId={studentId} filledLabels={(data?.parents ?? []).map((p) => p.label).filter(Boolean)} />
           {viewer === "tutor" && !has.parent && (
             <button
               onClick={() => openPass?.("familyparent")}

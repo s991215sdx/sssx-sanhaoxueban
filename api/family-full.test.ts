@@ -106,3 +106,41 @@ describe("完整版报告取数", () => {
     expect(html).toContain("APPENDIX");
   });
 });
+
+describe("第二位家长（对照列）", () => {
+  it("没填第二位家长时：alt 为空，报告只有一列，页数不变", () => {
+    const r = buildFamilyFullReport(SAMPLE_INPUT);
+    expect(r.alt).toBeNull();
+    expect(renderFamilyReportPages(r)).not.toContain("妈妈以为");
+  });
+
+  it("填了第二位家长：alt 有数、附录多一列、页数仍是 13 页", () => {
+    const r = buildFamilyFullReport({
+      ...SAMPLE_INPUT,
+      parent2Items: { ...SAMPLE_INPUT.parentItems, P16: 0, P10: 0, P53: 4, P54: 2 },
+      parent2Label: "妈妈",
+    });
+    expect(r.alt).not.toBeNull();
+    expect(r.alt!.label).toBe("妈妈");
+    /* 妈妈觉得手机「用得很少」，爸爸觉得「娱乐为主，但还可控」——同一题答得不一样 */
+    expect(r.alt!.blind.find((b) => b.key === "phone")?.parentGuess).toBe("用得很少");
+    expect(r.blind.find((b) => b.key === "phone")?.parentGuess).not.toBe("用得很少");
+    /* 附录两列同一批题，只换作答人 */
+    expect(r.appendix.parentRows.every((x) => x.altChoice != null)).toBe(true);
+
+    const html = renderFamilyReportPages(r);
+    expect((html.match(/class="page/g) ?? []).length).toBe(13);
+    expect(html).toContain("妈妈以为");
+    expect(html).toContain("妈妈");
+  });
+
+  it("第二位家长只答了一半：缺的题按 0 处理，不借主家长的答案", () => {
+    const r = buildFamilyFullReport({
+      ...SAMPLE_INPUT,
+      parent2Items: { P53: 5, P54: 1 },
+      parent2Label: "妈妈",
+    });
+    expect(r.alt!.security).toEqual({ avoid: 0, anxiety: 100 });
+    expect(r.alt!.blind.every((b) => b.parentGuess === "说不清")).toBe(true);
+  });
+});

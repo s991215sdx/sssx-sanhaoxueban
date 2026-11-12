@@ -186,7 +186,13 @@ function part00(r: FamilyFullReport): string {
 
     <div class="asset">
       <div class="ah"><span class="an">02</span><span class="at">日常在场｜关注持续且具体</span></div>
-      <div class="ab">投入这几题你答了 ${investBest.count} 题，其中「${H(investBest.q)}」得分最高。指向同一结论：你对学习过程保持持续关注，而不只在结果出来时才介入。</div>
+      <div class="ab">投入这几题你答了 ${investBest.count} 题，其中「${H(investBest.q)}」得分最高。指向同一结论：你对学习过程保持持续关注，而不只在结果出来时才介入。${
+        r.alt
+          ? `${H(r.alt.label)}答了 ${r.alt.invest.count} 题，最高的是「${H(r.alt.invest.q)}」（${r.alt.invest.score} 分）——${
+              r.alt.invest.q === investBest.q ? "两个人关注的是同一件事" : "两个人的关注点不在同一处，正好互补"
+            }。`
+          : ""
+      }</div>
       <div class="ev2">家长卷投入 5 题作答 ${investBest.count} 题；「${H(investBest.q)}」得 ${investBest.score} 分</div>
       <div class="au"><b>建议：</b>把「观察」改为「询问」，同样的关注度更容易被孩子接住。</div>
     </div>
@@ -570,6 +576,12 @@ function part04(r: FamilyFullReport): string {
   const py = 218 - (p.anxiety / 100) * 204;
   const cx = 52 + (c.avoid / 100) * 448;
   const cy = 218 - (c.anxiety / 100) * 204;
+  /* 第二位家长（多为妈妈）：有她的安全感两题就多画一个点，没有就不画——
+     空白比「未测」两个字更不打扰人。 */
+  const altSec = r.alt?.security ?? null;
+  const ax = altSec ? 52 + (altSec.avoid / 100) * 448 : 0;
+  const ay = altSec ? 218 - (altSec.anxiety / 100) * 204 : 0;
+  const altLabel = r.alt?.label ?? "";
   const sameZone = sec.zone !== "未测" && sec.gap.includes("同一区域");
   return `<div class="page">
   ${head(r)}
@@ -616,8 +628,18 @@ function part04(r: FamilyFullReport): string {
       <text x="${cx.toFixed(1)}" y="${(cy - 12).toFixed(1)}" text-anchor="middle" font-size="8.6" font-weight="700" fill="#B04A33">他</text>
       <text x="${px.toFixed(1)}" y="${(py + 16).toFixed(1)}" text-anchor="middle" font-size="6.8" fill="#7C8E85">回避 ${p.avoid} · 焦虑 ${p.anxiety}</text>
       <text x="${cx.toFixed(1)}" y="${(cy + 16).toFixed(1)}" text-anchor="middle" font-size="6.8" fill="#7C8E85">回避 ${c.avoid} · 焦虑 ${c.anxiety}</text>
+      ${
+        altSec
+          ? `<circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="8" fill="#C9A227" opacity=".18"/>
+      <circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="4.2" fill="#B8860B"/>
+      <text x="${(ax + 9).toFixed(1)}" y="${(ay + 3).toFixed(1)}" font-size="8.6" font-weight="700" fill="#8A6508">${H(altLabel.slice(0, 1))}</text>
+      <text x="${(ax + 9).toFixed(1)}" y="${(ay + 15).toFixed(1)}" font-size="6.6" fill="#8A6508">回避 ${altSec.avoid} · 焦虑 ${altSec.anxiety}</text>`
+          : ""
+      }
     </svg>
-    <p class="xs" style="text-align:center;margin-top:.6mm">${sameZone ? "两个点都落在同一片区域——同一片区域，不同的理由" : "两个点落在不同区域——你们的不安，来源不是同一个"}</p>
+    <p class="xs" style="text-align:center;margin-top:1.4mm">${
+      sameZone ? "你和他都落在同一片区域——同样的回避，不同的理由" : "你和他落在不同区域——你们的不安，来源不是同一个"
+    }${altSec ? "" : ""}</p>
   </div>
 
   <div class="grid3" style="margin-top:2.2mm">
@@ -633,7 +655,9 @@ function part04(r: FamilyFullReport): string {
     </div>
     <div class="card tint" style="padding:2.6mm 3mm">
       <h4 style="font-size:8.8pt">你们之间</h4>
-      <p class="sm" style="color:var(--mute);font-size:7pt;margin-bottom:.8mm">${H(sec.gap || "都在回避")}</p>
+      <p class="sm" style="color:var(--mute);font-size:7pt;margin-bottom:.8mm">${H(sec.gap || "都在回避")}${
+        altSec ? `；${H(altLabel)}偏${H(r.alt!.zone)}` : ""
+      }</p>
       <p class="sm"><b>两个都在回避的人凑在一起，家里就没有人负责说话。</b>所以你们不吵架、也不亲近——不是关系差，是都在等对方先开口。</p>
     </div>
   </div>
@@ -736,11 +760,16 @@ function anxietyWord(r: FamilyFullReport): string {
 
 function part06(r: FamilyFullReport): string {
   const m = r.motive;
+  /* 盲区表：第二位家长在时多一列，同题并排——两个人都「低估」，才是真的看不见。 */
+  const altBlind = r.alt?.blind ?? [];
+  const hasAltCol = !!r.alt && altBlind.length > 0;
   const blindRows = r.blind
-    .map(
-      (b) =>
-        `<tr><td><b>${H(b.label)}</b></td><td>${H(b.parentGuess)}</td><td>${H(b.childReal)}</td></tr>`,
-    )
+    .map((b) => {
+      const altGuess = altBlind.find((x) => x.key === b.key)?.parentGuess ?? "—";
+      return hasAltCol
+        ? `<tr><td><b>${H(b.label)}</b></td><td>${H(b.parentGuess)}</td><td>${H(altGuess)}</td><td>${H(b.childReal)}</td></tr>`
+        : `<tr><td><b>${H(b.label)}</b></td><td>${H(b.parentGuess)}</td><td>${H(b.childReal)}</td></tr>`;
+    })
     .join("\n    ");
   const pType = r.disc.parent?.primary ?? "D";
   const cType = r.disc.child?.primary ?? "S";
@@ -776,10 +805,21 @@ function part06(r: FamilyFullReport): string {
 
   <h3>三 · 你以为的，和他真实的</h3>
   <table>
-    <tr><th style="width:16%">这一项</th><th style="width:40%">你以为</th><th>他真实</th></tr>
-    ${blindRows || `<tr><td colspan="3" style="color:#8A9B92">孩子的 E3 与家长的条件观察还没齐，这三点暂时空着。</td></tr>`}
+    ${
+      hasAltCol
+        ? `<tr><th style="width:14%">这一项</th><th style="width:27%">${H(r.meta.respondentLabel)}以为</th><th style="width:27%">${H(r.alt!.label)}以为</th><th>他真实</th></tr>`
+        : `<tr><th style="width:16%">这一项</th><th style="width:40%">你以为</th><th>他真实</th></tr>`
+    }
+    ${blindRows || `<tr><td colspan="${hasAltCol ? 4 : 3}" style="color:#8A9B92">孩子的 E3 与家长的条件观察还没齐，这三点暂时空着。</td></tr>`}
   </table>
-  <p class="xs" style="margin-top:1.2mm">三条里${r.blind.filter((b) => b.low).length}条是<b>低估</b>——不是你不了解他，是你的注意力一直在「他学得怎么样」，很少放在「他过得怎么样」。</p>
+  <p class="xs" style="margin-top:1.2mm">三条里${r.blind.filter((b) => b.low).length}条是<b>低估</b>——不是你不了解他，是你的注意力一直在「他学得怎么样」，很少放在「他过得怎么样」。${
+    hasAltCol
+      ? `两位家长都低估的是：${(() => {
+          const both = r.blind.filter((b) => b.low && (altBlind.find((x) => x.key === b.key)?.low ?? false));
+          return both.length ? both.map((b) => b.label).join("、") : "没有——至少有一位看到了";
+        })()}。`
+      : ""
+  }</p>
 
   <h3>三个原因连起来，是一个转不停的圈</h3>
   <div style="display:flex;flex-wrap:wrap;align-items:center;gap:1.6mm;margin:1mm 0 2mm">
@@ -1059,10 +1099,13 @@ function appendix(r: FamilyFullReport): string {
         .join("\n\n    ")
     : `<tr><td colspan="5" style="padding:5mm;text-align:center;color:#8A9B92">孩子还没做 E3 学习力诊断，附录暂空。</td></tr>`;
 
+  const hasAltCol = !!r.alt && r.appendix.parentRows.some((x) => x.altChoice != null);
   const parentTable = r.appendix.parentRows
     .map(
       (row) =>
-        `<tr><td>${H(row.text)}</td><td><b>${H(row.choice)}</b></td><td>${row.bad ? `<b style="color:var(--red)">${H(row.gap)}</b>` : H(row.gap || "—")}</td></tr>`,
+        `<tr><td>${H(row.text)}</td><td><b>${H(row.choice)}</b></td>${
+          hasAltCol ? `<td><b>${H(row.altChoice ?? "—")}</b></td>` : ""
+        }<td>${row.bad ? `<b style="color:var(--red)">${H(row.gap)}</b>` : H(row.gap || "—")}</td></tr>`,
     )
     .join("\n        ");
 
@@ -1086,7 +1129,11 @@ function appendix(r: FamilyFullReport): string {
   <div class="grid2" style="align-items:start">
     <div>
       <table class="apx">
-        <tr><th style="width:52%">题目</th><th style="width:14%">你选的</th><th>与他自评的差</th></tr>
+        ${
+          hasAltCol
+            ? `<tr><th style="width:44%">题目</th><th style="width:12%">${H(r.meta.respondentLabel)}</th><th style="width:12%">${H(r.alt!.label)}</th><th>与孩子自评差</th></tr>`
+            : `<tr><th style="width:52%">题目</th><th style="width:14%">你选的</th><th>与他自评的差</th></tr>`
+        }
         ${parentTable}
       </table>
     </div>

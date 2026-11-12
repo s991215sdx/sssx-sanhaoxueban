@@ -93,3 +93,29 @@ export const SAMPLE_INPUT: FullReportInput = {
   mental: { anxiety: 11, mood: 8, selfHarm: 0 },
   stage: "junior",
 };
+
+/**
+ * 第二位家长（妈妈）的样例：与爸爸刻意答得不一样——
+ * 手机她觉得「用得很少」、情绪「状态不错」、自己更焦虑、陪得更久。
+ * 报告里那几列对照要用它验：差异不明显的样例验不出错位。
+ */
+export const SAMPLE_PARENT2: Record<string, number> = {
+  ...SAMPLE_INPUT.parentItems,
+  P10: 0,
+  P16: 0,
+  P12: 2,
+  P46: 4,
+  P47: 3,
+  P48: 5,
+  P49: 4,
+  P50: 4,
+  P53: 4,
+  P54: 2,
+  P38: 4,
+  P39: 3,
+  P40: 3,
+  P41: 2,
+  P42: 3,
+  P43: 3,
+  P44: 2,
+};

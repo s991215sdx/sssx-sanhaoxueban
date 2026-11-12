@@ -117,6 +117,7 @@ import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5Talent
 import MentalDetail from "@/components/reports/MentalDetail";
 import FamilyReportFull from "@/pages/FamilyReportFull";
 import FamilyCommKit from "@/components/reports/FamilyCommKit";
+import InviteParentButton from "@/components/family/InviteParentCard";
 import { AssessmentPassProvider } from "@/components/coach/AssessmentPassDialog";
 import { useAssessmentPass } from "@/components/coach/passRequest";
 
@@ -3187,6 +3188,13 @@ function ReportViewInner({
 
       {(tab === "parent" || tab === "discparent") && (
         <div className="space-y-4">
+          {/* 冲突报告靠「家长的 DISC + 家长卷」算，缺一位家长对照就缺一半：入口放最先看到的位置 */}
+          <div className="no-print flex flex-wrap items-center justify-end gap-2">
+            <InviteParentButton
+              studentId={viewer === "tutor" ? studentUserId : undefined}
+              filledLabels={discParents.map((p) => p.label)}
+            />
+          </div>
           <VerSwitch on={!!oliveNew.parent} onChange={(v) => setOliveNew((p) => ({ ...p, parent: v }))} />
           {oliveNew.parent ? (
             <OliveParent
@@ -3204,7 +3212,18 @@ function ReportViewInner({
       )}
 
       {tab === "family" && <FamilyReportFull viewer={viewer} studentId={viewer === "tutor" ? studentUserId : undefined} />}
-      {tab === "commkit" && <FamilyCommKit disc={disc} discParents={discParents} viewer={viewer} profile={profile} />}
+      {tab === "commkit" && (
+        <div className="space-y-4">
+          {/* 锦囊按「孩子的 DISC + 每位家长的 DISC」一本一本出，多一位家长就多一本 */}
+          <div className="no-print flex flex-wrap items-center justify-end gap-2">
+            <InviteParentButton
+              studentId={viewer === "tutor" ? studentUserId : undefined}
+              filledLabels={discParents.map((p) => p.label)}
+            />
+          </div>
+          <FamilyCommKit disc={disc} discParents={discParents} viewer={viewer} profile={profile} />
+        </div>
+      )}
 
       {tab === "anchor" &&
         (!anchor ? (
