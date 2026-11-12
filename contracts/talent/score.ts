@@ -366,6 +366,9 @@ export const CORE_GAP_LINE = 40;
 /** 重要维（权重 ≥2）低于这个分数算「会拖后腿」。比核心线低一档，避免把中等偏弱也当成问题。 */
 export const WEAK_LINE = 30;
 
+/** 高于这个分才叫「吃得开」。低于它就不往强项里写——把 55 分说成长处，报告就不可信了。 */
+export const STRENGTH_LINE = 60;
+
 export function fitForJob(job: JobKey, dims: TalentDims): JobFit {
   const w = JOB_WEIGHTS[job];
   let sum = 0;
@@ -382,8 +385,14 @@ export function fitForJob(job: JobKey, dims: TalentDims): JobFit {
     if (weight >= 2 && dims[dim] < WEAK_LINE) weak.push({ dim, label: DIM_LABEL[dim], score: dims[dim] });
     if (weight >= 2) pool.push({ dim, label: DIM_LABEL[dim], score: dims[dim], weight });
   }
-  const strengths = pool
-    .sort((a, b) => b.score - a.score || b.weight - a.weight)
+  /* 强项先看这个岗的核心维，核心维不够强才拿重要维补。
+     早前是「全池取最高两项」，结果四个岗列出来是同两个维度——
+     「换个岗位会怎样」就白写了：人只有一套特质，高分维在哪儿都高。 */
+  const byScore = (a: { score: number; weight: Weight }, b: { score: number; weight: Weight }) =>
+    b.score - a.score || b.weight - a.weight;
+  const core = pool.filter((p) => p.weight === 3 && p.score >= STRENGTH_LINE).sort(byScore);
+  const extra = pool.filter((p) => p.weight < 3 && p.score >= STRENGTH_LINE).sort(byScore);
+  const strengths = [...core, ...extra]
     .slice(0, 2)
     .map(({ dim, label, score }) => ({ dim, label, score }));
   const score = weightSum > 0 ? Math.round(sum / weightSum) : 0;
