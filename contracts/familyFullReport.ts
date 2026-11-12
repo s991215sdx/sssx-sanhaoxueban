@@ -756,35 +756,61 @@ function buildParentRows(
   ];
   return [
     ...mirrorPairs.map((m) => {
-      const pv = items[m.pid] ?? 0;
-      const sv = ratings?.[m.sno - 1] ?? 0;
-      const gap = pv && sv ? Math.abs(pv - sv) : 0;
+      /* 0 分是「完全不符合」，是答过的：这里只能拿 undefined 当没答，
+         用 `pv ?` 判断会把最严重的那一档（他答 0 或家长答 0）当成空，反而漏掉最大盲区。 */
+      const pv = items[m.pid];
+      const sv = ratings?.[m.sno - 1];
+      const gap = pv !== undefined && sv !== undefined ? Math.abs(pv - sv) : 0;
       return {
         text: `他${m.label}`,
-        choice: pv ? String(pv) : "—",
+        choice: pv === undefined ? "—" : String(pv),
         gap: gap >= 1.5 ? `差 ${gap.toFixed(1)}，最大盲区` : gap > 0 ? `差 ${gap.toFixed(1)}` : "基本一致",
         bad: gap >= 1.5,
       };
     }),
     {
       text: "我会规定每天的学习时间",
-      choice: String(items.P39 ?? 0) || "—",
+      choice: items.P39 === undefined ? "—" : String(items.P39),
       gap: `要求 ${Math.round(avg4(items, ["P38", "P39", "P40", "P41"]) * 20)} 的来源`,
       bad: false,
     },
     {
       text: "我会先听他说完再回应",
-      choice: String(items.P42 ?? 0) || "—",
+      choice: items.P42 === undefined ? "—" : String(items.P42),
       gap: `回应 ${Math.round(avg4(items, ["P42", "P43", "P44"]) * 20)} 的来源`,
       bad: false,
     },
     {
       text: "成绩一不好，我会立刻给他加任务",
-      choice: String(items.P40 ?? 0) || "—",
+      choice: items.P40 === undefined ? "—" : String(items.P40),
       gap: "「有条件的肯定」",
       bad: false,
     },
   ];
+}
+
+/**
+ * 从多条家长 DISC 答卷里挑出「报告主角」那一条。
+ *
+ * 报告的主口径固定是 p0（爸爸优先），第 5 页那张「你是 D、他是 S」必须画 p0 的四维。
+ * 妈妈补填后 discparent 会多一条、且更新更晚——直接取最新，第 5 页就换成了妈妈，
+ * 全篇却仍称「你」，等于把两个人的性格拼在一起。
+ *
+ * rows 需按提交时间倒序传入（调用方已是这个顺序）。
+ * 老答卷只有 label、没有 respondent，所以第二道按 label 对齐，最后才退回最新一条。
+ */
+export function pickParentDiscRow<T extends { answers: unknown }>(
+  rows: T[],
+  p0: { respondent: string; label: string } | null,
+): T | null {
+  if (!rows.length) return null;
+  const meta = (r: T) => (r.answers ?? {}) as { respondent?: string; label?: string };
+  return (
+    rows.find((r) => !!p0 && !!meta(r).respondent && meta(r).respondent === p0.respondent) ??
+    rows.find((r) => !!p0?.label && meta(r).label === p0.label) ??
+    rows[0] ??
+    null
+  );
 }
 
 export function buildFamilyFullReport(input: FullReportInput): FamilyFullReport {

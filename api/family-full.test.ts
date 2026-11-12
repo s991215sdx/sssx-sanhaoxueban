@@ -12,7 +12,7 @@ import {
   buildStudentRelPaper,
   parentBlockCounts,
 } from "@contracts/familyFullPaper";
-import { buildFamilyFullReport, anxietyBand, moodBand } from "@contracts/familyFullReport";
+import { buildFamilyFullReport, pickParentDiscRow, anxietyBand, moodBand } from "@contracts/familyFullReport";
 import { renderFamilyReportPages } from "../src/pages/famReportHtml";
 import { SAMPLE_INPUT } from "../scripts/fam-sample";
 
@@ -142,5 +142,58 @@ describe("第二位家长（对照列）", () => {
     });
     expect(r.alt!.security).toEqual({ avoid: 0, anxiety: 100 });
     expect(r.alt!.blind.every((b) => b.parentGuess === "说不清")).toBe(true);
+  });
+});
+
+/**
+ * v251 补测：妈妈扫码补填后，第 5 页那张「你是 D」不能换成妈妈。
+ *
+ * 模拟留下的疤：discparent 一旦多出妈妈一条、且更新更晚，`latest("discparent")`
+ * 拿到的是妈妈——报告全篇称「你」（爸爸），四维却是妈妈的。挑人必须按 p0 对齐。
+ */
+describe("家长 DISC 挑人（两位家长时）", () => {
+  const dadRow = { answers: { respondent: "dad", label: "爸爸", answers: { most: [], least: [] } } };
+  const momRow = { answers: { respondent: "mom", label: "妈妈", answers: { most: [], least: [] } } };
+
+  it("只有爸爸时选爸爸", () => {
+    expect(pickParentDiscRow([dadRow], { respondent: "dad", label: "爸爸" })).toBe(dadRow);
+  });
+
+  it("妈妈更新更晚（排在前面），仍选爸爸", () => {
+    const picked = pickParentDiscRow([momRow, dadRow], { respondent: "dad", label: "爸爸" });
+    expect(picked).toBe(dadRow);
+  });
+
+  it("老答卷没有 respondent：按 label 兜住，不退回最新", () => {
+    const legancyDad = { answers: { label: "爸爸" } };
+    const picked = pickParentDiscRow([momRow, legancyDad], { respondent: "dad", label: "爸爸" });
+    expect(picked).toBe(legancyDad);
+  });
+
+  it("一条都对不上（称谓被改过）：退回最新一条，不至于空着", () => {
+    const picked = pickParentDiscRow([momRow, dadRow], { respondent: "other", label: "爷爷" });
+    expect(picked).toBe(momRow);
+  });
+});
+
+describe("附录 0 分不被当成没答", () => {
+  it("家长答「完全不符合」(0) 要显示 0，不是「—」", () => {
+    const r = buildFamilyFullReport({
+      ...SAMPLE_INPUT,
+      parentItems: { ...SAMPLE_INPUT.parentItems, P17: 0, P20: 0, P39: 0 },
+    });
+    const row17 = r.appendix.parentRows[0]!;
+    expect(row17.choice).toBe("0");
+  });
+
+  it("孩子答 0、家长答 5：这是最大盲区，不能算「基本一致」", () => {
+    const r = buildFamilyFullReport({
+      ...SAMPLE_INPUT,
+      parentItems: { ...SAMPLE_INPUT.parentItems, P17: 5 },
+      e3Ratings: Array.from({ length: 70 }, (_, i) => (i === 0 ? 0 : 3)),
+    });
+    const row17 = r.appendix.parentRows[0]!;
+    expect(row17.gap).toContain("最大盲区");
+    expect(row17.bad).toBe(true);
   });
 });

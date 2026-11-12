@@ -58,7 +58,7 @@ import {
   type FamilyParentProfile,
 } from "@contracts/familyParent";
 import { buildFamilyProfile, type FamilyProfile } from "@contracts/familyProfile";
-import { buildFamilyFullReport } from "@contracts/familyFullReport";
+import { buildFamilyFullReport, pickParentDiscRow } from "@contracts/familyFullReport";
 import { buildParentFullPaper, buildStudentRelPaper, type ParentPaper, type StudentRelPaper } from "@contracts/familyFullPaper";
 import { isV250Parent, isV250Student, toV236ParentItems, toV236StudentItems } from "@contracts/familyPackAdapter";
 import {
@@ -589,6 +589,37 @@ async function paperFor(
  * 必须在库里长得一模一样，否则「扫码那份」会在报告里缺字段，而报告往往是最后才被打开的东西，
  * 到那时已经没人记得它是扫码来的。
  */
+/**
+ * 家庭卷里那 24 组 DISC 也是这位家长的 DISC：另存一条 discparent。
+ *
+ * 冲突报告与沟通锦囊读的是 discparent——不落这一条，妈妈补填之后那两份报告里
+ * 根本没有她这个人，只有家庭教育报告会变。登录态填写（applySubmission）与
+ * 家长扫码填写（submitFamilyParent）是两条独立的写入口，两边都必须走这里，
+ * 否则「扫码补填」这条主路径会漏掉一半报告。
+ */
+async function persistFamilyDisc(
+  db: ReturnType<typeof getDb>,
+  userId: number,
+  fa: { disc?: { most: number[]; least: number[] }; label?: string; respondent?: string },
+  via?: string,
+): Promise<void> {
+  const d = fa.disc;
+  if (d?.most?.length !== DISC_PARENT_V2_GROUPS.length || d.least?.length !== d.most.length) return;
+  const discResult = scoreDiscV2(d, DISC_PARENT_V2_GROUPS);
+  await db.insert(assessmentResults).values({
+    userId,
+    kind: "discparent",
+    result: discResult as unknown as Record<string, unknown>,
+    answers: {
+      answers: d,
+      label: fa.label || (fa.respondent === "mom" ? "妈妈" : fa.respondent === "dad" ? "爸爸" : "家长"),
+      respondent: fa.respondent ?? "other",
+      from: "familyparent",
+      ...(via ? { via } : {}),
+    } as unknown as number[],
+  });
+}
+
 async function applySubmission(
   userId: number,
   input: AssessmentSubmitInput,
@@ -766,27 +797,14 @@ async function applySubmission(
     answers: (opts?.via ? { ...(rawAnswers as object), via: opts.via } : rawAnswers) as unknown as number[],
   });
 
-  /* 家庭码里那 24 组 DISC 也是这位家长的 DISC：另存一条 discparent。
-     冲突报告与沟通锦囊读的是 discparent——不落这一条，妈妈扫码补填之后，
-     那两份报告看不到她，只有家庭教育报告会变。 */
+  /* 家庭码里那 24 组 DISC 也是这位家长的 DISC：另存一条 discparent（扫码那条路走同一个函数）。 */
   if (outcome.kind === "familyparent") {
-    const fa = input.answers as { disc?: { most: number[]; least: number[] }; label?: string; respondent?: string };
-    const d = fa.disc;
-    if (d?.most?.length === DISC_PARENT_V2_GROUPS.length && d.least?.length === d.most.length) {
-      const discResult = scoreDiscV2(d, DISC_PARENT_V2_GROUPS);
-      await db.insert(assessmentResults).values({
-        userId,
-        kind: "discparent",
-        result: discResult as unknown as Record<string, unknown>,
-        answers: {
-          answers: d,
-          label: fa.label || (fa.respondent === "mom" ? "妈妈" : fa.respondent === "dad" ? "爸爸" : "家长"),
-          respondent: fa.respondent ?? "other",
-          from: "familyparent",
-          ...(opts?.via ? { via: opts.via } : {}),
-        } as unknown as number[],
-      });
-    }
+    await persistFamilyDisc(
+      db,
+      userId,
+      input.answers as { disc?: { most: number[]; least: number[] }; label?: string; respondent?: string },
+      opts?.via,
+    );
   }
 
   // 同步到档案对应字段；没有档案则先建一条默认档案
@@ -1428,7 +1446,9 @@ export const assessmentRouter = createRouter({
         p ? p.label || (p.respondent === "mom" ? "妈妈" : p.respondent === "dad" ? "爸爸" : "其他家人") : "";
 
       const discRow = latest("disc");
-      const discParentRow = latest("discparent");
+      /* 家长 DISC 可能有好几条（爸爸一条、妈妈一条）：报告里的「你」是 p0，第 5 页那张
+         「你是 D、他是 S」必须挑 p0 那一条，否则妈妈一补填就换成妈妈的四维。 */
+      const discParentRow = pickParentDiscRow(rows.filter((r) => r.kind === "discparent"), p0);
       const discDims = (row: typeof discRow) => {
         const r = row?.result as { dims?: Record<string, number> } | null;
         return r?.dims ? (r.dims as Record<"D" | "I" | "S" | "C", number>) : null;
@@ -1606,6 +1626,14 @@ export const assessmentRouter = createRouter({
         /* via=code：区分「家长在孩子的账号里填」与「扫码填」，排查数据来源时用得上 */
         answers: { ...a, pack, via: "code" } as unknown as number[],
       });
+      /* 扫码这条是「邀请另一位家长」的主路径，同样要落 discparent：
+         不落，妈妈只在家庭教育报告里出现，冲突报告与沟通锦囊查无此人。 */
+      await persistFamilyDisc(
+        db,
+        target.studentUserId,
+        { disc: a.disc, label: a.label, respondent: a.respondent },
+        "code",
+      );
       return { kind: "familyparent" as const, result };
     }),
 });
