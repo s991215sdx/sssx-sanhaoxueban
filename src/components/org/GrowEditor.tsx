@@ -19,7 +19,7 @@ const KIND: Record<string, string> = { mbti: "MBTI", disc: "DISC", e3: "E3 学�
 const SUBJECT_NAMES = ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治"];
 
 /** 测评右侧与独立陪跑共用的 GROW 编辑器；v274 起按规划课四要素（目的/目标/策略/衡量）表单化。 */
-export default function GrowEditor({ studentUserId, initialResultId, onOpenReport, onOpenCoaching }: { studentUserId: number; initialResultId?: number; onOpenReport?: () => void; onOpenCoaching?: (caseId: number) => void }) {
+export default function GrowEditor({ studentUserId, initialResultId, onOpenReport, onOpenCoaching, formId }: { studentUserId: number; initialResultId?: number; onOpenReport?: () => void; onOpenCoaching?: (caseId: number) => void; formId?: string }) {
   const utils = trpc.useUtils();
   const { data: cases } = trpc.coaching.cases.useQuery();
   const [createdCaseId, setCreatedCaseId] = useState<number | null>(null);
@@ -128,15 +128,15 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
   const selectedResult = data?.results.find((result) => result.id === initialResultId);
   const latest = selectedResult ? [selectedResult, ...(data?.results.filter((result) => result.id !== initialResultId) ?? [])].slice(0, 4) : data?.results.slice(0, 4) ?? [];
 
-  return <section className="overflow-hidden rounded-2xl border border-[#0C7064]/15 bg-white shadow-sm">
-    <header className="bg-[#0C7064] px-5 py-4 text-white">
-      <div className="text-[10px] font-semibold tracking-[.18em] text-white/60">GROW · 规划课课程设计</div>
-      <div className="mt-1 flex items-center justify-between gap-2">
-        <h2 className="text-[18px] font-bold">像装修先做设计：定目的、定目标、定策略、定衡量</h2>
-        {onOpenReport && <button type="button" disabled={data?.reportAllowed === false} title={data?.reportAllowed === false ? "报告权限未开放或已到期" : "查看该学员完整报告"} onClick={onOpenReport} className="inline-flex items-center gap-1 rounded-lg bg-white/12 px-2.5 py-1.5 text-[11px] font-semibold hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"><FileText size={13} /> 完整报告</button>}
+  return <section className="space-y-4">
+    <header className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]">
+      <div className="flex items-center justify-between gap-2">
+        <div><div className="text-[10px] font-semibold tracking-[.14em] text-[#0C7064]">GROW · 规划课课程设计</div><h2 className="mt-1 text-[16px] font-bold text-olive">像装修先做设计：定目的、定目标、定策略、定衡量</h2></div>
+        {onOpenReport && <button type="button" disabled={data?.reportAllowed === false} title={data?.reportAllowed === false ? "报告权限未开放或已到期" : "查看该学员完整报告"} onClick={onOpenReport} className="inline-flex min-h-10 items-center gap-1 rounded-[10px] border border-[#0C7064]/25 px-3 py-2 text-[11px] font-semibold text-[#0C7064] hover:bg-[#E5EFE8] disabled:cursor-not-allowed disabled:opacity-40"><FileText size={13} /> 完整报告</button>}
       </div>
     </header>
-    {caseId > 0 && isLoading ? <div className="p-6 text-sm text-olive-mute">正在读取陪跑主档…</div> : <div className="space-y-4 p-4">
+    {caseId > 0 && isLoading ? <div className="rounded-2xl border border-[#E7E2D0] bg-white p-6 text-sm text-olive-mute">正在读取陪跑主档…</div> : <form id={formId} onSubmit={(event) => { event.preventDefault(); save(); }} className="space-y-4">
+      <section className="space-y-3 rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]">
       <div className="flex items-center justify-between gap-3">
         <div><h3 className="text-[13px] font-bold text-olive">陪跑服务场景</h3><p className="mt-0.5 text-[10.5px] text-olive-mute">可按实际服务叠加选择，至少一项</p></div>
         <div className="shrink-0 rounded-lg bg-mint-pale/60 px-3 py-2 text-[11px] text-olive-soft">测评结果 <b className="ml-1 text-[15px] text-olive">{data?.reportAllowed === false ? "未开放" : `${data?.results.length ?? 0} 份`}</b></div>
@@ -154,11 +154,12 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
       {end < start && <p role="alert" className="text-[11px] text-red-700">服务结束日期不能早于开始日期。</p>}
       {data && <details className="rounded-xl border border-border bg-cream/40 p-3"><summary className="cursor-pointer text-[12px] font-semibold text-olive">服务场景历史 <span className="font-normal text-olive-mute">（{data.scenarioHistory.length} 个周期，使用中 {data.serviceScenarios.length} 项）</span></summary><div className="mt-3 space-y-2">{data.scenarioHistory.map((item) => <div key={item.id} className="rounded-lg bg-white p-2.5 text-[11px] leading-relaxed"><div className="flex flex-wrap items-center gap-2"><b className="text-olive">{coachingScenarioLabel(item.scenario)}</b><span className={`rounded-full px-2 py-0.5 text-[10px] ${item.endedAt ? "bg-cream text-olive-mute" : "bg-mint-pale text-[#0C7064]"}`}>{item.endedAt ? "已停用" : "使用中"}</span></div><p className="mt-1 text-olive-mute">开始：{new Date(item.startedAt).toLocaleString("zh-CN")}{item.endedAt ? ` · 停用：${new Date(item.endedAt).toLocaleString("zh-CN")}` : ""}</p>{item.changeReason && <p className="mt-1 whitespace-pre-wrap text-olive-soft">原因：{item.changeReason}</p>}</div>)}{!data.scenarioHistory.length && <p className="text-[11px] text-olive-mute">尚无场景周期记录，保存补选后开始留痕。</p>}</div></details>}
       {data?.reportAllowed === false && <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-[11.5px] leading-relaxed text-amber-800">该学员的报告权限未开放或已到期。这里不会把空列表当作“没有测评”；请联系机构管理员确认报告授权，已有 GROW 计划和督学记录不受影响。</p>}
+      </section>
 
       {/* v274 规划课四要素表单 */}
       <div className="space-y-3">
         {/* ① 目的 */}
-        <section className="rounded-xl border border-border bg-cream/60 p-3">
+        <section className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]">
           <h4 className="flex items-center gap-1.5 text-[13px] font-bold text-olive"><Target size={15} />① 目的 <span className="text-[10.5px] font-normal text-olive-mute">这次陪跑为了什么（可多选）</span></h4>
           <div className="mt-2 flex flex-wrap gap-2">
             {PURPOSE_OPTIONS.map((p) => <button key={p} type="button" onClick={() => set({ purpose: form.purpose.includes(p) ? form.purpose.filter((x) => x !== p) : [...form.purpose, p] })} className={`rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors ${form.purpose.includes(p) ? "border-[#0C7064]/50 bg-mint-pale text-[#0C7064]" : "border-border bg-white text-olive-mute hover:border-[#0C7064]/30"}`}>{p}</button>)}
@@ -168,7 +169,7 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
         </section>
 
         {/* ② 目标 */}
-        <section className="rounded-xl border border-border bg-cream/60 p-3">
+        <section className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]">
           <h4 className="flex items-center gap-1.5 text-[13px] font-bold text-olive"><Compass size={15} />② 目标 <span className="text-[10.5px] font-normal text-olive-mute">要达到什么程度（对接学习力「成绩与目标」）</span></h4>
           <label className="mt-2 block text-[11px] font-semibold text-olive-mute">升学目标<input value={form.targetSchool} onChange={(e) => set({ targetSchool: e.target.value })} placeholder="例：三好目标中学" maxLength={60} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-[12px] font-normal text-olive outline-none focus:border-[#0C7064]" /></label>
           <div className="mt-3">
@@ -208,7 +209,7 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
         </section>
 
         {/* ③ 策略（v275：表格化，课程/目标/针对问题/课纲/频次/形式） */}
-        <section className="rounded-xl border border-border bg-cream/60 p-3">
+        <section className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]">
           <h4 className="flex items-center gap-1.5 text-[13px] font-bold text-olive"><ClipboardCheck size={15} />③ 策略 <span className="text-[10.5px] font-normal text-olive-mute">用哪些课程来指导（五大课表格，勾选并按孩子情况调整频次与形式）</span></h4>
           <div className="mt-2 overflow-x-auto">
             <table className="w-full min-w-[860px] border-collapse text-left">
@@ -251,7 +252,7 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
         </section>
 
         {/* ④ 衡量 */}
-        <section className="rounded-xl border border-border bg-cream/60 p-3">
+        <section className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]">
           <h4 className="flex items-center gap-1.5 text-[13px] font-bold text-olive"><TrendingUp size={15} />④ 衡量 <span className="text-[10.5px] font-normal text-olive-mute">怎么知道做到了（每周修正项 + 大考分数）</span></h4>
           <b className="mt-2 block text-[11px] text-olive">每周修正项</b>
           <div className="mt-1.5 space-y-1.5">{form.weekly.map((w, i) => <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-1.5">
@@ -280,9 +281,9 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
         {data && onOpenCoaching && <button type="button" onClick={() => onOpenCoaching(data.coachingCase.id)} className="mt-3 w-full rounded-lg border border-[#0C7064]/20 bg-white py-2 text-[12px] font-semibold text-[#0C7064] hover:bg-mint-pale">进入独立陪跑：计划、课堂、验收与反馈 →</button>}
       </div>
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-700">{error}</p>}
-      <button type="button" onClick={save} disabled={saving || !formValid} className="w-full rounded-xl bg-[#0C7064] py-2.5 text-[13px] font-semibold text-white hover:bg-[#095c53] disabled:opacity-40">{saving ? "正在保存…" : data ? "保存课程设计（GROW 草稿与计划版本）" : "保存课程设计草稿，建立陪跑主档"}</button>
+      <button type="submit" disabled={saving || !formValid} className="w-full rounded-xl bg-[#0C7064] py-2.5 text-[13px] font-semibold text-white hover:bg-[#095c53] disabled:opacity-40">{saving ? "正在保存…" : data ? "保存课程设计（GROW 草稿与计划版本）" : "保存课程设计草稿，建立陪跑主档"}</button>
       <p className="text-center text-[10.5px] leading-relaxed text-olive-mute">此快捷入口只保存内部草稿；请继续在“计划三方会签”中由教练提交、学生与至少一位监护人本人确认后，计划才正式生效。</p>
       {(create.isSuccess || update.isSuccess) && <p className="text-center text-[11px] text-[#2F7A41]">草稿已保存，历史计划版本与服务场景周期均保留；仍需完成三方会签。</p>}
-    </div>}
+    </form>}
   </section>;
 }

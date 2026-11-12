@@ -37,11 +37,11 @@ function emptySupervision(): SupervisionForm {
 }
 
 /** 五课交付：整组续写、逐生家庭接收人、预约与历史事实分开管理。 */
-export default function CoachingSessionDelivery({ data }: { data: CoachingDetail }) {
+export default function CoachingSessionDelivery({ data, initialMode = "session" }: { data: CoachingDetail; initialMode?: "session" | "supervision" }) {
   const utils = trpc.useUtils();
   const caseId = data.coachingCase.id;
   const { data: cases = [] } = trpc.coaching.cases.useQuery();
-  const [mode, setMode] = useState<"session" | "supervision">("session");
+  const [mode, setMode] = useState<"session" | "supervision">(initialMode);
   const [editingSessionId, setEditingSessionId] = useState<number | null>(null);
   const [editingSupervisionId, setEditingSupervisionId] = useState<number | null>(null);
   const [startAt, setStartAt] = useState(localDateTime());

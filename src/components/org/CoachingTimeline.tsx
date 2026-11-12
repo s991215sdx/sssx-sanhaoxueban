@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { BookOpenCheck, CalendarDays, ClipboardCheck, Footprints } from "lucide-react";
 import { parseGrowForm } from "./growPlan";
 import type { CoachingDetail } from "./coachingTypes";
@@ -12,7 +12,7 @@ type DayEntry = { date: string; sessions: CoachingDetail["sessions"]; supervisio
 const dayOf = (value: Date | string): string => new Date(value).toISOString().slice(0, 10);
 
 /** 执行：服务时间线。到店/课堂/督学/日检验按天合并为一条时间线，带服务阶段标签，右侧五课课时累计。 */
-export default function CoachingTimeline({ data }: { data: CoachingDetail }) {
+export default function CoachingTimeline({ data, children }: { data: CoachingDetail; children?: ReactNode }) {
   const growForm = parseGrowForm(data.coachingCase.growForm);
   const serviceStart = new Date(data.coachingCase.serviceStart);
   const methodStarted = useMemo(() => data.sessions.some((session) => session.status === "completed" && session.units.some((unit) => unit.courseKey === "method")), [data.sessions]);
@@ -39,7 +39,8 @@ export default function CoachingTimeline({ data }: { data: CoachingDetail }) {
   };
 
   return <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-    <section className="rounded-2xl border border-border bg-white p-5 shadow-sm" aria-label="服务时间线">
+    <div className="min-w-0 space-y-4">
+    <section className="rounded-2xl border border-[#E7E2D0] bg-white p-5 shadow-[0_1px_2px_rgba(69,80,58,.06)]" aria-label="服务时间线">
       <h3 className="flex items-center gap-1.5 text-[15px] font-bold text-olive"><Footprints size={16} className="text-[#0C7064]" />服务时间线<span className="text-[11px] font-normal text-olive-mute">每次到店一条：课堂＋督学＋日检验合并展示</span></h3>
       <div className="mt-4 space-y-5">
         {days.map((day) => { const stage = stageChip(day.date); const when = new Date(`${day.date}T00:00:00`); return <div key={day.date} className="relative border-l-2 border-[#0C7064]/20 pl-4">
@@ -67,9 +68,11 @@ export default function CoachingTimeline({ data }: { data: CoachingDetail }) {
         {!days.length && <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-[12px] text-olive-mute">还没有到店或课堂记录，用下方表单记第一次。</p>}
       </div>
     </section>
+    {children}
+    </div>
 
     <div className="space-y-3">
-      <section className="rounded-2xl border border-border bg-white p-4 shadow-sm" aria-label="五课课时累计">
+      <section className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]" aria-label="五课课时累计">
         <h3 className="text-[13px] font-bold text-olive">五课课时累计</h3>
         <div className="mt-3 space-y-2.5 text-[11px]">
           {(["planning", "mindset", "supervision", "method", "parent"] as const).map((key) => { const count = counts[key]; const target = COURSE_TARGET[key]; const pct = Math.min(100, Math.round(count / target.target * 100)); return <div key={key}>
@@ -78,7 +81,7 @@ export default function CoachingTimeline({ data }: { data: CoachingDetail }) {
           </div>; })}
         </div>
       </section>
-      {growForm && growForm.weekly.some((w) => w.item) && <section className="rounded-2xl border border-border bg-white p-4 shadow-sm" aria-label="本周修正项">
+      {growForm && growForm.weekly.some((w) => w.item) && <section className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]" aria-label="本周修正项">
         <h3 className="text-[13px] font-bold text-olive">本周修正项</h3>
         <div className="mt-3 space-y-2 text-[11.5px]">{growForm.weekly.filter((w) => w.item).slice(0, 6).map((w, index) => <div key={index} className="flex items-baseline gap-2"><span className="min-w-0 flex-1 text-olive-soft">· {w.item}</span>{w.metric && <span className="shrink-0 font-semibold text-[#0C7064]">{w.metric}</span>}</div>)}</div>
       </section>}

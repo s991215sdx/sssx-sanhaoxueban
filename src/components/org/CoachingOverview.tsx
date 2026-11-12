@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { CalendarDays, ClipboardCheck, Target, TrendingUp } from "lucide-react";
 import GrowSnapshot from "./GrowSnapshot";
 import { GrowthPathBar } from "./CoachingV2Panels";
+import { CoachingPageHeading } from "./CoachingV4";
 import { parseGrowForm } from "./growPlan";
 import type { CoachingDetail } from "./coachingTypes";
 
@@ -38,6 +39,7 @@ export default function CoachingOverview({ data, onEdit }: { data: CoachingDetai
   const verified = data.tasks.filter((task) => task.status === "verified").length;
 
   return <div className="space-y-4">
+    <CoachingPageHeading title="学员 · 陪跑总览" description="以 GROW 四象限汇总当前学员的目标、现状、五课设计与真实执行证据，再沿成长路径持续复盘。" />
     <GrowSnapshot data={data} onEdit={onEdit} />
     <GrowthPathBar data={data} />
     <div className="grid items-start gap-4 2xl:grid-cols-2">
