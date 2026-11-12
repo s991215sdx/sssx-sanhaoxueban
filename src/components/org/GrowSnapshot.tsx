@@ -1,5 +1,6 @@
 import { ArrowRight, ClipboardCheck, Compass, Target, TrendingUp } from "lucide-react";
 import { courseGoal, parseGrowForm } from "./growPlan";
+import { IcebergPanel } from "./CoachingV2Panels";
 import type { CoachingDetail } from "./coachingTypes";
 
 const LEVEL: Record<string, string> = { term: "学期", month: "月", week: "周", day: "日" };
@@ -35,7 +36,7 @@ export default function GrowSnapshot({ data, onEdit, onOpenCoaching }: {
       {profile && asSubjects(profile.targetSubjects).length > 0 && <div className="mt-3 space-y-2">{asSubjects(profile.targetSubjects).slice(0, 3).map((item, index) => <div key={index} className="grid grid-cols-[48px_minmax(0,1fr)] gap-2 text-[11px]"><span className="text-olive-mute">{item.subject}</span><span className="text-olive">{item.baseline} <b className="mx-1 text-[#0C7064]">→</b> {item.target}</span></div>)}</div>}
       <p className="mt-auto pt-3 text-[10.5px] text-olive-mute">目标须由伴学师与学生、家长分别核对</p>
     </GrowCard>
-    <GrowCard letter="R" title="评估现状" subtitle="结论可追溯到具体事实与报告" tone="blue" icon={<TrendingUp size={17} />}>
+    <GrowCard letter="R" title="评估现状" subtitle="E3 冰山模型 · 红黄绿" tone="blue" icon={<TrendingUp size={17} />}>{data && <IcebergPanel studentUserId={data.coachingCase.studentUserId} />}
       <Fact label="现状评估" value={situation} strong />
       <Fact label="事实证据" value={evidence} />
       {data?.reportAllowed === false ? <p className="mt-3 rounded-lg bg-amber-50 px-2.5 py-2 text-[10.5px] text-amber-800">报告权限未开放或已到期，不以空列表代替测评结论。</p> : <p className="mt-auto pt-3 text-[10.5px] text-olive-mute">已关联 {data?.results.length ?? 0} 份可见测评结果</p>}

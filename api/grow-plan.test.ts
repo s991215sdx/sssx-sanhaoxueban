@@ -4,7 +4,7 @@ import { ABILITY_TO_COURSE, COURSE_OUTLINE, composeGoalText, composePlanText, de
 /** v275：GROW 规划课四要素表单的数据契约——五大课目标、课程计划、合成纯文本与宽容解析。 */
 describe("growPlan 五大课定义（v275 用户拍板文案）", () => {
   it("五门课的目标、系统与默认安排完整", () => {
-    expect(COURSE_OUTLINE.map((c) => c.course)).toEqual(["规划课", "心法课", "技法课", "督学课", "亲子课"]);
+    expect(COURSE_OUTLINE.map((c) => c.course)).toEqual(["规划课", "心法课", "技法课", "督学课", "亲子美言课"]);
     expect(COURSE_OUTLINE.map((c) => c.goal)).toEqual([
       "目标明确、路径清晰",
       "心智成长、认知发展",
@@ -64,6 +64,6 @@ describe("parseGrowForm 宽容解析", () => {
     const parsed = parseGrowForm({ purpose: ["不存在的选项"], subjects: "bad", coursePlans: [{ course: "亲子课", frequency: 3 }] });
     expect(parsed?.purpose).toEqual([]);
     expect(parsed?.subjects).toEqual([]);
-    expect(parsed?.coursePlans[0]).toEqual({ course: "亲子课", frequency: "", format: "" });
+    expect(parsed?.coursePlans[0]).toEqual({ course: "亲子美言课", frequency: "", format: "" });
   });
 });

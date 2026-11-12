@@ -18,23 +18,29 @@ export interface GrowPlanForm {
 
 export const PURPOSE_OPTIONS = ["分数提升", "综合成长"] as const;
 
-/** 五大课定义（v275 按用户白板拍板：课程 / 系统 / 目标 / 课纲重点 / 默认频次与形式）。 */
-export const COURSE_OUTLINE: { course: string; system: string; goal: string; outline: string; frequency: string; format: string }[] = [
-  { course: "规划课", system: "方向", goal: "目标明确、路径清晰", outline: "全维度测评 · 考情解读 · 升学目标定位与拆分 · 学业＋升学双方案（每学期滚动修订）", frequency: "每学期第 1 次", format: "一对一" },
-  { course: "心法课", system: "乐学", goal: "心智成长、认知发展", outline: "立志（修齐治平）· 三观 · 秀塔 · 三个钱袋子 · 三大主义 · 教育选型 · 楼层驱动 · 心力能量训练", frequency: "每周 1 次", format: "一对一" },
-  { course: "技法课", system: "会学", goal: "校内学法优化、校外 AI 学习", outline: "12 次课：综合测评与立志 → 全科学习策略 → 计划与总结 → 复盘与费曼输出 → 高效作业 → 预习与听课 → 笔记与思维导图 → 错题整理 → 试卷分析 → 专注力与时间管理 → 记忆流程与技巧 → 考前心态与考场策略", frequency: "每周 1 次", format: "一对一" },
-  { course: "督学课", system: "真学", goal: "高效执行、温度陪伴", outline: "周计划落地 · 日检验·周复盘·月家长会 · 费曼输出训练 · 痕迹管理 · 试卷分析", frequency: "每次到店", format: "督学" },
-  { course: "亲子课", system: "家庭", goal: "学会说话、关系亲密", outline: "YES 模型（接纳→探索→解决）· 亲子美言 · 五型防御机制 · 家访", frequency: "每月 1 周期", format: "一对一＋沙龙" },
+/** 五大课定义（v275 按用户白板拍板：课程 / 系统 / 目标 / 课纲重点 / 默认频次与形式）。
+ *  v276：亲子课更名「亲子美言课」，并补每课「标准周期」（融入 11-11 产品培训节奏）。 */
+export const COURSE_OUTLINE: { course: string; system: string; goal: string; outline: string; frequency: string; format: string; period: string }[] = [
+  { course: "规划课", system: "方向", goal: "目标明确、路径清晰", outline: "全维度测评 · 考情解读 · 升学目标定位与拆分 · 学业＋升学双方案（每学期滚动修订）", frequency: "每学期第 1 次", format: "一对一", period: "启动 1 次 · 唤醒内驱力" },
+  { course: "心法课", system: "乐学", goal: "心智成长、认知发展", outline: "立志（修齐治平）· 三观 · 秀塔 · 三个钱袋子 · 三大主义 · 教育选型 · 楼层驱动 · 三个美好 · 五型防御机制 · 情绪坐标", frequency: "每周 1 次", format: "一对一", period: "标准 4–8 周 · 先关系后学习" },
+  { course: "技法课", system: "会学", goal: "校内学法优化、校外 AI 学习", outline: "12 次课：综合测评与立志 → 全科学习策略 → 计划与总结 → 复盘与费曼输出 → 高效作业 → 预习与听课 → 笔记与思维导图 → 错题整理 → 试卷分析 → 专注力与时间管理 → 记忆流程与技巧 → 考前心态与考场策略", frequency: "每周 1 次", format: "一对一", period: "心法稳定后上线 · 成长区学习" },
+  { course: "督学课", system: "真学", goal: "高效执行、温度陪伴", outline: "周计划落地 · 日检验·周复盘·月家长会 · 费曼输出训练 · 九大习惯 · 痕迹管理 · 试卷分析", frequency: "每次到店", format: "督学", period: "常态 · 首月以发现问题为主" },
+  { course: "亲子美言课", system: "家庭", goal: "学会说话、关系亲密", outline: "YES 模型（接纳→探索→解决）· 亲子美言 · 每天 10 分钟＋每周复盘 · 五型防御机制 · 家访", frequency: "每月 1 周期", format: "家长课＋沙龙", period: "1 个月周期" },
 ];
+
+/** 课程名兼容：旧数据/旧文案中的「亲子课」统一显示为「亲子美言课」。 */
+export function normalizeCourseName(course: string): string {
+  return course === "亲子课" ? "亲子美言课" : course;
+}
 
 export const COURSE_FORMATS = ["一对一", "沙龙", "学习坊", "督学", "混合", "一对一＋沙龙"] as const;
 
-/** 九能 → 课程映射：乐学进心法课，会学进技法课，善学进督学课＋技法课，条件系统进亲子课。 */
+/** 九能 → 课程映射：乐学进心法课，会学进技法课，善学进督学课＋技法课，条件系统进亲子美言课。 */
 export const ABILITY_TO_COURSE: Record<string, string[]> = {
   动力: ["心法课"], 信心: ["心法课"], 韧劲: ["心法课"],
   学懂: ["技法课"], 记住: ["技法课"], 会用: ["技法课"],
   计划: ["督学课", "技法课"], 复盘: ["督学课", "技法课"], 智学: ["技法课", "督学课"],
-  状态: ["亲子课"], 关系: ["亲子课"], 资源: ["亲子课"],
+  状态: ["亲子美言课"], 关系: ["亲子美言课"], 资源: ["亲子美言课"],
 };
 
 export function courseGoal(course: string): string {
@@ -60,10 +66,11 @@ export function parseGrowForm(value: unknown): GrowPlanForm | null {
     ? v.subjects.filter((s): s is Record<string, unknown> => typeof s === "object" && s !== null)
         .map((s) => ({ name: str(s.name), baseline: numOrNull(s.baseline), target: numOrNull(s.target) })).filter((s) => s.name)
     : [];
-  const coursePlans = Array.isArray(v.coursePlans)
+  const coursePlansRaw = Array.isArray(v.coursePlans)
     ? v.coursePlans.filter((p): p is Record<string, unknown> => typeof p === "object" && p !== null)
         .map((p) => ({ course: str(p.course), frequency: str(p.frequency), format: str(p.format) })).filter((p) => p.course)
     : [];
+  const coursePlans = coursePlansRaw.map((p) => ({ ...p, course: normalizeCourseName(p.course) }));
   const weekly = Array.isArray(v.weekly)
     ? v.weekly.filter((w): w is Record<string, unknown> => typeof w === "object" && w !== null)
         .map((w) => ({ item: str(w.item), metric: str(w.metric) })).filter((w) => w.item)
@@ -77,7 +84,7 @@ export function parseGrowForm(value: unknown): GrowPlanForm | null {
     purposeNote: str(v.purposeNote),
     targetSchool: str(v.targetSchool),
     subjects,
-    courses: Array.isArray(v.courses) ? v.courses.filter((c): c is string => typeof c === "string").slice(0, 5) : [],
+    courses: Array.isArray(v.courses) ? v.courses.filter((c): c is string => typeof c === "string").slice(0, 5).map(normalizeCourseName) : [],
     coursePlans,
     strategyNote: str(v.strategyNote),
     weekly,

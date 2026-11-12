@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Archive, ArrowRightLeft, BookOpenCheck, CalendarDays, Check, ClipboardCheck, Download, FileAudio, FileImage, FileText, History, MessageSquareText, Plus, ShieldCheck, UserCheck, Users } from "lucide-react";
+import { Archive, ArrowRightLeft, CalendarDays, Check, ClipboardCheck, Download, FileAudio, FileImage, Footprints, History, LayoutGrid, LineChart, MessageSquareText, Plus, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { saveCoachingFile } from "@/lib/coachingDownload";
 import GrowEditor from "./GrowEditor";
+import CoachingOverview from "./CoachingOverview";
 import CoachingSessions from "./CoachingSessionDelivery";
 import CoachingCheckins from "./CoachingCheckins";
 import CoachingExceptions from "./CoachingExceptions";
@@ -11,7 +12,7 @@ import CoachingHandoffInbox from "./CoachingHandoffInbox";
 import CoachingMonthlyQuality, { CoachingQualityInbox } from "./CoachingMonthlyQuality";
 import CoachingOperations from "./CoachingOperations";
 import CoachingPlanning from "./CoachingPlanning";
-import CoachingRecords from "./CoachingRecords";
+import CoachingTimeline from "./CoachingTimeline";
 import CoachingRecipients from "./CoachingRecipients";
 import CoachingScenarioEnd from "./CoachingScenarioEnd";
 import CoachingStageHandoffs from "./CoachingStageHandoffs";
@@ -25,13 +26,23 @@ const PERIOD: Record<string, string> = { day: "日复盘", week: "周复盘", mo
 const KIND: Record<string, string> = { mbti: "MBTI", disc: "DISC", e3: "E3 学习力", multi5: "多元智能", mentalsdq: "心理健康 A 版", mentalpa: "心理健康 B 版", scl90: "SCL-90", mental: "心理健康通用版", subject4d: "学科四维", holland: "霍兰德", anchor: "职业锚", subject: "学科能力", e3parent: "家长认知", discparent: "家长 DISC", familystudent: "家庭关系·学生", familyparent: "家庭关系·家长" };
 function today(offset = 0): string { const date = new Date(); date.setDate(date.getDate() + offset); return date.toISOString().slice(0, 10); }
 
+type CoachingTab = "overview" | "plan" | "execute" | "growth" | "family" | "ops";
+const TABS: { key: CoachingTab; label: string; icon: typeof LayoutGrid }[] = [
+  { key: "overview", label: "总览", icon: LayoutGrid },
+  { key: "plan", label: "规划", icon: ClipboardCheck },
+  { key: "execute", label: "执行", icon: Footprints },
+  { key: "growth", label: "成长", icon: LineChart },
+  { key: "family", label: "家校", icon: MessageSquareText },
+  { key: "ops", label: "运营", icon: ShieldCheck },
+];
+
 export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: number }) {
   const { data: cases = [], isLoading } = trpc.coaching.cases.useQuery();
   const { data: students = [] } = trpc.coach.myStudents.useQuery();
   const [selectedCaseId, setCaseId] = useState(initialCaseId ?? 0);
   const [newStudentId, setNewStudentId] = useState(0);
   const [scenarioFilter, setScenarioFilter] = useState<"all" | CoachingScenarioKey>("all");
-  const [tab, setTab] = useState<"plan" | "records" | "sessions" | "review" | "monthly" | "family">("plan");
+  const [tab, setTab] = useState<CoachingTab>("overview");
   const filteredCases = useMemo(() => scenarioFilter === "all" ? cases : cases.filter((row) => row.serviceScenarios.includes(scenarioFilter)), [cases, scenarioFilter]);
   const scenarioPersonTimes = useMemo(() => cases.reduce((sum, row) => sum + row.serviceScenarios.length, 0), [cases]);
   const caseId = newStudentId ? 0 : filteredCases.some((row) => row.coachingCase.id === selectedCaseId) ? selectedCaseId : filteredCases[0]?.coachingCase.id ?? 0;
@@ -58,27 +69,27 @@ export default function CoachingWorkspace({ initialCaseId }: { initialCaseId?: n
       </section>
       <section className="rounded-2xl border border-[#0C7064]/15 bg-mint-pale/30 p-3">
         <label className="block text-[12px] font-bold text-olive">为另一位学员建档<select value={newStudentId} onChange={(e) => { setNewStudentId(Number(e.target.value)); setCaseId(0); setTab("plan"); }} className="mt-2 w-full rounded-lg border border-border bg-white px-2.5 py-2 text-[12px] font-normal"><option value={0}>请选择学员</option>{availableStudents.map((student) => <option key={student.userId} value={student.userId}>{student.name} · {student.grade || "年级待补全"}</option>)}</select></label>
-        <p className="mt-2 text-[10.5px] leading-relaxed text-olive-mute">先保存明确目标、评估现状与定制计划，再进入课堂和督学。</p>
+        <p className="mt-2 text-[10.5px] leading-relaxed text-olive-mute">先在「规划」保存明确目标、评估现状与定制计划，再进入执行和督学。</p>
       </section>
     </aside>
 
     <div className="min-w-0 space-y-4">
-      <CoachingOperations onOpenCase={(id, kind) => { setScenarioFilter("all"); setCaseId(id); setNewStudentId(0); setTab(kind === "quality" ? "monthly" : kind === "session" || kind === "supervision" ? "sessions" : kind === "record" ? "records" : kind === "exception" || kind === "crisis" || kind === "handoff" ? "review" : "plan"); }} />
+      <CoachingOperations onOpenCase={(id, kind) => { setScenarioFilter("all"); setCaseId(id); setNewStudentId(0); setTab(kind === "quality" ? "ops" : kind === "session" || kind === "supervision" ? "execute" : kind === "record" || kind === "exception" || kind === "crisis" ? "growth" : kind === "handoff" ? "ops" : "plan"); }} />
       <CoachingHandoffInbox />
       <CoachingQualityInbox />
       {newStudentId > 0 ? <GrowEditor key={newStudentId} studentUserId={newStudentId} onOpenCoaching={(id) => { setCaseId(id); setNewStudentId(0); }} /> : activeCase ? <>
         <header className="rounded-2xl bg-[#0C7064] px-5 py-4 text-white shadow-sm">
           <div className="flex flex-wrap items-center gap-3"><div className="min-w-0 flex-1"><div className="text-[10px] tracking-[.16em] text-white/60">独立陪跑 · 学员 {activeCase.coachingCase.studentUserId}</div><h2 className="mt-1 text-[20px] font-bold">{activeCase.studentName}的学业生涯陪跑</h2><p className="mt-1 text-[11.5px] text-white/75">{activeCase.coachingCase.serviceStart} 至 {activeCase.coachingCase.serviceEnd} · {STATUS[activeCase.coachingCase.status]}</p></div><span className="rounded-full bg-white/12 px-3 py-1.5 text-[11px]">主档 V{activeCase.coachingCase.version}</span></div>
           <div className="mt-2 flex flex-wrap gap-1.5">{activeCase.serviceScenarios.length ? activeCase.serviceScenarios.map((key) => <span key={key} className="rounded-full bg-white/12 px-2.5 py-1 text-[10.5px] text-white/90">{coachingScenarioLabel(key)}</span>) : <span className="rounded-full bg-amber-100/20 px-2.5 py-1 text-[10.5px] text-amber-50">待设置服务场景</span>}</div>
-          <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-white/10 p-1 sm:grid-cols-3 xl:grid-cols-6">{([{ key: "plan", label: "目标与计划", icon: ClipboardCheck }, { key: "records", label: "过程记录", icon: FileText }, { key: "sessions", label: "到店与五课", icon: BookOpenCheck }, { key: "review", label: "复盘与交接", icon: ArrowRightLeft }, { key: "monthly", label: "月报与质量", icon: ShieldCheck }, { key: "family", label: "家长反馈", icon: MessageSquareText }] as const).map((item) => <button type="button" key={item.key} onClick={() => setTab(item.key)} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11.5px] font-semibold ${tab === item.key ? "bg-white text-[#0C7064] shadow" : "text-white/80 hover:bg-white/10"}`}><item.icon size={14} />{item.label}</button>)}</div>
+          <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-white/10 p-1 sm:grid-cols-3 xl:grid-cols-6">{TABS.map((item) => <button type="button" key={item.key} onClick={() => setTab(item.key)} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11.5px] font-semibold ${tab === item.key ? "bg-white text-[#0C7064] shadow" : "text-white/80 hover:bg-white/10"}`}><item.icon size={14} />{item.label}</button>)}</div>
         </header>
         {detailLoading && <div className="rounded-2xl border border-border bg-white p-8 text-center text-[13px] text-olive-mute">正在读取计划、课堂与反馈…</div>}
         {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-[12px] text-red-700">{error.message}</p>}
+        {detail && tab === "overview" && <CoachingOverview key={detail.coachingCase.id} data={detail} onEdit={() => setTab("plan")} />}
         {detail && tab === "plan" && <div key={detail.coachingCase.id} className="space-y-4"><CoachingPlanning key={`${detail.coachingCase.id}:${detail.planning.growProfiles[0]?.id ?? 0}`} data={detail} /><div className="grid items-start gap-4 2xl:grid-cols-[minmax(300px,4fr)_minmax(0,6fr)]"><GrowEditor key={detail.coachingCase.studentUserId} studentUserId={detail.coachingCase.studentUserId} /><div className="space-y-4"><PlanPanel data={detail} /><TaskPanel data={detail} /></div></div></div>}
-        {detail && tab === "records" && <CoachingRecords key={detail.coachingCase.id} data={detail} />}
-        {detail && tab === "sessions" && <CoachingSessions key={detail.coachingCase.id} data={detail} />}
-        {detail && tab === "review" && <ReviewWorkspace key={`${detail.coachingCase.id}:${detail.coachingCase.coachId}:${detail.coachingCase.supervisorId}`} data={detail} />}
-        {detail && tab === "monthly" && <CoachingMonthlyQuality key={`${detail.coachingCase.id}:${detail.coachingCase.coachId}:${detail.coachingCase.supervisorId}`} caseId={detail.coachingCase.id} coachId={detail.coachingCase.coachId} supervisorId={detail.coachingCase.supervisorId} />}
+        {detail && tab === "execute" && <div key={detail.coachingCase.id} className="space-y-4"><CoachingTimeline data={detail} /><details className="rounded-2xl border border-border bg-white p-4 shadow-sm"><summary className="cursor-pointer text-[14px] font-bold text-olive">课堂／督学／反馈录入</summary><div className="mt-3"><CoachingSessions data={detail} /></div></details></div>}
+        {detail && tab === "growth" && <GrowthWorkspace key={detail.coachingCase.id} data={detail} />}
+        {detail && tab === "ops" && <OpsWorkspace key={`${detail.coachingCase.id}:${detail.coachingCase.coachId}:${detail.coachingCase.supervisorId}`} data={detail} />}
         {detail && tab === "family" && <GuardianPanel key={detail.coachingCase.id} data={detail} />}
       </> : !isLoading && <div className="rounded-2xl border border-dashed border-border bg-white/50 p-12 text-center"><Users className="mx-auto text-olive-mute" size={30} /><h2 className="mt-3 text-[16px] font-bold text-olive">{cases.length && !filteredCases.length ? "当前筛选没有对应主档" : "选择主档，或先为学员建立 GROW 方案"}</h2><p className="mt-2 text-[12px] text-olive-mute">课堂、督学、验收、复盘和家校反馈都会归入同一个学员主档。</p></div>}
     </div>
@@ -146,8 +157,12 @@ function TaskCard({ data, task }: { data: CoachingDetail; task: CoachingDetail["
   </article>;
 }
 
-function ReviewWorkspace({ data }: { data: CoachingDetail }) {
-  return <div className="space-y-4"><CoachingCheckins data={data} /><CoachingExceptions data={data} /><CoachingStageHandoffs data={data} /><div className="grid items-start gap-4 2xl:grid-cols-2"><div className="space-y-4"><ReviewPanel data={data} /><HandoffPanel data={data} /></div><div className="space-y-4"><StatusPanel data={data} /><Panel title="主档事件时间线" icon={<History size={16} />}><div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">{data.events.map((event) => <div key={event.id} className="border-l-2 border-[#0C7064]/20 pl-3 text-[11.5px]"><time className="text-[10px] text-olive-mute">{new Date(event.createdAt).toLocaleString("zh-CN")}</time><p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-olive-soft">{event.content}</p></div>)}</div></Panel></div></div></div>;
+function GrowthWorkspace({ data }: { data: CoachingDetail }) {
+  return <div className="space-y-4"><CoachingCheckins data={data} /><ReviewPanel data={data} /><CoachingExceptions data={data} /><Panel title="主档事件时间线" icon={<History size={16} />}><div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">{data.events.map((event) => <div key={event.id} className="border-l-2 border-[#0C7064]/20 pl-3 text-[11.5px]"><time className="text-[10px] text-olive-mute">{new Date(event.createdAt).toLocaleString("zh-CN")}</time><p className="mt-0.5 whitespace-pre-wrap leading-relaxed text-olive-soft">{event.content}</p></div>)}</div></Panel></div>;
+}
+
+function OpsWorkspace({ data }: { data: CoachingDetail }) {
+  return <div className="space-y-4"><CoachingMonthlyQuality caseId={data.coachingCase.id} coachId={data.coachingCase.coachId} supervisorId={data.coachingCase.supervisorId} /><div className="grid items-start gap-4 2xl:grid-cols-2"><div className="space-y-4"><CoachingStageHandoffs data={data} /><HandoffPanel data={data} /></div><div className="space-y-4"><StatusPanel data={data} /></div></div></div>;
 }
 function ReviewPanel({ data }: { data: CoachingDetail }) {
   const utils = trpc.useUtils(); const [period, setPeriod] = useState<"day" | "week" | "month" | "term">("week"); const [periodKey, setPeriodKey] = useState(today().slice(0, 7)); const [content, setContent] = useState(""); const [nextActions, setNextActions] = useState("");

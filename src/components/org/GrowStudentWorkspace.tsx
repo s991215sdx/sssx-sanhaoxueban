@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, Check, Search, Users } from "lucide-react";
+import { trpc } from "@/providers/trpc";
 import GrowEditor from "./GrowEditor";
+import GrowSnapshot from "./GrowSnapshot";
 
 export type GrowStudent = { userId: number; name: string; grade: string | null };
 
@@ -34,7 +36,23 @@ export default function GrowStudentWorkspace({ students, studentId, resultId, on
         })}{!filtered.length && <div className="py-8 text-center"><Users size={24} className="mx-auto text-olive-mute/60" /><p className="mt-2 text-[11.5px] text-olive-mute">没有匹配的学员</p></div>}</div>
         {onToggle && <div className="mt-3 rounded-xl bg-cream/60 p-3 text-[11px] leading-relaxed text-olive-soft">当前选中 <b className="text-[#0C7064]">{selectedIds?.length ?? 0} 人</b><br />返回推送清单后选择仍会保留</div>}
       </aside>
-      <div className="min-w-0">{studentId ? <GrowEditor key={`${studentId}:${resultId ?? 0}`} studentUserId={studentId} initialResultId={resultId} onOpenReport={() => onOpenReport(studentId)} onOpenCoaching={onOpenCoaching} /> : <div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center text-[13px] text-olive-mute">请选择一位学员查看 GROW 伴学</div>}</div>
+      <div className="min-w-0">{studentId ? <StudentGrowPane key={`${studentId}:${resultId ?? 0}`} studentUserId={studentId} resultId={resultId} onOpenReport={() => onOpenReport(studentId)} onOpenCoaching={onOpenCoaching} /> : <div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center text-[13px] text-olive-mute">请选择一位学员查看 GROW 伴学</div>}</div>
     </div>
+  </div>;
+}
+
+/** 学员已有陪跑主档时，测评中心右侧降级为 GROW 摘要（冰山+成长路径+本周安排），完整编辑在陪跑工作台。 */
+function StudentGrowPane({ studentUserId, resultId, onOpenReport, onOpenCoaching }: { studentUserId: number; resultId?: number; onOpenReport: () => void; onOpenCoaching: (caseId: number) => void }) {
+  const { data: cases = [] } = trpc.coaching.cases.useQuery();
+  const caseId = cases.find((row) => row.coachingCase.studentUserId === studentUserId)?.coachingCase.id ?? 0;
+  const { data: detail, isLoading } = trpc.coaching.detail.useQuery({ caseId }, { enabled: caseId > 0 });
+  if (!caseId) return <GrowEditor key={`${studentUserId}:${resultId ?? 0}`} studentUserId={studentUserId} initialResultId={resultId} onOpenReport={onOpenReport} onOpenCoaching={onOpenCoaching} />;
+  if (isLoading || !detail) return <div className="rounded-2xl border border-border bg-white p-10 text-center text-[13px] text-olive-mute">正在读取陪跑主档…</div>;
+  return <div className="space-y-3">
+    <div className="flex flex-wrap items-center gap-2">
+      <p className="min-w-0 flex-1 text-[12px] leading-relaxed text-olive-mute">该学员已建立陪跑主档，完整规划与执行请在「陪跑中心」中维护；此处展示当前 GROW 快照与冰山现状。</p>
+      <button type="button" onClick={() => onOpenCoaching(caseId)} className="min-h-10 rounded-xl bg-[#0C7064] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#095C53]">进入陪跑工作台</button>
+    </div>
+    <GrowSnapshot data={detail} onOpenCoaching={onOpenCoaching} />
   </div>;
 }
