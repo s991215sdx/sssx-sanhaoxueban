@@ -124,6 +124,21 @@ div[id*="kimi-widget" i] {
     padding-left: 0 !important;
     padding-bottom: 0 !important;
   }
+  /* v256：封面单独成第一页（白底铺满版心），附录单独成最后一页。
+     附录有 100 多题、必然跨页，所以显式允许内部自然断开——
+     否则会被上面的 break-inside:avoid 整段推到下一页，产生空白页。 */
+  body.talent-print .cover {
+    break-after: page;
+    page-break-after: always;
+    border: none !important;
+    box-shadow: 0 0 0 100vmax #fff;
+  }
+  body.talent-print .appendix {
+    break-before: page;
+    page-break-before: always;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
   body.talent-print .paper-card,
   body.talent-print section,
   body.talent-print .rounded-xl,

@@ -13,7 +13,7 @@ import { chromium } from "playwright-core";
 import { openPage, BASE } from "./lib/talent-auth.mjs";
 
 /** 四岗各一份 + 一份「暂不匹配」对照，四种分档全齐 */
-const DEFAULTS = ["20", "21", "22", "23", "24"];
+const DEFAULTS = ["25", "26", "27", "28", "29"];
 const OUT_DIR = "/workspace";
 
 const ids = process.argv.slice(2).filter((a) => /^\d+$/.test(a));

@@ -218,6 +218,7 @@ export const talentRouter = createRouter({
         name,
         position,
         generatedAt: new Date().toISOString(),
+        answers,
         parts: { bigfive, value, discwork, eq, duty },
         dims,
         details,
@@ -341,7 +342,12 @@ export const talentRouter = createRouter({
       const sameOrg = me.orgId != null && row.orgId === me.orgId;
       const canSee = row.ownerId === me.id || me.role === "admin" || (me.role === "tutor" && sameOrg);
       if (!canSee) throw new TRPCError({ code: "FORBIDDEN", message: "没有这份报告" });
-      return { id: row.id, candidateName: row.candidateName, source: row.source, createdAt: row.createdAt, report: row.report as unknown as TalentReport };
+      let orgName: string | null = null;
+      if (row.orgId != null) {
+        const org = (await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, row.orgId)).limit(1))[0];
+        orgName = org?.name ?? null;
+      }
+      return { id: row.id, candidateName: row.candidateName, source: row.source, createdAt: row.createdAt, orgName, report: row.report as unknown as TalentReport };
     }),
 
   /** 删除一条记录（只允许发起人或管理员）。 */

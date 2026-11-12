@@ -15,19 +15,19 @@ const VIEWPORTS = [
   ["桌面", { width: 1280, height: 1000 }],
   ["手机", { width: 390, height: 844 }],
 ];
-/* 22 号是行政岗（高度匹配，无硬缺口），23 号是管理岗（有条件匹配，有硬缺口） */
+/* 27 号是行政岗（高度匹配，无硬缺口），28 号是管理岗（有条件匹配，有硬缺口） */
 const REPORTS = [
-  ["行政", "22", false],
-  ["管理", "23", true],
+  ["行政", "27", false],
+  ["管理", "28", true],
 ];
-const BASE_KEYS = ["匹配度", "用人建议", "这个岗位要什么", "换个岗位会怎样", "十维明细", "特质情商", "发展建议", "面谈时值得追问", "这份报告能用到什么程度"];
+const BASE_KEYS = ["匹配度", "用人建议", "这个岗位要什么", "换个岗位会怎样", "十维明细", "特质情商", "发展建议", "面谈时值得追问", "这份报告能用到什么程度", "原始作答明细"];
 
 const b = await chromium.launch({ executablePath: "/usr/bin/chromium", headless: true, args: ["--no-sandbox"] });
 
 
 for (const [vpName, viewport] of VIEWPORTS) {
   const p = await openPage(b, viewport);
-  for (const [label, url] of [["中心", "/talent"], ["行政报告", "/talent/report/22"], ["管理报告", "/talent/report/23"]]) {
+  for (const [label, url] of [["中心", "/talent"], ["行政报告", "/talent/report/27"], ["管理报告", "/talent/report/28"]]) {
     await p.goto(`${BASE}${url}`, { waitUntil: "networkidle" });
     await p.waitForTimeout(2200);
     const info = await p.evaluate(() => {
