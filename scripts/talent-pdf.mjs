@@ -9,8 +9,8 @@
  * 打印前确认 body 上有 talent-print 类——报告页自己挂，别在外部补。
  */
 import { chromium } from "playwright-core";
+import { openPage, BASE } from "./lib/talent-auth.mjs";
 
-const BASE = "http://localhost:3000";
 const DEFAULTS = [
   ["9", "/workspace/人才测评-报告样例-行政岗-高度匹配.pdf"],
   ["10", "/workspace/人才测评-报告样例-管理岗-有条件匹配.pdf"],
@@ -20,15 +20,7 @@ const pairs = process.argv.slice(2).filter((a) => a.includes(":"));
 const jobs = pairs.length > 0 ? pairs.map((a) => a.split(":")) : DEFAULTS;
 
 const b = await chromium.launch({ executablePath: "/usr/bin/chromium", headless: true, args: ["--no-sandbox"] });
-const ctx = await b.newContext({ viewport: { width: 1100, height: 1200 } });
-const p = await ctx.newPage();
-await p.goto(`${BASE}/login`, { waitUntil: "networkidle" });
-await p.fill('input[type="tel"]', "13900000001");
-await p.fill('input[placeholder="6～64 位"]', "123456");
-await p.click('button[type="submit"], button:has-text("登录")');
-await p.waitForTimeout(3000);
-const who = await p.evaluate(() => document.body.innerText.slice(0, 60));
-console.log("登录后页面:", who.replace(/\n/g, " | "));
+const p = await openPage(b, { width: 1100, height: 1200 });
 
 for (const [id, out] of jobs) {
   await p.goto(`${BASE}/talent/report/${id}`, { waitUntil: "networkidle" });
