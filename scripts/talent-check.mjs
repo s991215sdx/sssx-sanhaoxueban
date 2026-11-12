@@ -9,8 +9,8 @@
  *  2) 报告的八个区块按「有没有硬缺口」分两套期望，缺一块就说明条件分支漏了。
  */
 import { chromium } from "playwright-core";
+import { openPage, BASE } from "./lib/talent-auth.mjs";
 
-const BASE = "http://localhost:3000";
 const VIEWPORTS = [
   ["桌面", { width: 1280, height: 1000 }],
   ["手机", { width: 390, height: 844 }],
@@ -23,19 +23,10 @@ const REPORTS = [
 const BASE_KEYS = ["匹配度", "换个岗位会怎样", "十维明细", "特质情商", "发展建议", "面谈时值得追问", "这份报告能用到什么程度"];
 
 const b = await chromium.launch({ executablePath: "/usr/bin/chromium", headless: true, args: ["--no-sandbox"] });
-const login = async (viewport) => {
-  const ctx = await b.newContext({ viewport });
-  const p = await ctx.newPage();
-  await p.goto(`${BASE}/login`, { waitUntil: "networkidle" });
-  await p.fill('input[type="tel"]', "13900000001");
-  await p.fill('input[placeholder="6～64 位"]', "123456");
-  await p.click('button[type="submit"], button:has-text("登录")');
-  await p.waitForTimeout(2200);
-  return p;
-};
+
 
 for (const [vpName, viewport] of VIEWPORTS) {
-  const p = await login(viewport);
+  const p = await openPage(b, viewport);
   for (const [label, url] of [["中心", "/talent"], ["行政报告", "/talent/report/9"], ["管理报告", "/talent/report/10"]]) {
     await p.goto(`${BASE}${url}`, { waitUntil: "networkidle" });
     await p.waitForTimeout(2200);
@@ -57,7 +48,7 @@ for (const [vpName, viewport] of VIEWPORTS) {
   await p.context().close();
 }
 
-const p = await login({ width: 1280, height: 1000 });
+const p = await openPage(b);
 for (const [label, id, hasGap] of REPORTS) {
   await p.goto(`${BASE}/talent/report/${id}`, { waitUntil: "networkidle" });
   await p.waitForTimeout(2200);
