@@ -2,12 +2,13 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import {
-  assessmentResults, coachingCases, coachingCaseScenarios, coachingCheckins, coachingDeliverableRecipients, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
+  assessmentResults, coachingCases, coachingCaseScenarios, coachingCaseStaff, coachingCheckins, coachingDeliverableRecipients, coachingDeliverables, coachingEvents, coachingGuardianGrants, coachingHandoffs,
   coachingMonthlyReports, coachingPlans, coachingReviews, coachingSessionEvents, coachingTasks, coachingTaskVerifications, courseCatalog, courseParticipants, courseSessions, courseSessionUnits,
   studentProfile, studentTutor, studySupervisionRecords, users,
 } from "@db/schema";
 import { COURSE_CATALOG, HANDOFF_TYPES, LEARNING_TRACE_KEYS, TECHNIQUE_LESSONS, coachingScenarioLabel, normalizeCoachingScenarios, phaseForVisit,
   validateDailyCheckin, validateSessionPhase, type DailyCheckinRuleInput } from "@contracts/orgService";
+import { initialCoachingNaturalMonths, isCoachingNaturalMonthPlan } from "@contracts/coachingTeam";
 import type { getDb } from "./queries/connection";
 import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
@@ -22,6 +23,7 @@ import { authorizedFamilyResources, familyRecipients, grantFamilyResourcesTx, qu
 import { listCoachingExtendedRecords } from "./coachingExtended";
 import { validateCoachingMedia } from "./coachingMedia";
 import { assertCoachingCapacity, getCoachingDeliverySettings, recordCapacityOverride } from "./coachingDelivery";
+import { listCoachingCaseTeam } from "./coachingTeam";
 
 export { assertCaseAccess } from "./coachingAccess";
 export { acceptHandoff, reassignCoachingCase, setCoachingStatus } from "./coachingLifecycle";
@@ -66,12 +68,15 @@ export async function listCoachingCases(db: Db, me: StaffUser) {
     .where(eq(coachingCases.orgId, orgId)).orderBy(desc(coachingCases.updatedAt)).limit(150);
   let visibleRows = rows;
   if (me.role !== "admin") {
-    const [links, profiles] = await Promise.all([
+    const [links, profiles, teamLinks] = await Promise.all([
       db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(eq(studentTutor.tutorUserId, me.id)),
       db.select({ userId: studentProfile.userId }).from(studentProfile).where(eq(studentProfile.tutorId, me.id)),
+      db.select({ caseId: coachingCaseStaff.caseId }).from(coachingCaseStaff)
+        .where(and(eq(coachingCaseStaff.orgId, orgId), eq(coachingCaseStaff.userId, me.id), eq(coachingCaseStaff.active, true))),
     ]);
     const allowed = new Set([...links.map((l) => l.studentUserId), ...profiles.map((p) => p.userId)]);
-    visibleRows = rows.filter((r) => r.coachingCase.coachId === me.id || r.coachingCase.supervisorId === me.id || allowed.has(r.coachingCase.studentUserId));
+    const teamCaseIds = new Set(teamLinks.map((row) => row.caseId));
+    visibleRows = rows.filter((r) => r.coachingCase.coachId === me.id || r.coachingCase.supervisorId === me.id || allowed.has(r.coachingCase.studentUserId) || teamCaseIds.has(r.coachingCase.id));
   }
   const caseIds = visibleRows.map((row) => row.coachingCase.id);
   const scenarioRows = caseIds.length ? await db.select({ caseId: coachingCaseScenarios.caseId, scenario: coachingCaseScenarios.scenario })
@@ -123,7 +128,7 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
       .leftJoin(users, eq(courseParticipants.studentUserId, users.id))
       .where(and(inArray(courseParticipants.sessionId, sessionIds), eq(courseParticipants.studentUserId, coachingCase.studentUserId))),
   ]) : [[], []];
-  const [reportAllowed, verificationHistory, scenarioHistory, exceptions, closureReadiness, planning, extendedRecords, recipients, resourceRecipients] = await Promise.all([
+  const [reportAllowed, verificationHistory, scenarioHistory, exceptions, closureReadiness, planning, extendedRecords, recipients, resourceRecipients, serviceTeam] = await Promise.all([
     hasAssessmentReportAccess(db, me, coachingCase.studentUserId),
     db.select().from(coachingTaskVerifications).where(eq(coachingTaskVerifications.caseId, caseId)).orderBy(asc(coachingTaskVerifications.taskId), desc(coachingTaskVerifications.version)),
     db.select().from(coachingCaseScenarios).where(eq(coachingCaseScenarios.caseId, caseId)).orderBy(desc(coachingCaseScenarios.startedAt), desc(coachingCaseScenarios.id)),
@@ -133,6 +138,7 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
     listCoachingExtendedRecords(db, me, caseId),
     familyRecipients(db, coachingCase),
     db.select().from(coachingDeliverableRecipients).where(and(eq(coachingDeliverableRecipients.orgId, coachingCase.orgId), eq(coachingDeliverableRecipients.caseId, caseId))),
+    listCoachingCaseTeam(db, coachingCase.orgId, caseId),
   ]);
   const [profile, e3Results] = await Promise.all([
     getCoachingCaseProfile(db, coachingCase),
@@ -143,7 +149,7 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
     sessions: sessions.map((session) => ({ ...session, units: units.filter((u) => u.sessionId === session.id),
       participants: participants.filter((p) => p.participant.sessionId === session.id) })),
     deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog, closureReadiness,
-    planning, extendedRecords, recipients,
+    planning, extendedRecords, recipients, serviceTeam,
     resourceRecipients: resourceRecipients.filter((grant) => plans.some((plan) => plan.id === grant.resourceId && grant.resourceType === "plan")
       || deliverables.some((file) => file.id === grant.resourceId && grant.resourceType === "deliverable")
       || participants.some((entry) => entry.participant.id === grant.resourceId && grant.resourceType === "session_feedback")
@@ -219,6 +225,10 @@ export async function createCoachingCase(db: Db, me: StaffUser, input: { student
       scenario: "新生接手", goal: required(input.goal, "请先明确陪跑目标"), currentSituation: required(input.currentSituation, "请评估学员现状"),
       planSummary: required(input.planSummary, "请定制陪跑计划"), growForm: input.growForm ?? null,
       serviceStart: input.serviceStart, serviceEnd: input.serviceEnd }).$returningId();
+    await tx.insert(coachingCaseStaff).values([
+      { orgId, caseId: id, userId: me.id, serviceRole: "coach", active: true, changeReason: "建档：初始学习教练", createdBy: me.id },
+      { orgId, caseId: id, userId: me.id, serviceRole: "supervisor", active: true, changeReason: "建档：初始督学负责人", createdBy: me.id },
+    ]);
     await syncCoachingScenariosTx(tx, { caseId: id, orgId, actorUserId: me.id, scenarios: input.scenarios, reason: "建立陪跑主档" });
     const [plan] = await tx.insert(coachingPlans).values({ caseId: id, level: "term", title: "学期陪跑方案", content: input.planSummary,
       startDate: input.serviceStart, endDate: input.serviceEnd, status: "awaiting_family", confirmedBy: me.id, confirmedAt: new Date(), createdBy: me.id }).$returningId();
@@ -235,7 +245,8 @@ export async function createCoachingCase(db: Db, me: StaffUser, input: { student
 type SaveCoachingPlanInput = { caseId: number; level: "term" | "month" | "week" | "day"; parentId?: number | null; title: string; content: string; startDate: string; endDate: string; sourceResultId?: number | null; confirmed: boolean };
 
 async function saveCoachingPlanTx(tx: PointTx, me: StaffUser, coachingCase: CaseRow, input: SaveCoachingPlanInput) {
-  if (input.confirmed && ![coachingCase.coachId, coachingCase.supervisorId].includes(me.id)) throw new TRPCError({ code: "FORBIDDEN", message: "只有本主档负责人可提交教练确认；管理员可先保存草稿" });
+  const canConfirm = input.level === "month" ? me.role === "admin" : [coachingCase.coachId, coachingCase.supervisorId].includes(me.id);
+  if (input.confirmed && !canConfirm) throw new TRPCError({ code: "FORBIDDEN", message: input.level === "month" ? "下月计划仅管理员可提交家庭会签" : "只有本主档负责人可提交教练确认；管理员可先保存草稿" });
   const previous = await tx.select({ version: coachingPlans.version }).from(coachingPlans)
     .where(and(eq(coachingPlans.caseId, input.caseId), eq(coachingPlans.level, input.level))).orderBy(desc(coachingPlans.version)).limit(1).for("update");
   const version = (previous[0]?.version ?? 0) + 1;
@@ -264,6 +275,12 @@ export async function saveCoachingPlan(db: Db, me: StaffUser, input: SaveCoachin
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
   required(input.content, "计划内容不能为空");
   if (input.endDate < input.startDate) throw new TRPCError({ code: "BAD_REQUEST", message: "计划结束日期不能早于开始日期" });
+  if (input.level === "month") {
+    if (me.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "下月计划仅管理员可填写和提交" });
+    if (!isCoachingNaturalMonthPlan(input.startDate, input.endDate, coachingCase.serviceStart)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "月计划须按自然月：首月可从服务开始日起，其他月份必须为 1 日至月末" });
+    }
+  }
   if (input.parentId != null) await assertPlanInCase(db, input.caseId, input.parentId);
   if (input.sourceResultId) {
     const [result] = await db.select({ userId: assessmentResults.userId }).from(assessmentResults).where(eq(assessmentResults.id, input.sourceResultId)).limit(1);
@@ -271,6 +288,30 @@ export async function saveCoachingPlan(db: Db, me: StaffUser, input: SaveCoachin
     await assertAssessmentReportAccess(db, me, coachingCase.studentUserId);
   }
   return db.transaction((tx) => saveCoachingPlanTx(tx, me, coachingCase, input));
+}
+
+export async function createInitialCoachingMonthPlans(db: Db, me: StaffUser, input: { caseId: number; plans: { month: string; title: string; content: string }[] }) {
+  if (me.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "首期自然月计划仅管理员可生成" });
+  const coachingCase = await assertCaseAccess(db, me, input.caseId);
+  const expected = initialCoachingNaturalMonths(coachingCase.serviceStart);
+  if (input.plans.length !== expected.length || expected.some((range, index) => input.plans[index]?.month !== range.month)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "请按服务开始日完整填写首期自然月计划" });
+  }
+  for (const plan of input.plans) { required(plan.title, "请填写计划名称"); required(plan.content, "计划内容不能为空"); }
+  return db.transaction(async (tx) => {
+    const existing = await tx.select().from(coachingPlans)
+      .where(and(eq(coachingPlans.caseId, input.caseId), eq(coachingPlans.level, "month"))).for("update");
+    const created: { id: number; month: string; startDate: string; endDate: string }[] = [];
+    const skipped: string[] = [];
+    for (const range of expected) {
+      if (existing.some((plan) => plan.startDate.startsWith(range.month))) { skipped.push(range.month); continue; }
+      const draft = input.plans.find((plan) => plan.month === range.month)!;
+      const saved = await saveCoachingPlanTx(tx, me, coachingCase, { caseId: input.caseId, level: "month", title: draft.title,
+        content: draft.content, startDate: range.start, endDate: range.end, confirmed: false });
+      created.push({ id: saved.id, month: range.month, startDate: range.start, endDate: range.end });
+    }
+    return { created, skipped };
+  });
 }
 
 export async function updateGrow(db: Db, me: StaffUser, input: { caseId: number; goal: string; currentSituation: string; planSummary: string; growForm?: Record<string, unknown> | null; scenarios: string[]; scenarioChangeReason?: string; serviceStart: string; serviceEnd: string }) {

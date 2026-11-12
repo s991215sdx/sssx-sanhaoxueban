@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { getTableConfig } from "drizzle-orm/mysql-core";
-import { coachingCases, coachingEvents, coachingHandoffs, users } from "@db/schema";
+import { coachingCases, coachingCaseStaff, coachingEvents, coachingHandoffs, users } from "@db/schema";
 import { acceptHandoff, buildCoachingClosureReadiness, cancelReassignment, reassignCoachingCase } from "./coachingLifecycle";
 import { addHandoff } from "./coachingService";
 import type { StaffUser } from "./orgAccess";
@@ -45,19 +45,22 @@ function reassignDb(pending = false) {
 function acceptDb(handoff = baseHandoff, current = baseCase) {
   const updates: { table: unknown; patch: Record<string, unknown> }[] = [];
   const events: Record<string, unknown>[] = [];
+  const teamValues: Record<string, unknown>[] = [];
   const tx = {
     select: vi.fn(() => ({ from: (table: unknown) => ({ where: () => ({
       limit: () => limit(table === coachingHandoffs ? [handoff] : table === coachingCases ? [current] : table === users ? [{ id: 1 }] : []),
+      for: async () => table === coachingCases ? [current] : [],
       then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve(table === coachingCases ? [current] : []).then(resolve),
     }) }) })),
     update: vi.fn((table: unknown) => ({ set: (patch: Record<string, unknown>) => ({ where: async () => {
       updates.push({ table, patch });
       return { affectedRows: 1 };
     } }) })),
-    insert: vi.fn((table: unknown) => {
-      expect(table).toBe(coachingEvents);
-      return { values: async (values: Record<string, unknown>) => { events.push(values); } };
-    }),
+    insert: vi.fn((table: unknown) => ({ values: (values: Record<string, unknown>) => {
+      if (table === coachingEvents) events.push(values);
+      if (table === coachingCaseStaff) teamValues.push(values);
+      return Object.assign(Promise.resolve(), { onDuplicateKeyUpdate: async () => ({ affectedRows: 1 }) });
+    } })),
   };
   const db = {
     select: vi.fn(() => ({ from: (table: unknown) => ({
@@ -65,7 +68,7 @@ function acceptDb(handoff = baseHandoff, current = baseCase) {
     }) })),
     transaction: vi.fn(async (callback: (tx: unknown) => unknown) => callback(tx)),
   };
-  return { db: db as unknown as Parameters<typeof acceptHandoff>[0], transaction: db.transaction, updates, events };
+  return { db: db as unknown as Parameters<typeof acceptHandoff>[0], transaction: db.transaction, updates, events, teamValues };
 }
 
 function cancelDb(handoff = baseHandoff) {
@@ -112,10 +115,14 @@ describe("H5 人员改派接收闭环", () => {
   it("新督学接收时才同时更新负责人并写入生效时间", async () => {
     const mock = acceptDb();
     await expect(acceptHandoff(mock.db, newSupervisor, 501)).resolves.toEqual({ ok: true, reassigned: true });
-    expect(mock.updates[0]).toMatchObject({ table: coachingCases, patch: { coachId: 39, supervisorId: 29 } });
-    expect(mock.updates[1].table).toBe(coachingHandoffs);
-    expect(mock.updates[1].patch).toMatchObject({ status: "accepted" });
-    expect(mock.updates[1].patch.appliedAt).toBeInstanceOf(Date);
+    expect(mock.updates.find((row) => row.table === coachingCases)).toMatchObject({ table: coachingCases, patch: { coachId: 39, supervisorId: 29 } });
+    const accepted = mock.updates.find((row) => row.table === coachingHandoffs)!;
+    expect(accepted.patch).toMatchObject({ status: "accepted" });
+    expect(accepted.patch.appliedAt).toBeInstanceOf(Date);
+    expect(mock.teamValues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ userId: 39, serviceRole: "coach", active: true }),
+      expect.objectContaining({ userId: 29, serviceRole: "supervisor", active: true }),
+    ]));
     expect(mock.events[0].content).toContain("接收并生效");
   });
 
@@ -149,7 +156,8 @@ describe("H5 人员改派接收闭环", () => {
     expect(denied.transaction).not.toHaveBeenCalled();
     const historical = acceptDb();
     await expect(acceptHandoff(historical.db, newSupervisor, 501)).resolves.toEqual({ ok: true, reassigned: true });
-    expect(historical.updates[0]).toMatchObject({ table: coachingCases, patch: { coachId: 39, supervisorId: 29 } });
+    expect(historical.updates.find((row) => row.table === coachingCases)).toMatchObject({ table: coachingCases, patch: { coachId: 39, supervisorId: 29 } });
+    expect(historical.teamValues).toHaveLength(2);
   });
 
   it("管理员可取消待接收改派，取消后不能再接收", async () => {

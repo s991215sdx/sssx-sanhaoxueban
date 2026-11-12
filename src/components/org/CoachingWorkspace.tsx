@@ -22,6 +22,8 @@ import { GrowthKnowledgePanel, MonthlyRhythmPanel, ParentKnowledgeCard, Planning
 import { CoachingPageHeading, CoachingRootNavigation, CoachingStudentHeader, V4_CARD, V4_PRIMARY } from "./CoachingV4";
 import { CoachingGrowthSummary, ParentCardSchedule, ParentFamilyPreview, PlanningRhythm } from "./CoachingV4Sections";
 import { resolveCoachingCaseId, sectionForOperation, type CoachingSection } from "./coachingNavigation";
+import { coachingNaturalMonthRange, initialCoachingNaturalMonths } from "@contracts/coachingTeam";
+import CoachingTeamPanel from "./CoachingTeamPanel";
 import { invalidateCoachingOperations } from "./coachingRefresh";
 import type { CoachingDetail } from "./coachingTypes";
 
@@ -100,7 +102,7 @@ function PlanningWorkspace({ data }: { data: CoachingDetail }) {
     <CoachingPageHeading title="学员 · 课程设计" description="先基于真实现状与目标完成半年课程设计，再通过月、周、日计划逐级落实；保存只生成内部草稿，三方会签后才正式生效。" actions={<button type="submit" form="grow-course-plan" className={V4_PRIMARY}><Save size={14} />保存课程设计</button>} />
     <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)]">
       <div className="min-w-0 space-y-4"><GrowEditor key={data.coachingCase.studentUserId} studentUserId={data.coachingCase.studentUserId} formId="grow-course-plan" /><PlanningKnowledgePanel data={data} onUse={setPrefill} /><details className={V4_CARD}><summary className="cursor-pointer text-[13px] font-bold text-olive">进阶：结构化 GROW 与测评证据链</summary><div className="mt-4"><CoachingPlanning data={data} view="details" /></div></details></div>
-      <aside className="min-w-0 space-y-4"><PlanningRhythm data={data} /><CoachingPlanning data={data} view="signatures" /><PlanPanel data={data} prefill={prefill} /></aside>
+      <aside className="min-w-0 space-y-4"><PlanningRhythm data={data} /><InitialMonthPlans key={data.coachingCase.id} data={data} /><CoachingPlanning data={data} view="signatures" /><PlanPanel data={data} prefill={prefill} /></aside>
     </div>
     <TaskPanel data={data} />
   </div>;
@@ -116,25 +118,58 @@ function ExecutionWorkspace({ data }: { data: CoachingDetail }) {
     <details id="coaching-entry" open={entryOpen} onToggle={(event) => setEntryOpen(event.currentTarget.open)} className={V4_CARD}><summary className="cursor-pointer text-[13px] font-bold text-olive">课堂／督学／反馈录入 <span className="font-normal text-olive-mute">展开后可保存真实交付，续写历史与附件仍保留</span></summary><div className="mt-4"><CoachingSessions key={`${data.coachingCase.id}:${entryMode}:${entryKey}`} data={data} initialMode={entryMode} /></div></details>
   </div>;
 }
+function InitialMonthPlans({ data }: { data: CoachingDetail }) {
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const ranges = useMemo(() => initialCoachingNaturalMonths(data.coachingCase.serviceStart), [data.coachingCase.serviceStart]);
+  const [plans, setPlans] = useState(() => ranges.map((range) => ({ ...range,
+    title: `${range.month} 首期陪跑计划`,
+    content: "目标：依据本学员已核实的现状与课程设计确定本月重点。\n行动：明确课程安排、督学节奏、每周修正项及验证证据。\n复盘：记录实际执行，月末核对总结与下月计划。\n请在保存前补充本学员的真实目标、责任人与衡量标准。",
+  })));
+  const create = trpc.coaching.createInitialMonthPlans.useMutation({ onSuccess: async () => {
+    await Promise.all([utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }), invalidateCoachingOperations(utils)]);
+  } });
+  if (user?.role !== "admin") return null;
+  return <Panel title="首期自然月计划" icon={<CalendarDays size={16} />}>
+    <p className="mb-3 text-[11px] leading-relaxed text-olive-mute">非 1 日开课，一次建立首月剩余期和下一个完整自然月；1 日开课只建立当月。这里保存内部草稿，不会直接提交家庭会签。</p>
+    <div className="space-y-3">{plans.map((plan, index) => <section key={plan.month} className="rounded-xl bg-cream/45 p-3">
+      <b className="text-[12px] text-olive">{plan.month} · {plan.start}～{plan.end}</b>
+      <input aria-label={`${plan.month} 首期计划名称`} value={plan.title} onChange={(event) => setPlans((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, title: event.target.value } : row))} className={`${input} mt-2 bg-white`} />
+      <textarea aria-label={`${plan.month} 首期计划内容`} value={plan.content} onChange={(event) => setPlans((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, content: event.target.value } : row))} rows={5} className={`${input} mt-2 resize-y bg-white`} />
+    </section>)}</div>
+    <button type="button" disabled={create.isPending || plans.some((plan) => plan.title.trim().length < 2 || plan.content.trim().length < 2)} onClick={() => create.mutate({ caseId: data.coachingCase.id, plans: plans.map(({ month, title, content }) => ({ month, title, content })) })} className={`${primary} mt-3 w-full`}>{create.isPending ? "生成中…" : "生成首期自然月计划草稿"}</button>
+    {create.error && <p role="alert" className="mt-2 rounded-lg bg-red-50 p-2 text-[11px] text-red-700">{create.error.message}</p>}
+    {create.data && <p role="status" className="mt-2 rounded-lg bg-mint-pale/40 p-2.5 text-[11px] leading-relaxed text-[#0C7064]">新建 {create.data.created.length} 份；已有同月计划 {create.data.skipped.length} 份，已跳过且未覆盖。</p>}
+  </Panel>;
+}
+
 function PlanPanel({ data, prefill = "" }: { data: CoachingDetail; prefill?: string }) {
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const [level, setLevel] = useState<"term" | "month" | "week" | "day">("week");
   const [title, setTitle] = useState("本周行动计划");
   const [content, setContent] = useState("");
-  useEffect(() => { if (prefill) { setLevel("month"); setTitle("月度陪跑规划建议草稿"); setContent(prefill); } }, [prefill]);
+  const [month, setMonth] = useState(today().slice(0, 7));
+  useEffect(() => { if (prefill) { setLevel(user?.role === "admin" ? "month" : "week"); setTitle(user?.role === "admin" ? "月度陪跑规划建议草稿" : "周行动规划建议草稿"); setContent(prefill); } }, [prefill, user?.role]);
   const [startDate, setStartDate] = useState(today());
   const [endDate, setEndDate] = useState(today(7));
   const [parentId, setParentId] = useState(0);
   const [sourceResultId, setSourceResultId] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
   const save = trpc.coaching.savePlan.useMutation({ onSuccess: async () => { setContent(""); await Promise.all([utils.coaching.detail.invalidate({ caseId: data.coachingCase.id }), invalidateCoachingOperations(utils)]); } });
-  const changeLevel = (value: typeof level) => { setLevel(value); setTitle(`${LEVEL[value]}陪跑计划`); setEndDate(today(value === "day" ? 0 : value === "week" ? 7 : value === "month" ? 30 : 180)); };
+  const changeLevel = (value: typeof level) => {
+    setLevel(value); setTitle(`${LEVEL[value]}陪跑计划`);
+    if (value === "month") { const range = coachingNaturalMonthRange(month, data.coachingCase.serviceStart); setStartDate(range.start); setEndDate(range.end); }
+    else { setStartDate(today()); setEndDate(today(value === "day" ? 0 : value === "week" ? 7 : 180)); }
+  };
+  const changeMonth = (value: string) => { if (!value) return; setMonth(value); const range = coachingNaturalMonthRange(value, data.coachingCase.serviceStart); setStartDate(range.start); setEndDate(range.end); };
   return <Panel title="学期／月／周／日计划版本" icon={<CalendarDays size={16} />}>
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><label className={label}>层级<select value={level} onChange={(e) => changeLevel(e.target.value as typeof level)} className={input}>{Object.entries(LEVEL).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label className={label}>计划名称<input value={title} onChange={(e) => setTitle(e.target.value)} className={input} /></label><label className={label}>开始<input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={input} /></label><label className={label}>结束<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={input} /></label></div>
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><label className={label}>层级<select value={level} onChange={(e) => changeLevel(e.target.value as typeof level)} className={input}>{Object.entries(LEVEL).filter(([key]) => key !== "month" || user?.role === "admin").map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label className={label}>计划名称<input value={title} onChange={(e) => setTitle(e.target.value)} className={input} /></label>{level === "month" && <label className={`${label} sm:col-span-2`}>自然月<input aria-label="月计划自然月" type="month" value={month} onChange={(e) => changeMonth(e.target.value)} className={input} /></label>}<label className={label}>开始<input type="date" readOnly={level === "month"} value={startDate} onChange={(e) => setStartDate(e.target.value)} className={input} /></label><label className={label}>结束<input type="date" readOnly={level === "month"} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={input} /></label></div>
+    {level === "month" && <p className="mt-2 rounded-lg bg-mint-pale/30 p-2.5 text-[10.5px] text-olive-soft">月计划由管理员负责；首月从服务开始日起，其他月份固定为 1 日至月末。</p>}
     <div className="mt-2 grid gap-2 sm:grid-cols-2"><label className={label}>上级计划（可选）<select value={parentId} onChange={(e) => setParentId(Number(e.target.value))} className={input}><option value={0}>不关联</option>{data.plans.map((p) => <option key={p.id} value={p.id}>{LEVEL[p.level]} · {p.title} V{p.version}</option>)}</select></label><label className={label}>来源测评（可选）<select value={sourceResultId} onChange={(e) => setSourceResultId(Number(e.target.value))} className={input}><option value={0}>不关联</option>{data.results.map((r) => <option key={r.id} value={r.id}>{KIND[r.kind] ?? r.kind} · {new Date(r.createdAt).toLocaleDateString("zh-CN")}</option>)}</select></label></div>
     <textarea aria-label="计划内容" value={content} onChange={(e) => setContent(e.target.value)} rows={4} placeholder="写清目标、频率、责任人、验证证据与复盘时间；每次保存生成新版本，不覆盖历史。" className={`${input} mt-2 resize-y`} />
-    <div className="mt-2 flex flex-wrap items-center gap-3"><label className="flex items-center gap-1.5 text-[11.5px] text-olive"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="accent-[#0C7064]" />教练核对并提交家庭会签（不直接生效）</label><button type="button" disabled={save.isPending || title.trim().length < 2 || content.trim().length < 2 || endDate < startDate} onClick={() => save.mutate({ caseId: data.coachingCase.id, level, parentId: parentId || null, title, content, startDate, endDate, sourceResultId: sourceResultId || null, confirmed })} className={`${primary} ml-auto`}>{save.isPending ? "保存中…" : confirmed ? "保存并提交家庭会签" : "保存内部草稿版本"}</button></div>
-    <p className="mt-2 text-[10.5px] leading-relaxed text-olive-mute">普通保存仅形成内部草稿。勾选后由教练确认并进入待家庭会签；学生与至少一位监护人分别确认且生成生效时间后，才成为正式计划。</p>
+    <div className="mt-2 flex flex-wrap items-center gap-3"><label className="flex items-center gap-1.5 text-[11.5px] text-olive"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="accent-[#0C7064]" />{level === "month" ? "管理员核对并提交家庭会签（不直接生效）" : "教练核对并提交家庭会签（不直接生效）"}</label><button type="button" disabled={save.isPending || title.trim().length < 2 || content.trim().length < 2 || endDate < startDate} onClick={() => save.mutate({ caseId: data.coachingCase.id, level, parentId: parentId || null, title, content, startDate, endDate, sourceResultId: sourceResultId || null, confirmed })} className={`${primary} ml-auto`}>{save.isPending ? "保存中…" : confirmed ? "保存并提交家庭会签" : "保存内部草稿版本"}</button></div>
+    <p className="mt-2 text-[10.5px] leading-relaxed text-olive-mute">普通保存仅形成内部草稿。勾选后进入待家庭会签；学生与至少一位监护人分别确认且生成生效时间后，才成为正式计划。</p>
     <MutationMessage error={save.error} success={save.isSuccess} />
     <div className="mt-4 space-y-2">{data.plans.map((p) => { const state = p.status === "confirmed" && p.issuedAt ? "三方会签已生效" : p.status === "awaiting_family" ? "待家庭会签" : p.status === "cancelled" ? "已停用" : "内部草稿"; return <details key={p.id} className="rounded-xl border border-border bg-cream/45 p-3"><summary className="cursor-pointer text-[12px] font-semibold text-olive">{LEVEL[p.level]} · {p.title} <span className="font-normal text-olive-mute">V{p.version} · {state} · {p.startDate}～{p.endDate}</span></summary><p className="mt-2 whitespace-pre-wrap text-[11.5px] leading-relaxed text-olive-soft">{p.content}</p>{p.sourceResultId && <p className="mt-2 text-[10.5px] text-[#0C7064]">来源测评：{KIND[data.results.find((r) => r.id === p.sourceResultId)?.kind ?? ""] ?? `结果 #${p.sourceResultId}`}</p>}</details>; })}</div>
   </Panel>;
@@ -195,7 +230,7 @@ function FamilyWorkspace({ data }: { data: CoachingDetail }) {
 }
 
 function OpsWorkspace({ data, onOpenExceptions }: { data: CoachingDetail; onOpenExceptions: () => void }) {
-  return <div className="space-y-4"><CoachingPageHeading title="学员 · 运营与质量" description="以月度教研、异常转介、服务交接和结课检查保证质量；所有状态变化继续按真实负责人、原因和接收记录留痕。" /><div className="grid items-start gap-4 2xl:grid-cols-2"><MonthlyRhythmPanel data={data} /><RiskReferralPanel data={data} onOpen={onOpenExceptions} /></div><CoachingMonthlyQuality caseId={data.coachingCase.id} coachId={data.coachingCase.coachId} supervisorId={data.coachingCase.supervisorId} /><div className="grid items-start gap-4 2xl:grid-cols-2"><div className="min-w-0 space-y-4"><CoachingStageHandoffs data={data} /><HandoffPanel data={data} /></div><div className="min-w-0 space-y-4"><StatusPanel data={data} /></div></div></div>;
+  return <div className="space-y-4"><CoachingPageHeading title="学员 · 运营与质量" description="以月度教研、异常转介、服务交接和结课检查保证质量；所有状态变化继续按真实负责人、原因和接收记录留痕。" /><CoachingTeamPanel data={data} /><div className="grid items-start gap-4 2xl:grid-cols-2"><MonthlyRhythmPanel data={data} /><RiskReferralPanel data={data} onOpen={onOpenExceptions} /></div><CoachingMonthlyQuality caseId={data.coachingCase.id} coachId={data.coachingCase.coachId} supervisorId={data.coachingCase.supervisorId} serviceTeam={data.serviceTeam} /><div className="grid items-start gap-4 2xl:grid-cols-2"><div className="min-w-0 space-y-4"><CoachingStageHandoffs data={data} /><HandoffPanel data={data} /></div><div className="min-w-0 space-y-4"><StatusPanel data={data} /></div></div></div>;
 }
 function ReviewPanel({ data, prefill = "" }: { data: CoachingDetail; prefill?: string }) {
   const utils = trpc.useUtils(); const [period, setPeriod] = useState<"day" | "week" | "month" | "term">("week"); const [periodKey, setPeriodKey] = useState(today().slice(0, 7)); const [content, setContent] = useState(""); const [nextActions, setNextActions] = useState("");

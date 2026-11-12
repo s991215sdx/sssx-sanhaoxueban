@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight, BookOpenCheck, CalendarCheck2, Check, Copy, GitCompareArrows, Lightbulb, RefreshCw, ShieldAlert, Sparkles } from "lucide-react";
 import { isE3V37Result } from "@contracts/e3v37";
+import { lastThursdayOfCoachingMonth } from "@contracts/coachingTeam";
 import { trpc } from "@/providers/trpc";
 import type { CoachingDetail } from "./coachingTypes";
 import { PARENT_CARDS, cardForDate, compareLatestE3, resolveGrowthStage, stageTipFor } from "./knowledgeBase";
@@ -150,8 +151,9 @@ export function MonthlyRhythmPanel({ data }: { data: CoachingDetail }) {
     { label: "家长月反馈", ok: pushed, text: pushed ? "已有推送记录" : "尚未确认推送" },
     { label: `${nextMonth} 下月计划`, ok: nextPlan, text: nextPlan ? "已有计划版本" : "尚未建立" },
   ];
+  const deadline = lastThursdayOfCoachingMonth(month);
   return <Panel title="月总结与月度教研会" icon={<RefreshCw size={16} />}>
-    <p className={`rounded-lg p-3 text-[11px] leading-relaxed ${lastWeek ? "bg-amber-50 text-amber-900" : "bg-mint-pale/35 text-olive-soft"}`}>{lastWeek ? "现在是当月最后一周：请在教研会完成月总结、证据复核与下月动态调整。" : "当月最后一周高亮提醒：月总结、下月规划与家长反馈都须在同一教研节奏内核对。"}</p>
+    <p className={`rounded-lg p-3 text-[11px] leading-relaxed ${lastWeek ? "bg-amber-50 text-amber-900" : "bg-mint-pale/35 text-olive-soft"}`}>完成期限：<b>{deadline}（当月最后一个周四）</b>。{lastWeek ? "现在是当月最后一周，请完成教研核对；" : "可提前完成，期限只作提醒；"}管理员负责下月陪跑计划，督学师／学习教练负责本月工作总结。</p>
     <div className="mt-3 grid gap-2 sm:grid-cols-2">{rows.map((row) => <div key={row.label} className="flex items-center gap-2 rounded-lg bg-cream/45 p-2.5 text-[11.5px]">{row.ok ? <Check size={14} className="text-green-700" /> : <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-200 text-[9px] font-bold text-amber-900">!</span>}<b className="text-olive">{row.label}</b><span className="ml-auto text-right text-[10.5px] text-olive-mute">{row.text}</span></div>)}</div>
     <p className="mt-2 text-[10.5px] text-olive-mute">状态来自真实复盘、月报、授权与计划记录；此卡不替代下方月报编辑及逐人推送流程。</p>
   </Panel>;

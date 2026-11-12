@@ -8,6 +8,7 @@ import {
   acceptHandoff, addCoachingReview, addCoachingTask, addHandoff, coachingCaseDetail, createCoachingCase, downloadCoachingDeliverable,
   endCoachingScenarios, ensureCourseCatalog, familyCoachingFeedback, grantGuardian, listCoachingCases, listFamilyCoachingCases, pushParticipantFeedback, reassignCoachingCase,
   revokeGuardian, saveCoachingPlan, saveCourseSession, saveDailyCheckin, saveSupervision, setCoachingStatus, updateGrow, uploadCoachingDeliverable, verifyCoachingTask,
+  createInitialCoachingMonthPlans,
 } from "./coachingService";
 import { createCoachingException, listCoachingCrisisFollowups, recordCoachingCrisisFollowup, recordCoachingException, revealCoachingException } from "./coachingExceptions";
 import { cancelReassignment, listIncomingHandoffs } from "./coachingLifecycle";
@@ -27,6 +28,8 @@ import { revokeFamilyResourceAccess } from "./coachingRecipients";
 import { getCoachingDeliverySettings, saveCoachingDeliverySettings } from "./coachingDelivery";
 import { saveCoachingCaseProfile } from "./coachingProfile";
 import { acceptFamilyCoachingStageHandoff, createCoachingStageHandoff, familyCoachingStageHandoffs } from "./coachingStageHandoffs";
+import { deleteCoachingPlan } from "./coachingPlanning";
+import { listCoachingStaff, saveCoachingCaseTeam, saveCoachingStaffRoles } from "./coachingTeam";
 
 const id = z.number().int().positive();
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -83,11 +86,14 @@ const deliverySettingsInput = z.object({ h3Hours: z.number().int().min(1).max(16
 export const coachingRouter = createRouter({
   cases: tutorQuery.query(({ ctx }) => listCoachingCases(getDb(), ctx.user)),
   incoming: tutorQuery.query(({ ctx }) => listIncomingHandoffs(getDb(), ctx.user)),
-  staff: tutorQuery.query(({ ctx }) => {
-    const orgId = requireOrgStaff(ctx.user);
-    return getDb().select({ id: users.id, name: users.name, role: users.role }).from(users)
-      .where(and(eq(users.orgId, orgId), or(eq(users.role, "tutor"), eq(users.role, "admin")), isNull(users.deletedAt))).orderBy(users.id);
-  }),
+  staff: tutorQuery.query(({ ctx }) => listCoachingStaff(getDb(), ctx.user)),
+  saveStaffRoles: tutorQuery.input(z.object({ userId: id,
+    serviceRoles: z.array(z.enum(["consultant", "tutor", "supervisor", "coach", "admin"])).min(1).max(5) }))
+    .mutation(({ ctx, input }) => saveCoachingStaffRoles(getDb(), ctx.user, input)),
+  saveCaseTeam: tutorQuery.input(z.object({ caseId: id,
+    assignments: z.array(z.object({ userId: id, serviceRole: z.enum(["consultant", "tutor", "supervisor", "coach", "admin"]) })).max(100),
+    reason: z.string().trim().min(2).max(2000) }))
+    .mutation(({ ctx, input }) => saveCoachingCaseTeam(getDb(), ctx.user, input)),
   detail: tutorQuery.input(z.object({ caseId: id })).query(({ ctx, input }) => coachingCaseDetail(getDb(), ctx.user, input.caseId)),
   saveProfile: tutorQuery.input(z.object({ caseId: id, birthDate: dateText.nullable().optional(),
     studentInfo: z.string().max(20000).default(""), threeParty: z.string().max(30000).default(""),
@@ -110,6 +116,11 @@ export const coachingRouter = createRouter({
     .mutation(({ ctx, input }) => updateGrow(getDb(), ctx.user, input)),
   saveGrowProfile: tutorQuery.input(growInput).mutation(({ ctx, input }) => saveCoachingGrowProfile(getDb(), ctx.user, input)),
   confirmPlan: tutorQuery.input(z.object({ planId: id })).mutation(({ ctx, input }) => confirmCoachingPlan(getDb(), ctx.user, input.planId)),
+  deletePlan: tutorQuery.input(z.object({ caseId: id, planId: id }))
+    .mutation(({ ctx, input }) => deleteCoachingPlan(getDb(), ctx.user, input)),
+  createInitialMonthPlans: tutorQuery.input(z.object({ caseId: id,
+    plans: z.array(z.object({ month: monthText, title: z.string().trim().min(2).max(160), content: z.string().trim().min(2).max(15000) })).min(1).max(2) }))
+    .mutation(({ ctx, input }) => createInitialCoachingMonthPlans(getDb(), ctx.user, input)),
   familyPendingPlans: authedQuery.input(z.object({ caseId: id })).query(({ ctx, input }) => familyPendingPlans(getDb(), ctx.user, input.caseId)),
   confirmFamilyPlan: authedQuery.input(z.object({ planId: id, comment: z.string().trim().max(2000).optional() }))
     .mutation(({ ctx, input }) => confirmFamilyCoachingPlan(getDb(), ctx.user, input)),

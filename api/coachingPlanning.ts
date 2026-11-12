@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray } from "drizzle-orm";
-import { assessmentResults, coachingCases, coachingEvents, coachingGrowProfiles, coachingGrowReportLinks,
-  coachingGuardianGrants, coachingPlanConfirmations, coachingPlans, users } from "@db/schema";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { assessmentResults, coachingCases, coachingDeliverableRecipients, coachingEvents, coachingGrowProfiles, coachingGrowReportLinks,
+  coachingGuardianGrants, coachingHandoffs, coachingPlanConfirmations, coachingPlans, coachingTasks, users } from "@db/schema";
 import type { getDb } from "./queries/connection";
 import type { PointTx } from "./orgPoints";
 import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
@@ -92,7 +92,9 @@ export async function confirmCoachingPlan(db: Db, me: StaffUser, planId: number)
   const [plan] = await db.select().from(coachingPlans).where(eq(coachingPlans.id, planId)).limit(1);
   if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "计划不存在" });
   const coachingCase = await assertCaseAccess(db, me, plan.caseId);
-  if (![coachingCase.coachId, coachingCase.supervisorId].includes(me.id)) throw new TRPCError({ code: "FORBIDDEN", message: "只有本主档负责人可代表教练确认" });
+  if (plan.level === "month" ? me.role !== "admin" : ![coachingCase.coachId, coachingCase.supervisorId].includes(me.id)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: plan.level === "month" ? "下月计划仅管理员可提交家庭会签" : "只有本主档负责人可代表教练确认" });
+  }
   return db.transaction(async (tx) => {
     const [current] = await tx.select().from(coachingPlans).where(eq(coachingPlans.id, planId)).limit(1).for("update");
     if (!current || current.status !== "draft") throw new TRPCError({ code: "CONFLICT", message: "该计划已提交确认，不能再代表家庭完成会签" });
@@ -153,5 +155,33 @@ export async function confirmFamilyCoachingPlan(db: Db, me: { id: number; role: 
     await tx.insert(coachingEvents).values({ caseId: coachingCase.id, actorUserId: me.id, type: "plan_family_confirmed",
       content: `计划 #${plan.id} 已${role === "student" ? "学生" : "一位监护人"}会签${studentSigned && guardianSigned ? "，三方会签完成并正式生效" : "，等待其余家庭角色确认"}`, visibility: "internal" });
     return { id: plan.id, duplicate: false as const, status: studentSigned && guardianSigned ? "confirmed" as const : "awaiting_family" as const };
+  });
+}
+
+/** 只允许删除没有任何下游依赖的内部草稿；历史会签、授权与交付关系一律失败关闭。 */
+export async function deleteCoachingPlan(db: Db, me: StaffUser, input: { caseId: number; planId: number }) {
+  const coachingCase = await assertCaseAccess(db, me, input.caseId);
+  return db.transaction(async (tx) => {
+    const [plan] = await tx.select().from(coachingPlans).where(eq(coachingPlans.id, input.planId)).limit(1).for("update");
+    if (!plan || plan.caseId !== coachingCase.id) throw new TRPCError({ code: "NOT_FOUND", message: "计划不存在或与当前主档不匹配" });
+    if (plan.status !== "draft" || plan.issuedAt) throw new TRPCError({ code: "CONFLICT", message: "仅未提交会签、未生效的内部草稿可以删除" });
+    const [children, tasks, confirmations, handoffs, recipients] = await Promise.all([
+      tx.select({ id: coachingPlans.id }).from(coachingPlans).where(eq(coachingPlans.parentId, plan.id)).limit(1),
+      tx.select({ id: coachingTasks.id }).from(coachingTasks).where(eq(coachingTasks.planId, plan.id)).limit(1),
+      tx.select({ id: coachingPlanConfirmations.id }).from(coachingPlanConfirmations).where(eq(coachingPlanConfirmations.planId, plan.id)).limit(1),
+      tx.select({ id: coachingHandoffs.id }).from(coachingHandoffs).where(eq(coachingHandoffs.nextPlanId, plan.id)).limit(1),
+      tx.select({ id: coachingDeliverableRecipients.id }).from(coachingDeliverableRecipients)
+        .where(and(eq(coachingDeliverableRecipients.resourceType, "plan"), eq(coachingDeliverableRecipients.resourceId, plan.id))).limit(1),
+    ]);
+    if ([children, tasks, confirmations, handoffs, recipients].some((rows) => rows.length)) {
+      throw new TRPCError({ code: "CONFLICT", message: "该草稿已有下级计划、行动、会签、交接或接收授权记录，不能删除" });
+    }
+    const result = await tx.delete(coachingPlans).where(and(eq(coachingPlans.id, plan.id), eq(coachingPlans.caseId, coachingCase.id),
+      eq(coachingPlans.status, "draft"), isNull(coachingPlans.issuedAt)));
+    const affectedRows = typeof result === "object" && result !== null && "affectedRows" in result ? Number(result.affectedRows) : 1;
+    if (affectedRows !== 1) throw new TRPCError({ code: "CONFLICT", message: "草稿状态已变化，请刷新后再试" });
+    await tx.insert(coachingEvents).values({ caseId: coachingCase.id, actorUserId: me.id, type: "plan_draft_deleted",
+      content: `已删除无依赖内部草稿 #${plan.id}：${plan.title} V${plan.version}`, visibility: "internal" });
+    return { id: plan.id, deleted: true as const };
   });
 }

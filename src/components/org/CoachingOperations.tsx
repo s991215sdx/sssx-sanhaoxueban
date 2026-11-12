@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, Bell, BellRing, CalendarClock, Check, ClipboardList, RotateCcw, Settings2, UserRoundCheck, Users } from "lucide-react";
+import { ArrowRight, Bell, Check, ClipboardList, RotateCcw, Settings2, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import CoachingDeliverySettings from "./CoachingDeliverySettings";
@@ -22,17 +22,10 @@ export default function CoachingOperations({ onOpenCase }: { onOpenCase: (caseId
   const accessible = new Set(data?.accessibleCaseIds ?? []);
   return <section className="rounded-2xl border border-[#0C7064]/15 bg-white p-4 shadow-sm" aria-label="陪跑运营中心">
     <div className="flex flex-wrap items-center gap-2">
-      <div className="min-w-0 flex-1"><h2 className="flex items-center gap-1.5 text-[16px] font-bold text-olive"><ClipboardList size={17} className="text-[#0C7064]" />陪跑运营中心</h2><p className="mt-1 text-[10.5px] text-olive-mute">统一查看本人待办、风险和未来交付；日期按 Asia/Shanghai 计算。</p></div>
+      <div className="min-w-0 flex-1"><h2 className="flex items-center gap-1.5 text-[16px] font-bold text-olive"><ClipboardList size={17} className="text-[#0C7064]" />待办处理与通知</h2><p className="mt-1 text-[10.5px] text-olive-mute">筛选并处理本人待办、风险和未来交付；统计与本周安排见上方工作台，日期按 Asia/Shanghai 计算。</p></div>
       <div className="flex rounded-xl bg-cream p-1">{([{ key: "todos" as const, label: "运营待办" }, { key: "notifications" as const, label: "通知中心" }, ...(user?.role === "admin" ? [{ key: "loads" as const, label: "团队负荷" }] : [])]).map((item) => <button type="button" key={item.key} onClick={() => setPanel(item.key)} className={`min-h-9 rounded-lg px-3 text-[11.5px] font-semibold ${panel === item.key ? "bg-white text-[#0C7064] shadow-sm" : "text-olive-mute"}`}>{item.label}</button>)}</div>
     </div>
     {panel === "notifications" ? <CoachingNotificationCenter /> : panel === "loads" ? <StaffWorkloads /> : <>
-      <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">{([
-        { key: "today", label: "今日待办", value: data?.summary.today ?? 0, icon: CalendarClock },
-        { key: "overdue", label: "已逾期", value: data?.summary.overdue ?? 0, icon: AlertTriangle },
-        { key: "risk", label: "开放风险", value: data?.summary.risks ?? 0, icon: BellRing },
-        { key: "upcoming", label: "近 7 天交付", value: data?.summary.upcoming ?? 0, icon: UserRoundCheck },
-      ] as const).map((card) => <button type="button" key={card.key} onClick={() => setFilter(card.key)} className={`rounded-xl border p-3 text-left ${filter === card.key ? "border-[#0C7064]/35 bg-mint-pale/45" : "border-border bg-cream/40"}`}><card.icon size={15} className={card.key === "overdue" || card.key === "risk" ? "text-amber-700" : "text-[#0C7064]"} /><b className="mt-1 block text-[21px] text-olive">{card.value}</b><span className="text-[10.5px] text-olive-mute">{card.label}</span></button>)}</div>
-      {data?.nextDeliveries.length ? <div className="mt-3 rounded-xl bg-mint-pale/25 p-3"><h3 className="text-[11.5px] font-bold text-olive">下一次交付</h3><div className="mt-2 flex gap-2 overflow-x-auto pb-1">{data.nextDeliveries.map((item) => <button type="button" key={item.key} onClick={() => accessible.has(item.caseId) && onOpenCase(item.caseId, item.kind)} className="min-w-[190px] rounded-lg bg-white p-2.5 text-left"><span className="text-[10px] text-[#0C7064]">{item.dueDate} · {KIND[item.kind]}</span><b className="mt-0.5 block truncate text-[11.5px] text-olive">{item.studentName}</b><span className="block truncate text-[10.5px] text-olive-mute">{item.title}</span></button>)}</div></div> : null}
       <div className="mt-3 flex flex-wrap items-center gap-2"><div className="flex flex-wrap gap-1">{(["all", "overdue", "today", "upcoming", "risk"] as const).map((key) => <button type="button" key={key} onClick={() => setFilter(key)} className={`rounded-full px-2.5 py-1 text-[10.5px] ${filter === key ? "bg-[#0C7064] text-white" : "bg-cream text-olive-mute"}`}>{key === "all" ? "全部" : CATEGORY[key]}</button>)}</div><span className="ml-auto text-[10px] text-olive-mute">{items.length} 项</span></div>
       {isLoading && <p className="py-6 text-center text-[12px] text-olive-mute">正在汇总运营待办…</p>}
       {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-[11.5px] text-red-700">{error.message}</p>}

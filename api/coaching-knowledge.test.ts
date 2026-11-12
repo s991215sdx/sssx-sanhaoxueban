@@ -111,7 +111,7 @@ describe("内部画像保存与 0058 迁移", () => {
     const sql = readFileSync(new URL("../db/migrations/0058_coaching_case_profiles.sql", import.meta.url), "utf8");
     expect(sql.match(/DEFAULT CURRENT_TIMESTAMP/g)).toHaveLength(2);
     expect(sql).toContain("UNIQUE(`case_id`)");
-    expect(JOURNAL_ENTRIES.at(-1)).toMatchObject({ idx: 58, tag: "0058_coaching_case_profiles" });
+    expect(JOURNAL_ENTRIES.find((entry) => entry.idx === 58)).toMatchObject({ idx: 58, tag: "0058_coaching_case_profiles" });
     expect(MIGRATION_SQL["0058_coaching_case_profiles"]).toContain("CREATE TABLE `coaching_case_profiles`");
   });
 });

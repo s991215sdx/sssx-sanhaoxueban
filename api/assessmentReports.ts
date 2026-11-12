@@ -2,16 +2,17 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gte, isNull, lte, or } from "drizzle-orm";
 import { assessmentActivities, assessmentActivityItems, assessmentAssignments, assessmentResults, users } from "@db/schema";
 import type { getDb } from "./queries/connection";
-import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
+import { assertStudentAccess, hasCoachingTeamStudentAccess, requireOrgStaff, type StaffUser } from "./orgAccess";
 import { getTutorReportAccess } from "./tutorAccess";
 
 type Db = ReturnType<typeof getDb>;
 
-/** 新报告列表、GROW 列表和计划关联统一走这里；报告正文仍沿用学员详情原权限。 */
+/** 新报告、画像与计划关联统一鉴权；有效服务团队按主档获得该学员完整测评资料。 */
 export async function hasAssessmentReportAccess(db: Db, me: StaffUser, studentUserId: number): Promise<boolean> {
   try {
     await assertStudentAccess(db, me, studentUserId);
     if (me.role === "admin") return true;
+    if (await hasCoachingTeamStudentAccess(db, me, studentUserId)) return true;
     return (await getTutorReportAccess(db, me.id, studentUserId)).allowed;
   } catch {
     return false;

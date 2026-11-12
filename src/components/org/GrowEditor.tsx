@@ -131,7 +131,7 @@ export default function GrowEditor({ studentUserId, initialResultId, onOpenRepor
   return <section className="space-y-4">
     <header className="rounded-2xl border border-[#E7E2D0] bg-white p-4 shadow-[0_1px_2px_rgba(69,80,58,.06)]">
       <div className="flex items-center justify-between gap-2">
-        <div><div className="text-[10px] font-semibold tracking-[.14em] text-[#0C7064]">GROW · 规划课课程设计</div><h2 className="mt-1 text-[16px] font-bold text-olive">像装修先做设计：定目的、定目标、定策略、定衡量</h2></div>
+        <div><div className="text-[10px] font-semibold tracking-[.14em] text-[#0C7064]">GROW · 规划课课程设计</div><h2 className="mt-1 text-[16px] font-bold text-olive">定目的、定目标、定策略、定衡量</h2></div>
         {onOpenReport && <button type="button" disabled={data?.reportAllowed === false} title={data?.reportAllowed === false ? "报告权限未开放或已到期" : "查看该学员完整报告"} onClick={onOpenReport} className="inline-flex min-h-10 items-center gap-1 rounded-[10px] border border-[#0C7064]/25 px-3 py-2 text-[11px] font-semibold text-[#0C7064] hover:bg-[#E5EFE8] disabled:cursor-not-allowed disabled:opacity-40"><FileText size={13} /> 完整报告</button>}
       </div>
     </header>

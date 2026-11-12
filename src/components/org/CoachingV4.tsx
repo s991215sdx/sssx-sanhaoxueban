@@ -30,9 +30,9 @@ export function CoachingPageHeading({ title, description, actions }: { title: st
 }
 
 export function CoachingNavigation({ tab, onChange }: { tab: CoachingSection; onChange: (section: CoachingSection) => void }) {
-  return <nav aria-label="陪跑中心导航" className="mt-4 flex gap-1 overflow-x-auto rounded-xl bg-[#F6F3E8] p-1">
+  return <nav aria-label="陪跑中心导航" className="mt-4 flex gap-1 overflow-x-auto rounded-xl bg-[#F6F3E8] p-1 sm:grid sm:grid-cols-9 sm:overflow-visible">
     {COACHING_SECTIONS.map((item) => <button type="button" key={item.key} aria-current={tab === item.key ? "page" : undefined} onClick={() => onChange(item.key)}
-      className={`min-h-10 min-w-[72px] flex-1 cursor-pointer whitespace-nowrap rounded-[10px] border border-transparent px-3 py-2 text-[12px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#0C7064]/35 ${tab === item.key ? "bg-[#E5EFE8] text-[#0C7064]" : "text-olive-soft hover:border-[#E7E2D0] hover:bg-white"}`}>{item.label}</button>)}
+      className={`min-h-10 min-w-[72px] flex-1 cursor-pointer whitespace-nowrap rounded-[10px] border border-transparent px-3 py-2 text-[12px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#0C7064]/35 sm:min-w-0 sm:px-1 lg:px-2 ${tab === item.key ? "bg-[#E5EFE8] text-[#0C7064]" : "text-olive-soft hover:border-[#E7E2D0] hover:bg-white"}`}>{item.label}</button>)}
   </nav>;
 }
 

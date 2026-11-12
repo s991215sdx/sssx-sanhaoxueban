@@ -1,4 +1,5 @@
 import { BookOpenCheck, CalendarCheck2, Check, ClipboardCheck, Clock3, FileText, GraduationCap, Target } from "lucide-react";
+import { lastThursdayOfCoachingMonth } from "@contracts/coachingTeam";
 import { trpc } from "@/providers/trpc";
 import type { CoachingDetail } from "./coachingTypes";
 import { parseGrowForm } from "./growPlan";
@@ -44,7 +45,7 @@ export function PlanningRhythm({ data }: { data: CoachingDetail }) {
       const rows = level.key === "day" ? data.checkins : data.plans.filter((plan) => plan.level === level.key);
       return <div key={level.key} className="flex items-center gap-2 rounded-lg border border-[#E7E2D0] px-3 py-2.5 text-[11px]"><span className="min-w-0 flex-1 font-semibold text-olive">{level.label}</span><span className="text-olive-mute">{rows.length ? `${rows.length} 条真实记录` : "尚未建立"}</span>{rows.length > 0 && <Check size={13} className="text-[#0C7064]" />}</div>;
     })}</div>
-    <div className="mt-3 rounded-lg bg-cream/60 p-3 text-[11px] leading-relaxed text-olive-soft"><b className="text-olive">本月教研：</b>{monthly ? `月复盘 V${monthly.version} 已保存` : "当月最后一周完成月总结、证据复核与下月调整"}</div>
+    <div className="mt-3 rounded-lg bg-cream/60 p-3 text-[11px] leading-relaxed text-olive-soft"><b className="text-olive">本月教研期限：{lastThursdayOfCoachingMonth(month)}（最后一个周四）</b><br />{monthly ? `月复盘 V${monthly.version} 已保存。` : "督学师／学习教练完成当月总结，"}管理员完成下月计划；可提前完成，不覆盖历史版本。</div>
   </CoachingPanel>;
 }
 

@@ -10,6 +10,7 @@ import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
 import type { PointTx } from "./orgPoints";
 import { queueCoachingNotification } from "./coachingNotifications";
 import { assertCoachingCapacity, recordCapacityOverride } from "./coachingDelivery";
+import { syncCoachingReassignmentTeamTx } from "./coachingTeam";
 
 type Db = ReturnType<typeof getDb>;
 type QueryDb = Db | PointTx;
@@ -114,6 +115,9 @@ export async function acceptHandoff(db: Db, me: StaffUser, handoffId: number, ca
       const result = await tx.update(coachingCases).set({ coachId: handoff.nextCoachId, supervisorId: handoff.nextSupervisorId })
         .where(and(eq(coachingCases.id, current.id), eq(coachingCases.coachId, handoff.fromCoachId), eq(coachingCases.supervisorId, handoff.fromSupervisorId)));
       assertAffected(result, "负责人已变化，请刷新后再接收");
+      await syncCoachingReassignmentTeamTx(tx, { orgId, caseId: current.id, actorUserId: me.id, reason: handoff.content,
+        fromCoachId: handoff.fromCoachId, fromSupervisorId: handoff.fromSupervisorId,
+        nextCoachId: handoff.nextCoachId, nextSupervisorId: handoff.nextSupervisorId });
       await recordCapacityOverride(tx, handoff.caseId, me.id, capacityOverrideReason);
       reassigned = true;
     }

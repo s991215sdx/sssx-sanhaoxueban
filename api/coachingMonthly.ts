@@ -9,6 +9,7 @@ import type { StaffUser } from "./orgAccess";
 import type { PointTx } from "./orgPoints";
 import { assertCaseAccess } from "./coachingAccess";
 import { grantFamilyResourcesTx, queueFamilyResourceNotifications } from "./coachingRecipients";
+import { assertCoachingMonthlySummaryRole } from "./coachingTeam";
 
 type Db = ReturnType<typeof getDb>;
 type QueryDb = Db | PointTx;
@@ -169,6 +170,7 @@ function required(value: string | undefined, message: string): string {
 
 export async function saveCoachingMonthlyReport(db: Db, me: StaffUser, input: MonthlyReportInput) {
   const coachingCase = await assertCaseAccess(db, me, input.caseId);
+  await assertCoachingMonthlySummaryRole(db, me, input.caseId);
   assertMonth(input.month);
   const fields = {
     goalProgress: required(input.goalProgress, "请填写目标推进事实"),

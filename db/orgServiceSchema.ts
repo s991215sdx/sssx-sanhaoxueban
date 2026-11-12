@@ -308,4 +308,26 @@ export const coachingNotificationSettings = mysqlTable("coaching_notification_se
   updatedBy: bigint("updated_by", { mode: "number", unsigned: true }), createdAt: createdAt(), updatedAt: updatedAt(),
 }, (table) => [uniqueIndex("coaching_notification_settings_org_unique").on(table.orgId)]);
 
+/** 员工可兼具多种职能；admin 只能来自真实管理员账号，不能由配置提权。 */
+export const orgStaffRoles = mysqlTable("org_staff_roles", {
+  id: id(), orgId: orgId(), userId: userId(), serviceRole: varchar("service_role", { length: 24 }).notNull(),
+  createdBy: userId("created_by"), createdAt: createdAt(), updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex("org_staff_roles_org_user_role_unique").on(table.orgId, table.userId, table.serviceRole),
+  index("org_staff_roles_org_role_idx").on(table.orgId, table.serviceRole),
+]);
+
+/** 同一主档可有多名督学与教练；停用保留历史，所有读写限定机构＋主档＋员工。 */
+export const coachingCaseStaff = mysqlTable("coaching_case_staff", {
+  id: id(), orgId: orgId(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), userId: userId(),
+  serviceRole: varchar("service_role", { length: 24 }).notNull(), active: boolean("active").notNull().default(true),
+  changeReason: varchar("change_reason", { length: 500 }).notNull().default(""),
+  createdBy: userId("created_by"), endedBy: bigint("ended_by", { mode: "number", unsigned: true }),
+  endedAt: timestamp("ended_at"), createdAt: createdAt(), updatedAt: updatedAt(),
+}, (table) => [
+  uniqueIndex("coaching_case_staff_case_user_role_unique").on(table.caseId, table.userId, table.serviceRole),
+  index("coaching_case_staff_org_user_active_idx").on(table.orgId, table.userId, table.active),
+  index("coaching_case_staff_case_active_idx").on(table.caseId, table.active),
+]);
+
 export * from "./coachingDeliverySchema";

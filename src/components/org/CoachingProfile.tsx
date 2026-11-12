@@ -5,6 +5,7 @@ import { trpc } from "@/providers/trpc";
 import type { CoachingDetail } from "./coachingTypes";
 import { GROWTH_STAGES, VITALITY_TOWER, resolveGrowthStage, towerPosition } from "./knowledgeBase";
 import { CoachingPageHeading, CoachingPanel, V4_PRIMARY } from "./CoachingV4";
+import CoachingTeamPanel from "./CoachingTeamPanel";
 
 const KIND: Record<string, string> = { mbti: "MBTI", disc: "DISC", e3: "E3 学习力", multi5: "多元智能", mentalsdq: "心理健康 A 版", mentalpa: "心理健康 B 版", scl90: "SCL-90", mental: "心理健康通用版", subject4d: "学科四维", holland: "霍兰德", anchor: "职业锚", subject: "学科能力", e3parent: "家长认知", discparent: "家长 DISC", familystudent: "家庭关系·学生", familyparent: "家庭关系·家长" };
 const DISC_ADVICE: Record<string, string> = {
@@ -48,8 +49,9 @@ export default function CoachingProfile({ data }: { data: CoachingDetail }) {
     { key: "behavioral" as const, title: "行为主义 · 自我线", values: VITALITY_TOWER.behavioral },
   ];
   return <div className="space-y-4">
-    <CoachingPageHeading title={`${student?.profile?.name ?? "学员"} · 学员画像`} description="伴学师内部视图 ｜ 孩子信息表内容仅伴学师可见，不进家长反馈与月报 ｜ 每次复盘结合本画像生成下一步建议" />
+    <CoachingPageHeading title={`${student?.profile?.name ?? "学员"} · 学员画像`} description="当前学员服务团队内部视图 ｜ 孩子信息表不进入家长反馈与月报 ｜ 每次复盘结合本画像生成下一步建议" />
     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[11.5px] leading-relaxed text-amber-900"><FileLock2 size={15} className="mr-1.5 inline" />三方信息、家庭特点与沟通注意事项仅供服务使用，不自动推送家长；不在这里录入或展示心理原始作答。</div>
+    <CoachingTeamPanel data={data} compact />
 
     <div className="grid items-start gap-4 xl:grid-cols-3">
       <CoachingPanel title="基本信息" subtitle="真实学员档案">
