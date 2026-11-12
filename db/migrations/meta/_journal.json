@@ -408,6 +408,13 @@
       "when": 1794486888033,
       "tag": "0059_coaching_service_team",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "5",
+      "when": 1793800000000,
+      "tag": "0046_talent_assess",
+      "breakpoints": true
     }
   ]
 }

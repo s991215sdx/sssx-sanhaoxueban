@@ -25,6 +25,11 @@ const SsoStudentView = lazy(() => import("./pages/SsoStudentView"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Tutor = lazy(() => import("./pages/Tutor"));
 const Library = lazy(() => import("./pages/Library"));
+/* v253 人才测评：与测评中心并列的独立栏目（岗位评估 + 候选人扫码） */
+const TalentCenter = lazy(() => import("./pages/TalentCenter"));
+const TalentQuizPage = lazy(() => import("./pages/TalentQuiz"));
+const TalentReportPage = lazy(() => import("./pages/TalentReport"));
+const TalentJoin = lazy(() => import("./pages/TalentJoin"));
 const RecycleBin = lazy(() => import("./pages/RecycleBin"));
 const ProfileStage = lazy(() => import("@/components/welcome/ProfileStage"));
 
@@ -129,7 +134,7 @@ function RoleGate({ children }: { children: React.ReactNode }) {
     if (location.pathname !== "/admin") return <Navigate to="/admin" replace />;
     return <>{children}</>;
   }
-  const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report"];
+  const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report", "/talent"];
   const onStaffPath = staffPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`));
   if (isStaff && !onStaffPath) {
     return <Navigate to="/tutor" replace />;
@@ -148,6 +153,8 @@ export default function App() {
       <Route path="/f/:code" element={<Suspense fallback={<PageSpinner />}><FamilyJoin /></Suspense>} />
       {/* v239 测评码：一张码对应「某个孩子 + 某份测评」，孩子扫码进自己账号，家长扫码就地作答 */}
       <Route path="/p/:code" element={<Suspense fallback={<PageSpinner />}><PassJoin /></Suspense>} />
+      {/* v253 人才测评邀请码：候选人扫码就地作答，不用注册；答完不看分数，报告回发起人 */}
+      <Route path="/t/:code" element={<Suspense fallback={<PageSpinner />}><TalentJoin /></Suspense>} />
       {/* v158：一体通 SSO 免登只读视图：公开路由（ticket 兑换 10 分钟短会话，仅可读对应学员） */}
       <Route path="/sso/view/:studentId" element={<Suspense fallback={<PageSpinner />}><SsoStudentView /></Suspense>} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}
@@ -179,6 +186,9 @@ export default function App() {
                     <Route path="/gaps" element={<Gaps />} />
                     <Route path="/assessments" element={<AssessmentCenter />} />
                     <Route path="/coaching" element={<FamilyCoaching />} />
+                    <Route path="/talent" element={<TalentCenter />} />
+                    <Route path="/talent/quiz" element={<TalentQuizPage />} />
+                    <Route path="/talent/report/:id" element={<TalentReportPage />} />
                     <Route path="/learn/:errorId" element={<LearnFlow />} />
                     <Route path="/papers" element={<Papers />} />
                     <Route path="/treehole" element={<Treehole />} />
