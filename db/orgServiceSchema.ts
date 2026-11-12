@@ -75,6 +75,15 @@ export const coachingCases = mysqlTable("coaching_cases", {
   createdAt: createdAt(), updatedAt: updatedAt(),
 });
 
+/** 伴学师内部画像：三方资料与沟通注意事项不进入家庭查询或自动推送。 */
+export const coachingCaseProfiles = mysqlTable("coaching_case_profiles", {
+  id: id(), orgId: orgId(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull().unique(),
+  birthDate: varchar("birth_date", { length: 10 }),
+  studentInfo: text("student_info").notNull(), threeParty: text("three_party").notNull(),
+  parentProfile: text("parent_profile").notNull(), attention: text("attention").notNull(), commAdvice: text("comm_advice").notNull(),
+  updatedBy: userId("updated_by"), createdAt: createdAt(), updatedAt: updatedAt(),
+}, (table) => [index("coaching_case_profiles_org_case_idx").on(table.orgId, table.caseId)]);
+
 export const coachingCaseScenarios = mysqlTable("coaching_case_scenarios", {
   id: id(), caseId: bigint("case_id", { mode: "number", unsigned: true }).notNull(), orgId: orgId(),
   scenario: varchar("scenario", { length: 8 }).notNull(), activeKey: varchar("active_key", { length: 64 }),

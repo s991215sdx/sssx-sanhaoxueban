@@ -32,7 +32,9 @@ export const JOURNAL_ENTRIES: { idx: number; when: number; tag: string }[] = [{"
 , {"idx": 55, "when": 1794384000000, "tag": "0055_campus_report_kinds"}
 , {"idx": 56, "when": 1794470400000, "tag": "0056_coaching_stage_handoffs"}
 , {"idx": 57, "when": 1794556800000, "tag": "0057_grow_plan_form"}
+, {"idx": 58, "when": 1794643200000, "tag": "0058_coaching_case_profiles"}
 ];
+
 
 
 
@@ -109,4 +111,5 @@ export const MIGRATION_SQL: Record<string, string> = {
   "0055_campus_report_kinds": "-- 校园报告逐学生授权：NULL 不回填，历史校园学生默认不开放任何报告。\nALTER TABLE `student_profile` ADD `campus_report_kinds` json NULL;\n",
   "0056_coaching_stage_handoffs": "-- H5 家庭阶段交接：关联月报、正式计划、家庭行动与私有交接单；不改变负责人。\n-- 全部为可空字段，历史 H5 改派以 next_supervisor_id 非空继续识别。\nALTER TABLE `coaching_handoffs` ADD `monthly_report_id` bigint unsigned NULL;\n--> statement-breakpoint\nALTER TABLE `coaching_handoffs` ADD `next_plan_id` bigint unsigned NULL;\n--> statement-breakpoint\nALTER TABLE `coaching_handoffs` ADD `family_action_id` bigint unsigned NULL;\n--> statement-breakpoint\nALTER TABLE `coaching_handoffs` ADD `attachment_id` bigint unsigned NULL;\n--> statement-breakpoint\nALTER TABLE `coaching_handoffs` ADD `family_snapshot` json NULL;\n--> statement-breakpoint\nALTER TABLE `coaching_handoffs` ADD `accepted_channel` varchar(32) NULL;\n--> statement-breakpoint\nALTER TABLE `coaching_handoffs` ADD `accepted_comment` text NULL;\n",
   "0057_grow_plan_form": "-- v274 GROW 表单化：规划课四要素（目的/目标/策略/衡量）结构化数据，空则回退纯文本展示。\nALTER TABLE `coaching_cases` ADD `grow_form` json NULL;\n",
+  "0058_coaching_case_profiles": "-- v277 陪跑知识底座：内部画像档案；不承载原始心理作答，不向家庭端自动开放。\nCREATE TABLE `coaching_case_profiles` (\n  `id` serial AUTO_INCREMENT NOT NULL,\n  `org_id` bigint unsigned NOT NULL,\n  `case_id` bigint unsigned NOT NULL,\n  `birth_date` varchar(10),\n  `student_info` text NOT NULL,\n  `three_party` text NOT NULL,\n  `parent_profile` text NOT NULL,\n  `attention` text NOT NULL,\n  `comm_advice` text NOT NULL,\n  `updated_by` bigint unsigned NOT NULL,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  CONSTRAINT `coaching_case_profiles_id` PRIMARY KEY(`id`),\n  CONSTRAINT `coaching_case_profiles_case_id_unique` UNIQUE(`case_id`)\n);\n--> statement-breakpoint\nCREATE INDEX `coaching_case_profiles_org_case_idx` ON `coaching_case_profiles` (`org_id`,`case_id`);\n",
 };

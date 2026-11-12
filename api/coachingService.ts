@@ -13,6 +13,7 @@ import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAcces
 import type { PointTx } from "./orgPoints";
 import { assertAssessmentReportAccess, hasAssessmentReportAccess } from "./assessmentReports";
 import { assertCaseAccess, type CoachingCaseRow } from "./coachingAccess";
+import { coachingE3Results, getCoachingCaseProfile } from "./coachingProfile";
 import { listCoachingExceptions } from "./coachingExceptions";
 import { getCoachingClosureReadiness } from "./coachingLifecycle";
 import { queueCoachingNotification } from "./coachingNotifications";
@@ -133,8 +134,12 @@ export async function coachingCaseDetail(db: Db, me: StaffUser, caseId: number) 
     familyRecipients(db, coachingCase),
     db.select().from(coachingDeliverableRecipients).where(and(eq(coachingDeliverableRecipients.orgId, coachingCase.orgId), eq(coachingDeliverableRecipients.caseId, caseId))),
   ]);
+  const [profile, e3Results] = await Promise.all([
+    getCoachingCaseProfile(db, coachingCase),
+    reportAllowed ? coachingE3Results(db, me, coachingCase) : Promise.resolve([]),
+  ]);
   const serviceScenarios = normalizeCoachingScenarios(scenarioHistory.filter((item) => !item.endedAt).map((item) => item.scenario));
-  return { coachingCase, serviceScenarios, scenarioHistory, plans, tasks, reviews, checkins, handoffs, events, exceptions, supervisions,
+  return { coachingCase, profile, e3Results, serviceScenarios, scenarioHistory, plans, tasks, reviews, checkins, handoffs, events, exceptions, supervisions,
     sessions: sessions.map((session) => ({ ...session, units: units.filter((u) => u.sessionId === session.id),
       participants: participants.filter((p) => p.participant.sessionId === session.id) })),
     deliverables, guardians, results: reportAllowed ? results : [], reportAllowed, verificationHistory, catalog, closureReadiness,

@@ -152,7 +152,7 @@ describe("校园授权迁移和前后端接入契约", () => {
     const journal = JSON.parse(readFileSync("db/migrations/meta/_journal.json", "utf8")) as { entries: { idx: number; tag: string }[] };
     expect(journal.entries).toContainEqual(expect.objectContaining({ idx: 55, tag: "0055_campus_report_kinds" }));
     expect(journal.entries).toContainEqual(expect.objectContaining({ idx: 56, tag: "0056_coaching_stage_handoffs" }));
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 57, tag: "0057_grow_plan_form" });
+    expect(journal.entries).toContainEqual(expect.objectContaining({ idx: 57, tag: "0057_grow_plan_form" }));
     const embedded = readFileSync("api/migrationsEmbedded.ts", "utf8");
     expect(embedded).toContain("0054_coaching_service_delivery");
     expect(embedded).toContain("0055_campus_report_kinds");

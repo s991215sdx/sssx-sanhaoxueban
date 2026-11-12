@@ -25,6 +25,7 @@ import { coachingRecordInput, familyCoachingActions, listCoachingExtendedRecords
 import { cancelCourseSession, cancelSupervision, courseSessionForEdit, courseSessionHistory, courseSessionRecipients, rescheduleCourseSession, rescheduleSupervision } from "./coachingSchedule";
 import { revokeFamilyResourceAccess } from "./coachingRecipients";
 import { getCoachingDeliverySettings, saveCoachingDeliverySettings } from "./coachingDelivery";
+import { saveCoachingCaseProfile } from "./coachingProfile";
 import { acceptFamilyCoachingStageHandoff, createCoachingStageHandoff, familyCoachingStageHandoffs } from "./coachingStageHandoffs";
 
 const id = z.number().int().positive();
@@ -88,6 +89,10 @@ export const coachingRouter = createRouter({
       .where(and(eq(users.orgId, orgId), or(eq(users.role, "tutor"), eq(users.role, "admin")), isNull(users.deletedAt))).orderBy(users.id);
   }),
   detail: tutorQuery.input(z.object({ caseId: id })).query(({ ctx, input }) => coachingCaseDetail(getDb(), ctx.user, input.caseId)),
+  saveProfile: tutorQuery.input(z.object({ caseId: id, birthDate: dateText.nullable().optional(),
+    studentInfo: z.string().max(20000).default(""), threeParty: z.string().max(30000).default(""),
+    parentProfile: z.string().max(15000).default(""), attention: z.string().max(15000).default(""), commAdvice: z.string().max(15000).default("") }))
+    .mutation(({ ctx, input }) => saveCoachingCaseProfile(getDb(), ctx.user, input)),
   createException: tutorQuery.input(z.object({ caseId: id, severity: z.enum(["S1", "S2", "S3", "S4"]),
     category: z.enum(["service", "archive", "communication", "attendance", "complaint", "integrity", "wellbeing", "safety", "other"]),
     title: z.string().trim().min(2).max(180), detail: z.string().trim().min(2).max(12000), sensitive: z.boolean().default(false),
