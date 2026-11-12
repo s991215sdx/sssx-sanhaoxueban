@@ -15,19 +15,19 @@ const VIEWPORTS = [
   ["桌面", { width: 1280, height: 1000 }],
   ["手机", { width: 390, height: 844 }],
 ];
-/* 9 号是行政岗（高度匹配，无硬缺口），10 号是管理岗（有条件匹配，有硬缺口） */
+/* 22 号是行政岗（高度匹配，无硬缺口），23 号是管理岗（有条件匹配，有硬缺口） */
 const REPORTS = [
-  ["行政", "9", false],
-  ["管理", "10", true],
+  ["行政", "22", false],
+  ["管理", "23", true],
 ];
-const BASE_KEYS = ["匹配度", "换个岗位会怎样", "十维明细", "特质情商", "发展建议", "面谈时值得追问", "这份报告能用到什么程度"];
+const BASE_KEYS = ["匹配度", "用人建议", "这个岗位要什么", "换个岗位会怎样", "十维明细", "特质情商", "发展建议", "面谈时值得追问", "这份报告能用到什么程度"];
 
 const b = await chromium.launch({ executablePath: "/usr/bin/chromium", headless: true, args: ["--no-sandbox"] });
 
 
 for (const [vpName, viewport] of VIEWPORTS) {
   const p = await openPage(b, viewport);
-  for (const [label, url] of [["中心", "/talent"], ["行政报告", "/talent/report/9"], ["管理报告", "/talent/report/10"]]) {
+  for (const [label, url] of [["中心", "/talent"], ["行政报告", "/talent/report/22"], ["管理报告", "/talent/report/23"]]) {
     await p.goto(`${BASE}${url}`, { waitUntil: "networkidle" });
     await p.waitForTimeout(2200);
     const info = await p.evaluate(() => {
@@ -35,7 +35,8 @@ for (const [vpName, viewport] of VIEWPORTS) {
       document.querySelectorAll("*").forEach((el) => {
         if (el.scrollWidth > el.clientWidth + 4 && el.clientWidth > 0) {
           const cs = getComputedStyle(el);
-          if (cs.overflowX === "visible" && el.tagName !== "HTML" && el.tagName !== "BODY")
+          /* fixed 元素（侧栏折叠按钮）的伸出是设计，不撑开文档流，不算溢出 */
+          if (cs.overflowX === "visible" && el.tagName !== "HTML" && el.tagName !== "BODY" && cs.position !== "fixed")
             bad.push(`${el.tagName}.${el.className.toString().slice(0, 36)} sw=${el.scrollWidth} cw=${el.clientWidth}`);
         }
       });

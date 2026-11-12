@@ -26,7 +26,7 @@ import { schoolRouter } from "./schoolRouter";
 import { talentRouter } from "./talentRouter";
 
 /** 版本标记：每次发版手动递增，用于确认线上跑的是哪一版（平台无部署状态可查） */
-const BUILD_TAG = "v254-2026-11-12";
+const BUILD_TAG = "v255-2026-11-12";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now(), v: BUILD_TAG })),

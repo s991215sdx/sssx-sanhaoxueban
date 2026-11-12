@@ -175,6 +175,26 @@ const JOB_INTERVIEW: Record<JobKey, string[]> = {
   ],
 };
 
+/* ------------------------------ 面试追问（按人定制） ------------------------------ */
+
+/**
+ * 每个维度偏低的追问模板。报告里的「面谈时值得追问的」不再是岗位通用的三句套话，
+ * 而是先问这个人这份卷子里暴露出的短板——追问只值钱在「针对他」，套话问谁都一样。
+ * 每一条都问「过去的真实行为」，不给「你会怎么做」这种能当场编答案的题。
+ */
+const DIM_PROBE: Record<TalentDim, string> = {
+  influence: "讲一次你没能说服对方的经历：对方为什么没被你说动？你后来做了什么补救？",
+  empathy: "遇到一个情绪很激动、又一时讲不清诉求的家长或客户，你会怎么开口？讲个真事。",
+  order: "讲一次因为记录、台账或流程出过岔子的事。当时是你自己发现，还是别人发现的？",
+  drive: "上一个你明确要完成的目标，最后差多少？你自己判断差在哪一环？",
+  stable: "讲一次你被当众否定或被投诉的经历。你当时怎么处理自己的情绪，多久才缓过来？",
+  duty: "讲一件你开了头、却拖了很久才收尾的事。为什么拖，最后怎么收的场？",
+  achieve: "最近一次你主动要「更难的事」是什么时候？没有的话，什么情况下你会主动去够一够？",
+  rule: "讲一次你觉得规矩不合理、想走别的路子的情况。你最后怎么做的，为什么？",
+  lead: "你带过人吗？讲一次你不得不当面指出下属「做得不好」的谈话，第一句话你怎么说？",
+  detail: "讲一次你因为粗心出错、被客户或上级抓住的事。后来你用了什么办法防再犯？",
+};
+
 /* ------------------------------ 报告数据 ------------------------------ */
 
 export type TalentReportInput = {
@@ -200,10 +220,14 @@ export type TalentReport = {
   fits: JobFit[];
   current: JobFit;
   currentBand: { key: string; label: string; text: string };
+  /** 一句话结论 + 用人动作 + 重点观察项。让 HR 第一眼拿到决策，而不是从分数里自己拼。 */
+  summary: { verdict: string; action: string; focus: string[] };
+  /** 这个岗位「要什么」对照「他多少」：核心/重要维逐个摆开，标达标 / 差一点 / 明显偏低。 */
+  requirements: { dim: TalentDim; label: string; weight: Weight; score: number; status: "met" | "edge" | "gap" }[];
   dims: { key: TalentDim; label: string; score: number; level: Level; text: string; source: string; basis: string }[];
   weights: { dim: TalentDim; label: string; source: string; values: Record<JobKey, Weight> }[];
   strengths: { label: string; score: number; text: string }[];
-  risks: { label: string; score: number; text: string; isCore: boolean }[];
+  risks: { dim: TalentDim; label: string; score: number; text: string; isCore: boolean }[];
   bigger: { bigfive: BigFiveScores | null; value: ValueScores | null; disc: DiscWorkScores | null };
   eq: {
     overall: number;
@@ -282,7 +306,46 @@ export function buildTalentReport(input: TalentReportInput): TalentReport {
     .filter((d) => d.score < 55)
     .sort((a, b) => w[b.key] - w[a.key] || a.score - b.score)
     .slice(0, 3)
-    .map((d) => ({ label: d.label, score: d.score, text: d.text, isCore: w[d.key] === 3 }));
+    .map((d) => ({ dim: d.key, label: d.label, score: d.score, text: d.text, isCore: w[d.key] === 3 }));
+
+  /* 用人要求对照：只摆这个岗的核心(3)/重要(2)维，不摆加分项(1)和无关项(0)——
+     加分项列进来会稀释「这个岗到底看什么」，HR 反而看不清重点。 */
+  const requirements: TalentReport["requirements"] = (Object.keys(w) as TalentDim[])
+    .filter((dim) => w[dim] >= 2)
+    .map((dim) => {
+      const score = dims[dim];
+      /* 核心维：<40 明显偏低(硬缺口)、40–64 差一点、≥65 达标；重要维线放低一档 */
+      const status: "met" | "edge" | "gap" =
+        w[dim] === 3
+          ? score < CORE_GAP_LINE
+            ? "gap"
+            : score < 65
+              ? "edge"
+              : "met"
+          : score < WEAK_LINE
+            ? "gap"
+            : score < 60
+              ? "edge"
+              : "met";
+      return { dim, label: DIM_LABEL[dim], weight: w[dim], score, status };
+    })
+    .sort((a, b) => b.weight - a.weight || a.score - b.score);
+
+  /* 一句话结论 + 用人动作。决策结论前置：读的人第一眼看到的是「怎么办」，不是一堆分数。 */
+  const focus = [...new Set([...current.gaps.map((g) => g.label), ...risks.map((r) => r.label)])].slice(0, 3);
+  const focusText = focus.length ? focus.map((f) => `「${f}」`).join("、") : "关键维度";
+  const action = (() => {
+    switch (band) {
+      case "strong":
+        return `建议进入下一步（面试或试用）。优先安排能发挥「${strengths[0]?.label ?? "他的长处"}」的事，方法带一带就能上手。`;
+      case "fit":
+        return `建议试用观察。试用期重点看 ${focusText} 能不能在实际工作里补上来，再决定去留。`;
+      case "watch":
+        return `可以用，但别让他一个人扛——${focusText} 要靠流程或搭档兜住，观察一段再决定是否长期。`;
+      case "off":
+        return `不建议放这个岗。可以回头看看四岗里分数最高的「${fits[0].label}」（${fits[0].score} 分），那里他更省力。`;
+    }
+  })();
 
   const eq = parts.eq
     ? (() => {
@@ -320,12 +383,19 @@ export function buildTalentReport(input: TalentReportInput): TalentReport {
     "测评不作为录用或淘汰的唯一依据，也不解释为心理诊断。",
   ];
 
+  /* 面试追问：先问这个人这份卷子暴露出的短板，再用岗位通用题打底。
+     追问只有「针对他」才值钱，套话问谁都一样。 */
+  const probeDims = [...new Set([...current.gaps.map((g) => g.dim), ...risks.map((r) => r.dim)])].slice(0, 2);
+  const interview = [...probeDims.map((d) => DIM_PROBE[d]), ...JOB_INTERVIEW[position].slice(0, 2)];
+
   return {
     meta: { name: input.name, position, positionLabel: JOB_LABEL[position], generatedAt: input.generatedAt },
     completeness,
     fits,
     current,
     currentBand: { key: band, label: FIT_BAND_LABEL[band], text: FIT_BAND_TEXT[band] },
+    summary: { verdict: FIT_BAND_TEXT[band], action, focus },
+    requirements,
     dims: dimRows,
     weights,
     strengths,
@@ -333,7 +403,7 @@ export function buildTalentReport(input: TalentReportInput): TalentReport {
     bigger: { bigfive: parts.bigfive ?? null, value: parts.value ?? null, disc: parts.discwork ?? null },
     eq,
     coaching,
-    interview: JOB_INTERVIEW[position],
+    interview,
     caveats,
   };
 }

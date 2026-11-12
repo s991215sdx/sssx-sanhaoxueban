@@ -23,6 +23,8 @@ const POS_TAG: Record<JobKey, string> = {
   mgmt: "校区负责人 / 主管",
 };
 
+const JOB_SHORT: Record<JobKey, string> = { sales: "销售", service: "教学", admin: "行政", mgmt: "管理" };
+
 function fmtDate(v: string | Date) {
   const d = typeof v === "string" ? new Date(v) : v;
   return `${d.getMonth() + 1} 月 ${d.getDate()} 日`;
@@ -36,10 +38,14 @@ export default function TalentCenter() {
   const [pos, setPos] = useState<JobKey>("sales");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [listPos, setListPos] = useState<JobKey | "all">("all");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const mine = trpc.talent.mine.useQuery(undefined, { retry: false });
-  const list = trpc.talent.list.useQuery({ limit: 30 }, { enabled: !!staff, retry: false });
+  const list = trpc.talent.list.useQuery(
+    { limit: 50, position: listPos === "all" ? undefined : listPos },
+    { enabled: !!staff, retry: false },
+  );
   const invite = trpc.talent.invite.useMutation();
 
   const job = useMemo(() => catalog?.jobs.find((j) => j.key === pos), [catalog, pos]);
@@ -197,13 +203,30 @@ export default function TalentCenter() {
       {/* 机构名单 */}
       {staff && (
         <section className="mt-7">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-olive-mute">
-            <Users size={12} /> 评估名单（共 {list.data?.total ?? 0} 份）
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-olive-mute">
+              <Users size={12} /> 评估名单（共 {list.data?.total ?? 0} 份）
+            </div>
+            <div className="ml-auto flex flex-wrap gap-1.5">
+              {(["all", "sales", "service", "admin", "mgmt"] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setListPos(k)}
+                  className={`rounded-lg px-2.5 py-1 text-[11.5px] transition-colors ${
+                    listPos === k ? "bg-brand text-white" : "border border-border bg-white text-olive-soft hover:bg-butter-pale"
+                  }`}
+                >
+                  {k === "all" ? "全部" : JOB_SHORT[k]}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="mt-2 overflow-hidden rounded-xl border border-border bg-white">
             <table className="w-full text-[12.5px]">
               <thead>
                 <tr className="border-b border-border bg-cream-deep/60 text-left text-[11px] text-olive-mute">
+                  <th className="w-10 px-3 py-2 text-right font-medium">#</th>
                   <th className="px-3 py-2 font-medium">姓名</th>
                   <th className="px-3 py-2 font-medium">岗位</th>
                   <th className="px-3 py-2 font-medium">来源</th>
@@ -215,13 +238,16 @@ export default function TalentCenter() {
               <tbody>
                 {(list.data?.rows ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-5 text-center text-[12px] text-olive-mute">
-                      还没有人做。点右上角「发一张码给候选人」，或者自己先做一份看看报告长什么样。
+                    <td colSpan={7} className="px-3 py-5 text-center text-[12px] text-olive-mute">
+                      {listPos === "all"
+                        ? "还没有人做。点右上角「发一张码给候选人」，或者自己先做一份看看报告长什么样。"
+                        : `这个岗位还没有人做。点右上角「发一张码给候选人」，发一张「${JOB_SHORT[listPos]}」的码。`}
                     </td>
                   </tr>
                 )}
-                {(list.data?.rows ?? []).map((r) => (
+                {(list.data?.rows ?? []).map((r, idx) => (
                   <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-butter-pale/40">
+                    <td className="mono px-3 py-2 text-right text-olive-mute">{idx + 1}</td>
                     <td className="px-3 py-2">
                       <Link to={`/talent/report/${r.id}`} className="font-medium text-brand hover:underline">
                         {r.candidateName || "未署名"}
