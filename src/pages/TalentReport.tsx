@@ -83,6 +83,35 @@ export default function TalentReportPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
+      {/* 封面：一张整页，报告的第一印象 */}
+      <section className="cover relative mb-8 overflow-hidden rounded-2xl border border-border bg-white">
+        <div className="px-7 py-12 text-center md:px-12 md:py-16">
+          <div className="mx-auto w-16 border-t-4 border-brand" />
+          <div className="mt-7 text-[12px] tracking-[0.35em] text-olive-mute">人才测评报告</div>
+          <h1 className="mt-4 text-[34px] font-bold tracking-tight text-olive">{r.meta.name}</h1>
+          <div className="mt-3 text-[15px] text-olive-soft">
+            {q.data.orgName ? `${q.data.orgName} · ` : ""}岗位评估：{r.meta.positionLabel}
+          </div>
+          <div className="mt-9 flex flex-col items-center gap-2.5">
+            <span className={`rounded-xl px-4 py-1.5 text-[14px] font-semibold ${BAND_STYLE[r.currentBand.key] ?? "bg-cream-deep text-olive"}`}>
+              {r.currentBand.label}
+            </span>
+            <span className="mono text-[13px] text-olive-mute">匹配度 {r.current.score} / 100</span>
+          </div>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-olive-mute">
+            <span>
+              {when.getFullYear()} 年 {when.getMonth() + 1} 月 {when.getDate()} 日
+            </span>
+            <span>{q.data.source === "invite" ? "扫码作答" : "本人自测"}</span>
+            <span>完成 {r.completeness.pct}%</span>
+          </div>
+          <div className="mx-auto mt-12 max-w-md border-t border-border pt-5 text-[11px] leading-relaxed text-olive-mute">
+            本报告依据作答人的自评生成，反映施测时点的倾向，是招聘与用人决策的参考之一，
+            须结合面试、工作样本与业务场景综合判断，不单独作为录用或淘汰依据。
+          </div>
+        </div>
+      </section>
+
       {/* 头部 */}
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -371,6 +400,43 @@ export default function TalentReportPage() {
           ))}
         </ul>
       </section>
+
+      {/* 附录：原始作答明细。正文讲「分数意味着什么」，附录讲「分数从哪几笔答出来」——
+          复核、存档、跟候选人核对都能翻到这。 */}
+      {r.appendix && r.appendix.sections.length > 0 && (
+        <section className="appendix mt-8">
+          <h2 className="text-[11px] font-bold tracking-wider text-olive-mute">附录 · 原始作答明细</h2>
+          <p className="mt-1 text-[11px] text-olive-mute">
+            共 {r.appendix.total} 题，已答 {r.appendix.answered} 题。逐题回显作答时的选择，供复核与存档。
+          </p>
+          {r.appendix.sections.map((sec) => {
+            const done = sec.items.filter((i) => i.answer !== "未作答").length;
+            return (
+              <div key={sec.key} className="mt-4">
+                <div className="flex items-baseline gap-2 border-b border-border pb-1.5">
+                  <span className="text-[13px] font-semibold text-olive">{sec.title}</span>
+                  <span className="mono text-[11px] text-olive-mute">
+                    {done} / {sec.items.length}
+                  </span>
+                </div>
+                <div className="mt-2 divide-y divide-border/50">
+                  {sec.items.map((it) => (
+                    <div key={it.id} className="flex gap-2.5 py-1.5">
+                      <span className="mono mt-0.5 w-6 shrink-0 text-right text-[10px] text-olive-mute">{it.no}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[12px] leading-relaxed text-olive-soft">{it.text}</div>
+                        <div className={`mt-0.5 text-[12px] ${it.answer === "未作答" ? "text-olive-mute" : "font-medium text-brand"}`}>
+                          作答：{it.answer}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
     </div>
   );
 }

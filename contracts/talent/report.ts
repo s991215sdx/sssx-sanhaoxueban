@@ -7,12 +7,16 @@
  */
 
 import {
+  BIGFIVE_ITEMS,
   EQ_DIM_LABEL,
   EQ_FACTOR_LABEL,
   EQ_FACTOR_DIMS,
+  EQ_ITEMS,
   EQ_STANDALONE_DIMS,
   BIGFIVE_DIM_LABEL,
   VALUE_DIM_LABEL,
+  VALUE_ITEMS,
+  WORK_DISC_GROUPS,
   type EqDim,
   type EqFactor,
 } from "./bank";
@@ -195,12 +199,129 @@ const DIM_PROBE: Record<TalentDim, string> = {
   detail: "讲一次你因为粗心出错、被客户或上级抓住的事。后来你用了什么办法防再犯？",
 };
 
+/* ------------------------------ 附录：原始作答明细 ------------------------------ */
+
+/** 交上来的原始作答。和打分用的答案键无关——这里只把「题号 → 作答值」原样保留下来。 */
+export type RawTalentAnswers = {
+  bigfive?: Record<string, number>;
+  value?: Record<string, number>;
+  discwork?: { most?: number[]; least?: number[] };
+  eq?: Record<string, number>;
+  duty?: Record<string, number | string>;
+};
+
+export type AnswerAppendixItem = {
+  /** 段内序号（1 起） */
+  no: number;
+  /** 题号（B01 / V01 / D1 / E01 / S01 …） */
+  id: string;
+  /** 题目原文 */
+  text: string;
+  /** 作答：量尺文字 / 选中的选项原文 / DISC「最像…· 最不像…」/ 未作答 */
+  answer: string;
+};
+
+export type AnswerAppendixSection = {
+  key: string;
+  title: string;
+  items: AnswerAppendixItem[];
+};
+
+export type AnswerAppendix = {
+  total: number;
+  answered: number;
+  sections: AnswerAppendixSection[];
+};
+
+/** 五段量尺对应的文字。大五/价值观/岗位加测的情境题用 5 点，情商用 7 点。 */
+const L5 = ["非常不符合", "不太符合", "一半一半", "比较符合", "非常符合"];
+const L7 = ["完全不符合", "比较不符合", "有点不符合", "说不好", "有点符合", "比较符合", "完全符合"];
+
+const likertText = (v: number | undefined, scale: string[]) =>
+  v != null && Number.isFinite(v) && v >= 1 && v <= scale.length ? scale[Math.round(v) - 1] : "未作答";
+
+/**
+ * 把原始作答还原成「谁答了什么」，作为报告附录。
+ *
+ * 报告正文讲的是「分数意味着什么」，附录讲的是「这分数是从哪几笔答出来的」——
+ * 用人部门要复核、要存证、要跟候选人核对，都能翻到这一页。缺答的题如实标「未作答」，
+ * 不假装每道都答了。
+ */
+export function buildAnswerAppendix(position: JobKey, answers: RawTalentAnswers): AnswerAppendix {
+  const sections: AnswerAppendixSection[] = [];
+  let total = 0;
+  let answered = 0;
+
+  const likertSection = (
+    key: string,
+    title: string,
+    items: { id: string; text: string }[],
+    bucket: Record<string, number> | undefined,
+    scale: string[],
+  ) => {
+    const rows = items.map((it, i) => {
+      const v = bucket?.[it.id];
+      return { no: i + 1, id: it.id, text: it.text, answer: likertText(v, scale) };
+    });
+    sections.push({ key, title, items: rows });
+    total += rows.length;
+    answered += rows.filter((r) => r.answer !== "未作答").length;
+  };
+
+  /* 大五 20 题 · 5 点 */
+  likertSection("bigfive", PART_META.bigfive.name, BIGFIVE_ITEMS, answers.bigfive, L5);
+  /* 工作价值观 18 题 · 5 点 */
+  likertSection("value", PART_META.value.name, VALUE_ITEMS, answers.value, L5);
+
+  /* 职场 DISC 24 组：每组一个「最像」一个「最不像」，落在同一个四词组上 */
+  {
+    const most = answers.discwork?.most ?? [];
+    const least = answers.discwork?.least ?? [];
+    const rows = WORK_DISC_GROUPS.map((g, i) => {
+      const m = most[i];
+      const l = least[i];
+      const hasM = m != null && m >= 0 && m < g.words.length;
+      const hasL = l != null && l >= 0 && l < g.words.length;
+      const answer =
+        hasM || hasL ? `最像「${hasM ? g.words[m] : "—"}」· 最不像「${hasL ? g.words[l] : "—"}」` : "未作答";
+      return { no: i + 1, id: `D${i + 1}`, text: g.words.join(" / "), answer };
+    });
+    sections.push({ key: "discwork", title: PART_META.discwork.name, items: rows });
+    total += rows.length;
+    answered += rows.filter((r) => r.answer !== "未作答").length;
+  }
+
+  /* 特质情商 30 题 · 7 点 */
+  likertSection("eq", PART_META.eq.name, EQ_ITEMS, answers.eq, L7);
+
+  /* 岗位加测：情境题用 5 点，情境选择题回显选中项原文 */
+  {
+    const pack = DUTY_PACKS[JOB_DUTY_PACK[position]];
+    const du = answers.duty ?? {};
+    const rows = pack.items.map((it, i) => {
+      const v = du[it.id];
+      if (it.kind === "likert") {
+        return { no: i + 1, id: it.id, text: it.text, answer: likertText(typeof v === "number" ? v : undefined, L5) };
+      }
+      const idx = typeof v === "number" && Number.isFinite(v) ? v : undefined;
+      return { no: i + 1, id: it.id, text: it.text, answer: idx != null && idx >= 0 && idx < it.options.length ? it.options[idx].text : "未作答" };
+    });
+    sections.push({ key: "duty", title: pack.name, items: rows });
+    total += rows.length;
+    answered += rows.filter((r) => r.answer !== "未作答").length;
+  }
+
+  return { total, answered, sections };
+}
+
 /* ------------------------------ 报告数据 ------------------------------ */
 
 export type TalentReportInput = {
   name: string;
   position: JobKey;
   generatedAt: string;
+  /** 原始作答（用于报告附录的「原始作答明细」） */
+  answers?: RawTalentAnswers;
   /** 已完成的作答部分 */
   parts: {
     bigfive?: BigFiveScores;
@@ -241,6 +362,8 @@ export type TalentReport = {
   coaching: string[];
   interview: string[];
   caveats: string[];
+  /** 原始作答明细：附录用，逐题回显「题号 + 题目 + 作答选项原文」 */
+  appendix: AnswerAppendix;
 };
 
 /** 岗位最吃的情商维（用于把情商分数接到岗位上，而不是孤立地看） */
@@ -256,6 +379,8 @@ const eqLevelText = (s: number) =>
 
 export function buildTalentReport(input: TalentReportInput): TalentReport {
   const { dims, details, parts, answered, position } = input;
+
+  const appendix = buildAnswerAppendix(position, input.answers ?? {});
 
   const done: string[] = [];
   const missing: string[] = [];
@@ -405,6 +530,7 @@ export function buildTalentReport(input: TalentReportInput): TalentReport {
     coaching,
     interview,
     caveats,
+    appendix,
   };
 }
 
