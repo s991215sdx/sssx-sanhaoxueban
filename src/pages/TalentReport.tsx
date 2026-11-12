@@ -20,6 +20,18 @@ const BAND_STYLE: Record<string, string> = {
   off: "bg-[#FDECEC] text-[#B23B3B]",
 };
 
+/** 用人要求对照表的达标状态。gap 是「这个岗离不开你却不行」，edge 是「够用但撑不起」。 */
+const REQ_STATUS: Record<string, { label: string; cls: string }> = {
+  met: { label: "达标", cls: "bg-brand-pale text-brand" },
+  edge: { label: "差一点", cls: "bg-butter-pale text-[#8A6A12]" },
+  gap: { label: "偏弱", cls: "bg-[#FDECEC] text-[#B23B3B]" },
+};
+
+const REQ_WEIGHT: Record<number, { label: string; cls: string }> = {
+  3: { label: "核心", cls: "bg-cream-deep font-bold text-olive" },
+  2: { label: "重要", cls: "bg-cream-deep/60 text-olive-soft" },
+};
+
 function Bar({ value, tone = "brand" }: { value: number; tone?: "brand" | "mute" }) {
   const color = tone === "mute" ? "bg-olive-mute/50" : value >= 65 ? "bg-brand" : value >= 45 ? "bg-lime" : "bg-terra";
   return (
@@ -113,6 +125,22 @@ export default function TalentReportPage() {
           </div>
         </div>
 
+        {/* 用人建议：决策结论前置，别让 HR 从分数里自己拼「怎么办」 */}
+        <div className="mt-4 rounded-xl border border-brand/25 bg-brand-pale/25 px-3.5 py-3">
+          <div className="text-[12px] font-semibold text-brand">用人建议</div>
+          <p className="mt-1 text-[13px] leading-relaxed text-olive-soft">{r.summary.action}</p>
+          {r.summary.focus.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-olive-mute">重点观察：</span>
+              {r.summary.focus.map((f) => (
+                <span key={f} className="mono rounded-md bg-white px-2 py-0.5 text-[11px] font-medium text-brand">
+                  {f}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         {r.current.gaps.length > 0 && (
           <div className="mt-4 rounded-xl border border-terra/30 bg-[#FFF4EE] px-3.5 py-3">
             <div className="text-[12px] font-semibold text-[#B2521F]">硬缺口：这个岗的核心项低于 40 分</div>
@@ -145,6 +173,28 @@ export default function TalentReportPage() {
             本次未完成：{r.completeness.missing.join("、")}。相关维度标了「估算」，结论请打折看。
           </p>
         )}
+      </section>
+
+      {/* 用人要求对照：把「岗位要什么」和「他多少」并排摆开 */}
+      <section className="mt-6">
+        <h2 className="text-[11px] font-bold tracking-wider text-olive-mute">这个岗位要什么，他差在哪</h2>
+        <div className="mt-2 overflow-hidden rounded-xl border border-border bg-white">
+          {r.requirements.map((req) => {
+            const st = REQ_STATUS[req.status];
+            const wt = REQ_WEIGHT[req.weight];
+            return (
+              <div key={req.dim} className="flex items-center gap-2.5 border-b border-border/60 px-3.5 py-2.5 last:border-0">
+                <span className="w-20 shrink-0 text-[13px] font-medium text-olive">{req.label}</span>
+                <span className={`w-10 shrink-0 rounded-md px-1.5 py-0.5 text-center text-[10px] ${wt.cls}`}>{wt.label}</span>
+                <div className="flex-1">
+                  <Bar value={req.score} />
+                </div>
+                <span className="mono w-7 shrink-0 text-right text-[13px] font-bold text-olive">{req.score}</span>
+                <span className={`w-14 shrink-0 rounded-md px-1.5 py-0.5 text-center text-[10.5px] ${st.cls}`}>{st.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* 四岗 */}

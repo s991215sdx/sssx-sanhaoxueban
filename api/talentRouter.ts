@@ -292,7 +292,8 @@ export const talentRouter = createRouter({
     return rows;
   }),
 
-  /** 名单（HR 视角）：展示谁、什么岗、匹配度、什么时候做的。 */
+  /** 名单（HR 视角）：谁、什么岗、匹配度。按匹配度从高到低——招聘旺季一次面很多人，
+     同岗的排在一起，谁最合适一眼看出。 */
   list: tutorQuery
     .input((v: unknown) => v as { limit?: number; offset?: number; position?: string })
     .query(async ({ ctx, input }) => {
@@ -320,7 +321,7 @@ export const talentRouter = createRouter({
         })
         .from(talentAssessments)
         .where(where)
-        .orderBy(desc(talentAssessments.createdAt))
+        .orderBy(desc(talentAssessments.fitScore), desc(talentAssessments.createdAt))
         .limit(Math.min(Math.max(input?.limit ?? 50, 1), 100))
         .offset(Math.max(input?.offset ?? 0, 0));
       const total = await db.select({ n: sql<number>`count(*)` }).from(talentAssessments).where(where);

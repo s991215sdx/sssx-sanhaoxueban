@@ -20,11 +20,13 @@ import {
   computeDims,
   allFits,
   fitForJob,
+  JOB_WEIGHTS,
   scoreBigFive,
   scoreDuty,
   scoreEq,
   scoreValue,
   scoreWorkDisc,
+  type TalentDim,
 } from "../contracts/talent/score";
 import { buildTalentReport } from "../contracts/talent/report";
 import { decodeTalentCode, encodeTalentCode } from "../api/talentCode";
@@ -270,6 +272,76 @@ describe("报告装配", () => {
       answered: { ...b.answered, eq: 0 },
     });
     expect(r.eq).toBeNull();
+  });
+
+  it("报告带总评：一句话结论 + 用人动作 + 重点观察项", () => {
+    const b = base();
+    const r = buildTalentReport({
+      name: "赵六",
+      position: "sales",
+      generatedAt: new Date().toISOString(),
+      parts: b,
+      dims: b.dims,
+      details: b.details,
+      answered: b.answered,
+    });
+    expect(r.summary.verdict.length).toBeGreaterThan(0);
+    expect(r.summary.action.length).toBeGreaterThan(0);
+    expect(Array.isArray(r.summary.focus)).toBe(true);
+  });
+
+  it("用人要求对照只列核心+重要维，加分项和无关项不出现", () => {
+    const b = base();
+    const r = buildTalentReport({
+      name: "赵六",
+      position: "service",
+      generatedAt: new Date().toISOString(),
+      parts: b,
+      dims: b.dims,
+      details: b.details,
+      answered: b.answered,
+    });
+    const w = JOB_WEIGHTS.service;
+    const expected = (Object.keys(w) as TalentDim[]).filter((d) => w[d] >= 2).sort();
+    expect(r.requirements.map((x) => x.dim).sort()).toEqual(expected);
+    /* 教学服务岗不看「领导」（权重 0），对照表里不该出现 */
+    expect(r.requirements.map((x) => x.dim)).not.toContain("lead");
+  });
+
+  it("要求对照表把核心维低于 40 标成「偏弱」，并进重点观察", () => {
+    const b = base();
+    const dims = { ...b.dims, influence: 20 };
+    const { details } = computeDims({ answered: b.answered });
+    const r = buildTalentReport({
+      name: "钱七",
+      position: "sales",
+      generatedAt: new Date().toISOString(),
+      parts: b,
+      dims,
+      details,
+      answered: b.answered,
+    });
+    const inf = r.requirements.find((x) => x.dim === "influence");
+    expect(inf?.status).toBe("gap");
+    expect(r.summary.focus).toContain("影响说服");
+  });
+
+  it("有短板时，面试追问先问这个人的短板，而不是岗位套话", () => {
+    const b = base();
+    const dims = { ...b.dims, drive: 20 };
+    const { details } = computeDims({ answered: b.answered });
+    const r = buildTalentReport({
+      name: "孙八",
+      position: "sales",
+      generatedAt: new Date().toISOString(),
+      parts: b,
+      dims,
+      details,
+      answered: b.answered,
+    });
+    expect(r.current.gaps.map((g) => g.dim)).toContain("drive");
+    /* 第一条追问针对「目标驱动」这个短板，措辞区别于岗位通用题 */
+    expect(r.interview[0]).toContain("明确要完成的目标");
   });
 });
 
