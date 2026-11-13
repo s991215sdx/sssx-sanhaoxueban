@@ -64,7 +64,7 @@ export default function GrowSnapshot({ data, onEdit, onOpenCoaching }: {
       <div className="space-y-1.5">{tasks.slice(0, 3).map((task) => <div key={task.id} className="flex items-center gap-2 text-[11px]"><span className={`rounded-full px-2 py-0.5 ${task.status === "verified" ? "bg-[#E9F3E6] text-[#2F7A41]" : "bg-[#FAF0CC] text-[#8A6500]"}`}>{task.status === "verified" ? "已验收" : "待验收"}</span><span className="min-w-0 flex-1 truncate text-olive-soft">{task.title}</span><span className="text-[10px] text-olive-mute">{task.dueDate}</span></div>)}{!tasks.length && <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-[11px] text-olive-mute">还没有行动任务，请先在规划页建立。</p>}</div>
       <Fact label="最近跟进" value={latest?.content || EMPTY} />
       {nextContact && <Fact label="下次跟进" value={nextContact} />}
-      {data && onOpenCoaching && <button type="button" onClick={() => onOpenCoaching(data.coachingCase.id)} className={`${V4_BUTTON} mt-auto w-full`}>更新陪跑进度 <ArrowRight size={12} /></button>}
+      {data && onOpenCoaching && <button type="button" onClick={() => onOpenCoaching(data.coachingCase.id)} className={`${V4_BUTTON} mt-auto w-full`}>查看陪跑迁移说明 <ArrowRight size={12} /></button>}
     </GrowCard>
   </div>;
 }

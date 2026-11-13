@@ -13,7 +13,6 @@ import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import OrgAssessmentCenter from "@/components/org/OrgAssessmentCenter";
 import OrgPointsPanel from "@/components/org/OrgPointsPanel";
-import CoachingWorkspace from "@/components/org/CoachingWorkspace";
 import AssessCenter from "@/components/admin/AssessCenter";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList, Library as LibraryIcon } from "lucide-react";
@@ -110,13 +109,13 @@ export default function Tutor() {
     || (orgView && (requestedSection !== "points" || user?.role === "admin"));
   const section: TutorSection = canOpenSection ? requestedSection : "students";
   const sectionTitle = section === "assessments" ? "测评中心"
-    : section === "coaching" ? "陪跑中心"
+    : section === "coaching" ? "陪跑中心迁移说明"
       : section === "points" ? "积分管理"
         : section === "training" ? "陪跑训练专栏"
           : campusView ? "指导老师工作台" : "学员管理";
   const sectionDescription = section === "assessments"
     ? "点选测评并推送给学员，查看报告，把结果转化为目标、计划与持续陪跑。"
-    : section === "coaching" ? "围绕明确目标、评估现状、定制计划与督学陪跑，沉淀每一次服务过程。"
+    : section === "coaching" ? "独立系统与原系统分开使用，历史学员与陪跑记录仍保留在原系统。"
       : section === "points" ? "管理机构积分池与伴学师个人积分，分配、回收和流水一目了然。"
         : section === "training" ? "按学员问题匹配训练方案，结合 AI 陪练与三阶九能训练内容。"
           : "名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。";
@@ -126,7 +125,6 @@ export default function Tutor() {
     else params.set("section", next);
     return params;
   }, { replace: true });
-  const [coachingCaseId, setCoachingCaseId] = useState<number | undefined>();
   const { data: students, isLoading } = trpc.coach.myStudents.useQuery(undefined, { enabled: allowed });
   // V56：学员查询（姓名/手机号）
   const kw = q.trim();
@@ -177,7 +175,6 @@ export default function Tutor() {
             [
               { key: "students", label: "学员管理", visible: true },
               { key: "assessments", label: "测评中心", visible: orgView || campusView },
-              { key: "coaching", label: "陪跑中心", visible: orgView },
               { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
               { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
@@ -347,11 +344,19 @@ export default function Tutor() {
       {orgView && section === "assessments" && (
         <OrgAssessmentCenter
           onOpenReport={openDetail}
-          onOpenCoaching={(caseId) => { setCoachingCaseId(caseId); setSection("coaching"); }}
+          onOpenCoaching={() => setSection("coaching")}
         />
       )}
 
-      {orgView && section === "coaching" && <CoachingWorkspace key={coachingCaseId ?? "workspace"} initialCaseId={coachingCaseId} />}
+      {orgView && section === "coaching" && (
+        <section aria-labelledby="coaching-migration-title" className="paper-card mx-auto max-w-2xl p-8 text-center">
+          <ClipboardList className="mx-auto text-[#0C7064]" size={32} />
+          <h2 id="coaching-migration-title" className="mt-3 text-[19px] font-bold text-olive">陪跑中心已迁移至独立系统</h2>
+          <p className="mt-3 text-[13px] leading-relaxed text-olive-mute">历史数据仍保留在原系统，未自动迁移。</p>
+          <p className="mt-2 text-[12px] leading-relaxed text-olive-soft">独立本地版不连接原服务器；原学员、测评报告与家庭端「陪跑反馈」不受影响。</p>
+          <button type="button" onClick={() => setSection("students")} className="mt-5 min-h-10 rounded-xl bg-[#0C7064] px-5 py-2 text-[12px] font-semibold text-white hover:bg-[#095C53]">返回学员管理</button>
+        </section>
+      )}
 
       {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
 

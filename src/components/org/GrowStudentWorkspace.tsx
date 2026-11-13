@@ -50,8 +50,8 @@ function StudentGrowPane({ studentUserId, resultId, onOpenReport, onOpenCoaching
   if (isLoading || !detail) return <div className="rounded-2xl border border-border bg-white p-10 text-center text-[13px] text-olive-mute">正在读取陪跑主档…</div>;
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center gap-2">
-      <p className="min-w-0 flex-1 text-[12px] leading-relaxed text-olive-mute">该学员已建立陪跑主档，完整规划与执行请在「陪跑中心」中维护；此处展示当前 GROW 快照与冰山现状。</p>
-      <button type="button" onClick={() => onOpenCoaching(caseId)} className="min-h-10 rounded-xl bg-[#0C7064] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#095C53]">进入陪跑工作台</button>
+      <p className="min-w-0 flex-1 text-[12px] leading-relaxed text-olive-mute">此处仅展示当前 GROW 快照与冰山现状。陪跑中心已迁移至独立系统，历史数据仍保留在原系统，未自动迁移。</p>
+      <button type="button" onClick={() => onOpenCoaching(caseId)} className="min-h-10 rounded-xl border border-[#0C7064]/25 bg-white px-4 py-2 text-[12px] font-semibold text-[#0C7064] hover:bg-mint-pale">查看陪跑迁移说明</button>
     </div>
     <GrowSnapshot data={detail} onOpenCoaching={onOpenCoaching} />
   </div>;

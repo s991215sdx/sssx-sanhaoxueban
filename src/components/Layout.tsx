@@ -155,7 +155,6 @@ export default function Layout({ children }: { children: ReactNode }) {
   const campusTutor = isCampus && user?.orgId != null;
   /* 工作台各功能统一进入桌面左侧栏；校园管理者沿用自己的控制台菜单。 */
   const showTutorAssessment = showCoach && !campusMgr && user?.orgId != null;
-  const showTutorCoaching = showCoach && !campusMgr && user?.orgId != null && schoolCtx?.campus === false;
   const showTutorTraining = showCoach && !campusMgr && !campusTutor;
   const showTutorLibrary = showCoach && !campusMgr && schoolCtx?.services?.library !== false;
   /* 机构管理员直达积分分配；校园版无积分，平台超管仍走机构管理中的总积分调整。 */
@@ -178,7 +177,6 @@ export default function Layout({ children }: { children: ReactNode }) {
   const tutorTrainingActive = tutorSection === "training";
   const orgPointsActive = tutorSection === "points";
   const orgAssessmentActive = tutorSection === "assessments";
-  const orgCoachingActive = tutorSection === "coaching";
   /* 桌面侧边栏折叠态：记住用户选择，折叠后只留图标，给阅读区让出最大空间 */
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -277,18 +275,6 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <ClipboardCheck size={18} strokeWidth={2.2} />
               {!collapsed && "测评中心"}
-            </NavLink>
-          )}
-          {showTutorCoaching && (
-            <NavLink
-              to="/tutor?section=coaching"
-              title={collapsed ? "陪跑中心" : undefined}
-              className={`group flex items-center rounded-xl transition-colors ${
-                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
-              } ${orgCoachingActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
-            >
-              <HeartHandshake size={18} strokeWidth={2.2} />
-              {!collapsed && "陪跑中心"}
             </NavLink>
           )}
           {showOrgPoints && (
