@@ -30,6 +30,7 @@ const TalentCenter = lazy(() => import("./pages/TalentCenter"));
 const TalentQuizPage = lazy(() => import("./pages/TalentQuiz"));
 const TalentReportPage = lazy(() => import("./pages/TalentReport"));
 const TalentJoin = lazy(() => import("./pages/TalentJoin"));
+const ParentDiscJoin = lazy(() => import("./pages/ParentDiscJoin"));
 const RecycleBin = lazy(() => import("./pages/RecycleBin"));
 const ProfileStage = lazy(() => import("@/components/welcome/ProfileStage"));
 
@@ -155,6 +156,8 @@ export default function App() {
       <Route path="/p/:code" element={<Suspense fallback={<PageSpinner />}><PassJoin /></Suspense>} />
       {/* v253 人才测评邀请码：候选人扫码就地作答，不用注册；答完不看分数，报告回发起人 */}
       <Route path="/t/:code" element={<Suspense fallback={<PageSpinner />}><TalentJoin /></Suspense>} />
+      {/* v283 家长 DISC 扫码直测：固定二维码入口，免登录免码，结果先入公共池待融合 */}
+      <Route path="/pd" element={<Suspense fallback={<PageSpinner />}><ParentDiscJoin /></Suspense>} />
       {/* v158：一体通 SSO 免登只读视图：公开路由（ticket 兑换 10 分钟短会话，仅可读对应学员） */}
       <Route path="/sso/view/:studentId" element={<Suspense fallback={<PageSpinner />}><SsoStudentView /></Suspense>} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}

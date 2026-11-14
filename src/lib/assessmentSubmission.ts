@@ -29,7 +29,7 @@ const fingerprintBody = fingerprint;
 
 /** 不重写任何答题组件：在统一 tRPC 请求层附加提交键及当前任务标识。 */
 export function prepareAssessmentSubmission(url: string, init?: RequestInit): { body: RequestInit["body"]; assignmentId: number | null } {
-  if (typeof init?.body !== "string" || !/assessment\.(submit|submitByPass|submitFamilyParent)/.test(url)) return { body: init?.body, assignmentId: null };
+  if (typeof init?.body !== "string" || !/assessment\.(submit|submitByPass|submitFamilyParent|submitStandaloneDisc)/.test(url)) return { body: init?.body, assignmentId: null };
   try {
     const parsed = JSON.parse(init.body) as Record<string, { json?: Record<string, unknown> }>;
     let assignmentId: number | null = null;
@@ -37,7 +37,7 @@ export function prepareAssessmentSubmission(url: string, init?: RequestInit): { 
       const json = entry.json;
       if (!json) continue;
       const target = url.includes("submitByPass") && json.input && typeof json.input === "object" ? json.input as Record<string, unknown> : json;
-      if (typeof target.kind !== "string" && !url.includes("submitFamilyParent")) continue;
+      if (typeof target.kind !== "string" && !url.includes("submitFamilyParent") && !url.includes("submitStandaloneDisc")) continue;
       let currentAssignmentId: number | null = null;
       if (typeof target.kind === "string") {
         const value = Number(sessionStorage.getItem(`${TASK_PREFIX}${target.kind}`));
