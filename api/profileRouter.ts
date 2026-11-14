@@ -1518,7 +1518,10 @@ export const assessmentRouter = createRouter({
     )
     .mutation(async ({ input }) => {
       const db = getDb();
-      const result: DiscResult = scoreDiscV2(input.answers, DISC_PARENT_V2_GROUPS);
+      const scored: DiscResult = scoreDiscV2(input.answers, DISC_PARENT_V2_GROUPS);
+      /* v285：扫码直测是家长评「自己」，结论主语从「孩子是…」改成「你是…」；
+         孩子账号里家长填的那种（家长评孩子）仍保留原文案，两种语义不能混。 */
+      const result: DiscResult = { ...scored, summary: scored.summary.replace(/^孩子是/, "你是") };
       /* 查看钥匙：家长测完凭它在自己手机上随时回看报告（无需登录）。
          随机 12 位十六进制，只存在答卷 JSON 里，服务端比对，不遍历不可猜。 */
       const viewKey = randomBytes(6).toString("hex");
