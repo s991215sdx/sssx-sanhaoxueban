@@ -1,4 +1,4 @@
-import { scryptSync, timingSafeEqual } from "node:crypto";
+import { scryptSync, timingSafeEqual, randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
@@ -1517,15 +1517,43 @@ export const assessmentRouter = createRouter({
     .mutation(async ({ input }) => {
       const db = getDb();
       const result: DiscResult = scoreDiscV2(input.answers, DISC_PARENT_V2_GROUPS);
+      /* 查看钥匙：家长测完凭它在自己手机上随时回看报告（无需登录）。
+         随机 12 位十六进制，只存在答卷 JSON 里，服务端比对，不遍历不可猜。 */
+      const viewKey = randomBytes(6).toString("hex");
       const saved = await persistAssessmentResult(db, {
         userId: 0,
         outcome: { kind: "discparent", result: result as unknown as Record<string, unknown> },
         /* via=qr：一眼认出这是扫码直测池里的答卷，区别于码流程（via=code/pas）与孩子账号里填的 */
-        answers: { ...input.answers, respondent: input.respondent, label: input.label ?? "", phone: input.phone || "", via: "qr" },
+        answers: { ...input.answers, respondent: input.respondent, label: input.label ?? "", phone: input.phone || "", via: "qr", viewKey },
         submissionKey: input.submissionKey,
         actorUserId: null,
       });
-      return { kind: saved.kind, result: saved.result, id: saved.resultId };
+      return { kind: saved.kind, result: saved.result, id: saved.resultId, viewKey };
+    }),
+
+  /**
+   * 家长端（公开）：凭查看钥匙回看自己的 DISC 报告。
+   * 融合到孩子名下后依然有效（报告本来就是同一份数据），家长随时能翻出来给伴侣看。
+   */
+  standaloneDiscReport: publicQuery
+    .input(z.object({ id: z.number().int().positive(), viewKey: z.string().min(8).max(32) }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const [row] = await db
+        .select({ id: assessmentResults.id, kind: assessmentResults.kind, answers: assessmentResults.answers, result: assessmentResults.result, createdAt: assessmentResults.createdAt })
+        .from(assessmentResults)
+        .where(eq(assessmentResults.id, input.id))
+        .limit(1);
+      if (!row || row.kind !== "discparent") return null;
+      const a = row.answers as { viewKey?: string; label?: string; respondent?: string } | null;
+      if (!a || a.viewKey !== input.viewKey) return null;
+      return {
+        id: row.id,
+        label: a.label || "家长",
+        respondent: a.respondent ?? "other",
+        result: row.result as unknown as DiscResult,
+        createdAt: row.createdAt,
+      };
     }),
 
   /** 待融合池列表（伴学师/管理员）：userId=0 的扫码直测家长 DISC，新→旧。 */
