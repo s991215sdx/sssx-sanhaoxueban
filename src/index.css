@@ -113,6 +113,40 @@ div[id*="kimi-widget" i] {
   @page {
     margin: 12mm;
   }
+  /* v253：人才测评报告打印——侧栏/顶栏/按钮不进纸面，正文占满版心。
+     用 body 上的类而不是 :has()，老一点的 Chrome/微信内核也能命中。 */
+  body.talent-print aside,
+  body.talent-print header,
+  body.talent-print .no-print {
+    display: none !important;
+  }
+  body.talent-print main {
+    padding-left: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  /* v256：封面单独成第一页（白底铺满版心），附录单独成最后一页。
+     附录有 100 多题、必然跨页，所以显式允许内部自然断开——
+     否则会被上面的 break-inside:avoid 整段推到下一页，产生空白页。 */
+  body.talent-print .cover {
+    break-after: page;
+    page-break-after: always;
+    border: none !important;
+    box-shadow: 0 0 0 100vmax #fff;
+  }
+  body.talent-print .appendix {
+    break-before: page;
+    page-break-before: always;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+  body.talent-print .paper-card,
+  body.talent-print section,
+  body.talent-print .rounded-xl,
+  body.talent-print .rounded-2xl {
+    break-inside: avoid;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
   /* 保留页面配色（图表颜色、分级底色） */
   * {
     print-color-adjust: exact;
