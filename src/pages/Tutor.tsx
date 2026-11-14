@@ -13,6 +13,7 @@ import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
 import OrgAssessmentCenter from "@/components/org/OrgAssessmentCenter";
 import OrgPointsPanel from "@/components/org/OrgPointsPanel";
+import ParentDiscPanel from "@/components/coach/ParentDiscPanel";
 import AssessCenter from "@/components/admin/AssessCenter";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList, Library as LibraryIcon } from "lucide-react";
@@ -100,22 +101,26 @@ export default function Tutor() {
   const [q, setQ] = useState("");
   const orgView = !campusView && user?.orgId != null;
   /* 支持左侧「积分管理」等深链直达；无权限的 section 参数回退学员管理。 */
-  const sectionOptions = ["students", "assessments", "coaching", "points", "training"] as const;
+  const sectionOptions = ["students", "assessments", "parentdisc", "coaching", "points", "training"] as const;
   type TutorSection = (typeof sectionOptions)[number];
   const requested = searchParams.get("section") as TutorSection | null;
   const requestedSection: TutorSection = requested && sectionOptions.includes(requested) ? requested : "students";
   const canOpenSection = requestedSection === "students" || requestedSection === "assessments"
+    || (requestedSection === "parentdisc" && user?.orgId != null)
     || (!campusView && requestedSection === "training")
     || (orgView && (requestedSection !== "points" || user?.role === "admin"));
   const section: TutorSection = canOpenSection ? requestedSection : "students";
   const sectionTitle = section === "assessments" ? "测评中心"
-    : section === "coaching" ? "陪跑中心迁移说明"
+    : section === "parentdisc" ? "家长扫码"
+      : section === "coaching" ? "陪跑中心迁移说明"
       : section === "points" ? "积分管理"
         : section === "training" ? "陪跑训练专栏"
           : campusView ? "指导老师工作台" : "学员管理";
   const sectionDescription = section === "assessments"
     ? "点选测评并推送给学员，查看报告，把结果转化为目标、计划与持续陪跑。"
-    : section === "coaching" ? "独立系统与原系统分开使用，历史学员与陪跑记录仍保留在原系统。"
+    : section === "parentdisc"
+      ? "家长 DISC 扫码直测：把二维码发给家长，免登录直接测；测完在待融合池绑定到学员，报告自动并入。"
+      : section === "coaching" ? "独立系统与原系统分开使用，历史学员与陪跑记录仍保留在原系统。"
       : section === "points" ? "管理机构积分池与伴学师个人积分，分配、回收和流水一目了然。"
         : section === "training" ? "按学员问题匹配训练方案，结合 AI 陪练与三阶九能训练内容。"
           : "名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。";
@@ -175,6 +180,7 @@ export default function Tutor() {
             [
               { key: "students", label: "学员管理", visible: true },
               { key: "assessments", label: "测评中心", visible: orgView || campusView },
+              { key: "parentdisc", label: "家长扫码", visible: user?.orgId != null },
               { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
               { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
@@ -359,6 +365,8 @@ export default function Tutor() {
       )}
 
       {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
+
+      {section === "parentdisc" && user?.orgId != null && <ParentDiscPanel />}
 
       {section === "training" && (
         <div className="space-y-4">

@@ -8,7 +8,7 @@ import { persistAssessmentResult } from "./assessmentPersistence";
 import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
 import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
-import { getTutorReportAccess } from "./tutorAccess";
+import { getTutorReportAccess, isMyStudent } from "./tutorAccess";
 import { canAccessUser } from "./tenant";
 import { getCampusReportKinds } from "./campusReports";
 import { campusResultAllowed } from "@contracts/campusReports";
@@ -1487,5 +1487,95 @@ export const assessmentRouter = createRouter({
         actorUserId: null,
       });
       return { kind: saved.kind, result: saved.result };
+    }),
+
+  /**
+   * v283 家长 DISC 扫码直测（公开、无码、无账号）：
+   * 家长扫码进入 /pd，选身份、留手机号（可选）、答 V2 题包，结果先挂在 userId=0 的公共池里，
+   * 等孩子建档后由伴学师/管理员通过 bindStandaloneDisc 融合到孩子名下（家长报告自动出现）。
+   */
+  standaloneDiscPaper: publicQuery.query(() => {
+    return { kind: "discparent" as const, groups: DISC_PARENT_V2_GROUPS };
+  }),
+
+  /** 家长端（公开）：提交扫码直测的家长 DISC。同一家长重填以最新一份为准（报告只取最新）。 */
+  submitStandaloneDisc: publicQuery
+    .input(
+      z.object({
+        submissionKey: z.string().min(12).max(64).optional(),
+        respondent: z.enum(["dad", "mom", "other"]),
+        label: z.string().max(12).optional(),
+        /** 手机号（可选）：家庭融合时的匹配线索，机构老师可见，不对其他家长展示 */
+        phone: z
+          .string()
+          .regex(/^1\d{10}$/, "手机号格式不正确")
+          .optional()
+          .or(z.literal("")),
+        answers: discV2AnswersSchema,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const result: DiscResult = scoreDiscV2(input.answers, DISC_PARENT_V2_GROUPS);
+      const saved = await persistAssessmentResult(db, {
+        userId: 0,
+        outcome: { kind: "discparent", result: result as unknown as Record<string, unknown> },
+        /* via=qr：一眼认出这是扫码直测池里的答卷，区别于码流程（via=code/pas）与孩子账号里填的 */
+        answers: { ...input.answers, respondent: input.respondent, label: input.label ?? "", phone: input.phone || "", via: "qr" },
+        submissionKey: input.submissionKey,
+        actorUserId: null,
+      });
+      return { kind: saved.kind, result: saved.result, id: saved.resultId };
+    }),
+
+  /** 待融合池列表（伴学师/管理员）：userId=0 的扫码直测家长 DISC，新→旧。 */
+  standaloneDiscs: tutorQuery.query(async () => {
+    const db = getDb();
+    const rows = await db
+      .select({ id: assessmentResults.id, answers: assessmentResults.answers, result: assessmentResults.result, createdAt: assessmentResults.createdAt })
+      .from(assessmentResults)
+      .where(and(eq(assessmentResults.userId, 0), eq(assessmentResults.kind, "discparent")))
+      .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
+      .limit(200);
+    return rows.map((r) => {
+      const a = r.answers as { label?: string; respondent?: string; phone?: string } | null;
+      const result = r.result as { primary?: string };
+      return {
+        id: r.id,
+        label: a?.label || "家长",
+        respondent: a?.respondent ?? "other",
+        phone: a?.phone || "",
+        primary: result?.primary ?? "-",
+        createdAt: r.createdAt,
+      };
+    });
+  }),
+
+  /**
+   * 家庭融合（伴学师/管理员）：把扫码直测池里的一条家长 DISC 绑到孩子名下。
+   * 绑定后该记录与孩子账号里直接填的家长 DISC 完全同权——家长报告、亲子对照自动出现。
+   * 伴学师只能绑自己名下学员；管理员限本机构学员。重复绑定幂等（已在池里才允许绑）。
+   */
+  bindStandaloneDisc: tutorQuery
+    .input(z.object({ resultId: z.number().int().positive(), studentUserId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = getDb();
+      const [row] = await db
+        .select({ id: assessmentResults.id, userId: assessmentResults.userId, kind: assessmentResults.kind })
+        .from(assessmentResults)
+        .where(eq(assessmentResults.id, input.resultId))
+        .limit(1);
+      if (!row || row.kind !== "discparent" || row.userId !== 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "这条测评不在待融合池里（可能已绑定或已删除）" });
+      }
+      if (ctx.user.role !== "admin") {
+        if (!(await isMyStudent(db, ctx.user, input.studentUserId))) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "这位同学不在你的伴学名单里" });
+        }
+      } else if (!(await canAccessUser(db, ctx.user, input.studentUserId))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "这位同学不在你的机构内" });
+      }
+      await db.update(assessmentResults).set({ userId: input.studentUserId }).where(eq(assessmentResults.id, input.resultId));
+      return { ok: true as const };
     }),
 });

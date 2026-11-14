@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router";
-import { Home, BookOpen, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2, Coins, Users, NotebookPen, Target } from "lucide-react";
+import { Home, BookOpen, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2, Coins, Users, NotebookPen, Target, QrCode } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -177,6 +177,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const tutorTrainingActive = tutorSection === "training";
   const orgPointsActive = tutorSection === "points";
   const orgAssessmentActive = tutorSection === "assessments";
+  const parentDiscActive = tutorSection === "parentdisc";
   /* 桌面侧边栏折叠态：记住用户选择，折叠后只留图标，给阅读区让出最大空间 */
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -275,6 +276,18 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <ClipboardCheck size={18} strokeWidth={2.2} />
               {!collapsed && "测评中心"}
+            </NavLink>
+          )}
+          {showTutorAssessment && (
+            <NavLink
+              to="/tutor?section=parentdisc"
+              title={collapsed ? "家长扫码" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${parentDiscActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <QrCode size={18} strokeWidth={2.2} />
+              {!collapsed && "家长扫码"}
             </NavLink>
           )}
           {showOrgPoints && (

@@ -17,7 +17,7 @@ describe("V281 独立陪跑迁移与历史数据边界", () => {
   });
 
   it("旧深链仅显示迁移说明，不加载旧陪跑工作台", () => {
-    expect(tutor).toContain('["students", "assessments", "coaching", "points", "training"]');
+    expect(tutor).toContain('["students", "assessments", "parentdisc", "coaching", "points", "training"]');
     expect(tutor).toContain('orgView && section === "coaching"');
     expect(tutor).toContain("陪跑中心已迁移至独立系统");
     expect(tutor).toContain("历史数据仍保留在原系统，未自动迁移。");
@@ -45,6 +45,6 @@ describe("V281 独立陪跑迁移与历史数据边界", () => {
     const router = readFileSync("api/router.ts", "utf8");
     expect(router).toContain('import { coachingRouter } from "./coachingRouter"');
     expect(router).toContain("coaching: coachingRouter,");
-    expect(router).toContain('const BUILD_TAG = "v282-2026-11-14"');
+    expect(router).toContain('const BUILD_TAG = "v283-2026-11-14"');
   });
 });
