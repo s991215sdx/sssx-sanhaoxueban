@@ -214,7 +214,7 @@ export default function TalentQuiz({
                           type="button"
                           onClick={() => setDisc(i, "least", wi)}
                           className={`rounded-md px-2 py-0.5 text-[11px] transition-colors ${
-                            isLeast ? "bg-olive text-white" : "border border-border text-olive-mute hover:bg-butter-pale"
+                            isLeast ? "bg-brand text-white" : "border border-border text-olive-mute hover:bg-butter-pale"
                           }`}
                         >
                           最不像

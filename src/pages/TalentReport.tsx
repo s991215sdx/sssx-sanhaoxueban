@@ -33,7 +33,7 @@ const REQ_WEIGHT: Record<number, { label: string; cls: string }> = {
 };
 
 function Bar({ value, tone = "brand" }: { value: number; tone?: "brand" | "mute" }) {
-  const color = tone === "mute" ? "bg-olive-mute/50" : value >= 65 ? "bg-brand" : value >= 45 ? "bg-lime" : "bg-terra";
+  const color = tone === "mute" ? "bg-border" : value >= 65 ? "bg-brand" : value >= 45 ? "bg-lime" : "bg-terra";
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-brand-pale/50">
       <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(2, Math.min(100, value))}%` }} />

@@ -5,6 +5,9 @@
  * 结构参考公开的学术框架——大五人格（Big Five）、DISC 四因子、特质情绪智力
  * 四因素十五维（Petrides 提出的 trait EI 结构）、工作价值观六类。
  * 因此报告只能称「依据××结构自编题本」，不得声称是 TEIQue / NEO-PI 等授权量表。
+ *
+ * v270：岗位加测从四套扩到五套——新增 mkt（渠道判断与投放），
+ * mgmt 从 12 题扩到 20 题（补授权、反馈、推新流程、向上争取四种场合）。
  */
 
 /* ============================== 一、大五人格 20 题 ============================== */
@@ -43,7 +46,7 @@ export const BIGFIVE_ITEMS: DimItem[] = [
   { id: "B09", dim: "E", text: "陌生人多的场合，我很快就能找到能聊下去的话题。" },
   { id: "B10", dim: "E", text: "连着见几拨人、开几场会之后，我需要一个人待着才能缓过来。", reverse: true },
   { id: "B11", dim: "E", text: "冷场的时候，我通常是先开口的那个。" },
-  { id: "B12", dim: "E", text: "能发消息说清的事，我不太愿意打电话。", reverse: true },
+  { id: "B12", dim: "E", text: "能发消息说清的事，我不太愿意直接开口沟通。", reverse: true },
 
   { id: "B13", dim: "A", text: "别人跟我意见不同时，我会先想他为什么这么看。" },
   { id: "B14", dim: "A", text: "遇到反应比较慢的同事或客户，我会明显不耐烦。", reverse: true },
@@ -194,9 +197,9 @@ export const EQ_ITEMS: DimItem[] = [
   { id: "E30", dim: "OP", text: "事情还没开始，我就先想到了最坏的结果。", reverse: true },
 ];
 
-/* ======================= 五、岗位加测：四套 ======================= */
+/* ======================= 五、岗位加测：五套 ======================= */
 
-export type DutyPackKey = "sales" | "service" | "admin" | "mgmt";
+export type DutyPackKey = "sales" | "service" | "admin" | "mgmt" | "mkt";
 
 export type DutyOption = { text: string; score: number };
 export type DutyItem =
@@ -206,23 +209,23 @@ export type DutyItem =
 export const DUTY_PACKS: Record<DutyPackKey, { name: string; blurb: string; minutes: number; items: DutyItem[] }> = {
   sales: {
     name: "拒绝恢复力",
-    blurb: "一天几十通电话、多数被挂断，看你能不能在回落之后重新拿起话筒。",
+    blurb: "一天几十次触达、多数没有下文，看你能不能在回落之后重新拿起下一次。",
     minutes: 6,
     items: [
-      { id: "S01", kind: "likert", text: "连着被拒绝几次之后，我打电话的语气会明显变得敷衍。" , reverse: true },
-      { id: "S02", kind: "likert", text: "客户挂断电话，我更多想的是「这通哪里没问对」。" },
+      { id: "S01", kind: "likert", text: "连着被拒绝几次之后，我再联系下一个时态度会明显变得敷衍。", reverse: true },
+      { id: "S02", kind: "likert", text: "客户直接结束对话，我更多想的是「这次哪里没问对」。" },
       { id: "S03", kind: "likert", text: "一天下来没开单，晚上我会反复难受，影响第二天状态。", reverse: true },
-      { id: "S04", kind: "likert", text: "陌生拜访之前，我不太需要靠打气才能出发。" },
+      { id: "S04", kind: "likert", text: "主动联系一个完全陌生的人之前，我不太需要靠打气才能出发。" },
       { id: "S05", kind: "likert", text: "被客户当面质疑「你不专业」，我会想立刻证明自己，而不是先听他说完。", reverse: true },
       { id: "S06", kind: "likert", text: "我会主动要一个「现在不买」的客户转介绍。" },
       { id: "S07", kind: "likert", text: "连续三个月业绩不理想，我仍然相信自己能翻过来。" },
       {
-        id: "S08", kind: "choice", text: "上午打了 30 通电话，28 通被挂，1 通被骂，1 通说「再看看」。下午还有 30 个名单，你会——",
+        id: "S08", kind: "choice", text: "上午联系了 30 位家长，28 位没下文，1 位态度很差，1 位说「再看看」。下午还有 30 个名单，你会——",
         options: [
-          { text: "先停下来复盘上午的话术，改一版再打", score: 3 },
-          { text: "换一批名单继续打，先把量堆上去", score: 2 },
-          { text: "找主管聊一聊，把情绪放下来再打", score: 2 },
-          { text: "今天先做整理和回访，明天再打新名单", score: 0 },
+          { text: "先停下来复盘上午的说法，改一版再联系", score: 3 },
+          { text: "换一批名单继续联系，先把量堆上去", score: 2 },
+          { text: "找主管聊一聊，把情绪放下来再联系", score: 2 },
+          { text: "今天先做整理和回访，明天再联系新名单", score: 0 },
         ],
       },
       {
@@ -253,7 +256,7 @@ export const DUTY_PACKS: Record<DutyPackKey, { name: string; blurb: string; minu
     items: [
       { id: "L01", kind: "likert", text: "家长在群里发火，我第一反应是先把他说的具体问题摘出来。" },
       { id: "L02", kind: "likert", text: "明明不是我的问题，我也能先接下来，事后再澄清。" },
-      { id: "L03", kind: "likert", text: "一天接待好几个情绪不好的家长之后，我回家会不想说话。" , reverse: true },
+      { id: "L03", kind: "likert", text: "一天接待好几个情绪不好的家长之后，我回家会不想说话。", reverse: true },
       { id: "L04", kind: "likert", text: "被家长当面说「你不负责」，我会记很久。", reverse: true },
       { id: "L05", kind: "likert", text: "我能在家长情绪最激动的时候，还保持语气平稳。" },
       { id: "L06", kind: "likert", text: "为了让家长满意，我常常答应一些自己其实做不到的事。", reverse: true },
@@ -373,8 +376,7 @@ export const DUTY_PACKS: Record<DutyPackKey, { name: string; blurb: string; minu
           { text: "先不回复，等有空再说", score: 0 },
         ],
       },
-      {
-        id: "A09", kind: "likert", text: "发出去的表格，我会先自己填一遍，看会不会有填不下去的地方。" },
+      { id: "A09", kind: "likert", text: "发出去的表格，我会先自己填一遍，看会不会有填不下去的地方。" },
       { id: "A10", kind: "likert", text: "同一个数字，我习惯再核一遍才敢往外发。" },
       { id: "A11", kind: "likert", text: "事情多的时候，我会先把容易出错的几项挑出来单独记。" },
       { id: "A12", kind: "likert", text: "别人催得急，我就先发出去，错了再改。", reverse: true },
@@ -383,8 +385,8 @@ export const DUTY_PACKS: Record<DutyPackKey, { name: string; blurb: string; minu
 
   mgmt: {
     name: "领导动机与决策",
-    blurb: "很多人业务做得很好，一提带人就躲——这组题看的是你愿不愿意管人，以及怎么定事。",
-    minutes: 6,
+    blurb: "很多人业务做得很好，一提带人就躲——这组题看的是你愿不愿意管人、怎么定事、敢不敢说重话。",
+    minutes: 10,
     items: [
       { id: "M01", kind: "likert", text: "带人这件事本身让我有兴趣，不只是把它当成升职的台阶。" },
       { id: "M02", kind: "likert", text: "要开口指出下属做得不好，我会觉得为难，宁愿自己做。", reverse: true },
@@ -446,6 +448,114 @@ export const DUTY_PACKS: Record<DutyPackKey, { name: string; blurb: string; minu
           { text: "先站队支持更有道理的一方", score: 1 },
         ],
       },
+      /* v270 起扩到 20 题：原来 12 题撑着「领导动机」一维，用它单独判「能不能带人」偏薄。
+         新增 8 题补的是管理真正会撞上的四种场合：授权、反馈、推新流程、向上争取。 */
+      { id: "M13", kind: "likert", text: "把事交给别人做，我总是担心他做不好，最后往往自己重做一遍。", reverse: true },
+      { id: "M14", kind: "likert", text: "下属提出一个比我更好的做法，我会直接采用，不在意是谁提的。" },
+      { id: "M15", kind: "likert", text: "团队里有人长期不达标，我会拖很久才去处理。", reverse: true },
+      { id: "M16", kind: "likert", text: "我愿意花时间教一个人，哪怕他半年内还派不上用场。" },
+      {
+        id: "M17", kind: "choice", text: "你带 5 个人：一个能力最强但不太服管，另外四个服管但能力一般。季度目标压下来，你会——",
+        options: [
+          { text: "把最难的一段交给他，同时把标准和节点定死，用结果换他的空间", score: 3 },
+          { text: "先压服他，杀一儆百", score: 1 },
+          { text: "把最强的人晾着，靠另外四个稳一点", score: 0 },
+          { text: "让他带一个新人，把他的精力占住", score: 2 },
+        ],
+      },
+      {
+        id: "M18", kind: "choice", text: "你要推一个新流程，老员工普遍抵触，说「以前也这么过来的」。你会——",
+        options: [
+          { text: "找两个愿意试的人先跑两周，拿数据说话，再全组推", score: 3 },
+          { text: "开会讲清楚为什么必须改，然后强制执行", score: 2 },
+          { text: "先放一放，等他们自己想通", score: 0 },
+          { text: "谁抵触就换谁", score: 1 },
+        ],
+      },
+      {
+        id: "M19", kind: "choice", text: "上级给了一个明显完不成的目标，团队已经连续加班一个月。你会——",
+        options: [
+          { text: "带着数据和资源缺口去谈：要人、要时间，或者明确砍掉一部分", score: 3 },
+          { text: "接住，回来再压给团队", score: 0 },
+          { text: "当场拒绝，说做不到", score: 1 },
+          { text: "自己把最难的活干了，让团队正常下班", score: 1 },
+        ],
+      },
+      {
+        id: "M20", kind: "choice", text: "年底评优只有一个名额：A 业绩第一但常抢别人的单；B 业绩第三但带出了两个新人。你会——",
+        options: [
+          { text: "给 B，并在团队里讲清楚：这个奖奖的是让团队变强的人", score: 3 },
+          { text: "给 A，业绩说话", score: 1 },
+          { text: "给 A，私下再补偿 B", score: 1 },
+          { text: "两个都不给，留到明年再说", score: 0 },
+        ],
+      },
+    ],
+  },
+
+  mkt: {
+    name: "渠道判断与投放",
+    blurb: "推广岗不考你会不会逼单，考的是「钱和内容投出去，能不能换回名单」——判断依据、成本口径、复盘习惯。",
+    minutes: 6,
+    items: [
+      { id: "K01", kind: "likert", text: "一条渠道三天没起量，我会先怀疑渠道不行，换一个再说。", reverse: true },
+      { id: "K02", kind: "likert", text: "投出去的钱，我记不清每一笔换回了多少条名单。", reverse: true },
+      { id: "K03", kind: "likert", text: "写一条给家长看的文案，比跟家长当面聊更让我有成就感。" },
+      { id: "K04", kind: "likert", text: "同一个活动连做三次没效果，我还能耐心把第四次改明白。" },
+      {
+        id: "K05", kind: "choice", text: "3000 块预算、一周时间、目标 60 条本地初三家长留资，你会先做哪件事？",
+        options: [
+          { text: "先花 300 块测三条不同素材，看哪条留资成本最低，再把剩下的钱压到最好那条", score: 3 },
+          { text: "直接找本地最大的家长群群主，一次投完", score: 1 },
+          { text: "印 2000 份单页，去三所学校门口发", score: 1 },
+          { text: "先做一张海报，发朋友圈让老师转发", score: 0 },
+        ],
+      },
+      {
+        id: "K06", kind: "choice", text: "一场线下讲座来了 40 个家长、留了 25 个电话。第二天打过去，8 个不接、5 个说不需要。你会先做什么？",
+        options: [
+          { text: "把 25 个按到场时长和提问情况分层，先跟最投入的 8 个约面谈", score: 3 },
+          { text: "复盘讲座内容哪里没讲好", score: 2 },
+          { text: "给 25 个人统一发一条活动回顾和资料", score: 1 },
+          { text: "把不接电话的再打两遍", score: 0 },
+        ],
+      },
+      {
+        id: "K07", kind: "choice", text: "两个渠道：A 留资成本 12 元/条、到店率 10%；B 成本 40 元/条、到店率 45%。你怎么看？",
+        options: [
+          { text: "算到店成本：A 是 120 元一个到店，B 是 89 元，B 更划算", score: 3 },
+          { text: "选 B，质量好比数量重要", score: 2 },
+          { text: "选 A，名单多，后面慢慢筛", score: 1 },
+          { text: "两个都投，各一半", score: 1 },
+        ],
+      },
+      {
+        id: "K08", kind: "choice", text: "校长要求「这个月必须带来 200 条名单」，你判断现有渠道最多 120 条。你会——",
+        options: [
+          { text: "算清缺口，列出要新开哪几个渠道、各要多少预算和时间，带着方案去谈", score: 3 },
+          { text: "直接说做不到，让他改目标", score: 1 },
+          { text: "加大现有渠道投放量，先把数字凑上", score: 1 },
+          { text: "先答应下来，做不到再说", score: 0 },
+        ],
+      },
+      {
+        id: "K09", kind: "choice", text: "一条短视频跑了 5000 播放、0 留资，你会先看什么？",
+        options: [
+          { text: "看完播率和跳出点，判断是内容没留住人，还是结尾没给下一步", score: 3 },
+          { text: "看是不是平台限流了", score: 1 },
+          { text: "换一条视频重发", score: 0 },
+          { text: "加投放，让更多人看到", score: 0 },
+        ],
+      },
+      {
+        id: "K10", kind: "choice", text: "一场地推结束：发了 800 张单页、加了 30 个微信、3 个问了价格。这次活动你怎么记？",
+        options: [
+          { text: "记清发放量、加微率、问价率、单条成本，以及哪个点位、哪个时段最好", score: 3 },
+          { text: "只记加了 30 个微信", score: 1 },
+          { text: "记个总数，下次注意", score: 0 },
+          { text: "不记，效果好下次再做", score: 0 },
+        ],
+      },
     ],
   },
 };
@@ -462,5 +572,6 @@ export const PART_META: Record<TalentPartKey, { name: string; short: string; min
   sales: { name: "拒绝恢复力", short: "10 题", minutes: 6, items: 10 },
   service: { name: "情绪劳动耐受", short: "10 题", minutes: 6, items: 10 },
   admin: { name: "细致准确", short: "12 题", minutes: 8, items: 12 },
-  mgmt: { name: "领导动机与决策", short: "12 题", minutes: 6, items: 12 },
+  mkt: { name: "渠道判断与投放", short: "10 题", minutes: 6, items: 10 },
+  mgmt: { name: "领导动机与决策", short: "20 题", minutes: 10, items: 20 },
 };

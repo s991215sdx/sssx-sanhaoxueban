@@ -275,7 +275,8 @@ export const assessmentResults = mysqlTable("assessment_results", {
 export type AssessmentResult = typeof assessmentResults.$inferSelect;
 
 /* ---------------------------------- 人才测评 ---------------------------------- */
-/* v253：四类岗位（销售咨询师 / 教学服务 / 行政 / 管理）的人才评估记录。
+/* v253：人才评估记录；v270 岗位从四值扩到六值（市场 mkt / 销售 sales / 行政 admin /
+ * 财务 fin / 教学服务 service / 潜质通道 pot，管理岗并入潜质通道）。
  * 与 assessment_results 分开：那张表按「孩子」组织且 kind 是学生量表的枚举，
  * 人才测评多出「岗位」「候选人」两维，报告的体量与查询方式也不同（按机构/发起人列表查）。 */
 export const talentAssessments = mysqlTable("talent_assessments", {
@@ -284,7 +285,7 @@ export const talentAssessments = mysqlTable("talent_assessments", {
   /** 发起人（HR / 伴学师 / 本人自测）：报告归属与列表可见性都看这一列 */
   ownerId: bigint("owner_id", { mode: "number", unsigned: true }).notNull().default(0),
   candidateName: varchar("candidate_name", { length: 64 }).notNull().default(""),
-  position: mysqlEnum("position", ["sales", "service", "admin", "mgmt"]).notNull(),
+  position: mysqlEnum("position", ["mkt", "sales", "admin", "fin", "service", "pot"]).notNull(),
   /** self = 本人登录自测；invite = 扫码作答（候选人 / 员工未登录） */
   source: mysqlEnum("source", ["self", "invite"]).notNull().default("self"),
   /** 完成度与当前岗位匹配度，落成列是为了列表页不解析整份报告 */

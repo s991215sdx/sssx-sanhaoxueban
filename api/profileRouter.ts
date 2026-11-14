@@ -987,6 +987,8 @@ const submitInputSchema = z.discriminatedUnion("kind", [
             label: z.string().max(12).optional(),
             items: z.record(z.string(), z.number().int().min(0).max(5)),
             scene: z.string().max(16).nullable().optional(),
+            /** 开放题（P08 家庭变化、P09 最想先解决的一件事）的一句话补充：不参与计分，随答卷留存 */
+            notes: z.record(z.string(), z.string().max(300)).optional(),
           }),
         }),
       ]).and(z.object({
@@ -1455,6 +1457,8 @@ export const assessmentRouter = createRouter({
           label: z.string().max(12).optional(),
           items: z.record(z.string(), z.number().int().min(0).max(5)),
           scene: z.string().max(16).nullable().optional(),
+          /** 开放题的一句话补充（可空）：存进 answers 供伴学师查看，不参与计分 */
+          notes: z.record(z.string(), z.string().max(300)).optional(),
         }),
       }),
     )

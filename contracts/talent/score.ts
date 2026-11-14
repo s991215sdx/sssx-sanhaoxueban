@@ -1,9 +1,14 @@
 /**
- * 人才测评计分：五份作答 → 十项维度分 → 四个岗位的人岗匹配度。
+ * 人才测评计分：五份作答 → 十项维度分 → 岗位的人岗匹配度。
  *
  * 口径统一：所有维度最终都折算到 0–100（50 ≈ 常模中位，本系统为自比量尺，
  * 未做外部常模转换）。岗位匹配度不是「能力总分」，而是「按该岗位的权重加权后，
  * 这个人现在的样子离这个岗位的要求有多近」，权重 0 的维度不计入分母。
+ *
+ * v270：岗位从四值扩到六值（mkt/sales/admin/fin/service/pot）。
+ * 五个是真实岗位（按前段获客→中段组织→后段交付的链路排），
+ * pot（潜质通道）不是岗位：评估的是「该不该带人、能带哪一段」，
+ * 所以 allFits 只出五个岗位，pot 走单独的潜质评估（见 potential.ts）。
  */
 
 import {
@@ -26,23 +31,78 @@ import {
 
 /* ------------------------------ 岗位与权重 ------------------------------ */
 
-export type JobKey = "sales" | "service" | "admin" | "mgmt";
+export type JobKey = "mkt" | "sales" | "admin" | "fin" | "service" | "pot";
 
 export const JOB_LABEL: Record<JobKey, string> = {
-  sales: "销售咨询师",
+  mkt: "市场推广",
+  sales: "咨询销售",
+  admin: "人事行政",
+  fin: "财务教务",
   service: "教学服务",
-  admin: "行政",
-  mgmt: "管理",
+  pot: "管理潜质",
 };
+
+/** 列表/卡片上的短名 */
+export const JOB_SHORT: Record<JobKey, string> = {
+  mkt: "推广",
+  sales: "销售",
+  admin: "人事",
+  fin: "财务",
+  service: "教学",
+  pot: "潜质",
+};
+
+/** 岗位在机构链路里的位置：前段对客、中段对组织、后段对交付；通道跨三段。 */
+export const JOB_TRACK: Record<JobKey, string> = {
+  mkt: "前段",
+  sales: "前段",
+  admin: "中段",
+  fin: "中段",
+  service: "后段",
+  pot: "通道",
+};
+
+/** job = 真实岗位；potential = 潜质通道（不是岗位，是「该不该带人」的评估） */
+export const JOB_KIND: Record<JobKey, "job" | "potential"> = {
+  mkt: "job",
+  sales: "job",
+  admin: "job",
+  fin: "job",
+  service: "job",
+  pot: "potential",
+};
+
+/** 五个真实岗位（按链路顺序）；pot 不在内 */
+export const JOB_ORDER: JobKey[] = ["mkt", "sales", "admin", "fin", "service"];
+export const JOB_KEYS: JobKey[] = [...JOB_ORDER, "pot"];
 
 export const JOB_BLURB: Record<JobKey, string> = {
-  sales: "课程顾问、咨询师：靠说服和跟进拿结果，被拒绝是日常。",
-  service: "学管、伴学师、教务：靠长期关系维系家长与学生的信任。",
-  admin: "行政、前台、排课：靠准确和流程把机构运转撑住。",
-  mgmt: "主管、校长：靠带人和定事把团队的结果做出来。",
+  mkt: "地推、社群、内容、投放：靠把陌生人变成名单拿结果。考核留资量与成本，不背签单。",
+  sales: "课程顾问、咨询师：靠面咨和跟单把名单变成合同。考核签单率，每天面对拒绝。",
+  admin: "招聘、入离职、员工关系、办公与合规：靠流程和准确把组织撑住，跟人打交道多。",
+  fin: "收费退费、课时核销、课酬结算、排课：跟数字和规则打交道，账实相符就是底线。",
+  service: "学管、伴学师、班主任：靠长期关系维系家长与学生的信任，交付质量就是口碑。",
+  pot: "不是岗位，是在职者的一条通道：看这个人现在该不该带人、能带哪一段、先给多大摊子。",
 };
 
-/** 十项维度。前四项来自职场 DISC，三、四来自大五，七、八来自价值观，九、十来自岗位加测。 */
+/** 岗位分层（前端配色/分组用） */
+export const JOB_LAYER: Record<JobKey, "front" | "mid" | "back" | "channel"> = {
+  mkt: "front",
+  sales: "front",
+  admin: "mid",
+  fin: "mid",
+  service: "back",
+  pot: "channel",
+};
+
+export const LAYER_LABEL: Record<"front" | "mid" | "back" | "channel", { name: string; sub: string }> = {
+  front: { name: "前段", sub: "对客获客" },
+  mid: { name: "中段", sub: "对组织" },
+  back: { name: "后段", sub: "对交付" },
+  channel: { name: "通道", sub: "跨三段" },
+};
+
+/** 十项维度。前四项来自职场 DISC，五、六来自大五，七、八来自价值观，九、十来自岗位加测。 */
 export type TalentDim =
   | "influence" | "empathy" | "order" | "drive"
   | "stable" | "duty" | "achieve" | "rule" | "lead" | "detail";
@@ -78,25 +138,44 @@ export const DIM_SOURCE: Record<TalentDim, string> = {
 export type Weight = 0 | 1 | 2 | 3;
 
 export const JOB_WEIGHTS: Record<JobKey, Record<TalentDim, Weight>> = {
+  mkt: {
+    /* 推广的核心是「自己找量」：没人给名单，得自己判断哪条渠道值得继续投。
+       影响说服只要够用（跟保安、群主、合作方谈），不必是销售级；
+       反过来条理与细致要比销售高——投放数据、物料、排期错一处，钱就白花了。 */
+    influence: 2, empathy: 1, order: 2, drive: 3, stable: 2,
+    duty: 2, achieve: 3, rule: 1, lead: 1, detail: 2,
+  },
   sales: {
     influence: 3, empathy: 2, order: 1, drive: 3, stable: 3,
     duty: 2, achieve: 3, rule: 1, lead: 1, detail: 1,
+  },
+  admin: {
+    /* 中段岗不只是守流程，还要能跟候选人谈、跟部门争、跟员工讲清规矩。
+       影响仍是「重要」不进核心——这一岗的核心始终是「不出错」，
+       把影响提到核心会让偏执行的人全部被判不匹配，与岗位实情相反。 */
+    influence: 2, empathy: 2, order: 3, drive: 1, stable: 2,
+    duty: 3, achieve: 1, rule: 3, lead: 0, detail: 2,
+  },
+  fin: {
+    /* 和人事的核心几乎重合，所以必须在两端拉开，否则两个岗的分数永远一样。
+       人事的核心是「答应的事盯到底」（尽责），财务的核心是「数字不出错」（细致）——
+       所以人事 detail 降到 2、财务 duty 降到 2，各留一项不同的硬要求。
+       影响压到 0：这岗不需要说服谁，需要的是顶住「先退了再说」；成就动机也给 0，
+       财务岗不靠闯劲，靠的是把同一件事做一千遍不出错。 */
+    influence: 0, empathy: 1, order: 3, drive: 0, stable: 2,
+    duty: 2, achieve: 0, rule: 3, lead: 0, detail: 3,
   },
   service: {
     influence: 2, empathy: 3, order: 2, drive: 1, stable: 3,
     duty: 3, achieve: 1, rule: 2, lead: 0, detail: 1,
   },
-  admin: {
-    influence: 1, empathy: 2, order: 3, drive: 1, stable: 2,
-    duty: 3, achieve: 1, rule: 3, lead: 0, detail: 3,
-  },
-  mgmt: {
-    /* 共情从 3 降到 2：DISC 是强迫选择，四项不可能同时高。
-       把「影响」「共情」「目标」「稳定」四项都设成核心，等于要求一个人四种风格全占，
-       没有任何真实答卷能满足，最后所有管理岗都会被判成「有条件匹配」。
-       管理要的是「听得进 + 顶得住」，不是「谁都照顾到」——共情留在重要档。 */
-    influence: 3, empathy: 2, order: 2, drive: 3, stable: 3,
-    duty: 3, achieve: 3, rule: 2, lead: 3, detail: 1,
+  pot: {
+    /* 潜质通道不按「岗位日常」加权，而按「整体管理」这一层配：
+       要带人（领导）、要拿结果（目标、成就）、要顶得住（情绪）、要收得住尾（尽责）。
+       共情留给「重要」——DISC 是强迫选择，四项不可能同时高，
+       核心设太多，所有真实答卷都会被判不匹配。 */
+    influence: 2, empathy: 2, order: 1, drive: 3, stable: 3,
+    duty: 2, achieve: 3, rule: 2, lead: 3, detail: 1,
   },
 };
 
@@ -104,10 +183,12 @@ export const WEIGHT_LABEL: Record<Weight, string> = { 0: "—", 1: "加分", 2: 
 
 /** 岗位需要做哪一套加测（没有则用估算值，报告标注）。 */
 export const JOB_DUTY_PACK: Record<JobKey, DutyPackKey> = {
+  mkt: "mkt",
   sales: "sales",
-  service: "service",
   admin: "admin",
-  mgmt: "mgmt",
+  fin: "admin",
+  service: "service",
+  pot: "mgmt",
 };
 
 /* ------------------------------ 作答结构 ------------------------------ */
@@ -118,6 +199,8 @@ export type TalentAnswers = {
   discwork?: { most: number[]; least: number[] };
   eq?: Record<string, number>;
   duty?: Record<string, number | string>;
+  /** 开放题（P08 家庭变化、P09 最想先解决的一件事）的一句话补充：不参与计分，随答卷留存 */
+  notes?: Record<string, string>;
 };
 
 export type BigFiveScores = Record<BigFiveDim, number>;
@@ -343,6 +426,8 @@ export function computeDims(input: TalentScoreInput): { dims: TalentDims; detail
 export type JobFit = {
   job: JobKey;
   label: string;
+  /** 岗位在机构链路中的位置（前段/中段/后段/通道） */
+  track: string;
   score: number;
   /** 核心维（权重 3）里低于门槛的项——这些是「不补就上不去」的地方 */
   gaps: { dim: TalentDim; label: string; score: number }[];
@@ -386,7 +471,7 @@ export function fitForJob(job: JobKey, dims: TalentDims): JobFit {
     if (weight >= 2) pool.push({ dim, label: DIM_LABEL[dim], score: dims[dim], weight });
   }
   /* 强项先看这个岗的核心维，核心维不够强才拿重要维补。
-     早前是「全池取最高两项」，结果四个岗列出来是同两个维度——
+     早前是「全池取最高两项」，结果几个岗列出来是同两个维度——
      「换个岗位会怎样」就白写了：人只有一套特质，高分维在哪儿都高。 */
   const byScore = (a: { score: number; weight: Weight }, b: { score: number; weight: Weight }) =>
     b.score - a.score || b.weight - a.weight;
@@ -399,6 +484,7 @@ export function fitForJob(job: JobKey, dims: TalentDims): JobFit {
   return {
     job,
     label: JOB_LABEL[job],
+    track: JOB_TRACK[job],
     score,
     gaps,
     weak,
@@ -408,10 +494,9 @@ export function fitForJob(job: JobKey, dims: TalentDims): JobFit {
   };
 }
 
+/** 只出五个真实岗位的匹配；pot（潜质通道）由 potential.ts 单独评估。 */
 export function allFits(dims: TalentDims): JobFit[] {
-  return (Object.keys(JOB_LABEL) as JobKey[])
-    .map((j) => fitForJob(j, dims))
-    .sort((a, b) => b.score - a.score);
+  return JOB_ORDER.map((j) => fitForJob(j, dims)).sort((a, b) => b.score - a.score);
 }
 
 /* ------------------------------ 匹配度分档 ------------------------------ */

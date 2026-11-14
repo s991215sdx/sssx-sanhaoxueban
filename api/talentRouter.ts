@@ -1,22 +1,21 @@
 /**
- * v253 人才测评接口。
+ * 人才测评接口（v282 恢复线上 v271 版）。
  *
- * 四类岗位（销售咨询师 / 教学服务 / 行政 / 管理）共用一套底盘（大五 20 + 价值观 18 +
- * 职场 DISC 24 组 + 特质情商 30），再按岗位加测一套（10—12 题）。一套数据、四张岗位画像——
- * 同一个「目标感强」在销售岗是长处、在行政岗是隐患，所以不做四套题四个分。
+ * 六个评估对象：五个真实岗位（市场推广 / 咨询销售 / 人事行政 / 财务教务 / 教学服务，
+ * 按前段获客 → 中段组织 → 后段交付的链路排）+ 一条潜质通道（pot：不是岗位，
+ * 评的是「该不该带人、能带哪一段」）。
+ *
+ * 一套底盘（大五 20 + 价值观 18 + 职场 DISC 24 组 + 特质情商 30）+ 工作能力客观题
+ * 21 题（教育行业版 / 通用版两套）+ 岗位加测一套。出卷只给题面，不给答案键。
  *
  * 两条入口，差别只在「谁发起」：
- *  - 本人登录自测：ownerId = 自己，改岗位重测会新增一条，历史留痕；
- *  - HR 发码、候选人扫码答：码里带着岗位（见 talentCode.ts），提交时落到发起人名下，
- *    候选人全程没有账号态——他不该看到自己的十维分数被怎么用。
- *
- * 出卷时剥离了两样东西：题目的 reverse 标记、DISC 每组词的字母归属、加测选项的分数。
- * 这三样都是答案键，前端拿不到，改请求也改不出高分。
+ *  - 管理员登录自测：ownerId = 自己；
+ *  - HR 发码、候选人扫码答：码里带着岗位（见 talentCode.ts），提交时落到发起人名下。
  */
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { organizations, talentAssessments, users } from "@db/schema";
-import { createRouter, adminQuery, authedQuery, publicQuery, tutorQuery } from "./middleware";
+import { createRouter, adminQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { env } from "./lib/env";
 import { encodeTalentCode, decodeTalentCode } from "./talentCode";
@@ -34,8 +33,14 @@ import {
 import {
   JOB_BLURB,
   JOB_DUTY_PACK,
+  JOB_KEYS,
+  JOB_KIND,
   JOB_LABEL,
+  JOB_LAYER,
+  JOB_SHORT,
+  JOB_TRACK,
   JOB_WEIGHTS,
+  LAYER_LABEL,
   computeDims,
   scoreBigFive,
   scoreDuty,
@@ -45,8 +50,11 @@ import {
   type JobKey,
 } from "@contracts/talent/score";
 import { buildTalentReport, JOB_EQ_FOCUS, type TalentReport } from "@contracts/talent/report";
+import { cogItemsFor, COG_TRACK_LABEL, cogTrackOf } from "@contracts/talent/cognitive-bank";
+import { COG_CORE_LINE, COG_MAJOR_LINE, COG_TIME_LIMIT_SEC, scoreCognitive } from "@contracts/talent/cognitive-score";
+import { PERSONAS } from "@contracts/talent/persona";
+import { BAND_LABEL, TIER_LABEL, TIER_ORDER, TIER_ROLE } from "@contracts/talent/potential";
 
-const JOB_KEYS: JobKey[] = ["sales", "service", "admin", "mgmt"];
 const isJob = (v: unknown): v is JobKey => typeof v === "string" && (JOB_KEYS as string[]).includes(v);
 
 function badRequest(message: string): never {
@@ -61,20 +69,38 @@ function assertIds(got: Record<string, unknown>, ids: string[], what: string) {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/* 线上库把本地时间当 UTC 存（MySQL 时区口径），回显时往回拨 8 小时才对得上真实时刻。 */
+const DB_UTC_SKEW_MS = 8 * 60 * 60 * 1000;
+const forDisplay = (d: Date) => new Date(d.getTime() - DB_UTC_SKEW_MS);
+
 export const talentRouter = createRouter({
   /** 岗位目录 + 题本构成 + 权重表：选岗页与说明页都用这一份，避免前端另抄一份常量。 */
   catalog: publicQuery.query(() => ({
+    /* 按段排：前段两个 → 中段两个 → 后段一个 → 潜质通道。前端直接照这个顺序分组渲染，
+       不再自己维护一份岗位清单——两处维护迟早会漏一个。 */
     jobs: JOB_KEYS.map((k) => ({
       key: k,
       label: JOB_LABEL[k],
+      short: JOB_SHORT[k],
+      track: JOB_TRACK[k],
+      layer: JOB_LAYER[k],
+      layerLabel: LAYER_LABEL[JOB_LAYER[k]],
+      kind: JOB_KIND[k],
       blurb: JOB_BLURB[k],
       dutyPack: JOB_DUTY_PACK[k],
       dutyName: DUTY_PACKS[JOB_DUTY_PACK[k]].name,
       dutyMinutes: DUTY_PACKS[JOB_DUTY_PACK[k]].minutes,
-      minutes: 24 + DUTY_PACKS[JOB_DUTY_PACK[k]].minutes,
+      dutyItems: DUTY_PACKS[JOB_DUTY_PACK[k]].items.length,
+      minutes: 24 + COG_TIME_LIMIT_SEC / 60 + DUTY_PACKS[JOB_DUTY_PACK[k]].minutes,
       eqFocus: JOB_EQ_FOCUS[k].map((d) => EQ_DIM_LABEL[d]),
       weights: JOB_WEIGHTS[k],
+      persona: PERSONAS[k],
     })),
+    /** 潜质通道的说明与四段定义：后台画像页与报告页共用 */
+    potential: {
+      tiers: TIER_ORDER.map((t) => ({ key: t, label: TIER_LABEL[t], role: TIER_ROLE[t] })),
+      bands: Object.entries(BAND_LABEL).map(([key, label]) => ({ key, label })),
+    },
     parts: (["bigfive", "value", "discwork", "eq"] as const).map((k) => ({ key: k, ...PART_META[k] })),
     eq: {
       factors: (Object.keys(EQ_FACTOR_LABEL) as (keyof typeof EQ_FACTOR_LABEL)[]).map((f) => ({
@@ -83,20 +109,44 @@ export const talentRouter = createRouter({
         dims: EQ_FACTOR_DIMS[f].map((d) => ({ key: d, label: EQ_DIM_LABEL[d] })),
       })),
     },
-    /** 做完要多久：底盘 24 分钟 + 岗位加测 */
-    totalMinutes: 24,
+    /** 做完要多久：底盘 24 分钟 + 工作能力 15 分钟 + 岗位加测 */
+    totalMinutes: 24 + COG_TIME_LIMIT_SEC / 60,
+    /** 工作能力段：题量、限时、参考线。前端只用来说明，不参与计分。 */
+    cognitive: {
+      items: cogItemsFor("edu").length,
+      tracks: ["edu", "general"],
+      minutes: COG_TIME_LIMIT_SEC / 60,
+      coreLine: COG_CORE_LINE,
+      majorLine: COG_MAJOR_LINE,
+    },
   })),
 
   /** 出卷。只给题面，不给答案键。 */
   paper: publicQuery
-    .input((v: unknown) => v as { position?: string })
+    .input((v: unknown) => v as { position?: string; track?: string })
     .query(({ input }) => {
       const position = isJob(input?.position) ? input.position : "sales";
       const pack = DUTY_PACKS[JOB_DUTY_PACK[position]];
+      const track = input?.track === "general" ? "general" : "edu";
+      const cogItems = cogItemsFor(track);
       return {
         position,
         positionLabel: JOB_LABEL[position],
+        positionTrack: JOB_TRACK[position],
+        cogTrack: track,
+        cogTrackLabel: COG_TRACK_LABEL[track],
         parts: [
+          {
+            /* 工作能力放第一段：限时测验要趁脑子清醒，也避免排在 100 多道自陈题之后
+               被疲劳和作答惯性拖累——那样测出来的不是能力，是耐心。 */
+            key: "cognitive" as const,
+            name: "工作能力（客观题）",
+            minutes: COG_TIME_LIMIT_SEC / 60,
+            kind: "choice" as const,
+            timed: true,
+            blurb: `本段 ${cogItems.length} 题（${COG_TRACK_LABEL[track]}），限时 ${COG_TIME_LIMIT_SEC / 60} 分钟。点「开始计时」才起表，到点这一段自动锁定，后面的问卷还能继续慢慢答。每题只有一个正确答案，不会的可以先跳过——错答不倒扣，空着也不给分。`,
+            items: cogItems.map((i) => ({ id: i.id, kind: "choice" as const, text: i.text, options: [...i.options] })),
+          },
           {
             key: "bigfive" as const,
             name: PART_META.bigfive.name,
@@ -149,12 +199,15 @@ export const talentRouter = createRouter({
           position?: string;
           name?: string;
           code?: string;
+          cognitiveTimeSec?: number;
           answers?: {
             bigfive?: Record<string, number>;
             value?: Record<string, number>;
             discwork?: { most?: number[]; least?: number[] };
             eq?: Record<string, number>;
             duty?: Record<string, number | string>;
+            notes?: Record<string, string>;
+            cognitive?: Record<string, number>;
           };
         },
     )
@@ -177,6 +230,9 @@ export const talentRouter = createRouter({
         source = "invite";
       } else {
         if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "请先登录再做测评" });
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "这份测评用于招聘，请扫后台发出的码作答" });
+        }
         if (!isJob(input?.position)) badRequest("请先选择要评估的岗位");
         position = input.position;
         ownerId = ctx.user.id;
@@ -196,6 +252,8 @@ export const talentRouter = createRouter({
       assertIds(vv, VALUE_ITEMS.map((i) => i.id), "工作价值观");
       assertIds(eqa, EQ_ITEMS.map((i) => i.id), "特质情商");
       assertIds(du, DUTY_PACKS[JOB_DUTY_PACK[position]].items.map((i) => i.id), "岗位加测");
+      const cogTrack = cogTrackOf(answers.cognitive ?? {});
+      assertIds(answers.cognitive ?? {}, cogItemsFor(cogTrack).map((i) => i.id), "工作能力");
 
       const bigfive = scoreBigFive(bf);
       const value = scoreValue(vv);
@@ -203,12 +261,23 @@ export const talentRouter = createRouter({
       const eq = scoreEq(eqa);
       const duty = scoreDuty(JOB_DUTY_PACK[position], du);
 
+      /* 客观题只收 0–3 的合法选项下标，其余当没答——防手滑带进来的脏数据污染正确率 */
+      const cg: Record<string, number> = {};
+      for (const [k, v] of Object.entries(answers.cognitive ?? {})) {
+        const n = Number(v);
+        if (Number.isInteger(n) && n >= 0 && n <= 3) cg[k] = n;
+      }
+      const cogAnswered = Object.keys(cg).length;
+      const cognitive = scoreCognitive(cg, cogTrack);
+      const cogTimeSec = Math.max(0, Math.min(COG_TIME_LIMIT_SEC, Math.round(Number(input?.cognitiveTimeSec) || 0)));
+
       const answered = {
         bigfive: Object.keys(bf).filter((k) => Number.isFinite(bf[k])).length,
         value: Object.keys(vv).filter((k) => Number.isFinite(vv[k])).length,
         discwork: dw.most.filter((m, i) => m != null && dw.least[i] != null && m !== dw.least[i]).length,
         eq: Object.keys(eqa).filter((k) => Number.isFinite(eqa[k])).length,
         duty: duty.answered,
+        cognitive: cogAnswered,
       };
 
       const { dims, details } = computeDims({ bigfive, value, discwork, dutyScores: duty, answered });
@@ -218,11 +287,13 @@ export const talentRouter = createRouter({
         name,
         position,
         generatedAt: new Date().toISOString(),
-        answers,
+        answers: { ...answers, cognitive: cg },
         parts: { bigfive, value, discwork, eq, duty },
         dims,
         details,
         answered,
+        cognitive,
+        cognitiveTimeSec: cogTimeSec,
       });
 
       const [row] = await db
@@ -234,17 +305,19 @@ export const talentRouter = createRouter({
           position,
           source,
           completeness: report.completeness.pct,
-          fitScore: report.current.score,
+          /* 潜质通道存的是潜质指数，不是人岗匹配度：列表里同一个「分数」列，
+             两种记录的含义必须一致，否则 HR 会拿 82 分的潜质和 82 分的岗位匹配做比较。 */
+          fitScore: report.potential ? report.potential.index : report.current.score,
           report: report as unknown as Record<string, unknown>,
-          answers: { ...answers, answered } as unknown as Record<string, unknown>,
+          answers: { ...answers, cognitive: cg, cognitiveTimeSec: cogTimeSec, answered } as unknown as Record<string, unknown>,
         })
         .$returningId();
 
       return { id: row.id, report };
     }),
 
-  /** HR / 伴学师出一张邀请码：岗位锁死在码里，7 天内有效。 */
-  invite: tutorQuery
+  /** 后台发一张邀请码：岗位锁死在码里，7 天内有效。只有管理员能发。 */
+  invite: adminQuery
     .input((v: unknown) => v as { position?: string })
     .mutation(({ ctx, input }) => {
       if (!isJob(input?.position)) badRequest("请先选择岗位");
@@ -268,14 +341,16 @@ export const talentRouter = createRouter({
       return {
         position: decoded.position,
         positionLabel: JOB_LABEL[decoded.position],
+        positionTrack: JOB_TRACK[decoded.position],
         inviterName: owner?.name ?? "招聘负责人",
         orgName,
-        minutes: 24 + DUTY_PACKS[JOB_DUTY_PACK[decoded.position]].minutes,
+        minutes: 24 + COG_TIME_LIMIT_SEC / 60 + DUTY_PACKS[JOB_DUTY_PACK[decoded.position]].minutes,
+        cogMinutes: COG_TIME_LIMIT_SEC / 60,
       };
     }),
 
-  /** 我的历史（本人自测）。 */
-  mine: authedQuery.query(async ({ ctx }) => {
+  /** 我试做过的记录（后台校准题目用，不对学员开放）。 */
+  mine: adminQuery.query(async ({ ctx }) => {
     const db = getDb();
     const rows = await db
       .select({
@@ -290,12 +365,12 @@ export const talentRouter = createRouter({
       .where(eq(talentAssessments.ownerId, ctx.user!.id))
       .orderBy(desc(talentAssessments.createdAt))
       .limit(20);
-    return rows;
+    return rows.map((r) => ({ ...r, createdAt: forDisplay(r.createdAt) }));
   }),
 
   /** 名单（HR 视角）：谁、什么岗、匹配度。按匹配度从高到低——招聘旺季一次面很多人，
      同岗的排在一起，谁最合适一眼看出。 */
-  list: tutorQuery
+  list: adminQuery
     .input((v: unknown) => v as { limit?: number; offset?: number; position?: string })
     .query(async ({ ctx, input }) => {
       const db = getDb();
@@ -326,11 +401,14 @@ export const talentRouter = createRouter({
         .limit(Math.min(Math.max(input?.limit ?? 50, 1), 100))
         .offset(Math.max(input?.offset ?? 0, 0));
       const total = await db.select({ n: sql<number>`count(*)` }).from(talentAssessments).where(where);
-      return { rows, total: Number(total[0]?.n ?? 0) };
+      return {
+        rows: rows.map((r) => ({ ...r, createdAt: forDisplay(r.createdAt) })),
+        total: Number(total[0]?.n ?? 0),
+      };
     }),
 
-  /** 读一份报告。本人、同机构伴学师、管理员可看；其余一律「没有这份」。 */
-  report: authedQuery
+  /** 读一份报告。人才评估是后台工具，只对管理员开放；其余一律「没有这份」。 */
+  report: adminQuery
     .input((v: unknown) => v as { id?: number })
     .query(async ({ ctx, input }) => {
       const id = Number(input?.id);
@@ -339,15 +417,13 @@ export const talentRouter = createRouter({
       const row = (await db.select().from(talentAssessments).where(eq(talentAssessments.id, id)).limit(1))[0];
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "没有这份报告" });
       const me = ctx.user!;
-      const sameOrg = me.orgId != null && row.orgId === me.orgId;
-      const canSee = row.ownerId === me.id || me.role === "admin" || (me.role === "tutor" && sameOrg);
-      if (!canSee) throw new TRPCError({ code: "FORBIDDEN", message: "没有这份报告" });
+      if (me.role !== "admin" && row.ownerId !== me.id) throw new TRPCError({ code: "FORBIDDEN", message: "没有这份报告" });
       let orgName: string | null = null;
       if (row.orgId != null) {
         const org = (await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, row.orgId)).limit(1))[0];
         orgName = org?.name ?? null;
       }
-      return { id: row.id, candidateName: row.candidateName, source: row.source, createdAt: row.createdAt, orgName, report: row.report as unknown as TalentReport };
+      return { id: row.id, candidateName: row.candidateName, source: row.source, createdAt: forDisplay(row.createdAt), orgName, report: row.report as unknown as TalentReport };
     }),
 
   /** 删除一条记录（只允许发起人或管理员）。 */

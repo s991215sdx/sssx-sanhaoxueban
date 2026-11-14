@@ -173,10 +173,10 @@ describe("岗位匹配", () => {
   });
 
   it("重要维塌到 0 时，分数再高也不给「高度匹配」", () => {
-    /* 其余九维 90 分、条理规范 0 分：加权分仍然很高，但报告不能说「主要维度都对得上」 */
-    const dims = { influence: 90, empathy: 90, order: 0, drive: 90, stable: 90, duty: 90, achieve: 90, rule: 90, lead: 90, detail: 90 };
-    const fit = fitForJob("mgmt", dims);
-    expect(fit.weak.map((w) => w.dim)).toContain("order");
+    /* 其余九维 90 分、共情 0 分：加权分仍然很高，但报告不能说「主要维度都对得上」 */
+    const dims = { influence: 90, empathy: 0, order: 90, drive: 90, stable: 90, duty: 90, achieve: 90, rule: 90, lead: 90, detail: 90 };
+    const fit = fitForJob("pot", dims);
+    expect(fit.weak.map((w) => w.dim)).toContain("empathy");
     expect(fit.band).not.toBe("strong");
   });
 
@@ -194,8 +194,8 @@ describe("岗位匹配", () => {
     const a = { influence: 60, empathy: 60, order: 60, drive: 60, stable: 60, duty: 60, achieve: 60, rule: 60, lead: 60, detail: 60 };
     const b = { ...a, lead: 0 };
     expect(fitForJob("service", b).score).toBe(fitForJob("service", a).score);
-    /* 管理岗看「领导」，同样的 0 分必须掉分 */
-    expect(fitForJob("mgmt", b).score).toBeLessThan(fitForJob("mgmt", a).score);
+    /* 潜质通道看「领导」（权重 3），同样的 0 分必须掉分 */
+    expect(fitForJob("pot", b).score).toBeLessThan(fitForJob("pot", a).score);
   });
 });
 
@@ -227,20 +227,21 @@ describe("报告装配", () => {
     expect(r.caveats.some((c) => c.includes("未完成"))).toBe(true);
   });
 
-  it("四岗匹配都算出来，且当前岗位那一项在列表里", () => {
+  it("五岗匹配都算出来；pot 通道走潜质评估而不是岗位匹配", () => {
     const b = base();
     const r = buildTalentReport({
       name: "张三",
-      position: "mgmt",
+      position: "pot",
       generatedAt: new Date().toISOString(),
       parts: b,
       dims: b.dims,
       details: b.details,
       answered: b.answered,
     });
-    expect(r.fits).toHaveLength(4);
-    expect(r.fits.map((f) => f.job)).toContain("mgmt");
-    expect(r.current.job).toBe("mgmt");
+    expect(r.fits).toHaveLength(5);
+    expect(r.current.job).toBe("pot");
+    expect(r.potential).not.toBeNull();
+    expect(r.meta.kind).toBe("potential");
   });
 
   it("有硬缺口时，第一条建议直接指向缺口", () => {
@@ -349,7 +350,7 @@ describe("邀请码", () => {
   const secret = "test-secret";
 
   it("出码与解码往返一致，岗位锁在码里", () => {
-    for (const pos of ["sales", "service", "admin", "mgmt"] as const) {
+    for (const pos of ["mkt", "sales", "admin", "fin", "service", "pot"] as const) {
       const { code } = encodeTalentCode(42, pos, secret);
       const d = decodeTalentCode(code, secret);
       expect(d?.ownerId).toBe(42);
@@ -378,6 +379,6 @@ describe("邀请码", () => {
 
   it("同一天出同一张码：连点两下不会得到两张不一样的码", () => {
     const now = 1_800_000_000_000;
-    expect(encodeTalentCode(42, "mgmt", secret, now).code).toBe(encodeTalentCode(42, "mgmt", secret, now + 3600_000).code);
+    expect(encodeTalentCode(42, "pot", secret, now).code).toBe(encodeTalentCode(42, "pot", secret, now + 3600_000).code);
   });
 });

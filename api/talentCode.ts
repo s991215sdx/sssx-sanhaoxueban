@@ -5,7 +5,7 @@
  *
  * 为什么把岗位也编进码里：候选人扫码之后不该再看一张「请选择你要应聘的岗位」的列表——
  * 他应聘什么岗是 HR 定的，让他自己选，选错了整份报告的依据就变了。
- * 岗位字母只有 4 种（sales/service/admin/mgmt → s/v/a/m），成本是 1 个字符。
+ * 岗位字母只有 6 种（mkt/sales/admin/fin/service/pot → g/s/a/f/v/p），成本是 1 个字符。
  *
  * 有效期用「日序号」而不是存表：招聘的节奏是「今天发、这周内答」，
  * 只认最近 7 天（含当天），过期自然失效，不需要清理任务，也不需要记「发过哪些码」。
@@ -22,10 +22,25 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** 一张码认多久（天，含当天） */
 export const TALENT_CODE_DAYS = 7;
 
-const POS_TO_LETTER: Record<JobKey, string> = { sales: "s", service: "v", admin: "a", mgmt: "m" };
-const LETTER_TO_POS: Record<string, JobKey> = { s: "sales", v: "service", a: "admin", m: "mgmt" };
+const POS_TO_LETTER: Record<JobKey, string> = {
+  mkt: "g", // growth：g 比 m 好认，m 留给历史码
+  sales: "s",
+  admin: "a",
+  fin: "f",
+  service: "v",
+  pot: "p",
+};
+const LETTER_TO_POS: Record<string, JobKey> = {
+  g: "mkt",
+  s: "sales",
+  a: "admin",
+  f: "fin",
+  v: "service",
+  p: "pot",
+  m: "pot", // 历史码：老 mgmt 岗位字母 m 归并到潜质通道
+};
 
-const RE = /^[a-z0-9]{1,12}-[svam]-[a-z0-9]{1,6}-[a-z0-9]{6}$/;
+const RE = /^[a-z0-9]{1,12}-[gsavfpm]-[a-z0-9]{1,6}-[a-z0-9]{6}$/;
 
 function toB36(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return "0";

@@ -279,7 +279,7 @@ export default function TalentCenter() {
       {/* 邀请码弹层 */}
       {inviteOpen && (
         <>
-          <div className="fixed inset-0 z-40 bg-olive/30 backdrop-blur-sm" onClick={() => setInviteOpen(false)} aria-hidden />
+          <div className="fixed inset-0 z-40 bg-black/25 backdrop-blur-sm" onClick={() => setInviteOpen(false)} aria-hidden />
           <div className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,380px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between">
               <div>
