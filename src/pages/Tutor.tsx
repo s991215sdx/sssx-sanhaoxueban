@@ -106,7 +106,7 @@ export default function Tutor() {
   const requested = searchParams.get("section") as TutorSection | null;
   const requestedSection: TutorSection = requested && sectionOptions.includes(requested) ? requested : "students";
   const canOpenSection = requestedSection === "students" || requestedSection === "assessments"
-    || (requestedSection === "parentdisc" && user?.orgId != null)
+    || (requestedSection === "parentdisc" && (user?.orgId != null || user?.role === "admin"))
     || (!campusView && requestedSection === "training")
     || (orgView && (requestedSection !== "points" || user?.role === "admin"));
   const section: TutorSection = canOpenSection ? requestedSection : "students";
@@ -180,7 +180,7 @@ export default function Tutor() {
             [
               { key: "students", label: "学员管理", visible: true },
               { key: "assessments", label: "测评中心", visible: orgView || campusView },
-              { key: "parentdisc", label: "家长扫码", visible: user?.orgId != null },
+              { key: "parentdisc", label: "家长扫码", visible: user?.orgId != null || user?.role === "admin" },
               { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
               { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
@@ -366,7 +366,7 @@ export default function Tutor() {
 
       {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
 
-      {section === "parentdisc" && user?.orgId != null && <ParentDiscPanel />}
+      {section === "parentdisc" && (user?.orgId != null || user?.role === "admin") && <ParentDiscPanel />}
 
       {section === "training" && (
         <div className="space-y-4">

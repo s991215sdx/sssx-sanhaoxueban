@@ -2,14 +2,14 @@ import { scryptSync, timingSafeEqual, randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
-import { createRouter, authedQuery, publicQuery, tutorQuery } from "./middleware";
+import { createRouter, adminQuery, authedQuery, publicQuery, tutorQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { persistAssessmentResult } from "./assessmentPersistence";
-import { academicRecords, assessmentResults, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
+import { academicRecords, assessmentResults, organizations, studentProfile, users, inviteChannels, inviteRegistrations, type StudentProfile } from "@db/schema";
 import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
 import { getTutorReportAccess, isMyStudent } from "./tutorAccess";
-import { canAccessUser } from "./tenant";
+import { canAccessUser, isPlatformAdmin } from "./tenant";
 import { getCampusReportKinds } from "./campusReports";
 import { campusResultAllowed } from "@contracts/campusReports";
 import {
@@ -1511,6 +1511,8 @@ export const assessmentRouter = createRouter({
           .regex(/^1\d{10}$/, "手机号格式不正确")
           .optional()
           .or(z.literal("")),
+        /** v285：二维码里带的机构——机构自己印的码扫进来，记录直接归该机构；不传则进公共池 */
+        orgId: z.number().int().positive().optional(),
         answers: discV2AnswersSchema,
       }),
     )
@@ -1524,7 +1526,16 @@ export const assessmentRouter = createRouter({
         userId: 0,
         outcome: { kind: "discparent", result: result as unknown as Record<string, unknown> },
         /* via=qr：一眼认出这是扫码直测池里的答卷，区别于码流程（via=code/pas）与孩子账号里填的 */
-        answers: { ...input.answers, respondent: input.respondent, label: input.label ?? "", phone: input.phone || "", via: "qr", viewKey },
+        answers: {
+          ...input.answers,
+          respondent: input.respondent,
+          label: input.label ?? "",
+          phone: input.phone || "",
+          via: "qr",
+          viewKey,
+          /* v285：机构码扫进来时在这里落归属，后台按机构分权 */
+          ...(input.orgId ? { orgId: input.orgId } : {}),
+        },
         submissionKey: input.submissionKey,
         actorUserId: null,
       });
@@ -1556,28 +1567,168 @@ export const assessmentRouter = createRouter({
       };
     }),
 
-  /** 待融合池列表（伴学师/管理员）：userId=0 的扫码直测家长 DISC，新→旧。 */
-  standaloneDiscs: tutorQuery.query(async () => {
+  /**
+   * 待融合池列表（伴学师/管理员）：userId=0 的扫码直测家长 DISC，新→旧。
+   *
+   * v285：分权与归属
+   * - 平台超管（admin 且无机构）：看全部，并带上归属机构名，用来跨机构巡检；
+   * - 机构账号：本机构已认领 + 未归属公共池（扫码链接本身不带机构时先进公共池，谁先认领归谁）；
+   *   别家机构已认领的记录一律不可见，避免家长手机号串机构。
+   * - 家长留的手机号能对上本机构学员/家长时，标 mine=true，机构账号优先处理这些人。
+   */
+  standaloneDiscs: tutorQuery.query(async ({ ctx }) => {
     const db = getDb();
     const rows = await db
-      .select({ id: assessmentResults.id, answers: assessmentResults.answers, result: assessmentResults.result, createdAt: assessmentResults.createdAt })
+      .select({
+        id: assessmentResults.id,
+        answers: assessmentResults.answers,
+        result: assessmentResults.result,
+        createdAt: assessmentResults.createdAt,
+        /* 直接取库里的本地时间文本：前端按浏览器时区渲染 Date 会整体偏 8 小时（全站既有口径） */
+        createdAtText: sql<string>`date_format(${assessmentResults.createdAt}, '%Y-%m-%d %H:%i')`,
+      })
       .from(assessmentResults)
       .where(and(eq(assessmentResults.userId, 0), eq(assessmentResults.kind, "discparent")))
       .orderBy(desc(assessmentResults.createdAt), desc(assessmentResults.id))
       .limit(200);
-    return rows.map((r) => {
-      const a = r.answers as { label?: string; respondent?: string; phone?: string } | null;
-      const result = r.result as { primary?: string };
+
+    const platform = isPlatformAdmin(ctx.user);
+    const myOrgId = ctx.user.orgId ?? null;
+    const orgNameOf = new Map<number, string>();
+    const myPhones = new Set<string>();
+    if (platform) {
+      const orgs = await db
+        .select({ id: organizations.id, name: organizations.name, brandName: organizations.brandName })
+        .from(organizations);
+      /* 优先用对外品牌名：机构表里的 name 常是「默认机构」这类系统名，后台列表显示品牌更好认 */
+      for (const o of orgs) orgNameOf.set(Number(o.id), o.brandName || o.name);
+    } else if (myOrgId != null) {
+      const ps = await db.select({ phone: users.phone }).from(users).where(eq(users.orgId, myOrgId));
+      for (const p of ps) if (p.phone) myPhones.add(p.phone);
+    }
+
+    return rows
+      .map((r) => {
+        const a = r.answers as { label?: string; respondent?: string; phone?: string; orgId?: unknown } | null;
+        const result = r.result as { primary?: string };
+        const raw = Number(a?.orgId);
+        const orgId = Number.isFinite(raw) && raw > 0 ? raw : null;
+        const phone = a?.phone || "";
+        return {
+          id: r.id,
+          label: a?.label || "家长",
+          respondent: a?.respondent ?? "other",
+          phone,
+          primary: result?.primary ?? "-",
+          createdAt: r.createdAt,
+          createdAtText: r.createdAtText,
+          orgId,
+          orgName: orgId != null ? orgNameOf.get(orgId) ?? `机构 ${orgId}` : "",
+          /** 手机号能对上本机构学员/家长 —— 机构账号看到它时优先绑定 */
+          mine: !!phone && myPhones.has(phone),
+        };
+      })
+      .filter((r) => platform || r.orgId == null || r.orgId === myOrgId);
+  }),
+
+  /**
+   * 认领（管理员）：把公共池里的扫码记录归到本机构。
+   * 认领后本机构账号长期可见，其他机构账号不再看到；平台超管始终看全部。
+   * 已归属别家的记录不允许抢，避免机构之间来回改数据。
+   */
+  claimStandaloneDiscs: tutorQuery
+    .input(z.object({ ids: z.array(z.number().int().positive()).min(1).max(50) }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "只有管理员可以把家长记录归到机构" });
+      }
+      const orgId = ctx.user.orgId ?? null;
+      if (orgId == null) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "平台超管不挂在具体机构下，看到的本来就是全部记录" });
+      }
+      const db = getDb();
+      const rows = await db
+        .select({ id: assessmentResults.id, answers: assessmentResults.answers })
+        .from(assessmentResults)
+        .where(and(eq(assessmentResults.kind, "discparent"), inArray(assessmentResults.id, input.ids)));
+      const free = rows.filter((r) => {
+        const raw = Number((r.answers as { orgId?: unknown } | null)?.orgId);
+        return !Number.isFinite(raw) || raw <= 0;
+      });
+      if (!free.length) throw new TRPCError({ code: "BAD_REQUEST", message: "这些记录已经被认领了" });
+      await db
+        .update(assessmentResults)
+        .set({ answers: sql`json_set(${assessmentResults.answers}, '$.orgId', ${orgId})` })
+        .where(inArray(assessmentResults.id, free.map((r) => r.id)));
+      return { ok: true as const, count: free.length };
+    }),
+
+  /**
+   * 平台超管：把扫码记录改归到指定机构（跨机构转移）。
+   * 场景：家长在 A 机构的活动码上测的，事后要并到 B 机构名下；
+   * 机构管理员只能认领「未归属」，跨机构调整只留给平台超管，避免互相抢数据。
+   */
+  transferStandaloneDiscs: adminQuery
+    .input(z.object({ ids: z.array(z.number().int().positive()).min(1).max(50), orgId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      if (!isPlatformAdmin(ctx.user)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "只有平台超管可以跨机构调整归属" });
+      }
+      const db = getDb();
+      const [org] = await db
+        .select({ id: organizations.id })
+        .from(organizations)
+        .where(eq(organizations.id, input.orgId))
+        .limit(1);
+      if (!org) throw new TRPCError({ code: "BAD_REQUEST", message: "目标机构不存在" });
+      await db
+        .update(assessmentResults)
+        .set({ answers: sql`json_set(${assessmentResults.answers}, '$.orgId', ${input.orgId})` })
+        .where(and(eq(assessmentResults.kind, "discparent"), inArray(assessmentResults.id, input.ids)));
+      return { ok: true as const, count: input.ids.length };
+    }),
+
+  /**
+   * 单条家长 DISC 报告（后台查看）：列表只给摘要，点开再取完整结果。
+   * 权限同列表——平台超管任意看，机构账号只能开本机构或公共池里的那条。
+   */
+  standaloneDiscDetail: tutorQuery
+    .input(z.object({ id: z.number().int().positive() }))
+    .query(async ({ input, ctx }) => {
+      const db = getDb();
+      const [row] = await db
+        .select({
+          id: assessmentResults.id,
+          kind: assessmentResults.kind,
+          userId: assessmentResults.userId,
+          answers: assessmentResults.answers,
+          result: assessmentResults.result,
+          createdAt: assessmentResults.createdAt,
+          createdAtText: sql<string>`date_format(${assessmentResults.createdAt}, '%Y-%m-%d %H:%i')`,
+        })
+        .from(assessmentResults)
+        .where(eq(assessmentResults.id, input.id))
+        .limit(1);
+      if (!row || row.kind !== "discparent") throw new TRPCError({ code: "NOT_FOUND", message: "这条测评不存在" });
+      const a = row.answers as { label?: string; respondent?: string; phone?: string; orgId?: unknown } | null;
+      const raw = Number(a?.orgId);
+      const orgId = Number.isFinite(raw) && raw > 0 ? raw : null;
+      if (!isPlatformAdmin(ctx.user) && orgId != null && orgId !== (ctx.user.orgId ?? null)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "这条记录属于其他机构" });
+      }
       return {
-        id: r.id,
+        id: row.id,
         label: a?.label || "家长",
         respondent: a?.respondent ?? "other",
         phone: a?.phone || "",
-        primary: result?.primary ?? "-",
-        createdAt: r.createdAt,
+        orgId,
+        /** 已绑到学员名下时带上学员，后台标一句「已并入」 */
+        studentUserId: Number(row.userId) || 0,
+        result: row.result as unknown as DiscResult,
+        createdAt: row.createdAt,
+        createdAtText: row.createdAtText,
       };
-    });
-  }),
+    }),
 
   /**
    * 家庭融合（伴学师/管理员）：把扫码直测池里的一条家长 DISC 绑到孩子名下。

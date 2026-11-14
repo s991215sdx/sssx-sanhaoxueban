@@ -155,6 +155,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   const campusTutor = isCampus && user?.orgId != null;
   /* 工作台各功能统一进入桌面左侧栏；校园管理者沿用自己的控制台菜单。 */
   const showTutorAssessment = showCoach && !campusMgr && user?.orgId != null;
+  /* v285：家长扫码板块对平台超管也开放——超管跨机构巡检家长测评记录 */
+  const showParentDisc = showCoach && !campusMgr && (user?.orgId != null || isPlatformAdmin);
   const showTutorTraining = showCoach && !campusMgr && !campusTutor;
   const showTutorLibrary = showCoach && !campusMgr && schoolCtx?.services?.library !== false;
   /* 机构管理员直达积分分配；校园版无积分，平台超管仍走机构管理中的总积分调整。 */
@@ -278,7 +280,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && "测评中心"}
             </NavLink>
           )}
-          {showTutorAssessment && (
+          {showParentDisc && (
             <NavLink
               to="/tutor?section=parentdisc"
               title={collapsed ? "家长扫码" : undefined}

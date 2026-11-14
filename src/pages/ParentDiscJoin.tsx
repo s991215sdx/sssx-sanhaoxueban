@@ -8,7 +8,7 @@
  * 作答体验与学生端 DiscV2 一致：24 组四词强迫选择（最像 + 最不像）。
  */
 import { useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { DISC_PARENT_V2_GROUPS, type DiscResult, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
@@ -33,6 +33,10 @@ type Stage = "identity" | "custom" | "phone" | "quiz";
 export default function ParentDiscJoinPage() {
   const utils = trpc.useUtils();
   const paper = trpc.assessment.standaloneDiscPaper.useQuery();
+  /* v285：机构二维码带 ?o=<机构 id>，扫进来直接归该机构；不带则进公共池由后台认领 */
+  const [sp] = useSearchParams();
+  const orgParam = Number(sp.get("o"));
+  const orgId = Number.isFinite(orgParam) && orgParam > 0 ? orgParam : undefined;
 
   const [stage, setStage] = useDraftState<Stage>(DRAFT, "stage", "identity");
   const [label, setLabel] = useDraftState<string>(DRAFT, "label", "");
@@ -114,6 +118,7 @@ export default function ParentDiscJoinPage() {
       label: finalLabel,
       phone: phone.trim(),
       answers: { most: m, least: l },
+      ...(orgId ? { orgId } : {}),
     });
   };
 

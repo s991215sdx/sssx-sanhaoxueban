@@ -545,3 +545,31 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - v56 修复：TutorAssignButton 去掉 useEffect 初始化（改打开时初始化，避免父级重渲染重置勾选）；student_tutor 查询统一走 listStudentTutorLinks 容错（迁移后台非阻塞执行，表未就绪时列表退化为主管伴学师，页面不再挂）
 - 冒烟 v57 全过；BUILD_TAG v57-2026-09-20；版本 52ab37b
 - 发布顺序：迁移 0013→0020 → v40 → v41 → 最新版
+
+## v285（2026-11-14）：家长扫码测评进后台 + 跨机构归属
+
+**需求**：家长在「11」机构（org 619663）扫码测的家长 DISC，要转到「上上升学 三好学伴」（org 1）后台，机构管理员和平台超管都能看报告。
+
+**后端 api/profileRouter.ts**
+- `standaloneDiscs`：平台超管看全部（带归属机构品牌名）；机构账号看「本机构已认领 + 未归属公共池」，别家已认领的不可见；手机号能对上本机构学员的标 `mine`
+- `claimStandaloneDiscs`：机构管理员认领公共池记录（写 `answers.orgId`），只能认领未归属的
+- `transferStandaloneDiscs`：平台超管跨机构改归属（`adminQuery` + `isPlatformAdmin` 校验）
+- `standaloneDiscDetail`：点开看完整报告，权限同列表
+- `submitStandaloneDisc`：支持 `orgId`，机构码 `/pd?o=<orgId>` 扫进来直接归属
+- 列表/详情补 `createdAtText`（`date_format` 取库内时间）——前端 `new Date` 渲染会整体偏 8 小时（全站既有口径，未改动全局）
+
+**前端**
+- `ParentDiscPanel`：二维码带 `?o=`；新增「看报告」抽屉（复用 `StandaloneParentDiscReport`）、归属标签、认领、平台超管「转到机构」
+- `Tutor.tsx` / `Layout.tsx`：家长扫码入口对平台超管开放（原来 `orgId != null` 才显示）
+
+**数据操作**
+- 6 条 `discparent`（id 36721239–36721244，11-14 15:48–15:57）写 `answers.orgId=1`、`movedFromOrg=619663`、`movedAt`
+- 改动前备份：`/workspace/家长DISC-20261114/backup-before-org.json`
+
+**部署与验证**
+- `BUILD_TAG v285-2026-11-14`；内部版 sanhao.sssx.club 已上线（dist 备份 `dist.bak.v284-*.tar.gz`、`dist/public.bak_v284`）
+- 已验证：平台超管看 6 条（标「归 上上升学 三好学伴」）、机构管理员周勇看 6 条（标「本机构」）、11 机构 0 条（隔离生效）、「看报告」抽屉完整渲染、780 条后端测试全过
+
+**遗留**
+- `TalentCenter.tsx` 仍是旧四岗（`mgmt`），与 contracts 六岗（`pot`）不一致，`tsc -b` 报 4 条既存错误，本次未处理
+- 渠道版 3hao.vip 未同步（本次只动内部版）
