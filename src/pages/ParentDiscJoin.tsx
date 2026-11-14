@@ -10,12 +10,15 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
-import { DISC_PARENT_V2_GROUPS, type DiscWordGroup } from "@contracts/assessments";
+import { DISC_PARENT_V2_GROUPS, type DiscResult, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { DiscV2GroupsUI, pickDiscV2 } from "@/components/companion/DiscV2Quiz";
-import { Users } from "lucide-react";
+import StandaloneParentDiscReport from "@/components/reports/StandaloneParentDiscReport";
+import { FileText, Users } from "lucide-react";
 
 const DRAFT = "parentdisc-qr";
+/** 查看钥匙：测完后存本机，家长随时点「查看我的报告」回看，无需登录。 */
+const VIEWER_KEY = "sanhao.parentdisc.viewer";
 const LABELS = ["爸爸", "妈妈", "爷爷", "奶奶", "其他家人"] as const;
 const RESPONDENT_OF: Record<string, "dad" | "mom" | "other"> = {
   爸爸: "dad",
@@ -52,11 +55,41 @@ export default function ParentDiscJoinPage() {
   };
 
   const submit = trpc.assessment.submitStandaloneDisc.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       clearQuizDraft(undefined, DRAFT);
       void utils.assessment.standaloneDiscs.invalidate();
+      /* 存下查看钥匙：本机随时回看；融合到孩子名下后这份数据依然有效 */
+      if (data?.id && data?.viewKey) {
+        try {
+          window.localStorage.setItem(VIEWER_KEY, JSON.stringify({ id: data.id, viewKey: data.viewKey }));
+        } catch {
+          /* 隐私模式等写不进就算，报告页本身仍展示完整结果 */
+        }
+      }
     },
   });
+
+  /* ------- 「查看我的报告」回看 ------- */
+  const [review, setReview] = useState<{ id: number; viewKey: string } | null>(null);
+  const [reviewHint, setReviewHint] = useState<string | null>(null);
+  const reviewQuery = trpc.assessment.standaloneDiscReport.useQuery(
+    { id: review?.id ?? 0, viewKey: review?.viewKey ?? "" },
+    { enabled: !!review },
+  );
+  const openViewer = () => {
+    setReviewHint(null);
+    try {
+      const raw = window.localStorage.getItem(VIEWER_KEY);
+      const saved = raw ? (JSON.parse(raw) as { id?: unknown; viewKey?: unknown }) : null;
+      if (saved && typeof saved.id === "number" && typeof saved.viewKey === "string") {
+        setReview({ id: saved.id, viewKey: saved.viewKey });
+      } else {
+        setReviewHint("这台手机上还没有测评记录，先完成一次测评即可随时回看。");
+      }
+    } catch {
+      setReviewHint("这台手机上还没有测评记录，先完成一次测评即可随时回看。");
+    }
+  };
 
   const groups: DiscWordGroup[] = paper.data?.groups ?? DISC_PARENT_V2_GROUPS;
   const total = groups.length;
@@ -115,21 +148,81 @@ export default function ParentDiscJoinPage() {
     </div>
   );
 
-  /* ------- 结果卡 ------- */
-  if (submit.isSuccess && submit.data?.kind === "discparent") {
-    const result = submit.data.result as { primary?: string };
+  /* ------- 回看模式：凭查看钥匙取回已测报告 ------- */
+  if (review) {
+    if (reviewQuery.isLoading) {
+      return shell(
+        <div className="paper-card flex justify-center py-14">
+          <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
+        </div>,
+      );
+    }
+    if (reviewQuery.isError || !reviewQuery.data) {
+      return shell(
+        <div className="paper-card p-6 text-center">
+          <p className="text-[14.5px] text-olive">没有找到这台手机上的测评记录，可能已过期或被清除。</p>
+          <button
+            onClick={() => {
+              setReview(null);
+              try {
+                window.localStorage.removeItem(VIEWER_KEY);
+              } catch {
+                /* ignore */
+              }
+            }}
+            className="mt-4 rounded-xl bg-brand px-6 py-2.5 text-[14px] font-semibold text-cream transition-colors hover:bg-lime"
+          >
+            返回
+          </button>
+        </div>,
+      );
+    }
+    const rd = reviewQuery.data;
     return shell(
-      <div className="paper-card p-6 text-center">
-        <Users className="mx-auto text-lime" size={30} />
-        <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">家长 DISC 行为风格 · 测评完成</p>
-        <div className="mt-2 text-3xl font-bold tracking-wide text-olive">
-          {finalLabel}的 DISC：{result?.primary ?? "-"} 型
+      <div className="space-y-4">
+        <div className="paper-card p-4 text-center">
+          <FileText className="mx-auto text-lime" size={26} />
+          <p className="mono mt-2 text-[11px] tracking-wider text-olive-mute">家长 DISC 行为风格 · 我的报告</p>
+          <p className="mt-1 text-[12.5px] text-olive-mute">
+            测于 {rd.createdAt ? new Date(rd.createdAt).toLocaleString("zh-CN") : "-"}
+          </p>
         </div>
-        <p className="mx-auto mt-4 max-w-md text-[14px] leading-relaxed text-olive-soft">
-          结果已保存。等孩子的档案建立后，{finalLabel}的结果会由老师关联到孩子名下，
-          并入家长报告，与孩子的校园 DISC 做亲子对照分析。
-        </p>
-        <div className="mt-6 grid gap-2 sm:grid-cols-2">
+        <StandaloneParentDiscReport label={rd.label} result={rd.result as unknown as DiscResult} />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            onClick={() => {
+              submit.reset();
+              resetAll();
+              setReview(null);
+            }}
+            className="rounded-xl border border-border bg-cream-card py-3 text-[15px] font-semibold text-olive transition-colors hover:border-[#E3B53A]/60"
+          >
+            再测一位家长
+          </button>
+          <Link
+            to="/login"
+            className="rounded-xl bg-brand py-3 text-center text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+          >
+            完成，返回首页
+          </Link>
+        </div>
+      </div>,
+    );
+  }
+
+  /* ------- 结果卡：测完立即展示完整 DISC 报告 ------- */
+  if (submit.isSuccess && submit.data?.kind === "discparent") {
+    return shell(
+      <div className="space-y-4">
+        <div className="paper-card p-6 text-center">
+          <Users className="mx-auto text-lime" size={30} />
+          <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">家长 DISC 行为风格 · 测评完成</p>
+          <p className="mx-auto mt-3 max-w-md text-[13.5px] leading-relaxed text-olive-soft">
+            下面是{finalLabel}的完整测评报告。这份报告已保存在这台手机上，之后打开本页点「查看我的报告」即可随时回看。
+          </p>
+        </div>
+        <StandaloneParentDiscReport label={finalLabel} result={submit.data.result as DiscResult} />
+        <div className="grid gap-2 sm:grid-cols-2">
           <button
             onClick={() => {
               submit.reset();
@@ -141,7 +234,7 @@ export default function ParentDiscJoinPage() {
           </button>
           <Link
             to="/login"
-            className="rounded-xl bg-brand py-3 text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
+            className="rounded-xl bg-brand py-3 text-center text-[15px] font-semibold text-cream transition-colors hover:bg-lime"
           >
             完成，返回首页
           </Link>
@@ -176,6 +269,16 @@ export default function ParentDiscJoinPage() {
               {l}
             </button>
           ))}
+        </div>
+        <div className="mt-5 border-t border-border pt-4">
+          <button
+            onClick={openViewer}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-lime/50 bg-lime-pale/50 px-4 py-2 text-[13.5px] font-medium text-olive transition-colors hover:border-lime"
+          >
+            <FileText size={15} />
+            查看我的报告（在这台手机测过就能看）
+          </button>
+          {reviewHint && <p className="mt-2 text-[12.5px] text-terra">{reviewHint}</p>}
         </div>
       </div>,
     );

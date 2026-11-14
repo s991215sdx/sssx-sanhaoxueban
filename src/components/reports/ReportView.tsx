@@ -1308,7 +1308,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
 }
 
 /** 家长管教风格 → 与不同主型孩子的常见摩擦点与建议（简版现场生成）。 */
-const PARENT_DISC_STYLE: Record<"D" | "I" | "S" | "C", { style: string; risk: Record<"D" | "I" | "S" | "C", string>; tip: string }> = {
+export const PARENT_DISC_STYLE: Record<"D" | "I" | "S" | "C", { style: string; risk: Record<"D" | "I" | "S" | "C", string>; tip: string }> = {
   D: {
     style: "指令多、节奏快、重结果",
     risk: {
@@ -1715,7 +1715,7 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
  * 每行 = +端标签 ｜ 左数值列 ｜ 中心条（从 0% 向对应侧伸展）｜ 右数值列 ｜ -端标签。
  * 值跟轴走：正值 +N%（含 0%）标在左轴侧、负值 -N% 标在右轴侧。
  */
-function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
+export function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
   const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
   return (
     <div className="mt-4">
@@ -1764,7 +1764,7 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
 }
 
 /** 上下反弹区说明卡（学生/家长详版共用）：仅当任一因子进入反弹区（|倾向度|≥80%）时才显示。 */
-function DiscReboundExplain({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
+export function DiscReboundExplain({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
   const inRebound = (["D", "I", "S", "C"] as const).some((k) => Math.abs(tendency[k]) >= DISC_REBOUND_PCT);
   if (!inRebound) return null;
   return (
