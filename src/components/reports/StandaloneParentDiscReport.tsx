@@ -31,8 +31,9 @@ export default function StandaloneParentDiscReport({ label, result }: { label: s
       </p>
       {/* 行为特征轴（与学生详版同一份口径） */}
       <DiscBipolarAxis tendency={tendency} />
-      {/* 双极倾向度图（家长版） */}
-      <div className="mt-4 -mx-5">
+      {/* 双极倾向度图（家长版）。v286：去掉原来的 -mx-5 出血——放进读本/PDF 后
+          负边距会把左侧刻度挤出卡片，纸上只剩「0%」。宁可窄 20px，也要刻度完整。 */}
+      <div className="mt-4">
         <DiscTendencyChart dims={result.dims} version={result.version} title={`${label} 的行为之镜 · DISC 四因子倾向度（家长版）`} who={label} />
       </div>
       <DiscReboundExplain tendency={tendency} />

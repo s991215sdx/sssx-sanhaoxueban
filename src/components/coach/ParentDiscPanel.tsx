@@ -14,10 +14,11 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Copy, FileText, QrCode, UserCheck, Users, X } from "lucide-react";
+import { Copy, Download, FileText, QrCode, UserCheck, Users, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import StandaloneParentDiscReport from "@/components/reports/StandaloneParentDiscReport";
+import ParentDiscReader from "@/components/reports/ParentDiscReader";
+import { downloadParentDiscPdf } from "@/lib/reportPdf";
 import type { DiscResult } from "@contracts/assessments";
 
 const RESPONDENT_LABEL: Record<string, string> = { dad: "爸爸", mom: "妈妈", other: "其他" };
@@ -68,6 +69,17 @@ export default function ParentDiscPanel() {
     { id: viewing ?? 0 },
     { enabled: viewing != null },
   );
+  /** v286：导出 PDF（服务端渲染 /pd-report，失败自动退到打印页） */
+  const [exporting, setExporting] = useState(false);
+  const exportPdf = async () => {
+    if (viewing == null || !detail.data) return;
+    setExporting(true);
+    try {
+      await downloadParentDiscPdf({ id: viewing, label: detail.data.label });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const copy = async () => {
     try {
@@ -278,17 +290,17 @@ export default function ParentDiscPanel() {
         )}
       </div>
 
-      {/* 报告抽屉：不绑定也能看完整报告 */}
+      {/* 报告抽屉：不绑定也能看完整报告；v286 起上段 DISC、下段沟通建议，一本到底 */}
       {viewing != null && (
         <div className="fixed inset-0 z-50 flex justify-end bg-[#1E3530]/45" onClick={() => setViewing(null)}>
           <div
-            className="h-full w-full max-w-2xl overflow-y-auto bg-cream p-4 sm:p-6"
+            className="h-full w-full max-w-3xl overflow-y-auto bg-cream p-4 sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-[17px] font-bold text-olive">
-                  家长 DISC 报告{detail.data ? ` · ${detail.data.label}` : ""}
+                  家长 DISC · 家庭沟通读本{detail.data ? ` · ${detail.data.label}` : ""}
                 </h3>
                 <p className="mt-0.5 text-[12.5px] text-olive-mute">
                   {detail.data
@@ -298,13 +310,23 @@ export default function ParentDiscPanel() {
                     : "读取中…"}
                 </p>
               </div>
-              <button
-                onClick={() => setViewing(null)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-olive-mute hover:text-olive"
-                aria-label="关闭"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => void exportPdf()}
+                  disabled={!detail.data || exporting}
+                  className="flex items-center gap-1.5 rounded-lg border border-brand/40 bg-brand-pale px-2.5 py-1.5 text-[12.5px] font-semibold text-brand transition-colors hover:border-brand disabled:opacity-40"
+                >
+                  <Download size={13} />
+                  {exporting ? "生成中…" : "导出 PDF"}
+                </button>
+                <button
+                  onClick={() => setViewing(null)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-olive-mute hover:text-olive"
+                  aria-label="关闭"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
             {detail.isLoading ? (
               <div className="flex justify-center py-16">
@@ -315,7 +337,12 @@ export default function ParentDiscPanel() {
                 {detail.error instanceof Error ? detail.error.message : "报告读取失败"}
               </p>
             ) : detail.data ? (
-              <StandaloneParentDiscReport label={detail.data.label} result={detail.data.result as DiscResult} />
+              <ParentDiscReader
+                label={detail.data.label}
+                result={detail.data.result as DiscResult}
+                onExport={() => void exportPdf()}
+                exporting={exporting}
+              />
             ) : null}
           </div>
         </div>

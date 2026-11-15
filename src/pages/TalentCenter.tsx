@@ -14,16 +14,21 @@ import QRCode from "qrcode";
 import { ArrowRight, ClipboardCheck, Clock, Copy, Link2, QrCode, Target, Users } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { DIM_LABEL, WEIGHT_LABEL, type JobKey, type TalentDim } from "@contracts/talent/score";
+import { DIM_LABEL, JOB_SHORT as JOB_SHORT_MAP, JOB_KEYS, WEIGHT_LABEL, type JobKey, type TalentDim } from "@contracts/talent/score";
 
+/* v286 顺手修：v270 把岗位从四值扩到五岗 + 潜质通道后，这里的本地标签表还留着 mgmt，
+   Record<JobKey,string> 因此少了 mkt/fin、多了 mgmt，tsc 一直报 4 条既存错误。
+   改成直接用契约里的短名，本地不再维护第二份。 */
 const POS_TAG: Record<JobKey, string> = {
+  mkt: "市场推广 / 地推投放",
   sales: "招生顾问 / 课程咨询",
+  admin: "人事行政 / 前台教务",
+  fin: "财务教务 / 收费对账",
   service: "班主任 / 学管师",
-  admin: "教务行政 / 前台",
-  mgmt: "校区负责人 / 主管",
+  pot: "校区负责人 / 主管（潜质）",
 };
 
-const JOB_SHORT: Record<JobKey, string> = { sales: "销售", service: "教学", admin: "行政", mgmt: "管理" };
+const JOB_SHORT = JOB_SHORT_MAP;
 
 function fmtDate(v: string | Date) {
   const d = typeof v === "string" ? new Date(v) : v;
@@ -208,7 +213,7 @@ export default function TalentCenter() {
               <Users size={12} /> 评估名单（共 {list.data?.total ?? 0} 份）
             </div>
             <div className="ml-auto flex flex-wrap gap-1.5">
-              {(["all", "sales", "service", "admin", "mgmt"] as const).map((k) => (
+              {(["all", ...JOB_KEYS] as const).map((k) => (
                 <button
                   key={k}
                   type="button"

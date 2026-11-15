@@ -13,7 +13,8 @@ import { trpc } from "@/providers/trpc";
 import { DISC_PARENT_V2_GROUPS, type DiscResult, type DiscWordGroup } from "@contracts/assessments";
 import { clearQuizDraft, useDraftResumed, useDraftState } from "@/lib/quizDraft";
 import { DiscV2GroupsUI, pickDiscV2 } from "@/components/companion/DiscV2Quiz";
-import StandaloneParentDiscReport from "@/components/reports/StandaloneParentDiscReport";
+import ParentDiscReader from "@/components/reports/ParentDiscReader";
+import { downloadParentDiscPdf } from "@/lib/reportPdf";
 import { FileText, Users } from "lucide-react";
 
 const DRAFT = "parentdisc-qr";
@@ -105,6 +106,18 @@ export default function ParentDiscJoinPage() {
   };
   const [submitHint, setSubmitHint] = useState<string | null>(null);
 
+  /* v286：导出 PDF —— 服务端按打印页 /pd-report 出文件，凭本机查看钥匙，不用登录 */
+  const [exporting, setExporting] = useState(false);
+  const exportPdf = async (id: number, viewKey?: string | null, who?: string) => {
+    if (!id) return;
+    setExporting(true);
+    try {
+      await downloadParentDiscPdf({ id, viewKey, label: who ?? finalLabel });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const finish = (m: number[], l: number[]) => {
     const bad = firstIncomplete(m, l);
     if (bad >= 0) {
@@ -185,14 +198,17 @@ export default function ParentDiscJoinPage() {
     const rd = reviewQuery.data;
     return shell(
       <div className="space-y-4">
-        <div className="paper-card p-4 text-center">
-          <FileText className="mx-auto text-lime" size={26} />
-          <p className="mono mt-2 text-[11px] tracking-wider text-olive-mute">家长 DISC 行为风格 · 我的报告</p>
-          <p className="mt-1 text-[12.5px] text-olive-mute">
-            测于 {rd.createdAt ? new Date(rd.createdAt).toLocaleString("zh-CN") : "-"}
-          </p>
+        <div className="flex items-center justify-center gap-2 text-[12.5px] text-olive-mute">
+          <FileText size={14} className="text-lime" />
+          <span>这本读本存在这台手机上，随时可以翻回来</span>
         </div>
-        <StandaloneParentDiscReport label={rd.label} result={rd.result as unknown as DiscResult} />
+        <ParentDiscReader
+          label={rd.label}
+          result={rd.result as unknown as DiscResult}
+          onExport={() => void exportPdf(rd.id, review?.viewKey, rd.label)}
+          exporting={exporting}
+          metaText={rd.createdAtText ? `测于 ${rd.createdAtText}` : undefined}
+        />
         <div className="grid gap-2 sm:grid-cols-2">
           <button
             onClick={() => {
@@ -215,18 +231,24 @@ export default function ParentDiscJoinPage() {
     );
   }
 
-  /* ------- 结果卡：测完立即展示完整 DISC 报告 ------- */
+  /* ------- 结果页：测完直接给整本（上半 DISC、下半沟通建议） ------- */
   if (submit.isSuccess && submit.data?.kind === "discparent") {
     return shell(
       <div className="space-y-4">
-        <div className="paper-card p-6 text-center">
-          <Users className="mx-auto text-lime" size={30} />
-          <p className="mono mt-3 text-[11px] tracking-wider text-olive-mute">家长 DISC 行为风格 · 测评完成</p>
-          <p className="mx-auto mt-3 max-w-md text-[13.5px] leading-relaxed text-olive-soft">
-            下面是{finalLabel}的完整测评报告。这份报告已保存在这台手机上，之后打开本页点「查看我的报告」即可随时回看。
+        <div className="paper-card p-5 text-center">
+          <Users className="mx-auto text-lime" size={26} />
+          <p className="mono mt-2 text-[11px] tracking-wider text-olive-mute">家长 DISC · 测评完成</p>
+          <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-olive-soft">
+            下面是{finalLabel}的完整读本：上半本是你的 DISC 形状，往下翻是今晚就能用的沟通建议。
+            这本已经存在这台手机上，之后点「查看我的报告」随时翻回来，也可以导成 PDF 保存。
           </p>
         </div>
-        <StandaloneParentDiscReport label={finalLabel} result={submit.data.result as DiscResult} />
+        <ParentDiscReader
+          label={finalLabel}
+          result={submit.data.result as DiscResult}
+          onExport={() => void exportPdf(submit.data.id, submit.data.viewKey)}
+          exporting={exporting}
+        />
         <div className="grid gap-2 sm:grid-cols-2">
           <button
             onClick={() => {

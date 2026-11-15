@@ -1554,7 +1554,15 @@ export const assessmentRouter = createRouter({
     .query(async ({ input }) => {
       const db = getDb();
       const [row] = await db
-        .select({ id: assessmentResults.id, kind: assessmentResults.kind, answers: assessmentResults.answers, result: assessmentResults.result, createdAt: assessmentResults.createdAt })
+        .select({
+          id: assessmentResults.id,
+          kind: assessmentResults.kind,
+          answers: assessmentResults.answers,
+          result: assessmentResults.result,
+          createdAt: assessmentResults.createdAt,
+          /* v286：同上，取库里本地时间文本——打印页与回看页都要显示「测于几点」 */
+          createdAtText: sql<string>`date_format(${assessmentResults.createdAt}, '%Y-%m-%d %H:%i')`,
+        })
         .from(assessmentResults)
         .where(eq(assessmentResults.id, input.id))
         .limit(1);
@@ -1567,6 +1575,7 @@ export const assessmentRouter = createRouter({
         respondent: a.respondent ?? "other",
         result: row.result as unknown as DiscResult,
         createdAt: row.createdAt,
+        createdAtText: row.createdAtText,
       };
     }),
 
