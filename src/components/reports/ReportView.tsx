@@ -1718,7 +1718,8 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
 export function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
   const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
   return (
-    <div className="mt-4">
+    /* 四行是一句话：拆到两页就只剩半句（D/I 在上一页、S/C 在下一页）。整块不许拆。 */
+    <div className="mt-4 print:break-inside-avoid">
       <div className="text-[12.5px] font-bold text-olive">行为特征轴 · 双极倾向度</div>
       <div className="mt-2 space-y-2.5">
         {keys.map((k) => {
