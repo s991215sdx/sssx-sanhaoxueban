@@ -97,8 +97,16 @@ export default function ParentDiscPrintPage() {
   return (
     <div className="bg-white">
       {/* 纸面尺寸与页边距：浏览器打印与服务端 PDF 走同一份，两边版式对得上 */}
-      <style>{`@page { size: A4; margin: 0; }
-        @media print { .no-print { display: none !important; } body { background: #fff !important; } }`}</style>
+      {/* v296：页边距改由 @page 给。
+          原来 margin:0 + 容器 padding，只有第一页顶部和最后一页底部吃得到 padding，
+          中间页的内容直接顶到纸边（行为特征轴那个标题就贴在第二页的裁切线上了）。
+          改成 @page 给边距，容器在打印时把 padding 交出去，每一页四边才有一样的白。 */}
+      <style>{`@page { size: A4; margin: 16mm 15mm 18mm; }
+        @media print {
+          .no-print { display: none !important; }
+          body { background: #fff !important; }
+          #pd-print-root { max-width: none !important; padding: 0 !important; }
+        }`}</style>
 
       <div className="no-print sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-cream/95 px-4 py-2.5 backdrop-blur">
         <span className="text-[12.5px] text-olive-soft">
