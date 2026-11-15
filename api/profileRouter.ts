@@ -1743,6 +1743,50 @@ export const assessmentRouter = createRouter({
     }),
 
   /**
+   * v289 双人对照读本：爸爸 × 妈妈。
+   * 两条记录都过一遍与 standaloneDiscDetail 相同的可见范围校验——任一条不属于本机构就整体拒绝，
+   * 免得拿「对照」当跳板看别人家的报告。两条都必须是扫码直测的家长 DISC。
+   */
+  standaloneDiscPair: tutorQuery
+    .input(z.object({ a: z.number().int().positive(), b: z.number().int().positive() }))
+    .query(async ({ input, ctx }) => {
+      if (input.a === input.b) throw new TRPCError({ code: "BAD_REQUEST", message: "需要对两条不同的记录" });
+      const db = getDb();
+      const rows = await db
+        .select({
+          id: assessmentResults.id,
+          kind: assessmentResults.kind,
+          answers: assessmentResults.answers,
+          result: assessmentResults.result,
+          createdAtText: sql<string>`date_format(${assessmentResults.createdAt}, '%Y-%m-%d %H:%i')`,
+        })
+        .from(assessmentResults)
+        .where(inArray(assessmentResults.id, [input.a, input.b]));
+
+      const pick = (id: number) => {
+        const row = rows.find((r) => Number(r.id) === id);
+        if (!row || row.kind !== "discparent") {
+          throw new TRPCError({ code: "NOT_FOUND", message: "其中一条测评不存在或不是家长 DISC" });
+        }
+        const a = row.answers as { label?: string; orgId?: unknown } | null;
+        const raw = Number(a?.orgId);
+        const orgId = Number.isFinite(raw) && raw > 0 ? raw : null;
+        if (!isPlatformAdmin(ctx.user) && orgId != null && orgId !== (ctx.user.orgId ?? null)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "其中一条记录属于其他机构" });
+        }
+        return {
+          id: row.id,
+          label: a?.label || "家长",
+          orgId,
+          result: row.result as unknown as DiscResult,
+          createdAtText: row.createdAtText,
+        };
+      };
+
+      return { a: pick(input.a), b: pick(input.b) };
+    }),
+
+  /**
    * 家庭融合（伴学师/管理员）：把扫码直测池里的一条家长 DISC 绑到孩子名下。
    * 绑定后该记录与孩子账号里直接填的家长 DISC 完全同权——家长报告、亲子对照自动出现。
    * 伴学师只能绑自己名下学员；管理员限本机构学员。重复绑定幂等（已在池里才允许绑）。

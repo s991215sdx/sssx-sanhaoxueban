@@ -18,7 +18,8 @@ import { Copy, FileText, QrCode, UserCheck, Users, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import ParentDiscReader from "@/components/reports/ParentDiscReader";
-import { downloadParentDiscPdf } from "@/lib/reportPdf";
+import ParentDiscCompare from "@/components/reports/ParentDiscCompare";
+import { downloadParentDiscPairPdf, downloadParentDiscPdf } from "@/lib/reportPdf";
 import type { DiscResult } from "@contracts/assessments";
 
 const RESPONDENT_LABEL: Record<string, string> = { dad: "爸爸", mom: "妈妈", other: "其他" };
@@ -69,13 +70,32 @@ export default function ParentDiscPanel() {
     { id: viewing ?? 0 },
     { enabled: viewing != null },
   );
-  /** v286：导出 PDF（服务端渲染 /pd-report，失败自动退到打印页） */
+  /** v289：与另一位家长对照（同一抽屉内切换，不另开页面） */
+  const [compareWith, setCompareWith] = useState<number | null>(null);
+  const pair = trpc.assessment.standaloneDiscPair.useQuery(
+    { a: viewing ?? 0, b: compareWith ?? 0 },
+    { enabled: viewing != null && compareWith != null },
+  );
+  /* 换一条记录就退出对照：否则会拿 A 的孩子和 B 的孩子比 */
+  useEffect(() => {
+    setCompareWith(null);
+  }, [viewing]);
+  /** v286：导出 PDF（服务端渲染 /pd-report，失败自动退到打印页）；v289 对照模式走双人版 */
   const [exporting, setExporting] = useState(false);
   const exportPdf = async () => {
-    if (viewing == null || !detail.data) return;
+    if (viewing == null) return;
     setExporting(true);
     try {
-      await downloadParentDiscPdf({ id: viewing, label: detail.data.label });
+      if (compareWith != null) {
+        await downloadParentDiscPairPdf({
+          a: viewing,
+          b: compareWith,
+          labelA: detail.data?.label,
+          labelB: pair.data?.b.label,
+        });
+      } else if (detail.data) {
+        await downloadParentDiscPdf({ id: viewing, label: detail.data.label });
+      }
     } finally {
       setExporting(false);
     }
@@ -321,6 +341,41 @@ export default function ParentDiscPanel() {
                 </button>
               </div>
             </div>
+            {/* v289：与另一位家长对照——同一抽屉内切换，不新开页面，不丢上下文 */}
+            {detail.data && (
+              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-white px-3 py-2 print:hidden">
+                <Users size={13} className="text-olive-mute" />
+                <span className="shrink-0 text-[12px] text-olive-mute">对照另一位家长</span>
+                <select
+                  value={compareWith ?? 0}
+                  onChange={(e) => setCompareWith(Number(e.target.value) || null)}
+                  className="w-[190px] shrink-0 rounded-lg border border-border bg-cream-card px-2 py-1 text-[12.5px] text-olive"
+                >
+                  <option value={0}>选一位…</option>
+                  {rows
+                    .filter((r) => r.id !== viewing)
+                    .map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.label} · {r.createdAtText}
+                      </option>
+                    ))}
+                </select>
+                {compareWith != null && (
+                  <button
+                    onClick={() => setCompareWith(null)}
+                    className="shrink-0 rounded-lg border border-border px-2 py-1 text-[12px] text-olive-soft hover:border-olive/40 hover:text-olive"
+                  >
+                    退出对照
+                  </button>
+                )}
+                {compareWith != null && pair.isLoading && <span className="text-[12px] text-olive-mute">读取中…</span>}
+                {compareWith != null && pair.isError && (
+                  <span className="text-[12px] text-terra">
+                    {pair.error instanceof Error ? pair.error.message : "这两条读不到"}
+                  </span>
+                )}
+              </div>
+            )}
             {detail.isLoading ? (
               <div className="flex justify-center py-16">
                 <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-lime border-t-transparent" />
@@ -329,6 +384,14 @@ export default function ParentDiscPanel() {
               <p className="paper-card p-6 text-center text-[13.5px] text-terra">
                 {detail.error instanceof Error ? detail.error.message : "报告读取失败"}
               </p>
+            ) : compareWith != null && pair.data ? (
+              <ParentDiscCompare
+                a={{ label: pair.data.a.label, result: pair.data.a.result as DiscResult }}
+                b={{ label: pair.data.b.label, result: pair.data.b.result as DiscResult }}
+                onExport={() => void exportPdf()}
+                exporting={exporting}
+                metaText={`${pair.data.a.label} 测于 ${pair.data.a.createdAtText} · ${pair.data.b.label} 测于 ${pair.data.b.createdAtText}`}
+              />
             ) : detail.data ? (
               <ParentDiscReader
                 label={detail.data.label}

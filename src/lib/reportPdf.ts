@@ -53,3 +53,28 @@ export async function downloadParentDiscPdf(opts: {
   if (!ok) window.open(path, "_blank", "noopener");
   return ok;
 }
+
+/**
+ * v289：双人对照读本的打印页地址。
+ * 对照要两条记录，家长手里只有自己那一条的钥匙，所以这一本**只走登录态**（后台老师用）。
+ */
+export function parentDiscPairPrintPath(a: number, b: number): string {
+  return `/pd-report?a=${a}&b=${b}`;
+}
+
+/** v289：双人对照读本导出 PDF，命名带上两个人的称呼。 */
+export async function downloadParentDiscPairPdf(opts: {
+  a: number;
+  b: number;
+  labelA?: string | null;
+  labelB?: string | null;
+  day?: string;
+}): Promise<boolean> {
+  const path = parentDiscPairPrintPath(opts.a, opts.b);
+  const clean = (s?: string | null) => (s ?? "家长").replace(/[\\/:*?"<>|\s]/g, "").slice(0, 6) || "家长";
+  const day = opts.day || new Date().toISOString().slice(0, 10);
+  const name = `家长DISC-双人对照-${clean(opts.labelA)}×${clean(opts.labelB)}-${day}.pdf`;
+  const ok = await downloadReportPdf(path, name);
+  if (!ok) window.open(path, "_blank", "noopener");
+  return ok;
+}
