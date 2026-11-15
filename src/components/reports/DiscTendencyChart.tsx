@@ -53,7 +53,9 @@ export default function DiscTendencyChart({
   const tendency = discTendencyFromDims(dims, version);
   const W = 460;
   const H = 268;
-  const PAD_X = 56;
+  /* v286：56 → 72。左侧刻度「+100%」在 460 宽的 viewBox 里会被裁掉前半，
+     屏幕上就只剩「0%」——家长版读本印成 PDF 后更明显。加宽左右留白即可。 */
+  const PAD_X = 72;
   const TOP = 44;
   const BOTTOM = 40;
   const plotH = H - TOP - BOTTOM;

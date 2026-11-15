@@ -137,7 +137,7 @@ export default function FamilyCommKit({
               {s.lead && <p className="mt-1.5 text-[13.5px] leading-relaxed text-olive-soft">{s.lead}</p>}
               <div className="mt-3 space-y-3">
                 {s.blocks.map((b, i) => (
-                  <Block key={i} b={b} />
+                  <KitBlockView key={i} b={b} />
                 ))}
               </div>
             </section>
@@ -352,7 +352,11 @@ function PassStart({ kind }: { kind: string }) {
 
 /* ------------------------------------------------------------------ */
 
-function Block({ b }: { b: KitBlock }) {
+/**
+ * 锦囊正文块渲染：四本读本与 v286 家长 DISC 融合读本共用。
+ * 导出成独立组件而不是复制一份——同一份数据必须只有一种排法。
+ */
+export function KitBlockView({ b }: { b: KitBlock }) {
   if (b.t === "lead") {
     return <p className="text-[15px] font-semibold leading-relaxed text-olive">{b.text}</p>;
   }

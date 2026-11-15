@@ -31,6 +31,8 @@ const TalentQuizPage = lazy(() => import("./pages/TalentQuiz"));
 const TalentReportPage = lazy(() => import("./pages/TalentReport"));
 const TalentJoin = lazy(() => import("./pages/TalentJoin"));
 const ParentDiscJoin = lazy(() => import("./pages/ParentDiscJoin"));
+/* v286 家长 DISC 融合读本的打印页：服务端出 PDF 与「自己按 Ctrl+P」都用这一页 */
+const ParentDiscPrint = lazy(() => import("./pages/ParentDiscPrint"));
 const RecycleBin = lazy(() => import("./pages/RecycleBin"));
 const ProfileStage = lazy(() => import("@/components/welcome/ProfileStage"));
 
@@ -158,6 +160,8 @@ export default function App() {
       <Route path="/t/:code" element={<Suspense fallback={<PageSpinner />}><TalentJoin /></Suspense>} />
       {/* v283 家长 DISC 扫码直测：固定二维码入口，免登录免码，结果先入公共池待融合 */}
       <Route path="/pd" element={<Suspense fallback={<PageSpinner />}><ParentDiscJoin /></Suspense>} />
+      {/* v286 家长 DISC 读本打印页：公开（家长凭查看钥匙）、后台老师凭登录态，两种都进得来 */}
+      <Route path="/pd-report" element={<Suspense fallback={<PageSpinner />}><ParentDiscPrint /></Suspense>} />
       {/* v158：一体通 SSO 免登只读视图：公开路由（ticket 兑换 10 分钟短会话，仅可读对应学员） */}
       <Route path="/sso/view/:studentId" element={<Suspense fallback={<PageSpinner />}><SsoStudentView /></Suspense>} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}

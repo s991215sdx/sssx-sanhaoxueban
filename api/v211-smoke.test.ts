@@ -23,7 +23,11 @@ describe("v211 报告 PDF 下载", () => {
   const router = read("api/router.ts");
 
   it("服务端端点：白名单 + Cookie 透传 + Playwright", () => {
-    if (!/PDF_PATH_WHITELIST = \["\/zhihui-report", "\/report-detail"\]/.test(api)) throw new Error("缺：路径白名单");
+    /* v286：白名单从两项扩到三项（加 /pd-report）。断言改成「按项包含」，不再钉死整串。 */
+    const wl = api.match(/PDF_PATH_WHITELIST = \[([^\]]*)\]/)?.[1] ?? "";
+    for (const p of ["/zhihui-report", "/report-detail", "/pd-report"]) {
+      if (!wl.includes(`"${p}"`)) throw new Error(`缺：路径白名单 ${p}`);
+    }
     if (!/addCookies/.test(api)) throw new Error("缺：Cookie 透传");
     if (!/page\.pdf\(\{ format: "A4"/.test(api)) throw new Error("缺：A4 PDF 渲染");
     if (!/req\("playwright-core"\)/.test(api)) throw new Error("缺：运行时加载");

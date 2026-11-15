@@ -573,3 +573,37 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 **遗留**
 - `TalentCenter.tsx` 仍是旧四岗（`mgmt`），与 contracts 六岗（`pot`）不一致，`tsc -b` 报 4 条既存错误，本次未处理
 - 渠道版 3hao.vip 未同步（本次只动内部版）
+
+## v286（2026-11-15）：家长 DISC 读本合订本（上段 DISC / 下段沟通建议）+ 导出 PDF
+
+**需求**：家长扫码测完，原来只给 DISC 报告（图 1），锦囊（图 2）另在别处。要求：① 后台报告抽屉改上下两段（先 DISC，往下是沟通建议）；② 加「导出 PDF」；③ 家长端 /pd 交卷后的结果页直接给这一本。
+
+**一套渲染，三处共用**（`src/components/reports/ParentDiscReader.tsx` 新增）
+- 封面（类型 + 四个维度条 + 这份给谁/怎么来的/怎么读）→ 段导航（01 / 02 两枚锚点）→
+  第一部分「你的 DISC 形状」= 原 `StandaloneParentDiscReport` 原样搬入 → 过渡块「为什么后面还有一半」→
+  第二部分「今晚这句话怎么说」= 锦囊引擎的「家长个人版」七节原话（目录 + 三栏入口 + 七节正文 + 下一步）
+- 内容全部来自既有引擎：`buildCommKit({ parents: [{ label, result }] })` 取 `key==="parent"` 那一本，
+  不另填问卷、不在渲染层补文案；锦囊块渲染器从 `FamilyCommKit` 导出为 `KitBlockView` 复用，全站只留一份实现
+- 段导航用 `scrollIntoView` + `scroll-mt-16`（不让 sticky 条盖住段标题）
+
+**接入点**
+- 后台抽屉 `ParentDiscPanel`：`max-w-3xl`，标题改「家长 DISC · 家庭沟通读本」，右上「导出 PDF」（生成中禁用）
+- `/pd` 结果页与「查看我的报告」回看页：都换成 `ParentDiscReader`；回看页用 `rd.createdAtText`（后端补了 `date_format`，不再前端算时区）
+
+**导出 PDF（真下载，不是只打印）**
+- 新增公开打印页 `/pd-report`：`?id=&k=<查看钥匙>` 家长免登录；`?id=` 后台老师走登录态（`standaloneDiscDetail` 同权限）
+- `api/reportPdf.ts`：白名单加 `/pd-report`；带 `k=` 时跳过 Cookie 校验；等 `#pd-print-root[data-ready="1"]`、错误块 404；
+  该页走 `preferCSSPageSize` + `@page A4 margin 0`，页边距由页面自己给（与浏览器 Ctrl+P 同一份版式）
+- 前端 `downloadParentDiscPdf()`：失败自动打开打印页兜底，不让人对着按钮干等
+
+**顺带修的两个既存问题**
+- `DiscTendencyChart`：`PAD_X 56 → 72`。左侧刻度「+100%」在 460 宽 viewBox 里被裁成「0%」（屏幕上就是这样，印成 PDF 更明显）
+- `StandaloneParentDiscReport`：去掉图表外层 `-mx-5` 出血，避免负边距把刻度推出卡片
+- `TalentCenter.tsx`：v270 扩到五岗后本地标签表还留着 `mgmt`，`tsc -b` 的 4 条既存错误——改用契约里的 `JOB_SHORT` + `JOB_KEYS`，现在 `pnpm check` 干净
+
+**纸面分页**（在 9 页 A4 上验过）
+- 不强行「第二部分另起一页」（会剩半页空白）；改为段头 `break-after-avoid`、目录卡 `break-inside-avoid`
+- 表格保留 `thead break-after:avoid` + 行级 `break-inside:avoid`，跨页有重复表头
+
+**冒烟**：`api/v286-parent-disc-book.test.ts` 9 项（内容层：只给家长作答就出家长个人版且学生那几本仍标未就绪；渲染层：三处共用同一 Reader；通道层：`/pd-report` 公开 + 端点认钥匙）；全量 853 项通过；`tsc -b` 无错误
+**版本**：`BUILD_TAG v286-2026-11-15`
