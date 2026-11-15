@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useAssessmentPass } from "@/components/coach/passRequest";
 import { buildCommKit, type KitBlock, type KitBook, type KitCoverVisual } from "@contracts/familyCommKit";
-import type { DiscResult } from "@contracts/assessments";
+import { discTendencyText, type DiscResult } from "@contracts/assessments";
 
 type ParentDisc = { label: string; result: DiscResult };
 
@@ -457,6 +457,37 @@ export function KitBlockView({ b }: { b: KitBlock }) {
     );
   }
   if (b.t === "dim-bars") {
+    /* v293：dual 走双极（值可为负，条从中线往两侧伸）——家长读本用这套，
+       与封面、行为特征轴、倾向度图同一口径；其余书仍用 0—100 单向条。 */
+    if (b.dual) {
+      return (
+        <div className="space-y-2">
+          {b.rows.map((r) => {
+            const span = Math.max(0.8, Math.abs(r.value) / 2);
+            return (
+              <div key={r.label} className="flex items-center gap-2.5">
+                <span className="w-24 shrink-0 text-[12.5px] text-olive">{r.label}</span>
+                <div className="relative h-2.5 flex-1 rounded-full bg-cream-deep">
+                  <div className="absolute left-1/2 top-[-2px] h-[calc(100%+4px)] w-px bg-brand-mute/50" />
+                  <div
+                    className="absolute top-0 h-full rounded-full"
+                    style={{
+                      left: r.value < 0 ? "50%" : `${50 - span}%`,
+                      width: `${span}%`,
+                      background: r.tag === "主导" ? "#0C7064" : r.tag === "副维" ? "#52A965" : "#C9D3C8",
+                    }}
+                  />
+                </div>
+                <span className="mono w-9 shrink-0 text-right text-[12px] text-olive">
+                  {discTendencyText(r.value)}
+                </span>
+                <span className="w-9 shrink-0 text-[11px] text-olive-mute">{r.tag ?? ""}</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
     const max = Math.max(...b.rows.map((r) => r.value), 100);
     return (
       <div className="space-y-2">

@@ -45,6 +45,6 @@ describe("V281 独立陪跑迁移与历史数据边界", () => {
     const router = readFileSync("api/router.ts", "utf8");
     expect(router).toContain('import { coachingRouter } from "./coachingRouter"');
     expect(router).toContain("coaching: coachingRouter,");
-    expect(router).toContain('const BUILD_TAG = "v292-2026-11-15"');
+    expect(router).toContain('const BUILD_TAG = "v293-2026-11-15"');
   });
 });

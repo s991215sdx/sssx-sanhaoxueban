@@ -15,7 +15,7 @@ import { useMemo } from "react";
 import { ArrowRight, Download } from "lucide-react";
 import { DISC_ANIMAL, DISC_REPORTS, getDiscCombo } from "@/data/reports";
 import { buildCommKit, type KitBook, type KitSection } from "@contracts/familyCommKit";
-import { discTendencyFromDims, type DiscResult } from "@contracts/assessments";
+import { discTendencyFromDims, discTendencyText, type DiscResult } from "@contracts/assessments";
 import StandaloneParentDiscReport from "@/components/reports/StandaloneParentDiscReport";
 import { KitBlockView } from "@/components/reports/FamilyCommKit";
 
@@ -49,15 +49,12 @@ export default function ParentDiscReader({
   const report = DISC_REPORTS[primary];
   const tendency = discTendencyFromDims(result.dims, result.version);
 
-  /* 绝对分口径：V2 每人每维最多 24 分，旧版 12 分；四维不合计为 100 */
-  const total = result.version === 2 ? 24 : 12;
-  const bars = useMemo(() => {
-    const rows = DIMS.map((d) => ({
-      label: `${d} ${DIM_NAME[d]}`,
-      value: Math.round((result.dims[d] / total) * 100),
-    })).sort((a, b) => b.value - a.value);
-    return rows.map((r, i) => ({ ...r, tag: i === 0 ? "主导" : i === 1 ? "副维" : "—" }));
-  }, [result.dims, total]);
+  /* v293：封面这里原来用「0—100 绝对分」（58 / 56 / 54 / 31），而翻过一页的图用的是
+     双极倾向度（+17% / +13% / +8% / −37%）——同一份作答两个数，家长对不上账。
+     现在全本只留倾向度一套：封面、正文依据、行为特征轴、图表全部是 ±%。 */
+  const bars = DIMS.map((d) => ({ label: `${d} ${DIM_NAME[d]}`, value: tendency[d] }))
+    .sort((a, b) => b.value - a.value)
+    .map((r, i) => ({ ...r, tag: i === 0 ? "主导" : i === 1 ? "副维" : "—" }));
 
   /* 后半本：只要家长自己这一份，不需要孩子的数据 */
   const book = useMemo<KitBook | null>(() => {
@@ -113,24 +110,41 @@ export default function ParentDiscReader({
         </div>
 
         <div className="mt-4 rounded-xl border border-border/70 bg-white px-3.5 py-3">
-          <p className="text-[11.5px] text-olive-mute">你的四个维度（0—100 绝对分，四维合计不固定为 100）</p>
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-[11.5px] text-olive-mute">你的四个维度（双极倾向度，四维合计恒为 0）</p>
+            <p className="shrink-0 text-[10px] text-olive-mute/80">← 偏强　｜　偏弱 →</p>
+          </div>
           <div className="mt-2 space-y-1.5">
-            {bars.map((r) => (
-              <div key={r.label} className="flex items-center gap-2.5">
-                <span className="w-16 shrink-0 text-[12.5px] text-olive">{r.label}</span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-cream-deep">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${Math.min(100, Math.max(3, r.value))}%`,
-                      background: r.tag === "主导" ? "#0C7064" : r.tag === "副维" ? "#52A965" : "#CFD8CD",
-                    }}
-                  />
+            {bars.map((r) => {
+              const neg = r.value < 0;
+              const span = Math.max(0.8, Math.abs(r.value) / 2);
+              return (
+                <div key={r.label} className="flex items-center gap-2.5">
+                  <span className="w-16 shrink-0 text-[12.5px] text-olive">{r.label}</span>
+                  <div className="relative h-2.5 flex-1 rounded-full bg-cream-deep">
+                    <div className="absolute left-1/2 top-[-2px] h-[calc(100%+4px)] w-px bg-brand-mute/50" />
+                    <div
+                      className="absolute top-0 h-full rounded-full"
+                      style={{
+                        left: neg ? "50%" : `${50 - span}%`,
+                        width: `${span}%`,
+                        background: neg
+                          ? "#CFD8CD"
+                          : r.tag === "主导"
+                            ? "#0C7064"
+                            : r.tag === "副维"
+                              ? "#52A965"
+                              : "#CFD8CD",
+                      }}
+                    />
+                  </div>
+                  <span className="mono w-9 shrink-0 text-right text-[12px] font-semibold text-olive">
+                    {discTendencyText(r.value)}
+                  </span>
+                  <span className="w-8 shrink-0 text-[10.5px] text-olive-mute">{r.tag === "—" ? "" : r.tag}</span>
                 </div>
-                <span className="mono w-7 shrink-0 text-right text-[12px] font-semibold text-olive">{r.value}</span>
-                <span className="w-8 shrink-0 text-[10.5px] text-olive-mute">{r.tag === "—" ? "" : r.tag}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -190,7 +204,8 @@ export default function ParentDiscReader({
       <section id="pd-part-1" className="scroll-mt-16 space-y-3">
         <PartHead no="第一部分" title="你的 DISC 形状" note={`${label} · ${primary} 主导 · ${tendency[primary] > 0 ? "+" : ""}${tendency[primary]}%`} />
         <p className="px-1 text-[13.5px] leading-relaxed text-olive-soft">
-          下面这张图是你这份作答的原始倾向：以 0% 为中线，往右是这一维偏强，往左是偏弱。
+          下面这张图是你这份作答的原始倾向：以 0% 为中线，<b className="text-olive">往上这一维偏强、往下偏弱</b>
+          （封面那四根横条是同一份数的另一种画法，往左偏强、往右偏弱）。
           四个数字加起来恒为 0，所以它说明的是<b className="text-olive">形状</b>，不是「总分高低」。
         </p>
         {/* 原有家长 DISC 报告原样搬过来：一道题、一张图、一句结论都不改 */}

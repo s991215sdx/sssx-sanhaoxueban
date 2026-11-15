@@ -449,17 +449,43 @@ export type DiscTendency = Record<DiscType, number>;
 /** 反弹区阈值（|倾向度| ≥ 80% 进入反弹区，经验性提示阈值，非临床切点）。 */
 export const DISC_REBOUND_PCT = 80;
 
-/** 由 dims（V2：0–24，中性 12；V1：0–12，中性 6）推导双极倾向度（-100..+100，保留整数）。
+/**
+ * v293：把净分换成四维整数倾向度，并保证**四维合计恰好为 0**。
+ *
+ * 逐维 Math.round 会破坏这个性质：本题示例的精确值是 +8.33 / −37.5 / +12.5 / +16.67，
+ * 各自取整后得到 +8 / −37 / +13 / +17，加起来是 +1——而报告每一页都写着「四因子合计恒为 0」，
+ * 家长拿笔一加就对不上。这是同一份作答在同一份报告里第二处「数字不统一」。
+ *
+ * 改法：先按精确值向下取整，再按小数部分从大到小把差出来的 1 分补回去（最大余数法）。
+ * 得到 +8 / −37 / +12 / +17，合计 0。误差仍在 ±0.5 内，但账是平的。
+ */
+function neatTendency(net: DiscDims, neutral: number): DiscTendency {
+  const keys: DiscType[] = ["D", "I", "S", "C"];
+  /* net 是**原始净分**（V2：-24..+24，每组 +1/−1 累加）。倾向度 = net ÷ 24 × 100。
+     V1（12 题）换算到 0–24 量尺后同式，故分母是 2×neutral。 */
+  const k = 100 / (2 * neutral);
+  const exact: DiscTendency = { D: 0, I: 0, S: 0, C: 0 };
+  const out: DiscTendency = { D: 0, I: 0, S: 0, C: 0 };
+  keys.forEach((key) => {
+    exact[key] = net[key] * k;
+    out[key] = Math.floor(exact[key]);
+  });
+  let rest = Math.round(keys.reduce((a, key) => a + exact[key], 0)) - keys.reduce((a, key) => a + out[key], 0);
+  const order = [...keys].sort((x, y) => exact[y] - out[y] - (exact[x] - out[x]));
+  for (let i = 0; rest !== 0; i = (i + 1) % keys.length) {
+    out[order[i]] += rest > 0 ? 1 : -1;
+    rest += rest > 0 ? -1 : 1;
+  }
+  return out;
+}
+
+/** 由 dims（V2：0–24，中性 12；V1：0–12，中性 6）推导双极倾向度（-100..+100，整数，合计恒为 0）。
  *  V2：(dims−12)/12×100；V1 换算到 0–24 后同式，即 (dims−6)/6×100。 */
 export function discTendencyFromDims(dims: DiscDims, version?: 2): DiscTendency {
   const neutral = version === 2 ? 12 : 6;
-  const k = version === 2 ? 1 / 12 : 1 / 6;
-  return {
-    D: Math.round((dims.D - neutral) * k * 100),
-    I: Math.round((dims.I - neutral) * k * 100),
-    S: Math.round((dims.S - neutral) * k * 100),
-    C: Math.round((dims.C - neutral) * k * 100),
-  };
+  /* dims 存的是「中性 + 净分/2」（V2 范围 0–24），所以还原净分要乘 2 */
+  const net = (v: number) => (v - neutral) * 2;
+  return neatTendency({ D: net(dims.D), I: net(dims.I), S: net(dims.S), C: net(dims.C) }, neutral);
 }
 
 /** 由 V2 原始作答直接算净分倾向度（权威口径；与 discTendencyFromDims(dims,2) 结果一致）。 */
@@ -477,7 +503,7 @@ export function discTendencyFromV2(ans: DiscV2Answers, groups: DiscWordGroup[] =
     net[g.types[m]] += 1;
     net[g.types[l]] -= 1;
   });
-  return { D: Math.round((net.D / 24) * 100), I: Math.round((net.I / 24) * 100), S: Math.round((net.S / 24) * 100), C: Math.round((net.C / 24) * 100) };
+  return neatTendency(net, 12);
 }
 
 /** 行为特征轴双极标签（附件口径）：每因子 + 端与 - 端各是一个行为描述，无好坏。 */

@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import { ArrowRight, Download, Users } from "lucide-react";
 import { DISC_ANIMAL, DISC_REPORTS, getDiscCombo } from "@/data/reports";
 import { buildCommKit, type KitSection } from "@contracts/familyCommKit";
-import { discTendencyFromDims, type DiscResult } from "@contracts/assessments";
+import { discTendencyFromDims, discTendencyText, type DiscResult } from "@contracts/assessments";
 import { KitBlockView } from "@/components/reports/FamilyCommKit";
 
 const DIMS = ["D", "I", "S", "C"] as const;
@@ -45,14 +45,12 @@ function useSide(side: Side, index: 0 | 1) {
     const primary = result.primary;
     const secondary =
       combo[1] ?? [...DIMS].sort((x, y) => result.dims[y] - result.dims[x]).find((d) => d !== primary) ?? primary;
-    const total = result.version === 2 ? 24 : 12;
-    const pct = Object.fromEntries(
-      DIMS.map((d) => [d, Math.round((result.dims[d] / total) * 100)]),
-    ) as Record<(typeof DIMS)[number], number>;
+    /* v293：对照页原来用「0—100 绝对分」，同一本读本里的图表却是倾向度，
+       两个人一比更容易看岔（差 2 分 vs 差 4 个百分点）。统一走倾向度。 */
     const tendency = discTendencyFromDims(result.dims, result.version);
     const kit = buildCommKit({ parents: [{ label, result }] });
     const book = kit.books.find((bk) => bk.key === "parent" && bk.ready) ?? null;
-    const rankedDims = [...DIMS].sort((x, y) => pct[y] - pct[x]);
+    const rankedDims = [...DIMS].sort((x, y) => tendency[y] - tendency[x]);
     return {
       label,
       result,
@@ -62,7 +60,6 @@ function useSide(side: Side, index: 0 | 1) {
       secondary,
       report: DISC_REPORTS[primary],
       animal: DISC_ANIMAL[primary],
-      pct,
       tendency,
       book,
       strongest: rankedDims[0],
@@ -80,10 +77,10 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
   /* 差值：按绝对值排，谁在哪一维更用力一眼看出来 */
   const diff = useMemo(
     () =>
-      DIMS.map((d) => ({ d, av: A.pct[d], bv: B.pct[d], delta: A.pct[d] - B.pct[d] })).sort(
+      DIMS.map((d) => ({ d, av: A.tendency[d], bv: B.tendency[d], delta: A.tendency[d] - B.tendency[d] })).sort(
         (x, y) => Math.abs(y.delta) - Math.abs(x.delta),
       ),
-    [A.pct, B.pct],
+    [A.tendency, B.tendency],
   );
   const widest = diff[0];
   const biggest = Math.abs(widest.delta);
@@ -156,11 +153,11 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
                 </span>
               </div>
               <p className="mt-1 text-[12px] leading-relaxed text-olive-mute">
-                主导 {s.primary}（{DIM_NAME[s.primary]} {s.pct[s.primary]}）· 副维 {s.secondary}（
-                {DIM_NAME[s.secondary]} {s.pct[s.secondary]}）
+                主导 {s.primary}（{DIM_NAME[s.primary]} {discTendencyText(s.tendency[s.primary])}）· 副维{" "}
+                {s.secondary}（{DIM_NAME[s.secondary]} {discTendencyText(s.tendency[s.secondary])}）
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-olive-soft">
-                最弱一格是 {s.weakest}（{DIM_NAME[s.weakest]} {s.pct[s.weakest]}）——这一维上的话，他往往说不出口。
+                最弱一格是 {s.weakest}（{DIM_NAME[s.weakest]} {discTendencyText(s.tendency[s.weakest])}）——这一维上的话，他往往说不出口。
               </p>
             </div>
           ))}
@@ -169,7 +166,9 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
         {/* 四维并排：同一维两根条，长的那个就是「谁在这件事上更用力」 */}
         <div className="mt-4 rounded-xl border border-border/70 bg-white px-3.5 py-3">
           <div className="flex items-center justify-between">
-            <p className="text-[11.5px] text-olive-mute">四个维度对照（0—100 绝对分，四维合计不固定为 100）</p>
+            <p className="text-[11.5px] text-olive-mute">
+              四个维度对照（双极倾向度，同一维两根条；往左是强、往右是弱）
+            </p>
             <div className="flex items-center gap-2.5">
               {[A, B].map((s) => (
                 <span key={s.label} className="flex items-center gap-1 text-[10.5px] text-olive-mute">
@@ -186,28 +185,31 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
                   {d} {DIM_NAME[d]}
                 </span>
                 <div className="flex-1 space-y-1">
-                  {[A, B].map((s) => (
-                    <div key={s.label} className="flex items-center gap-1.5">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-cream-deep">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${Math.min(100, Math.max(3, s.pct[d]))}%`,
-                            background: s.tone.bar,
-                          }}
-                        />
+                  {[A, B].map((s) => {
+                    const v = s.tendency[d];
+                    const span = Math.max(0.8, Math.abs(v) / 2);
+                    return (
+                      <div key={s.label} className="flex items-center gap-1.5">
+                        <div className="relative h-2 flex-1 rounded-full bg-cream-deep">
+                          <div className="absolute left-1/2 top-[-1px] h-[calc(100%+2px)] w-px bg-brand-mute/40" />
+                          <div
+                            className="absolute top-0 h-full rounded-full"
+                            style={{ left: v < 0 ? "50%" : `${50 - span}%`, width: `${span}%`, background: s.tone.bar }}
+                          />
+                        </div>
+                        <span className="mono w-9 shrink-0 text-right text-[11px] text-olive">{discTendencyText(v)}</span>
                       </div>
-                      <span className="mono w-6 shrink-0 text-right text-[11px] text-olive">{s.pct[d]}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
           </div>
           <p className="mt-3 border-t border-border/50 pt-2 text-[12px] leading-relaxed text-olive-soft">
             差得最多的是 <b className="text-olive">{widest.d}</b>（{DIM_NAME[widest.d]}）：
-            {lead.label} {lead.pct[widest.d]}，{trail.label} {trail.pct[widest.d]}，相差{" "}
-            <b className="text-olive">{biggest}</b> 分。这一维就是你们最容易各说各话的地方——
+            {lead.label} {discTendencyText(lead.tendency[widest.d])}，{trail.label}{" "}
+            {discTendencyText(trail.tendency[widest.d])}，相差 <b className="text-olive">{biggest}</b> 个百分点。
+            这一维就是你们最容易各说各话的地方——
             不是谁错了，是两个人对「{DIM_GAP[widest.d]}」的默认答案不一样。
           </p>
         </div>
@@ -296,13 +298,13 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
                     <td className="px-3 py-1.5 font-semibold text-olive">
                       {r.d} {DIM_NAME[r.d]}
                     </td>
-                    <td className="mono px-3 py-1.5 text-right text-olive">{r.av}</td>
-                    <td className="mono px-3 py-1.5 text-right text-olive">{r.bv}</td>
+                    <td className="mono px-3 py-1.5 text-right text-olive">{discTendencyText(r.av)}</td>
+                    <td className="mono px-3 py-1.5 text-right text-olive">{discTendencyText(r.bv)}</td>
                     <td
                       className="mono px-3 py-1.5 text-right font-semibold"
                       style={{ color: r.delta === 0 ? "#6B7A72" : r.delta > 0 ? TONE[0].text : TONE[1].text }}
                     >
-                      {r.delta > 0 ? `+${r.delta}` : r.delta}
+                      {discTendencyText(r.delta)}
                     </td>
                     <td className="px-3 py-1.5 text-olive-mute">{DIM_TAG[r.d]}</td>
                   </tr>

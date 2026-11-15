@@ -1727,8 +1727,13 @@ export function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S"
           const val = `${discTendencyText(t)} · ${discBand(t)}`;
           return (
             <div key={k} className="flex items-center gap-2">
-              <span className={`w-[64px] shrink-0 text-right text-[12px] ${!neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
-                {DISC_BIPOLAR[k].plus} {k}+
+              {/* v293：行首写「这一维现在偏哪边」，不是固定的 + 端名。
+                  原来是「外向 I+」配 −37%，家长读成「外向怎么是负的」——标签和数值打架。 */}
+              {/* 行首恒粗：它写的是「这一维现在偏哪边」，是这一行的标题；
+                  对侧名字淡出，只作对照。原来按「左=+端」上色，负值时会出现
+                  「内向」是灰的、「外向」却加粗，读起来又反了。 */}
+              <span className="w-[64px] shrink-0 text-right text-[12px] font-bold text-olive">
+                {k} {!neg ? DISC_BIPOLAR[k].plus : DISC_BIPOLAR[k].minus}
               </span>
               <span className="mono w-[88px] shrink-0 text-right text-[12px]" style={{ color: !neg ? DISC_COLOR[k] : "#CBD5CC" }}>
                 {!neg ? val : ""}
@@ -1743,8 +1748,8 @@ export function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S"
               <span className="mono w-[88px] shrink-0 text-[12px]" style={{ color: neg ? DISC_COLOR[k] : "#CBD5CC" }}>
                 {neg ? val : ""}
               </span>
-              <span className={`w-[64px] shrink-0 text-[12px] ${neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
-                {k}- {DISC_BIPOLAR[k].minus}
+              <span className="w-[64px] shrink-0 text-[12px] text-olive-mute/70">
+                {k} {neg ? DISC_BIPOLAR[k].plus : DISC_BIPOLAR[k].minus}
               </span>
             </div>
           );

@@ -97,6 +97,6 @@ describe("v286 家长 DISC 融合读本", () => {
   });
 
   it("版本号已升到 v286", () => {
-    expect(router).toContain('const BUILD_TAG = "v292-2026-11-15"');
+    expect(router).toContain('const BUILD_TAG = "v293-2026-11-15"');
   });
 });
