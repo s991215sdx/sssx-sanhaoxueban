@@ -320,7 +320,9 @@ export default function ParentDiscPanel() {
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-[17px] font-bold text-olive">
-                  家长 DISC · 家庭沟通读本{detail.data ? ` · ${detail.data.label}` : ""}
+                  {compareWith != null && pair.data
+                    ? `家长 DISC · 双人对照 · ${pair.data.a.label} × ${pair.data.b.label}`
+                    : `家长 DISC · 家庭沟通读本${detail.data ? ` · ${detail.data.label}` : ""}`}
                 </h3>
                 <p className="mt-0.5 text-[12.5px] text-olive-mute">
                   {detail.data
@@ -352,8 +354,11 @@ export default function ParentDiscPanel() {
                   className="w-[190px] shrink-0 rounded-lg border border-border bg-cream-card px-2 py-1 text-[12.5px] text-olive"
                 >
                   <option value={0}>选一位…</option>
+                  {/* 称呼不同的排前面：爸爸在看时先给妈妈，反之亦然——同一家的两位通常就是这个组合 */}
                   {rows
                     .filter((r) => r.id !== viewing)
+                    .slice()
+                    .sort((x, y) => Number(x.label === detail.data?.label) - Number(y.label === detail.data?.label))
                     .map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.label} · {r.createdAtText}
@@ -367,6 +372,9 @@ export default function ParentDiscPanel() {
                   >
                     退出对照
                   </button>
+                )}
+                {compareWith == null && (
+                  <span className="text-[11.5px] text-olive-mute/80">建议选同一名学员的爸爸与妈妈</span>
                 )}
                 {compareWith != null && pair.isLoading && <span className="text-[12px] text-olive-mute">读取中…</span>}
                 {compareWith != null && pair.isError && (

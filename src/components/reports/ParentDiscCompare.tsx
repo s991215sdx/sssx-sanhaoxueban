@@ -98,6 +98,9 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
     return Array.from({ length: n }, (_, i) => ({ key: sa[i]?.no ?? sb[i]?.no ?? String(i + 1), a: sa[i], b: sb[i] }));
   }, [A.book, B.book]);
 
+  const sameLabel = A.label === B.label;
+  const sameTitle = sameLabel ? `${A.label}也有两种做法` : `${A.label}和${B.label}，不是同一种家长`;
+
   const go = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -119,7 +122,7 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
           FOR PARENTS ONLY · TWO PROFILES, ONE HOUSE
         </p>
         <h2 className="mt-2 text-[26px] font-black leading-tight tracking-tight text-olive sm:text-[32px]">
-          {A.label}和{B.label}，不是同一种家长
+          {sameTitle}
         </h2>
         <div className="mt-3 h-[3px] w-14 rounded-full bg-brand" />
         <p className="mt-3 text-[13.5px] leading-relaxed text-olive-soft">
@@ -127,8 +130,16 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
           {A.report ? ` · ${A.report.name}` : ""}，{A.animal}为主；
           {B.label}是 <b className="text-olive">{B.combo.join("")} 型</b>
           {B.report ? ` · ${B.report.name}` : ""}，{B.animal}为主。
-          这本不评谁对，只把两种节奏摆在一起，让你们看见孩子每天接的是两套信号。
+          {sameLabel
+            ? "这本不评谁对，只把两种做法摆在一起——同一种称呼，也可以是两种节奏。"
+            : "这本不评谁对，只把两种节奏摆在一起，让你们看见孩子每天接的是两套信号。"}
         </p>
+        {sameLabel && (
+          <p className="mt-2 rounded-lg bg-cream-deep/60 px-3 py-2 text-[11.5px] leading-relaxed text-olive-mute">
+            两位的称呼相同。若这两份来自两个不同的家庭，下面的对照只能比较「做法」，不能推「同一个孩子接了什么」——
+            那一层要同一名学员的爸爸与妈妈各测一份才成立。
+          </p>
+        )}
 
         {/* 两人各一张小卡 */}
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
