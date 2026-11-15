@@ -87,6 +87,6 @@ describe("v289 家长 DISC 双人对照读本", () => {
   });
 
   it("版本号已升到 v289", () => {
-    expect(router).toContain('const BUILD_TAG = "v289-2026-11-15"');
+    expect(router).toContain('const BUILD_TAG = "v290-2026-11-15"');
   });
 });
