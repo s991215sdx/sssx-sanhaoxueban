@@ -14,7 +14,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Copy, Download, FileText, QrCode, UserCheck, Users, X } from "lucide-react";
+import { Copy, FileText, QrCode, UserCheck, Users, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import ParentDiscReader from "@/components/reports/ParentDiscReader";
@@ -311,14 +311,7 @@ export default function ParentDiscPanel() {
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <button
-                  onClick={() => void exportPdf()}
-                  disabled={!detail.data || exporting}
-                  className="flex items-center gap-1.5 rounded-lg border border-brand/40 bg-brand-pale px-2.5 py-1.5 text-[12.5px] font-semibold text-brand transition-colors hover:border-brand disabled:opacity-40"
-                >
-                  <Download size={13} />
-                  {exporting ? "生成中…" : "导出 PDF"}
-                </button>
+                {/* 导出 PDF 放在读本自己的段导航条上（跟着滚动一直在），这里不重复放一个 */}
                 <button
                   onClick={() => setViewing(null)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-olive-mute hover:text-olive"

@@ -52,11 +52,12 @@ describe("v286 家长 DISC 融合读本", () => {
     expect(reader).toContain("print:break-inside-avoid");
   });
 
-  it("后台抽屉改成上下两段，并给出导出 PDF", () => {
+  it("后台抽屉改成上下两段，并给出导出 PDF（按钮在读本段导航条上，不在抽屉头上重复）", () => {
     expect(drawer).toContain("ParentDiscReader");
     expect(drawer).not.toContain("StandaloneParentDiscReport");
     expect(drawer).toContain("downloadParentDiscPdf");
-    expect(drawer).toContain("导出 PDF");
+    expect(drawer).toContain("onExport={() => void exportPdf()}");
+    expect(reader).toContain("导出 PDF");
   });
 
   it("/pd 交卷后的结果页与回看页都给整本，不只给 DISC", () => {
@@ -96,6 +97,6 @@ describe("v286 家长 DISC 融合读本", () => {
   });
 
   it("版本号已升到 v286", () => {
-    expect(router).toContain('const BUILD_TAG = "v287-2026-11-15"');
+    expect(router).toContain('const BUILD_TAG = "v288-2026-11-15"');
   });
 });

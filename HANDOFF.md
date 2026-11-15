@@ -606,4 +606,13 @@ smoke-render-v45 全过（v37-v44 全量 + v45 增量）：动物象徽图例与
 - 表格保留 `thead break-after:avoid` + 行级 `break-inside:avoid`，跨页有重复表头
 
 **冒烟**：`api/v286-parent-disc-book.test.ts` 9 项（内容层：只给家长作答就出家长个人版且学生那几本仍标未就绪；渲染层：三处共用同一 Reader；通道层：`/pd-report` 公开 + 端点认钥匙）；全量 853 项通过；`tsc -b` 无错误
-**版本**：`BUILD_TAG v286-2026-11-15`
+
+**部署时发现并修掉的线上老问题（报告 PDF 一直 500）**
+- 现象：`/api/report-pdf` 返回 `browserType.launch: Executable doesn't exist at /home/sanhao/.cache/ms-playwright/...`
+- 根因：服务以 `sanhao` 账号跑、`HOME=/home/sanhao` 根本不存在，而内核当初装在 `/root/.cache/ms-playwright`（读不到）；`sudo` 只放行 `systemctl`，装不到用户目录
+- 处理：内核改放**应用目录** `/www/wwwroot/sanhao/.chrome/chrome-headless-shell-linux64/`（在 dist 之外，部署不覆盖），`api/reportPdf.ts` 按 `CHROME_BIN → 应用目录 .chrome → 系统 chrome` 顺序找可执行文件
+- 内核版本对齐 `playwright-core 1.64.1`：Chrome for Testing **156.0.8078.4**（`dev-tools` 的 googleapis 源国内仅 ~50KB/s，走 `https://cdn.npmmirror.com/binaries/chrome-for-testing/<ver>/linux64/chrome-headless-shell-linux64.zip` 6 秒下完）
+- 两台服务器都已装（内部版 106.52.8.20 / 渠道版 114.132.171.31），`--version` 正常
+- 验证：`GET /api/report-pdf?path=/pd-report?id=36721255&k=<key>` → 200、A4 9 页 2.7MB、中文正常；后台登录态（不带 k）同样 200；渠道版用错钥匙返回 404（说明内核起来了、只是没数据）
+
+**版本**：`BUILD_TAG v288-2026-11-15`（v286 首发 → v286.1 修 PDF 内核 → v287 版本号格式修正 → v288 去掉抽屉头上重复的导出按钮，线上最终为 v288）
