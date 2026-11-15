@@ -216,7 +216,9 @@ export default function ParentDiscCompare({ a, b, printMode = false, onExport, e
           <div className="flex gap-3 border-b border-border/40 py-2 text-[12px]">
             <span className="w-[68px] shrink-0 text-olive-mute">这份给谁</span>
             <span className="flex-1 font-semibold leading-relaxed text-olive">
-              {A.label}和{B.label}一起看。不是拿去找对方算账，是先知道「他怎么会那样说」。
+              {sameLabel
+                ? "两位各看一遍，再交换看对方那份。不是拿去找对方算账，是先知道「他怎么会那样说」。"
+                : `${A.label}和${B.label}一起看。不是拿去找对方算账，是先知道「他怎么会那样说」。`}
             </span>
           </div>
           <div className="flex gap-3 border-b border-border/40 py-2 text-[12px]">
