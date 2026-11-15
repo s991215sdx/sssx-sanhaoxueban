@@ -6,10 +6,14 @@
  * - 登录态：透传请求 Cookie 给无头浏览器，页面权限与当前用户一致（渲染出登录页即判 401）；
  * - v286 例外：/pd-report 带查看钥匙（k=）时不要求登录——家长在自己手机上导出 PDF 不该先注册；
  * - 字体：服务器已装 Noto Sans CJK（渲染前等待图表与字体就绪）；
- * - playwright-core 用 createRequire 运行时加载（esbuild 不打进 bundle），浏览器内核用服务器
- *   ~/.cache/ms-playwright 的 chromium_headless_shell-1248 目录（官方源国内不可达时可用
- *   1243 复制别名，见手册「内部版/渠道版服务器备忘」，不额外下载。
+ * - playwright-core 用 createRequire 运行时加载（esbuild 不打进 bundle）；
+ * - 浏览器内核：v286 起按 CHROME_BIN → 应用目录 .chrome/ → 系统 chrome 的顺序找。
+ *   原来只认 ms-playwright 缓存，而线上服务以 sanhao 账号跑、HOME=/home/sanhao 并不存在，
+ *   缓存落在 /root/.cache 里读不到——PDF 一直 500。内核现在放在应用目录下（随 dist 之外持久，
+ *   部署不覆盖），不依赖运行账号的 HOME。
  */
+import fs from "node:fs";
+import path from "node:path";
 import { createRequire as mkRequire } from "node:module";
 import type { Context } from "hono";
 import type { Browser } from "playwright-core";
@@ -26,6 +30,28 @@ const PDF_PATH_WHITELIST = ["/zhihui-report", "/report-detail", "/pd-report"];
  * 与家长在自己手机上回看报告用的是同一把钥匙。后台老师走 Cookie，两路都认。
  */
 const PUBLIC_KEY_PATH = "/pd-report";
+
+/** 内核候选路径：应用目录优先（部署不覆盖），其次系统安装的 chrome/chromium */
+function findChrome(): string | undefined {
+  /* dist/boot.js 的上一级就是应用根目录 */
+  const root = path.resolve(import.meta.dirname, "..");
+  const candidates = [
+    process.env.CHROME_BIN,
+    path.join(root, ".chrome/chrome-headless-shell-linux64/chrome-headless-shell"),
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+  ].filter((p): p is string => !!p);
+  return candidates.find((p) => {
+    try {
+      fs.accessSync(p, fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+}
 
 function loadPlaywright(): PlaywrightCore | null {
   try {
@@ -55,7 +81,10 @@ export async function reportPdfHandler(c: Context) {
   const port = parseInt(process.env.PORT || "3000", 10);
   let browser: Browser | null = null;
   try {
-    browser = await pw.chromium.launch({ args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    browser = await pw.chromium.launch({
+      ...(findChrome() ? { executablePath: findChrome() } : {}),
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 1600 }, deviceScaleFactor: 1 });
     /* 会话 Cookie 透传：domain 固定本机回环，页面走 http://127.0.0.1:{port} */
     await ctx.addCookies(
