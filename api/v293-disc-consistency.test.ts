@@ -93,6 +93,9 @@ describe("v293 · 家长读本这条链上只剩一套数", () => {
     expect(kit).not.toContain("要求轴取 D 分 ${sc.D}");
     expect(kit).not.toContain("${p.second} 有 ${sc[p.second]}");
     expect(kit).not.toContain("折算为 0—100 的四维绝对分。主因子取最高分");
+    /* 06 节这条最容易漏：句子里只有「最低维」一个数字，扫段落时会被跳过 */
+    expect(kit).not.toContain("最低维 ${lo.d} ${lo.v}");
+    expect(kit).toContain("最低维 ${lo.d} ${discTendencyText(td[lo.d])}");
   });
 
   it("锦囊块支持双极条，且家长个人版显式打开", () => {
