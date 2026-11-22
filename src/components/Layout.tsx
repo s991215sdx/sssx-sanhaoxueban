@@ -1,11 +1,11 @@
 import { NavLink, useLocation } from "react-router";
-import { Home, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2 } from "lucide-react";
+import { Home, BookOpen, BookOpenCheck, Bandage, ClipboardList, HeartHandshake, Sprout, LineChart, LogOut, ShieldCheck, GraduationCap, ClipboardCheck, ChevronsLeft, ChevronsRight, Trash2, Building2, Coins, Users, NotebookPen, Target, QrCode } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
 import UpdateToast from "@/components/UpdateToast";
 import BackBar from "@/components/BackBar";
-import { trpc } from "@/providers/trpc";
+import { prepareIdentitySwitch, trpc } from "@/providers/trpc";
 import { visibleSchoolGroups, type SchoolItemKey } from "@/components/admin/schoolNav";
 
 /** 导航项所属学员端模块（测评中心恒可用；首页属 home，受限学员不显示）。 */
@@ -43,10 +43,10 @@ function LogoMark() {
 
 function Logo({ brand }: { brand: string }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <LogoMark />
-      <div>
-        <div className="font-bold text-[17px] leading-tight tracking-tight text-olive">{brand}</div>
+    <div className="flex min-w-0 items-center gap-2.5">
+      <div className="shrink-0"><LogoMark /></div>
+      <div className="min-w-0">
+        <div className="truncate font-bold text-[17px] leading-tight tracking-tight text-olive">{brand}</div>
         <div className="mono text-[10px] tracking-wider text-olive-mute">K12 · 个性化学习</div>
       </div>
     </div>
@@ -97,7 +97,13 @@ function OrgSwitcher() {
                 onClick={() =>
                   switchMut.mutate(
                     { userId: a.userId },
-                    { onSuccess: () => window.location.reload() },
+                    {
+                      onSuccess: async () => {
+                        setOpen(false);
+                        await prepareIdentitySwitch();
+                        window.location.reload();
+                      },
+                    },
                   )
                 }
                 className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
@@ -132,11 +138,12 @@ export default function Layout({ children }: { children: ReactNode }) {
   /* 学员端功能开关（v50）：null=全功能；数组=只显示这些模块（测评中心恒显示） */
   const { data: profile } = trpc.profile.get.useQuery();
   const enabledModules = profile?.enabledModules ?? null;
+  const { data: familyCases = [] } = trpc.coaching.familyCases.useQuery(undefined, { enabled: !isStaff });
   const navVisible = (m: string) => enabledModules === null || m === "assessments" || enabledModules.includes(m);
 
-  /* v220.3：校园机构判定（机构管理员/教务）——学校版后台菜单并入外层侧边栏，隐藏伴学工作台 */
+  /* 校园机构判定：管理员、教务与伴学师都需要识别版本，以显示对应的工作台左侧菜单。 */
   const { data: schoolCtx } = trpc.school.context.useQuery(undefined, {
-    enabled: (isAdmin && !isPlatformAdmin) || user?.role === "jiaowu",
+    enabled: isStaff && !isPlatformAdmin,
   });
   const isCampus = !!schoolCtx?.campus;
   const isJiaowu = user?.role === "jiaowu";
@@ -146,6 +153,14 @@ export default function Layout({ children }: { children: ReactNode }) {
   const campusMgr = isCampus && user?.orgId != null && (isAdmin || isJiaowu);
   /* v220.5：超管的「伴学工作台」称谓不跟校园版走 */
   const campusTutor = isCampus && user?.orgId != null;
+  /* 工作台各功能统一进入桌面左侧栏；校园管理者沿用自己的控制台菜单。 */
+  const showTutorAssessment = showCoach && !campusMgr && user?.orgId != null;
+  /* v285：家长扫码板块对平台超管也开放——超管跨机构巡检家长测评记录 */
+  const showParentDisc = showCoach && !campusMgr && (user?.orgId != null || isPlatformAdmin);
+  const showTutorTraining = showCoach && !campusMgr && !campusTutor;
+  const showTutorLibrary = showCoach && !campusMgr && schoolCtx?.services?.library !== false;
+  /* 机构管理员直达积分分配；校园版无积分，平台超管仍走机构管理中的总积分调整。 */
+  const showOrgPoints = isAdmin && !isPlatformAdmin && user?.orgId != null && schoolCtx?.edition === "org" && schoolCtx.campus === false;
   /* v229：资料库功能被平台超管关闭时，学校版菜单同步隐藏该入口 */
   const schoolGroups = campusMgr
     ? (schoolCtx?.services?.library === false
@@ -159,6 +174,12 @@ export default function Layout({ children }: { children: ReactNode }) {
     const first = schoolGroups[0]?.items[0]?.key;
     return (cur ?? first ?? "progress") === key;
   };
+  const tutorSection = location.pathname === "/tutor" ? new URLSearchParams(location.search).get("section") : null;
+  const tutorStudentsActive = location.pathname === "/tutor" && (tutorSection === null || tutorSection === "students");
+  const tutorTrainingActive = tutorSection === "training";
+  const orgPointsActive = tutorSection === "points";
+  const orgAssessmentActive = tutorSection === "assessments";
+  const parentDiscActive = tutorSection === "parentdisc";
   /* 桌面侧边栏折叠态：记住用户选择，折叠后只留图标，给阅读区让出最大空间 */
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -224,19 +245,103 @@ export default function Layout({ children }: { children: ReactNode }) {
               {!collapsed && n.label}
             </NavLink>
           ))}
-          {/* v220.3：学校版管理者隐藏「伴学工作台」，侧边栏直接列出学校版控制台菜单（与回收站并列） */}
+          {!isStaff && familyCases.length > 0 && (
+            <NavLink
+              to="/coaching"
+              title={collapsed ? "陪跑反馈" : undefined}
+              className={({ isActive }) => `group flex items-center rounded-xl transition-colors ${collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"} ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <BookOpenCheck size={18} strokeWidth={2.2} />
+              {!collapsed && "陪跑反馈"}
+            </NavLink>
+          )}
+          {/* 学员管理是工作台主页；校园管理者仍使用学校控制台菜单。 */}
           {showCoach && !campusMgr && (
             <NavLink
               to="/tutor"
-              title={collapsed ? (campusTutor ? "指导老师工作台" : "伴学工作台") : undefined}
+              title={collapsed ? (campusTutor ? "指导老师工作台" : "学员管理") : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${tutorStudentsActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <Users size={18} strokeWidth={2.2} />
+              {!collapsed && (campusTutor ? "指导老师工作台" : "学员管理")}
+            </NavLink>
+          )}
+          {showTutorAssessment && (
+            <NavLink
+              to="/tutor?section=assessments"
+              title={collapsed ? "测评中心" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${orgAssessmentActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <ClipboardCheck size={18} strokeWidth={2.2} />
+              {!collapsed && "测评中心"}
+            </NavLink>
+          )}
+          {showParentDisc && (
+            <NavLink
+              to="/tutor?section=parentdisc"
+              title={collapsed ? "家长扫码" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${parentDiscActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <QrCode size={18} strokeWidth={2.2} />
+              {!collapsed && "家长扫码"}
+            </NavLink>
+          )}
+          {showOrgPoints && (
+            <NavLink
+              to="/tutor?section=points"
+              title={collapsed ? "积分管理" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${orgPointsActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <Coins size={18} strokeWidth={2.2} />
+              {!collapsed && "积分管理"}
+            </NavLink>
+          )}
+          {showTutorTraining && (
+            <NavLink
+              to="/tutor?section=training"
+              title={collapsed ? "陪跑训练专栏" : undefined}
+              className={`group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${tutorTrainingActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <NotebookPen size={18} strokeWidth={2.2} />
+              {!collapsed && "陪跑训练专栏"}
+            </NavLink>
+          )}
+          {showTutorLibrary && (
+            <NavLink
+              to="/library"
+              title={collapsed ? "资料库" : undefined}
+              className={({ isActive }) => `group flex items-center rounded-xl transition-colors ${
+                collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
+              } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`}
+            >
+              <BookOpen size={18} strokeWidth={2.2} />
+              {!collapsed && "资料库"}
+            </NavLink>
+          )}
+          {/* v253：人才测评（四类岗位评估 + 候选人扫码）——放在伴学工作台与后台之间，
+              与学员端的「测评中心」分属两条线：一个是孩子的学习测评，一个是员工的岗位评估 */}
+          {showCoach && (
+            <NavLink
+              to="/talent"
+              title={collapsed ? "人才测评" : undefined}
               className={({ isActive }) =>
                 `group flex items-center rounded-xl transition-colors ${
                   collapsed ? "w-10 justify-center px-0 py-2.5" : "gap-3 px-3.5 py-2.5 text-[15px]"
                 } ${isActive ? "bg-brand font-semibold text-white shadow-sm" : "text-olive-soft hover:bg-butter-pale/60"}`
               }
             >
-              <GraduationCap size={18} strokeWidth={2.2} />
-              {!collapsed && (campusTutor ? "指导老师工作台" : "伴学工作台")}
+              <Target size={18} strokeWidth={2.2} />
+              {!collapsed && "人才测评"}
             </NavLink>
           )}
           {campusMgr &&
@@ -358,9 +463,14 @@ export default function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* 移动顶栏 */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
-        <Logo brand={brand} />
-        <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border bg-cream/90 px-4 py-3 backdrop-blur md:hidden">
+        <div className="min-w-0 flex-1"><Logo brand={brand} /></div>
+        <div className="flex shrink-0 items-center gap-2">
+          {!isStaff && familyCases.length > 0 && (
+            <NavLink to="/coaching" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title="陪跑反馈">
+              <BookOpenCheck size={18} />
+            </NavLink>
+          )}
           {showCoach && !campusMgr && (
             <NavLink to="/tutor" className="rounded-lg p-2 text-olive-mute hover:bg-butter-pale hover:text-brand" title={campusTutor ? "指导老师工作台" : "伴学工作台"}>
               <GraduationCap size={18} />
@@ -381,7 +491,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className={`pb-24 transition-all duration-200 md:pb-10 ${collapsed ? "md:pl-[68px]" : "md:pl-60"}`}>
+      {/* 折叠过渡只在桌面生效，避免跨断点时留白动画把手机内容瞬时挤出屏幕。 */}
+      <main className={`pb-24 md:pb-10 md:transition-all md:duration-200 ${collapsed ? "md:pl-[68px]" : "md:pl-60"}`}>
         {/* V59：机构被平台停用时的提示条（学员/伴学师/机构管理员都能看到） */}
         {orgPaused && (
           <div className="border-b border-terra/30 bg-terra/10 px-4 py-2.5 text-center text-[12.5px] text-terra">

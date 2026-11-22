@@ -11,6 +11,10 @@ import ResetPasswordButton from "@/components/ResetPasswordButton";
 import DeleteStudentButton from "@/components/DeleteStudentButton";
 import ReportAccessButton from "@/components/ReportAccessButton";
 import AssessmentReleasePanel from "@/components/AssessmentReleasePanel";
+import OrgAssessmentCenter from "@/components/org/OrgAssessmentCenter";
+import OrgPointsPanel from "@/components/org/OrgPointsPanel";
+import ParentDiscPanel from "@/components/coach/ParentDiscPanel";
+import AssessCenter from "@/components/admin/AssessCenter";
 import { STUDENT_MODULES } from "@contracts/studentModules";
 import { GraduationCap, SlidersHorizontal, Send, Search, ClipboardList, Library as LibraryIcon } from "lucide-react";
 import Pager from "@/components/Pager";
@@ -95,8 +99,37 @@ export default function Tutor() {
   const [modulesFor, setModulesFor] = useState<number | null>(null);
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
-  // V57：学员管理 / 陪跑训练专栏
-  const [section, setSection] = useState<"students" | "training">("students");
+  const orgView = !campusView && user?.orgId != null;
+  /* 支持左侧「积分管理」等深链直达；无权限的 section 参数回退学员管理。 */
+  const sectionOptions = ["students", "assessments", "parentdisc", "coaching", "points", "training"] as const;
+  type TutorSection = (typeof sectionOptions)[number];
+  const requested = searchParams.get("section") as TutorSection | null;
+  const requestedSection: TutorSection = requested && sectionOptions.includes(requested) ? requested : "students";
+  const canOpenSection = requestedSection === "students" || requestedSection === "assessments"
+    || (requestedSection === "parentdisc" && (user?.orgId != null || user?.role === "admin"))
+    || (!campusView && requestedSection === "training")
+    || (orgView && (requestedSection !== "points" || user?.role === "admin"));
+  const section: TutorSection = canOpenSection ? requestedSection : "students";
+  const sectionTitle = section === "assessments" ? "测评中心"
+    : section === "parentdisc" ? "家长扫码"
+      : section === "coaching" ? "陪跑中心迁移说明"
+      : section === "points" ? "积分管理"
+        : section === "training" ? "陪跑训练专栏"
+          : campusView ? "指导老师工作台" : "学员管理";
+  const sectionDescription = section === "assessments"
+    ? "点选测评并推送给学员，查看报告，把结果转化为目标、计划与持续陪跑。"
+    : section === "parentdisc"
+      ? "家长 DISC 扫码直测：把二维码发给家长，免登录直接测；测完在待融合池绑定到学员，报告自动并入。"
+      : section === "coaching" ? "独立系统与原系统分开使用，历史学员与陪跑记录仍保留在原系统。"
+      : section === "points" ? "管理机构积分池与伴学师个人积分，分配、回收和流水一目了然。"
+        : section === "training" ? "按学员问题匹配训练方案，结合 AI 陪练与三阶九能训练内容。"
+          : "名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。";
+  const setSection = (next: TutorSection) => setSearchParams((prev) => {
+    const params = new URLSearchParams(prev);
+    if (next === "students") params.delete("section");
+    else params.set("section", next);
+    return params;
+  }, { replace: true });
   const { data: students, isLoading } = trpc.coach.myStudents.useQuery(undefined, { enabled: allowed });
   // V56：学员查询（姓名/手机号）
   const kw = q.trim();
@@ -127,37 +160,37 @@ export default function Tutor() {
       <header>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-[22px] font-bold tracking-tight text-olive">{campusView ? "指导老师工作台" : "伴学工作台"}</h1>
-            <p className="mt-1 text-[13px] text-olive-mute">
-              名下学员、陪跑训练专栏都在这里。树洞内容属于隐私，只能看到心情曲线，看不到具体文字。
-            </p>
+            <h1 className="text-[22px] font-bold tracking-tight text-olive">{sectionTitle}</h1>
+            <p className="mt-1 text-[13px] text-olive-mute">{sectionDescription}</p>
           </div>
-          {/* v229：资料库功能被平台超管关闭时隐藏入口（服务端同步 403） */}
+          {/* 桌面资料库在全局左侧栏；手机端保留本入口。 */}
           {schoolCtx?.services?.library !== false && (
             <button
               type="button"
               onClick={() => navigate("/library")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-cream-card px-3.5 py-2 text-[13px] font-medium whitespace-nowrap text-olive transition-colors hover:bg-mint-pale/60 md:hidden"
             >
               <LibraryIcon size={14} /> 资料库
             </button>
           )}
         </div>
-        {/* V57：两大专栏切换 */}
-        {/* v127：与后台统一——tab 条白底，选中=草绿色卡+白字 */}
-        <div className="mt-3 flex rounded-xl border border-[#1E3530]/10 bg-white p-1">
+        {/* 桌面全部入口收进全局左侧栏；手机端保留完整页签。 */}
+        <div className="mt-3 flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1 md:hidden">
           {(
             [
-              { key: "students", label: "学员管理" },
-              { key: "training", label: "陪跑训练专栏" },
+              { key: "students", label: "学员管理", visible: true },
+              { key: "assessments", label: "测评中心", visible: orgView || campusView },
+              { key: "parentdisc", label: "家长扫码", visible: user?.orgId != null || user?.role === "admin" },
+              { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
+              { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
-          ).map((t) => (
+          ).filter((t) => t.visible).map((t) => (
             <button
               key={t.key}
+              type="button"
               onClick={() => setSection(t.key)}
-              className={`flex-1 rounded-lg py-2 text-[13px] font-semibold transition ${
-                section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"
-              }`}
+              className={`min-h-10 flex-1 rounded-lg px-3 py-2 text-[12px] font-semibold whitespace-nowrap transition ${
+                section === t.key ? "bg-[#0C7064] text-white shadow" : "text-[#1E3530] hover:bg-[#0C7064]/10"}`}
             >
               {t.label}
             </button>
@@ -230,7 +263,7 @@ export default function Tutor() {
                     {/* V53：重置该学员登录密码（默认 123456） */}
                     <ResetPasswordButton userId={s.userId} name={s.name} compact />
                     {/* V54：报告推送开关（默认未推送，家长不可见） */}
-                    <ReportAccessButton userId={s.userId} released={s.reportReleased} compact />
+                    {!campusView && <ReportAccessButton userId={s.userId} released={s.reportReleased} compact />}
                     {/* v96：删除学员（移入回收站，保留 2 个月可恢复） */}
                     <DeleteStudentButton userId={s.userId} name={s.name} compact />
                     {/* v82：渠道绑定测评套餐的学员——推送解锁隐藏的测评 */}
@@ -300,7 +333,7 @@ export default function Tutor() {
           <Pager page={pager.page} totalPages={pager.totalPages} total={pager.total} onChange={pager.setPage} />
 
           {/* 邀请注册：伴学师自己的二维码（经此码注册的学员自动归到名下） */}
-          <section className="pt-3">
+          {!campusView && <section className="pt-3">
             <h2 className="text-[17px] font-bold text-olive">邀请注册 · 我的二维码</h2>
             <p className="mt-1 text-[12.5px] leading-relaxed text-olive-mute">
               生成你自己的注册二维码发给家长（可打印、可复制链接）：通过你的码注册的学员<b className="text-olive">自动归到你名下</b>。学员注册后默认只显示测评中心，在上方学员卡里可以逐人开启更多功能。
@@ -308,9 +341,32 @@ export default function Tutor() {
             <div className="mt-3">
               <InviteChannelsTab />
             </div>
-          </section>
+          </section>}
         </>
       )}
+
+      {campusView && section === "assessments" && <AssessCenter canManage onOpenReport={openDetail} />}
+
+      {orgView && section === "assessments" && (
+        <OrgAssessmentCenter
+          onOpenReport={openDetail}
+          onOpenCoaching={() => setSection("coaching")}
+        />
+      )}
+
+      {orgView && section === "coaching" && (
+        <section aria-labelledby="coaching-migration-title" className="paper-card mx-auto max-w-2xl p-8 text-center">
+          <ClipboardList className="mx-auto text-[#0C7064]" size={32} />
+          <h2 id="coaching-migration-title" className="mt-3 text-[19px] font-bold text-olive">陪跑中心已迁移至独立系统</h2>
+          <p className="mt-3 text-[13px] leading-relaxed text-olive-mute">历史数据仍保留在原系统，未自动迁移。</p>
+          <p className="mt-2 text-[12px] leading-relaxed text-olive-soft">独立本地版不连接原服务器；原学员、测评报告与家庭端「陪跑反馈」不受影响。</p>
+          <button type="button" onClick={() => setSection("students")} className="mt-5 min-h-10 rounded-xl bg-[#0C7064] px-5 py-2 text-[12px] font-semibold text-white hover:bg-[#095C53]">返回学员管理</button>
+        </section>
+      )}
+
+      {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
+
+      {section === "parentdisc" && (user?.orgId != null || user?.role === "admin") && <ParentDiscPanel />}
 
       {section === "training" && (
         <div className="space-y-4">

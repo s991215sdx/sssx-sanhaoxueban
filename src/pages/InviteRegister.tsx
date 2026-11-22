@@ -60,7 +60,7 @@ function CampusRegister({ code, school, brandName, logoUrl }: { code: string; sc
   const [className, setClassName] = useState("");
   const [grade, setGrade] = useState("高一");
   const [error, setError] = useState("");
-  /* v198：校园版标题「粤华学校 新高一选科规划与生涯指导」——校名去掉地名前缀（如「东莞」），无校名时兜底 */
+  /* 校园注册统一呈现学校的完整学业生涯测评服务，不再限定为新高一选科。 */
   const schoolShort = (school || brandName).replace(/^东莞/, "") || "学校";
 
   const register = trpc.invite.registerCampus.useMutation({
@@ -94,10 +94,10 @@ function CampusRegister({ code, school, brandName, logoUrl }: { code: string; sc
             </span>
           )}
           <h1 className="mt-3 text-[22px] font-bold tracking-tight text-olive">
-            {`${schoolShort} 新高一选科规划与生涯指导`}
+            {`${schoolShort} 学业生涯测评`}
           </h1>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-olive-mute">
-            {school ? <>{school} · 生涯规划测评系统</> : "生涯规划测评系统"}
+            {school ? <>{school} · 测评与升学指导服务</> : "测评与升学指导服务"}
             <br />
             填写姓名和班级即可进入，无需手机号。
           </p>

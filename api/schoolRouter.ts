@@ -19,6 +19,7 @@ import { defaultFullScore } from "@contracts/academics";
 import { normalizeAssessKinds, expandAssessKinds, INVITE_ASSESS_KINDS } from "@contracts/invite";
 import { resolveServices } from "@contracts/edition";
 import type { OrgServices } from "@contracts/edition";
+import { normalizeCampusReportKinds } from "@contracts/campusReports";
 import {
   users,
   studentProfile,
@@ -459,15 +460,16 @@ export const schoolRouter = createRouter({
       }
       const ids = list.map((s) => s.userId);
       const openKindsEarly = await orgOpenAssessKinds(db, ctx.user.orgId ?? null);
-      if (!ids.length) return { openKinds: openKindsEarly, targets: [] as { userId: number; name: string; className: string | null; grade: string; doneKinds: string[]; releasedKinds: string[] }[] };
+      if (!ids.length) return { openKinds: openKindsEarly, targets: [] as { userId: number; name: string; className: string | null; grade: string; doneKinds: string[]; releasedKinds: string[]; campusReportKinds: string[] }[] };
       const results = await db.select({ userId: assessmentResults.userId, kind: assessmentResults.kind }).from(assessmentResults).where(inArray(assessmentResults.userId, ids));
       const doneBy = new Map<number, Set<string>>();
       for (const r of results) {
         if (!doneBy.has(r.userId)) doneBy.set(r.userId, new Set());
         doneBy.get(r.userId)!.add(r.kind);
       }
-      const profiles = await db.select({ userId: studentProfile.userId, released: studentProfile.releasedAssessments }).from(studentProfile).where(inArray(studentProfile.userId, ids));
+      const profiles = await db.select({ userId: studentProfile.userId, released: studentProfile.releasedAssessments, campusReportKinds: studentProfile.campusReportKinds }).from(studentProfile).where(inArray(studentProfile.userId, ids));
       const releasedBy = new Map<number, string[]>(profiles.map((p) => [p.userId, Array.isArray(p.released) ? (p.released as string[]) : []]));
+      const reportsBy = new Map<number, string[]>(profiles.map((p) => [p.userId, normalizeCampusReportKinds(p.campusReportKinds)]));
       const openKinds = await orgOpenAssessKinds(db, ctx.user.orgId ?? null);
       return {
         openKinds,
@@ -478,9 +480,29 @@ export const schoolRouter = createRouter({
           grade: s.grade,
           doneKinds: [...(doneBy.get(s.userId) ?? [])],
           releasedKinds: releasedBy.get(s.userId) ?? [],
+          campusReportKinds: reportsBy.get(s.userId) ?? [],
         })),
       };
     }),
+    /** 校园逐学生、逐报告授权：完整替换白名单，取消勾选即收回。 */
+    setReports: assessSvcQuery
+      .input(z.object({ userId: z.number().int().positive(), kinds: z.array(z.string()).max(32) }))
+      .mutation(async ({ ctx, input }) => {
+        requireStaff(ctx);
+        const db = getDb();
+        const kinds = normalizeCampusReportKinds(input.kinds);
+        if (kinds.length !== new Set(input.kinds).size) throw new TRPCError({ code: "BAD_REQUEST", message: "报告种类不在校园授权范围内" });
+        const campus = await campusStudents(db, ctx.user.orgId ?? null);
+        if (!campus.some((s) => s.userId === input.userId)) throw new TRPCError({ code: "FORBIDDEN", message: "只能设置本校校园学生的报告" });
+        if (ctx.user.role === "tutor") {
+          const [mine] = await db.select({ studentUserId: studentTutor.studentUserId }).from(studentTutor).where(and(eq(studentTutor.tutorUserId, ctx.user.id), eq(studentTutor.studentUserId, input.userId))).limit(1);
+          if (!mine) throw new TRPCError({ code: "FORBIDDEN", message: "只能设置自己名下学生的报告" });
+        }
+        const [existing] = await db.select({ id: studentProfile.id }).from(studentProfile).where(eq(studentProfile.userId, input.userId)).limit(1);
+        if (existing) await db.update(studentProfile).set({ campusReportKinds: kinds }).where(eq(studentProfile.id, existing.id));
+        else await db.insert(studentProfile).values({ userId: input.userId, campusReportKinds: kinds });
+        return { ok: true as const, userId: input.userId, kinds };
+      }),
     /** 组选推送：把所选测评并入目标学生的「已解锁测评」（union，不收回既有推送），学生客户端立即可见可测；全程留痕。 */
     push: assessSvcQuery
       .input(z.object({

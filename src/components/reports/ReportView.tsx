@@ -110,7 +110,7 @@ import {
   LabelList,
   Cell,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, BookOpen, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, Compass, Download, PhoneCall, Sparkles, Puzzle, Target, TrendingUp, UserRound } from "lucide-react";
 import AnchorDetail from "@/components/reports/AnchorDetail";
 import HollandDetail from "@/components/reports/HollandDetail";
 import Multi5TalentMaps, { TalentDonut } from "@/components/reports/Multi5TalentMaps";
@@ -119,6 +119,8 @@ import FamilyReport from "@/components/reports/FamilyReport";
 import FamilyCommKit from "@/components/reports/FamilyCommKit";
 import { AssessmentPassProvider } from "@/components/coach/AssessmentPassDialog";
 import { useAssessmentPass } from "@/components/coach/passRequest";
+import { campusTabAllowed } from "@contracts/campusReports";
+import { getReportTabCompletion, type ReportCompletionRecord } from "@contracts/reportCompletion";
 
 /** 报告视图所需的测评数据（学生端来自 trpc.assessment.latest；伴学师端由其自己的数据源组装）。 */
 export type ReportAssessmentData = {
@@ -134,6 +136,8 @@ export type ReportAssessmentData = {
   /** V78 学科能力测评结果（9 科听懂/记住/运用自评）。 */
   subject?: SubjectAssessmentResult | null;
   raw?: { kind: string; answers: unknown; createdAt: Date | string }[];
+  /** 当前学员已保存的全部结果；仅用于栏目完成状态，不影响历次报告与授权。 */
+  completedRecords?: ReportCompletionRecord[];
 };
 export type ReportProfileInfo = { name?: string | null; grade?: string | null; academics?: AcademicsData | null };
 
@@ -1304,7 +1308,7 @@ function DiscDetail({ primary, dims, version, onGoCombined }: { primary: "D" | "
 }
 
 /** 家长管教风格 → 与不同主型孩子的常见摩擦点与建议（简版现场生成）。 */
-const PARENT_DISC_STYLE: Record<"D" | "I" | "S" | "C", { style: string; risk: Record<"D" | "I" | "S" | "C", string>; tip: string }> = {
+export const PARENT_DISC_STYLE: Record<"D" | "I" | "S" | "C", { style: string; risk: Record<"D" | "I" | "S" | "C", string>; tip: string }> = {
   D: {
     style: "指令多、节奏快、重结果",
     risk: {
@@ -1711,10 +1715,11 @@ function Multi5Detail({ result }: { result: Multi5Result }) {
  * 每行 = +端标签 ｜ 左数值列 ｜ 中心条（从 0% 向对应侧伸展）｜ 右数值列 ｜ -端标签。
  * 值跟轴走：正值 +N%（含 0%）标在左轴侧、负值 -N% 标在右轴侧。
  */
-function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
+export function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
   const keys: ("D" | "I" | "S" | "C")[] = ["D", "I", "S", "C"];
   return (
-    <div className="mt-4">
+    /* 四行是一句话：拆到两页就只剩半句（D/I 在上一页、S/C 在下一页）。整块不许拆。 */
+    <div className="mt-4 print:break-inside-avoid">
       <div className="text-[12.5px] font-bold text-olive">行为特征轴 · 双极倾向度</div>
       <div className="mt-2 space-y-2.5">
         {keys.map((k) => {
@@ -1723,8 +1728,13 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
           const val = `${discTendencyText(t)} · ${discBand(t)}`;
           return (
             <div key={k} className="flex items-center gap-2">
-              <span className={`w-[64px] shrink-0 text-right text-[12px] ${!neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
-                {DISC_BIPOLAR[k].plus} {k}+
+              {/* v293：行首写「这一维现在偏哪边」，不是固定的 + 端名。
+                  原来是「外向 I+」配 −37%，家长读成「外向怎么是负的」——标签和数值打架。 */}
+              {/* 行首恒粗：它写的是「这一维现在偏哪边」，是这一行的标题；
+                  对侧名字淡出，只作对照。原来按「左=+端」上色，负值时会出现
+                  「内向」是灰的、「外向」却加粗，读起来又反了。 */}
+              <span className="w-[64px] shrink-0 text-right text-[12px] font-bold text-olive">
+                {k} {!neg ? DISC_BIPOLAR[k].plus : DISC_BIPOLAR[k].minus}
               </span>
               <span className="mono w-[88px] shrink-0 text-right text-[12px]" style={{ color: !neg ? DISC_COLOR[k] : "#CBD5CC" }}>
                 {!neg ? val : ""}
@@ -1739,8 +1749,8 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
               <span className="mono w-[88px] shrink-0 text-[12px]" style={{ color: neg ? DISC_COLOR[k] : "#CBD5CC" }}>
                 {neg ? val : ""}
               </span>
-              <span className={`w-[64px] shrink-0 text-[12px] ${neg ? "font-bold text-olive" : "text-olive-mute/70"}`}>
-                {k}- {DISC_BIPOLAR[k].minus}
+              <span className="w-[64px] shrink-0 text-[12px] text-olive-mute/70">
+                {k} {neg ? DISC_BIPOLAR[k].plus : DISC_BIPOLAR[k].minus}
               </span>
             </div>
           );
@@ -1760,7 +1770,7 @@ function DiscBipolarAxis({ tendency }: { tendency: Record<"D" | "I" | "S" | "C",
 }
 
 /** 上下反弹区说明卡（学生/家长详版共用）：仅当任一因子进入反弹区（|倾向度|≥80%）时才显示。 */
-function DiscReboundExplain({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
+export function DiscReboundExplain({ tendency }: { tendency: Record<"D" | "I" | "S" | "C", number> }) {
   const inRebound = (["D", "I", "S", "C"] as const).some((k) => Math.abs(tendency[k]) >= DISC_REBOUND_PCT);
   if (!inRebound) return null;
   return (
@@ -2316,6 +2326,8 @@ type ReportViewProps = {
   subject4d?: unknown;
   /** v176：伴学师查看学员时的学员 userId（选科及升学规划报告栏目直达完整页用） */
   studentUserId?: number;
+  /** 学生／家长前台的校园逐报告授权；教师后台传 null，不按前台授权过滤。 */
+  allowedKinds?: string[] | null;
 };
 
 /**
@@ -2342,39 +2354,41 @@ function ReportViewInner({
   viewer,
   onEditAcademics,
   studentUserId,
+  allowedKinds,
 }: ReportViewProps) {
   const navigate = useNavigate();
   /* 有这层 Provider（= 伴学师看学员）时，receive 到的是「出码」；学生端为 null，还是老样子跳页 */
   const openPass = useAssessmentPass();
   const [params, setParams] = useSearchParams();
-  const tab: Tab = (params.get("tab") as Tab) || "combined";
-  /* V79：我的档案/成绩与目标移出栏目框（学生端置顶「基本信息」区）；伴学师端保留「成绩与目标」栏目 */
-  /* v199：查看对象（或本人）是校园渠道学生（粤华版）时，栏目只保留 选科及升学规划 / 职业兴趣 / 成绩与目标 */
+  const requestedTab = (params.get("tab") as Tab | null) ?? "combined";
   const { data: campusInfo } = trpc.invite.studentCampus.useQuery(
     { userId: viewer === "tutor" ? (studentUserId ?? undefined) : undefined },
     { enabled: viewer === "student" || studentUserId != null },
   );
-  const campusView = !!campusInfo?.campus;
-  /* v208：粤华学生所有报告页脚统一挂学校品牌（如「东莞粤华学校 · 生涯规划测评」）；非校园学生为 null，报告版式不变 */
-  const reportBrand = campusView ? (campusInfo?.brand ?? null) : null;
+  /* 逐报告授权只限制学生／家长前台；老师和管理员后台在原有 B 端权限内查看全部已测报告。 */
+  const campusView = viewer === "student" && (!!campusInfo?.campus || Array.isArray(allowedKinds));
+  const campusAllowed = Array.isArray(allowedKinds) ? allowedKinds : [];
+  const reportBrand = campusInfo?.campus ? (campusInfo.brand ?? null) : null;
   const tabs = useMemo(() => {
     const base: { key: Tab; label: string }[] =
       viewer === "tutor" ? [...TABS, { key: "academics" as Tab, label: "成绩与目标" }] : [...TABS];
-    return campusView ? base.filter((t) => t.key === "zhihui" || t.key === "holland" || t.key === "academics") : base;
-  }, [viewer, campusView]);
-  /* 校园版当前栏目不在保留列表（如旧链接带 tab=combined）时，自动落到选科及升学规划 */
+    return campusView
+      ? base.filter((t) => campusTabAllowed(t.key, campusAllowed))
+      : base;
+  }, [viewer, campusView, allowedKinds]);
+  const tab: Tab | "locked" = campusView
+    ? (tabs.some((t) => t.key === requestedTab) ? requestedTab : (tabs[0]?.key ?? "locked"))
+    : requestedTab;
+  /* 旧深链指向未授权栏目时，落到第一个已授权栏目。 */
   useEffect(() => {
-    if (campusView && !tabs.some((t) => t.key === tab)) {
-      setParams(
-        (p) => {
-          const n = new URLSearchParams(p);
-          n.set("tab", "zhihui");
-          return n;
-        },
-        { replace: true },
-      );
+    if (campusView && tabs.length > 0 && requestedTab !== tab) {
+      setParams((p) => {
+        const n = new URLSearchParams(p);
+        n.set("tab", tab);
+        return n;
+      }, { replace: true });
     }
-  }, [campusView, tab, tabs, setParams]);
+  }, [campusView, requestedTab, tab, tabs, setParams]);
 
   /** V3.7 判定：有 e3 但不是 V3.7 结果 → 旧版数据，提示重测。 */
   const e3v37 = isE3V37Result(data?.e3) ? data.e3 : null;
@@ -2880,23 +2894,57 @@ function ReportViewInner({
         </section>
       )}
 
-      {/* Tab 切换（v143：轨道=白色，选中=白底+墨绿字+墨绿框，未选中=白底墨绿灰字；
-          v176c→v180：「选科及升学规划（高一）」改为内嵌直开，与其他栏目一致不切页面） */}
-      <div className="flex flex-wrap gap-1 rounded-xl border border-[#1E3530]/10 bg-white p-1">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`grow basis-[30%] rounded-lg border px-2 py-2 text-[12.5px] font-semibold transition ${
-              tab === t.key
-                ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
-                : "border-transparent bg-white text-olive hover:border-[#1E3530]/15"
-            }`}
-          >
-            {t.key === "zhihui" ? `选科及升学规划（${profile?.grade || "高一"}）` : t.label}
-          </button>
-        ))}
+      {/* 已完成报告用薄荷绿、勾选图标和文字三重标识；综合报告另显示前置测评进度。 */}
+      <div className="flex flex-wrap gap-1.5 rounded-xl border border-[#1E3530]/10 bg-white p-1.5" aria-label="测评报告栏目">
+        {tabs.map((t) => {
+          const label = t.key === "zhihui" ? `选科及升学规划（${profile?.grade || "高一"}）` : t.label;
+          const completion = getReportTabCompletion(t.key, data?.completedRecords ?? data?.raw ?? [], !!academics?.subjects.length);
+          const latestDate = completion.latestCompletedAt ? new Date(completion.latestCompletedAt).toLocaleDateString("zh-CN") : "";
+          return (
+            <button
+              type="button"
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              aria-current={tab === t.key ? "page" : undefined}
+              aria-label={`${label}，${completion.label}${completion.highlighted ? "，查看报告" : ""}`}
+              data-completion={completion.complete ? "complete" : completion.highlighted ? "partial" : "none"}
+              title={`${label} · ${completion.label}${latestDate ? ` · 最近完成 ${latestDate}` : ""}`}
+              className={`flex min-h-[52px] grow basis-full flex-col justify-center rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0C7064] focus-visible:ring-offset-2 sm:basis-[30%] ${
+                completion.highlighted
+                  ? tab === t.key
+                    ? "border-[#0C7064] bg-[#DDF3E8] text-[#075E4F] shadow-sm"
+                    : "border-[#8AC3AD]/70 bg-[#EFF8F1] text-[#155E4B] hover:border-[#0C7064] hover:bg-[#E4F4E9]"
+                  : tab === t.key
+                    ? "border-[#0C7064] bg-white text-[#0C7064] shadow-sm"
+                    : "border-[#1E3530]/15 bg-white text-olive hover:border-[#0C7064]/40 hover:bg-cream/50"
+              }`}
+            >
+              <span className="flex w-full items-center justify-between gap-2 text-[12.5px] font-semibold leading-5">
+                <span>{label}</span>
+                {completion.highlighted && <CheckCircle2 size={17} className="shrink-0 text-[#0C7064]" aria-hidden="true" />}
+              </span>
+              {completion.highlighted ? (
+                <span className="mt-0.5 flex w-full items-center justify-between gap-2 text-[10.5px] font-semibold text-[#0C7064]">
+                  <span>{completion.label}</span>
+                  <span>{t.key === "academics" ? "查看内容" : "查看报告"} →</span>
+                </span>
+              ) : (
+                /* v273：未测评栏目也加边框（不突出底色），并补一行「未完成」字样，排版与已完成项对齐 */
+                <span className="mt-0.5 flex w-full items-center justify-between gap-2 text-[10.5px] text-olive-mute/80">
+                  <span>未完成</span>
+                  <span>测评后生成报告 →</span>
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
+      {campusView && tabs.length === 0 && (
+        <div className="paper-card p-8 text-center">
+          <h3 className="text-[16px] font-bold text-olive">报告暂未开放</h3>
+          <p className="mt-2 text-[13px] leading-relaxed text-olive-mute">老师会根据你的测评与学习情况开放报告，开放后学生和家长即可在这里查看。</p>
+        </div>
+      )}
 
       {/* 下载当前 tab 的报告 */}
       {canDownload && (

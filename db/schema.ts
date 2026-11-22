@@ -192,6 +192,8 @@ export const studentProfile = mysqlTable("student_profile", {
   onboarded: boolean("onboarded").notNull().default(false),
   /** V54：报告推送开关——false=测评报告由伴学师把关，家长暂不可见；true=已推送，家长可直接查看（伴学师/管理员在后台切换） */
   reportReleased: boolean("report_released").notNull().default(false),
+  /** 校园逐报告授权：NULL（含历史数据）= 未授权；非校园学生不使用此字段。 */
+  campusReportKinds: json("campus_report_kinds").$type<string[] | null>(),
   /** V55：家长「请伴学师推送报告」的请求时间（推送后清空） */
   reportPushRequestedAt: timestamp("report_push_requested_at"),
   /** v82：伴学师额外推送开放的测评种类（INVITE_ASSESS_KINDS 的 key 数组；null=无额外推送）。
@@ -263,10 +265,38 @@ export const assessmentResults = mysqlTable("assessment_results", {
   result: json("result").$type<Record<string, unknown>>().notNull(),
   /** 原始作答（题目选项/评分），供伴学师查看答题明细。 */
   answers: json("answers").$type<Record<string, unknown> | number[]>(),
+  /** 同一次作答提交／重试的唯一键；历史数据为空。 */
+  submissionKey: varchar("submission_key", { length: 64 }).unique(),
+  /** 机构测评任务关联；旧的无任务结果保持为空。 */
+  assignmentId: bigint("assignment_id", { mode: "number", unsigned: true }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export type AssessmentResult = typeof assessmentResults.$inferSelect;
+
+/* ---------------------------------- 人才测评 ---------------------------------- */
+/* v253：人才评估记录；v270 岗位从四值扩到六值（市场 mkt / 销售 sales / 行政 admin /
+ * 财务 fin / 教学服务 service / 潜质通道 pot，管理岗并入潜质通道）。
+ * 与 assessment_results 分开：那张表按「孩子」组织且 kind 是学生量表的枚举，
+ * 人才测评多出「岗位」「候选人」两维，报告的体量与查询方式也不同（按机构/发起人列表查）。 */
+export const talentAssessments = mysqlTable("talent_assessments", {
+  id: serial("id").primaryKey(),
+  orgId: bigint("org_id", { mode: "number", unsigned: true }),
+  /** 发起人（HR / 伴学师 / 本人自测）：报告归属与列表可见性都看这一列 */
+  ownerId: bigint("owner_id", { mode: "number", unsigned: true }).notNull().default(0),
+  candidateName: varchar("candidate_name", { length: 64 }).notNull().default(""),
+  position: mysqlEnum("position", ["mkt", "sales", "admin", "fin", "service", "pot"]).notNull(),
+  /** self = 本人登录自测；invite = 扫码作答（候选人 / 员工未登录） */
+  source: mysqlEnum("source", ["self", "invite"]).notNull().default("self"),
+  /** 完成度与当前岗位匹配度，落成列是为了列表页不解析整份报告 */
+  completeness: int("completeness").notNull().default(0),
+  fitScore: int("fit_score").notNull().default(0),
+  report: json("report").$type<Record<string, unknown>>().notNull(),
+  answers: json("answers").$type<Record<string, unknown> | number[]>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type TalentAssessment = typeof talentAssessments.$inferSelect;
 
 /* ---------------------------------- 试卷分析 ---------------------------------- */
 
@@ -435,11 +465,13 @@ export const organizations = mysqlTable("organizations", {
   edition: mysqlEnum("edition", ["school", "org"]).notNull().default("org"),
   /** 机构级设置（JSON）：xuanke.scoreWeight = 选科成绩权重%（0-60，空=默认：校园机构35/通用机构40）；
    *  assess.kinds = 校园版测评中心开放给本校的测评（INVITE_ASSESS_KINDS key 数组；含 "all" 或缺省=全部开放）；
-   *  services = 功能权限包（ORG_SERVICES key → 布尔；缺省=全部开启，见 contracts/edition.ts） */
+   *  services = 功能权限包（ORG_SERVICES key → 布尔；缺省=全部开启，见 contracts/edition.ts）；
+   *  campusUserLimit = 校园版学员注册账户上限（仅 school；未配置=存量校园机构不限，不使用积分） */
   settings: json("settings").$type<{
     xuanke?: { scoreWeight?: number };
     assess?: { kinds?: string[] };
     services?: Partial<import("@contracts/edition").OrgServices>;
+    campusUserLimit?: number;
   }>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
@@ -806,3 +838,6 @@ export const campusAssessPushes = mysqlTable("campus_assess_pushes", {
 });
 
 export type CampusAssessPush = typeof campusAssessPushes.$inferSelect;
+
+/* 机构版测评、积分、独立陪跑与五课：独立文件维护，统一经 @db/schema 注入 Drizzle。 */
+export * from "./orgServiceSchema";

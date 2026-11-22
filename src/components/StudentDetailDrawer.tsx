@@ -191,6 +191,10 @@ export default function StudentDetailDrawer({
               <p className="mt-2 text-[12.5px] text-olive-soft">
                 {(() => {
                   const a = data.assessments;
+                  if (Array.isArray(data.campusReportKinds)) {
+                    const completed = (data.completedKinds ?? []).map((kind) => KIND_LABELS[kind] ?? kind);
+                    return completed.length ? `已测 ${completed.length} 项：${[...new Set(completed)].join("、")}。老师和管理员可查看全部已测报告；学生／家长前台按授权显示。` : "还没有测评结果。";
+                  }
                   const names: string[] = [];
                   if (a.mbti) names.push("MBTI 性格测评");
                   if (a.disc) names.push("DISC 行为风格");
@@ -223,9 +227,11 @@ export default function StudentDetailDrawer({
                           mentalScl90: (a.optional?.scl90 as any) ?? null,
                           subject: (a.optional?.subject as any) ?? null,
                           e3parent: a.e3parent, discParents: (a.discParents ?? []) as any, raw: a.raw ?? [],
+                          completedRecords: data.completedRecords,
                         }}
                         profile={{ name: data.profile?.name || data.user.name, grade: data.profile?.grade, academics: data.academics as any }}
                         viewer="tutor"
+                        allowedKinds={null}
                         subject4d={data.assessments.optional?.subject4d ?? null}
                         studentUserId={userId}
                         onEditAcademics={() => {

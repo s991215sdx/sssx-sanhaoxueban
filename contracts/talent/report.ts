@@ -1,0 +1,810 @@
+/**
+ * 人才测评报告：把分数翻译成「这人放在哪个岗位、会卡在哪、怎么带」。
+ *
+ * 两条写作原则：
+ * 1）不给结论性标签（「他不适合做销售」），只描述行为与成本（「每天要打的陌生电话，他要额外消耗」）。
+ * 2）每条判断都指回具体维度分，读者能自己复核。
+ */
+
+import {
+  BIGFIVE_ITEMS,
+  EQ_DIM_LABEL,
+  EQ_FACTOR_LABEL,
+  EQ_FACTOR_DIMS,
+  EQ_ITEMS,
+  EQ_STANDALONE_DIMS,
+  BIGFIVE_DIM_LABEL,
+  VALUE_DIM_LABEL,
+  VALUE_ITEMS,
+  WORK_DISC_GROUPS,
+  type EqDim,
+  type EqFactor,
+} from "./bank";
+import {
+  allFits,
+  fitForJob,
+  FIT_BAND_LABEL,
+  FIT_BAND_TEXT,
+  CORE_GAP_LINE,
+  WEAK_LINE,
+  DIM_LABEL,
+  DIM_SOURCE,
+  JOB_LABEL,
+  JOB_BLURB,
+  JOB_WEIGHTS,
+  JOB_DUTY_PACK,
+  JOB_TRACK,
+  JOB_KIND,
+  JOB_ORDER,
+  WEIGHT_LABEL,
+  type JobFit,
+  type JobKey,
+  type TalentDim,
+  type TalentDims,
+  type BigFiveScores,
+  type ValueScores,
+  type DiscWorkScores,
+  type EqScores,
+  type Weight,
+} from "./score";
+import { PART_META, DUTY_PACKS, type DutyPackKey } from "./bank";
+import { cogItemsFor, cogTrackOf } from "./cognitive-bank";
+import {
+  COG_CORE_LINE,
+  COG_MAJOR_LINE,
+  COG_WEIGHT_LABEL,
+  assessCognitive,
+  cogValidity,
+  type CognitiveScores,
+} from "./cognitive-score";
+import { buildDiscProfile, type DiscProfile } from "./disc";
+import { buildPotential, type PotentialAssessment } from "./potential";
+import { personaOf, type JobPersona } from "./persona";
+
+/* ------------------------------ 维度解读 ------------------------------ */
+
+type Level = "high" | "mid" | "low";
+const levelOf = (s: number): Level => (s >= 65 ? "high" : s >= 35 ? "mid" : "low");
+
+/** 十维的三档解读。high 写「这样在岗位上是什么样」，low 写「代价是什么」，不写褒贬。 */
+const DIM_TEXT: Record<TalentDim, Record<Level, string>> = {
+  influence: {
+    high: "开口就能把事推着走，讲方案时对方容易跟着他的节奏想。丢给他一个不熟的客户，他敢先聊起来。",
+    mid: "该说的时候能说清楚，但不会主动去争。需要说服的场合，准备好材料他就能顶住。",
+    low: "更愿意把话讲准确，而不是讲动人。让他硬推一个家长当场签约，他会难受，效果也一般。",
+  },
+  empathy: {
+    high: "会先顺着对方的情绪走一段，家长发火时不容易被点着。代价是有时候太顾及人，该收口的时候收不住。",
+    mid: "能照顾到对方感受，但不会为此改变自己的判断。多数沟通场景够用。",
+    low: "更关注事情本身对不对，不太接得住情绪。遇到情绪重的家长，容易越解释越僵。",
+  },
+  order: {
+    high: "台账、记录、跟进表会做得很干净，交出去的东西基本不用返工。",
+    mid: "该记的会记，但不会为格式较真。事情多的时候偶尔会漏。",
+    low: "讨厌繁琐，台账容易断。要靠工具和流程兜，不能靠他自觉。",
+  },
+  drive: {
+    high: "盯着结果不放，被拒绝也不太影响下一步动作。目标清楚的时候，他能自己往前推。",
+    mid: "有目标就动，没目标就等安排。需要有人把数字明确给他。",
+    low: "不太主动冲量，更愿意把交代的事情做好。放到纯结果岗上会很吃力。",
+  },
+  stable: {
+    high: "被否定、被投诉之后能比较快回到正常状态，不会把一天的活都拖垮。",
+    mid: "多数时候稳得住，连续的坏消息会明显影响状态。",
+    low: "情绪回弹慢，一次冲突可能要缓一两天。天天要接投诉、扛业绩的岗位，得有人在背后接住他。",
+  },
+  duty: {
+    high: "答应的事会自己盯到闭环，不用人催。细节上不太需要别人复核。",
+    mid: "该做的会做完，遇到麻烦会先问一句再动。",
+    low: "开头热、收尾松，长期项目容易烂尾。需要拆小节点、定期检查。",
+  },
+  achieve: {
+    high: "自己要往上走，愿意接有难度的活。给成长空间比给钱更管用。",
+    mid: "有成长机会会接，但不主动找。需要有人推一把。",
+    low: "更看重当下稳定，不太愿意为「以后更好」多付出。用成长话术激励他没用。",
+  },
+  rule: {
+    high: "流程清楚他才安心，按制度办不会有心理摩擦。适合要守规矩的岗位。",
+    mid: "能守规矩，也能接受偶尔变通。",
+    low: "讨厌被流程束缚，喜欢自己找路子。放到强合规岗位会天天顶牛。",
+  },
+  lead: {
+    high: "愿意坐那个要管人的位置，指出问题、处理矛盾不会躲。",
+    mid: "能带人，但更愿意自己干。团队小、事情清楚的时候可以。",
+    low: "对管人没有兴趣，甚至排斥。硬提到管理岗，通常两头都做不好。",
+  },
+  detail: {
+    high: "数字、名单、时间这类东西他天然会多看一眼，出错率低。",
+    mid: "一般不会错，但在赶时间的时候会漏。",
+    low: "快比准重要，重复核对让他痛苦。要配复核机制。",
+  },
+};
+
+/* ------------------------------ 情商解读 ------------------------------ */
+
+/** 15 维的短板建议（只在低分时给）。每条都落到具体动作，不是「多练习」。 */
+const EQ_TIPS: Record<EqDim, string> = {
+  AD: "换流程、换负责人这类变动，提前给他一版书面说明：变什么、不变什么、什么时候定。信息缺口比变动本身更耗他。",
+  AS: "每周挑一次例会，让他把「我不同意的地方」讲完，不用先铺垫。练习的是「说出来不惹事」的经验。",
+  SC: "把任务拆到他能看到自己做成的小节点，每完成一个当面确认一次。自信靠证据堆，不靠鼓励。",
+  MO: "给他一个不用汇报、自己定节奏的小项目，一个月后只看结果。被盯着做事的人很难长出内驱。",
+  EE: "养成「先复述、再回应」的习惯：把对方的话用自己的话说一遍，问一句「我理解得对吗」。",
+  EM: "先从「让场面降温」这一件事练：不解决问题，只把人从情绪里捞出来，比如先倒杯水、换个地方。",
+  ER: "情绪上来时先做一件机械的事（记要点、倒水、走到窗边），给自己 60 秒，再决定说什么。",
+  EX: "把「我觉得」换成「我担心的是」——表达立场比表达情绪更容易被接住，也不容易被当成抱怨。",
+  IC: "重要消息发出前，强制自己放 10 分钟再发。他的问题不是不懂，是太快。",
+  RE: "给他一份「需要定期维护的人」清单（10 个以内），每月一次简短联系。关系靠节奏，不靠热情。",
+  SA: "进新场合前，先弄清三件事：这里谁说了算、大家怎么称呼、什么话不能在这说。",
+  SM: "压力大的时候先做「减法」而不是「加油」：把手上事情列出来，划掉三件不必须的。",
+  TE: "遇到不认同的人，先写一句「他这么做，可能是为了……」，写完再回应。",
+  HA: "把工作里让他舒服的具体事情记下来（哪类活、和谁搭），每周至少安排一件。",
+  OP: "对担心的事写「最坏会怎样、概率多大、我能做什么」三行。悲观本身不是问题，悬着才是。",
+};
+
+/* ------------------------------ 岗位带人建议 ------------------------------ */
+
+const JOB_COACHING: Record<JobKey, string[]> = {
+  mkt: [
+    "前两周不要只压名单数，先让他把「一条渠道从投钱到出名单」完整跑通一遍，哪怕只花 300 块。",
+    "每次活动结束当天就复盘：花了多少、来了多少、留下多少、哪一步漏得最多。不记录等于没做。",
+    "给他一个固定的成本口径（单条留资成本、单到店成本），否则他会用「曝光量」自我安慰。",
+    "换渠道之前先攒够数据，最少跑满一个周期。频繁换渠道的人，永远学不会判断。",
+  ],
+  sales: [
+    "前两周不要只压数字，先让他把话术跑顺：每天陪听 3 通电话，当天给一条具体改法。",
+    "把「被拒绝」正常化：晨会公开讲昨天最难的一通电话怎么接的，把挫败变成素材。",
+    "名单要分层给：先给意向度高的，让他先尝到成的感觉，再放冷名单。",
+    "结果指标之外加一个过程指标（有效沟通数），否则他会被成单率打击到不敢打。",
+  ],
+  service: [
+    "给他一套「家长情绪升级」的处理脚本：什么话必须说、什么话绝对不能说。",
+    "明确「哪些要求可以答应、哪些必须上报」，否则他会为了平息情绪乱承诺。",
+    "每周一次 20 分钟的个案复盘，只聊一个最难缠的家长，帮他把情绪和方法分开。",
+    "续费和满意度之外，看他的跟进记录质量——这是他这类岗位的真实功底。",
+  ],
+  admin: [
+    "把流程写成清单给他，不要口头交代。这类人靠清单稳定，不靠记性。",
+    "允许他问「为什么要这样」，回答清楚一次，以后就不用再管。",
+    "排课、金额这类高风险动作，设一道复核，别指望人不出错。",
+    "临时插事要提前说，突然改计划对他是最大的消耗。",
+  ],
+  fin: [
+    "把「哪些能退、哪些必须报」写成一张纸贴在他桌上。这类人不靠灵活，靠边界清楚。",
+    "业务催他「先办后补」时，要有人替他挡一次；否则他要么破规矩，要么被说成不配合。",
+    "月底对账留出完整半天，不要让他一边接电话一边核数——错误都出在这种时候。",
+    "复核机制要有，但别把他的工作变成「填表给复核看」：他是执行者，不是审计员。",
+  ],
+  pot: [
+    "先给 3 个人，不要一上来给 8 个。第一次带人的挫败感，会决定他以后想不想带。",
+    "把「你的考核是团队结果，不是你个人业绩」写进第一个月目标，否则他会回去抢单。",
+    "第一次处理人的矛盾要陪他过一遍；事后只复盘一件事：他第一句话怎么开的口。",
+    "给他决策的边界：哪些自己定、哪些必须报。边界不清的人会一直往上推。",
+  ],
+};
+
+/* ------------------------------ 面试追问 ------------------------------ */
+
+const JOB_INTERVIEW: Record<JobKey, string[]> = {
+  mkt: [
+    "你上一次把一个渠道的留资成本压下来，具体动了哪一环？花了多久看到数？",
+    "给你 3000 块、一周时间、60 条本地初三家长名单，你会怎么花？先说顺序。",
+    "一场活动做完，你手上会留下哪几个数？为什么是这几个？",
+  ],
+  sales: [
+    "讲一个你被连续拒绝之后，还继续跟进并最终成交的例子。当时第几天最难熬，你怎么过的？",
+    "家长说「我再考虑一下」，你接下来会做什么？请具体到你会说的第一句话。",
+    "你上一个周期没完成目标，差多少？你怎么判断差在哪一环？",
+  ],
+  service: [
+    "讲一次家长把不是你的责任推给你，你当时怎么回的？事后怎么处理自己的情绪？",
+    "有没有答应过家长一件你其实做不到的事？后来怎么收的场？",
+    "同时有三个家长找你，其中两个在发火，你先处理哪个？为什么？",
+  ],
+  admin: [
+    "给你一份排课表和一个退费单，你第一眼看什么？（现场给材料，看他从哪查起）",
+    "讲一次你发现的差错，是你自己发现的还是别人发现的？怎么发现的？",
+    "事情堆在一起、又有人催，你怎么排先后？举个最近的例子。",
+  ],
+  fin: [
+    "一笔钱对不上，你从哪一步开始查？先说顺序，再说为什么是这个顺序。",
+    "业务说「这单先退了，手续后补」，你怎么回？举一个你真实遇到过的。",
+    "月底最忙的时候有人插一件急事进来，你怎么排？",
+  ],
+  pot: [
+    "你现在带几个人？其中最难带的是谁，你做了什么，结果如何？",
+    "讲一次你不得不告诉下属「你做得不好」的谈话。你第一句话怎么说的？",
+    "手下最强的人提离职，你会怎么谈？先说你会问哪三个问题。",
+  ],
+};
+
+/* ------------------------------ 面试追问（按人定制） ------------------------------ */
+
+/**
+ * 每个维度偏低的追问模板。报告里的「面谈时值得追问的」不再是岗位通用的三句套话，
+ * 而是先问这个人这份卷子里暴露出的短板——追问只值钱在「针对他」，套话问谁都一样。
+ * 每一条都问「过去的真实行为」，不给「你会怎么做」这种能当场编答案的题。
+ */
+const DIM_PROBE: Record<TalentDim, string> = {
+  influence: "讲一次你没能说服对方的经历：对方为什么没被你说动？你后来做了什么补救？",
+  empathy: "遇到一个情绪很激动、又一时讲不清诉求的家长或客户，你会怎么开口？讲个真事。",
+  order: "讲一次因为记录、台账或流程出过岔子的事。当时是你自己发现，还是别人发现的？",
+  drive: "上一个你明确要完成的目标，最后差多少？你自己判断差在哪一环？",
+  stable: "讲一次你被当众否定或被投诉的经历。你当时怎么处理自己的情绪，多久才缓过来？",
+  duty: "讲一件你开了头、却拖了很久才收尾的事。为什么拖，最后怎么收的场？",
+  achieve: "最近一次你主动要「更难的事」是什么时候？没有的话，什么情况下你会主动去够一够？",
+  rule: "讲一次你觉得规矩不合理、想走别的路子的情况。你最后怎么做的，为什么？",
+  lead: "你带过人吗？讲一次你不得不当面指出下属「做得不好」的谈话，第一句话你怎么说？",
+  detail: "讲一次你因为粗心出错、被客户或上级抓住的事。后来你用了什么办法防再犯？",
+};
+
+/* ------------------------------ 附录：原始作答明细 ------------------------------ */
+
+/** 交上来的原始作答。和打分用的答案键无关——这里只把「题号 → 作答值」原样保留下来。 */
+export type RawTalentAnswers = {
+  bigfive?: Record<string, number>;
+  value?: Record<string, number>;
+  discwork?: { most?: number[]; least?: number[] };
+  eq?: Record<string, number>;
+  duty?: Record<string, number | string>;
+  /** 开放题（P08 / P09 等）的一句话补充：不参与计分，随答卷留存 */
+  notes?: Record<string, string>;
+  /** 工作能力客观题：题号 → 选项下标 */
+  cognitive?: Record<string, number>;
+  cognitiveTimeSec?: number;
+};
+
+export type AnswerAppendixItem = {
+  /** 段内序号（1 起） */
+  no: number;
+  /** 题号（B01 / V01 / D1 / E01 / S01 / C01 …） */
+  id: string;
+  /** 题目原文 */
+  text: string;
+  /** 作答：量尺文字 / 选中的选项原文 / DISC「最像…· 最不像…」/ 未作答 */
+  answer: string;
+  /** 客观题专用：是否答对（错答题会给出正确答案原文） */
+  correct?: boolean;
+  correctText?: string;
+};
+
+export type AnswerAppendixSection = {
+  key: string;
+  title: string;
+  items: AnswerAppendixItem[];
+};
+
+export type AnswerAppendix = {
+  total: number;
+  answered: number;
+  sections: AnswerAppendixSection[];
+};
+
+/** 五段量尺对应的文字。大五/价值观/岗位加测的情境题用 5 点，情商用 7 点。 */
+const L5 = ["非常不符合", "不太符合", "一半一半", "比较符合", "非常符合"];
+const L7 = ["完全不符合", "比较不符合", "有点不符合", "说不好", "有点符合", "比较符合", "完全符合"];
+
+const likertText = (v: number | undefined, scale: string[]) =>
+  v != null && Number.isFinite(v) && v >= 1 && v <= scale.length ? scale[Math.round(v) - 1] : "未作答";
+
+/**
+ * 把原始作答还原成「谁答了什么」，作为报告附录。
+ *
+ * 报告正文讲的是「分数意味着什么」，附录讲的是「这分数是从哪几笔答出来的」——
+ * 用人部门要复核、要存证、要跟候选人核对，都能翻到这一页。缺答的题如实标「未作答」，
+ * 不假装每道都答了。
+ */
+export function buildAnswerAppendix(position: JobKey, answers: RawTalentAnswers): AnswerAppendix {
+  const sections: AnswerAppendixSection[] = [];
+  let total = 0;
+  let answered = 0;
+
+  const likertSection = (
+    key: string,
+    title: string,
+    items: { id: string; text: string }[],
+    bucket: Record<string, number> | undefined,
+    scale: string[],
+  ) => {
+    const rows = items.map((it, i) => {
+      const v = bucket?.[it.id];
+      return { no: i + 1, id: it.id, text: it.text, answer: likertText(v, scale) };
+    });
+    sections.push({ key, title, items: rows });
+    total += rows.length;
+    answered += rows.filter((r) => r.answer !== "未作答").length;
+  };
+
+  /* 大五 20 题 · 5 点 */
+  likertSection("bigfive", PART_META.bigfive.name, BIGFIVE_ITEMS, answers.bigfive, L5);
+  /* 工作价值观 18 题 · 5 点 */
+  likertSection("value", PART_META.value.name, VALUE_ITEMS, answers.value, L5);
+
+  /* 职场 DISC 24 组：每组一个「最像」一个「最不像」，落在同一个四词组上 */
+  {
+    const most = answers.discwork?.most ?? [];
+    const least = answers.discwork?.least ?? [];
+    const rows = WORK_DISC_GROUPS.map((g, i) => {
+      const m = most[i];
+      const l = least[i];
+      const hasM = m != null && m >= 0 && m < g.words.length;
+      const hasL = l != null && l >= 0 && l < g.words.length;
+      const answer =
+        hasM || hasL ? `最像「${hasM ? g.words[m] : "—"}」· 最不像「${hasL ? g.words[l] : "—"}」` : "未作答";
+      return { no: i + 1, id: `D${i + 1}`, text: g.words.join(" / "), answer };
+    });
+    sections.push({ key: "discwork", title: PART_META.discwork.name, items: rows });
+    total += rows.length;
+    answered += rows.filter((r) => r.answer !== "未作答").length;
+  }
+
+  /* 特质情商 30 题 · 7 点 */
+  likertSection("eq", PART_META.eq.name, EQ_ITEMS, answers.eq, L7);
+
+  /* 岗位加测：情境题用 5 点，情境选择题回显选中项原文 */
+  {
+    const pack = DUTY_PACKS[JOB_DUTY_PACK[position]];
+    const du = answers.duty ?? {};
+    const rows = pack.items.map((it, i) => {
+      const v = du[it.id];
+      if (it.kind === "likert") {
+        return { no: i + 1, id: it.id, text: it.text, answer: likertText(typeof v === "number" ? v : undefined, L5) };
+      }
+      const idx = typeof v === "number" && Number.isFinite(v) ? v : undefined;
+      return { no: i + 1, id: it.id, text: it.text, answer: idx != null && idx >= 0 && idx < it.options.length ? it.options[idx].text : "未作答" };
+    });
+    sections.push({ key: "duty", title: pack.name, items: rows });
+    total += rows.length;
+    answered += rows.filter((r) => r.answer !== "未作答").length;
+  }
+
+  /* 工作能力（客观题）：回显选项字母与原文，错题附正确答案——可复核、可存证 */
+  {
+    const cog = answers.cognitive ?? {};
+    const rows = cogItemsFor(cogTrackOf(cog)).map((it, i) => {
+      const v = cog[it.id];
+      const has = typeof v === "number" && Number.isFinite(v) && v >= 0 && v < it.options.length;
+      const right = has && v === it.answer;
+      return {
+        no: i + 1,
+        id: it.id,
+        text: it.text,
+        answer: has ? `${"ABCD"[v]}· ${it.options[v]}` : "未作答",
+        correct: has ? right : undefined,
+        correctText: right ? undefined : `${"ABCD"[it.answer]}· ${it.options[it.answer]}`,
+      };
+    });
+    sections.push({ key: "cognitive", title: "工作能力（客观题）", items: rows });
+    total += rows.length;
+    answered += rows.filter((r) => r.answer !== "未作答").length;
+  }
+
+  return { total, answered, sections };
+}
+
+/* ------------------------------ 特质 × 能力 四象限 ------------------------------ */
+
+/** 特质面（十维加权匹配）× 能力面（客观题）合成一个行动象限：两个面分开看都会误判。 */
+const QUADRANT_TEXT = {
+  star: {
+    title: "特质与能力都对得上",
+    short: "优先推进",
+    advice: "日常做事的方式贴近这个岗，客观题也证明能力够。建议直接推进到面试或试用，考察重点放在动机与稳定性上——「能不能做」这一层已经不必反复验证。",
+  },
+  misplaced: {
+    title: "能力够，但不是这个岗的人",
+    short: "考虑转岗",
+    advice: "客观题证明能力站得住，但做事方式与这个岗的日常要求不合。这类人最典型的结局是「干得成、干得难受」，往往半年内自己走。建议看五岗里匹配度最高的那个，差距在 10 分以上就谈转岗，比硬留划算。",
+  },
+  coachable: {
+    title: "人对了，能力有短板",
+    short: "先验工作样本",
+    advice: "做事方式是对的，客观题暴露的是能力短板。这类短板靠鼓励补不上，得上手上练。建议先安排一次真实工作样本（限时算一套报价、现场校对一份排课表）再定；录用则前三个月配带教，把任务拆成能看见进度的小节点。",
+  },
+  notyet: {
+    title: "两侧都不在要求上",
+    short: "暂缓",
+    advice: "特质与能力都不在这个岗的要求上。不建议现在放入；确实缺人，也只能放在有强流程、有老手兜底的辅助位置，并事先讲清观察期与退出条件。",
+  },
+};
+
+/** 能力短板对应的真实工作样本验证法：报告里给的是「怎么验」，不是「多练习」。 */
+const COG_VERIFY = {
+  verbal: "给一份真实规则（退费、赠课、排课任选），让他在 5 分钟内讲清「家长这种情况该怎么处理」——听的是他有没有抓住条件。",
+  numeric: "现场给一张报价单和一份时间表，让他算出两种方案的总价与差额，限时 5 分钟、允许用计算器。",
+  abstract: "给一份他没用过的系统或表格，讲一遍操作后让他复述步骤并指出一个可能的错误——抽象推理弱的人在这里会明显卡住。",
+};
+
+const ABILITY_LABEL = {
+  ok: "达标",
+  partial: "差一点",
+  low: "明显偏低",
+};
+
+const ABILITY_TEXT = {
+  ok: "岗位看重的核心能力维全部达到参考线，作为「能不能做」的证据是站得住的。",
+  partial: "核心能力维有一项没到参考线。够用，但撑不起这个岗最吃力的那部分工作。",
+  low: "核心能力维存在明显短板。这一项不补，日常工作会持续撞墙。",
+};
+
+/* ------------------------------ 报告数据 ------------------------------ */
+
+export type TalentReportInput = {
+  name: string;
+  position: JobKey;
+  generatedAt: string;
+  /** 原始作答（用于报告附录的「原始作答明细」） */
+  answers?: RawTalentAnswers;
+  /** 已完成的作答部分 */
+  parts: {
+    bigfive?: BigFiveScores;
+    value?: ValueScores;
+    discwork?: DiscWorkScores;
+    eq?: EqScores;
+    duty?: { pack: DutyPackKey; score: number; answered: number } | null;
+  };
+  dims: TalentDims;
+  details: { key: TalentDim; label: string; score: number; basis: "measured" | "estimated"; source: string }[];
+  answered: { bigfive?: number; value?: number; discwork?: number; eq?: number; duty?: number; cognitive?: number };
+  /** 工作能力计分结果（客观题未作答时为 null） */
+  cognitive?: CognitiveScores | null;
+  /** 能力段用时（秒），效度检查用 */
+  cognitiveTimeSec?: number;
+};
+
+export type TalentReport = {
+  meta: {
+    name: string;
+    position: JobKey;
+    positionLabel: string;
+    /** 岗位链路位置（前段/中段/后段/通道）与类型（岗位/潜质通道） */
+    positionTrack: string;
+    kind: "job" | "potential";
+    generatedAt: string;
+  };
+  completeness: { done: string[]; missing: string[]; pct: number };
+  fits: JobFit[];
+  current: JobFit;
+  currentBand: { key: string; label: string; text: string };
+  /** pot 通道的潜质评估（岗位测评为 null） */
+  potential: PotentialAssessment | null;
+  /** 岗位人物小传：选岗页与报告页共用 */
+  persona: JobPersona;
+  /** 一句话结论 + 用人动作 + 重点观察项。让 HR 第一眼拿到决策，而不是从分数里自己拼。 */
+  summary: { verdict: string; action: string; focus: string[] };
+  /** 这个岗位「要什么」对照「他多少」：核心/重要维逐个摆开，标达标 / 差一点 / 明显偏低。 */
+  requirements: { dim: TalentDim; label: string; weight: Weight; score: number; status: "met" | "edge" | "gap" }[];
+  dims: { key: TalentDim; label: string; score: number; level: Level; text: string; source: string; basis: string }[];
+  weights: { dim: TalentDim; label: string; source: string; values: Record<JobKey, Weight> }[];
+  strengths: { label: string; score: number; text: string }[];
+  risks: { dim: TalentDim; label: string; score: number; text: string; isCore: boolean }[];
+  bigger: { bigfive: BigFiveScores | null; value: ValueScores | null; disc: DiscWorkScores | null };
+  /** 职场 DISC 画像：风格 + 与岗位日常的顺逆（作答不足时为 null） */
+  disc: DiscProfile | null;
+  /** 能力面评估：维度正确率 / 达标判断 / 效度 / 特质×能力象限（无客观题作答时为 null） */
+  cognitive: {
+    track: string;
+    trackLabel: string;
+    dims: { dim: string; label: string; correct: number; total: number; rate: number; weight: number; weightLabel: string; status: "met" | "edge" | "gap"; line: number }[];
+    overall: { correct: number; total: number; rate: number };
+    ability: "ok" | "partial" | "low";
+    abilityLabel: string;
+    abilityText: string;
+    weak: { dim: string; label: string; rate: number; status: string; text: string }[];
+    validity: { key: string; label: string; text: string; time: { usedSec: number; limitSec: number; state: string; text: string }; doneRate: number };
+    matrix: {
+      quadrant: string;
+      title: string;
+      short: string;
+      advice: string;
+      trait: { label: string; detail: string; good: boolean };
+      ability: { label: string; detail: string; good: boolean };
+    };
+    verify: string[];
+  } | null;
+  eq: {
+    overall: number;
+    level: string;
+    factors: { key: EqFactor; label: string; score: number; dims: { dim: EqDim; label: string; score: number }[] }[];
+    standalone: { dim: EqDim; label: string; score: number }[];
+    low3: { dim: EqDim; label: string; score: number; tip: string }[];
+    high3: { dim: EqDim; label: string; score: number }[];
+    /** 情商与岗位的交点：这个岗位最吃哪几个情商维 */
+  } | null;
+  coaching: string[];
+  interview: string[];
+  caveats: string[];
+  /** 原始作答明细：附录用，逐题回显「题号 + 题目 + 作答选项原文」 */
+  appendix: AnswerAppendix;
+};
+
+/** 岗位最吃的情商维（用于把情商分数接到岗位上，而不是孤立地看） */
+export const JOB_EQ_FOCUS: Record<JobKey, EqDim[]> = {
+  mkt: ["OP", "SM", "AS", "SC"],
+  sales: ["OP", "SM", "EM", "AS"],
+  service: ["ER", "TE", "SM", "RE"],
+  admin: ["IC", "AD", "SM", "SC"],
+  fin: ["IC", "SM", "AD", "SC"],
+  pot: ["EM", "AS", "SC", "MO"],
+};
+
+const eqLevelText = (s: number) =>
+  s >= 75 ? "高于平均水平" : s >= 45 ? "平均水平" : "低于平均水平";
+
+export function buildTalentReport(input: TalentReportInput): TalentReport {
+  const { dims, details, parts, answered, position } = input;
+
+  const appendix = buildAnswerAppendix(position, input.answers ?? {});
+
+  const done: string[] = [];
+  const missing: string[] = [];
+  const partKeys: { key: string; name: string; n: number; need: number }[] = [
+    { key: "bigfive", name: PART_META.bigfive.name, n: answered.bigfive ?? 0, need: 16 },
+    { key: "value", name: PART_META.value.name, n: answered.value ?? 0, need: 14 },
+    { key: "discwork", name: PART_META.discwork.name, n: answered.discwork ?? 0, need: 20 },
+    { key: "eq", name: PART_META.eq.name, n: answered.eq ?? 0, need: 24 },
+    {
+      key: JOB_DUTY_PACK[position],
+      name: PART_META[JOB_DUTY_PACK[position]].name,
+      n: answered.duty ?? 0,
+      /* 按该包实际题量算八成：包扩题以后不必回来改这个数字，也不会出现「答完却不计入完成」 */
+      need: Math.ceil(DUTY_PACKS[JOB_DUTY_PACK[position]].items.length * 0.8),
+    },
+  ];
+  if (input.cognitive) {
+    partKeys.push({ key: "cognitive", name: "工作能力（客观题）", n: answered.cognitive ?? 0, need: 13 });
+  }
+  for (const p of partKeys) {
+    if (p.n >= p.need) done.push(p.name);
+    else missing.push(p.name);
+  }
+  const completeness = {
+    done,
+    missing,
+    pct: Math.round((done.length / partKeys.length) * 100),
+  };
+
+  const fits = allFits(dims);
+  const isPotential = position === "pot";
+  const current = isPotential ? fitForJob("pot", dims) : fits.find((f) => f.job === position) ?? fits[0];
+  const band = current.band;
+  const potential = isPotential ? buildPotential(dims, { leadMeasured: (answered.duty ?? 0) >= 12 }) : null;
+
+  /* 能力面：客观题正确率 × 岗位权重 = 「能不能做」。和特质面分开算，再合成象限。 */
+  const cogInput = input.cognitive ?? null;
+  const cogTrack = input.answers?.cognitive ? cogTrackOf(input.answers.cognitive) : "edu";
+  const cog = cogInput
+    ? (() => {
+        const a = assessCognitive(cogInput, position);
+        const cogDims = a.dims.map((d) => ({
+          dim: d.dim,
+          label: d.label,
+          correct: d.correct,
+          total: d.total,
+          rate: d.rate,
+          weight: d.weight,
+          weightLabel: COG_WEIGHT_LABEL[d.weight],
+          status: d.status,
+          line: d.weight === 2 ? COG_MAJOR_LINE : COG_CORE_LINE,
+        }));
+        const coreNames = cogDims.filter((d) => d.weight === 3).map((d) => d.label);
+        const weakNames = a.weak.map((x) => x.label);
+        const validity = cogValidity(cogInput, input.answers?.cognitive ?? {}, input.cognitiveTimeSec ?? 0, answered.cognitive, cogTrack);
+        const thin = validity.key === "thin";
+        const traitStrong = band === "strong" || band === "fit";
+        const traitGood = band !== "off";
+        const abilityGood = a.ability === "ok";
+        const quadrant = abilityGood ? (traitGood ? "star" : "misplaced") : traitGood ? "coachable" : "notyet";
+        const q = QUADRANT_TEXT[quadrant as keyof typeof QUADRANT_TEXT];
+        const conditional = quadrant === "star" && !traitStrong;
+        return {
+          track: cogTrack,
+          trackLabel: cogTrack === "general" ? "通用版" : "教育行业版",
+          dims: cogDims,
+          overall: a.overall,
+          ability: a.ability,
+          abilityLabel: thin ? "数据不足" : ABILITY_LABEL[a.ability],
+          abilityText: thin
+            ? "本段未答完，正确率只反映答过的那部分，不能当作能力上限；结论请以工作样本为准。"
+            : ABILITY_TEXT[a.ability],
+          weak: a.weak.map((x) => ({ ...x, text: COG_VERIFY[x.dim as keyof typeof COG_VERIFY] ?? "" })),
+          validity,
+          matrix: {
+            quadrant,
+            title: q.title,
+            short: conditional ? "可推，配兜底" : q.short,
+            advice: thin
+              ? `能力段未答完，这个象限仅供参考。${q.advice}`
+              : conditional
+                ? `特质面只是「有条件匹配」：能用，但有一两项不是他的长处，得靠流程或搭档兜住。${q.advice}`
+                : q.advice,
+            trait: {
+              label: traitStrong ? "特质面：基本匹配" : traitGood ? "特质面：有条件匹配" : "特质面：不匹配",
+              detail: `十维加权匹配度 ${current.score} 分（${FIT_BAND_LABEL[band]}）`,
+              good: traitGood,
+            },
+            ability: {
+              label: `能力面：${thin ? "数据不足" : ABILITY_LABEL[a.ability]}`,
+              detail:
+                a.ability === "ok"
+                  ? `${coreNames.join("、") || "核心能力"} 均在 ${COG_CORE_LINE}% 参考线之上`
+                  : `${weakNames.join("、") || "核心能力"} 未到参考线（${a.ability === "low" ? "明显偏低" : "差一点"}）`,
+              good: abilityGood,
+            },
+          },
+          verify: [...new Set(a.weak.map((x) => COG_VERIFY[x.dim as keyof typeof COG_VERIFY]).filter(Boolean))].slice(0, 2),
+        };
+      })()
+    : null;
+
+  const dimRows = details.map((d) => {
+    const level = levelOf(d.score);
+    return { key: d.key, label: d.label, score: d.score, level, text: DIM_TEXT[d.key][level], source: d.source, basis: d.basis };
+  });
+
+  const weights = (Object.keys(DIM_LABEL) as TalentDim[]).map((dim) => ({
+    dim,
+    label: DIM_LABEL[dim],
+    source: DIM_SOURCE[dim],
+    values: Object.fromEntries(JOB_ORDER.map((j) => [j, JOB_WEIGHTS[j][dim]])) as Record<JobKey, Weight>,
+  }));
+
+  /* 强项：优先给「当前岗位权重 ≥2 且分高」的，读的人才用得上 */
+  const w = JOB_WEIGHTS[position];
+  const ranked = [...dimRows].sort((a, b) => b.score - a.score);
+  const strengths = ranked
+    .filter((d) => d.score >= 60)
+    .sort((a, b) => w[b.key] - w[a.key] || b.score - a.score)
+    .slice(0, 3)
+    .map((d) => ({ label: d.label, score: d.score, text: d.text }));
+
+  const risks = ranked
+    .filter((d) => d.score < 55)
+    .sort((a, b) => w[b.key] - w[a.key] || a.score - b.score)
+    .slice(0, 3)
+    .map((d) => ({ dim: d.key, label: d.label, score: d.score, text: d.text, isCore: w[d.key] === 3 }));
+
+  /* 用人要求对照：只摆这个岗的核心(3)/重要(2)维，不摆加分项(1)和无关项(0)——
+     加分项列进来会稀释「这个岗到底看什么」，HR 反而看不清重点。 */
+  const requirements: TalentReport["requirements"] = (Object.keys(w) as TalentDim[])
+    .filter((dim) => w[dim] >= 2)
+    .map((dim) => {
+      const score = dims[dim];
+      /* 核心维：<40 明显偏低(硬缺口)、40–64 差一点、≥65 达标；重要维线放低一档 */
+      const status: "met" | "edge" | "gap" =
+        w[dim] === 3
+          ? score < CORE_GAP_LINE
+            ? "gap"
+            : score < 65
+              ? "edge"
+              : "met"
+          : score < WEAK_LINE
+            ? "gap"
+            : score < 60
+              ? "edge"
+              : "met";
+      return { dim, label: DIM_LABEL[dim], weight: w[dim], score, status };
+    })
+    .sort((a, b) => b.weight - a.weight || a.score - b.score);
+
+  /* 一句话结论 + 用人动作。决策结论前置：读的人第一眼看到的是「怎么办」，不是一堆分数。 */
+  const focus = [...new Set([...current.gaps.map((g) => g.label), ...risks.map((r) => r.label)])].slice(0, 3);
+  const focusText = focus.length ? focus.map((f) => `「${f}」`).join("、") : "关键维度";
+  const action = (() => {
+    const base = (() => {
+      if (isPotential && potential) {
+        const riskTail = potential.risk.key === "steady" ? "" : `最需要盯的是${potential.risk.label}：${potential.risk.text}`;
+        return `他在「${potential.best.label}」最省力，摊子先按「${potential.teamSize}」给。${riskTail}`;
+      }
+      switch (band) {
+        case "strong":
+          return `建议进入下一步（面试或试用）。优先安排能发挥「${strengths[0]?.label ?? "他的长处"}」的事，方法带一带就能上手。`;
+        case "fit":
+          return `建议试用观察。试用期重点看 ${focusText} 能不能在实际工作里补上来，再决定去留。`;
+        case "watch":
+          return `可以用，但别让他一个人扛——${focusText} 要靠流程或搭档兜住，观察一段再决定是否长期。`;
+        case "off":
+          return `不建议放这个岗。可以回头看看五岗里分数最高的「${fits[0].label}」（${fits[0].score} 分），那里他更省力。`;
+      }
+    })();
+    if (!cog) return base;
+    const weakText = cog.weak.map((x) => x.label).join("、") || "核心能力";
+    if (cog.ability === "low") return `${base}但客观题里 ${weakText} 明显偏低，建议先做一次真实工作样本再定。`;
+    if (cog.ability === "partial") return `${base}客观题里 ${weakText} 差一点，试用期要专门验证这一项。`;
+    return base;
+  })();
+
+  const eq = parts.eq
+    ? (() => {
+        const e = parts.eq!;
+        const dimRowsEq = (Object.keys(EQ_DIM_LABEL) as EqDim[]).map((d) => ({ dim: d, label: EQ_DIM_LABEL[d], score: e.dims[d] }));
+        const sorted = [...dimRowsEq].sort((a, b) => a.score - b.score);
+        return {
+          overall: e.overall,
+          level: eqLevelText(e.overall),
+          factors: (Object.keys(EQ_FACTOR_LABEL) as EqFactor[]).map((f) => ({
+            key: f,
+            label: EQ_FACTOR_LABEL[f],
+            score: e.factors[f],
+            dims: EQ_FACTOR_DIMS[f].map((d) => ({ dim: d, label: EQ_DIM_LABEL[d], score: e.dims[d] })),
+          })),
+          standalone: EQ_STANDALONE_DIMS.map((d) => ({ dim: d, label: EQ_DIM_LABEL[d], score: e.dims[d] })),
+          low3: sorted.slice(0, 3).map((x) => ({ ...x, tip: EQ_TIPS[x.dim] })),
+          high3: sorted.slice(-3).reverse(),
+        };
+      })()
+    : null;
+
+  const coaching = [...JOB_COACHING[position]];
+  /* 有硬缺口的，第一条建议直接指向缺口，别让读者自己去对表 */
+  if (current.gaps.length) {
+    const g = current.gaps[0];
+    coaching.unshift(`${g.label}只有 ${g.score} 分，这是${isPotential ? "这一段" : "这个岗位"}的核心项——不要靠"多提醒"解决，得改流程或配人补位。`);
+  }
+
+  const caveats = [
+    "本报告用的是自编题本，结构参考大五、DISC、特质情绪智力的公开框架，不是任何商业量表的授权版本，没有外部常模。分数是「和自己比、和同事比」的参考，不是百分位排名。",
+    "自评题会被美化，越是在意的维度越容易答高。关键判断请结合工作样本（试讲、模拟电话、现场校对）和结构化面试。",
+    "「成就动机」「规则遵从」两项来自工作价值观，测的是「多看重」而不是「多强」。看重不等于做得到。",
+    ...(missing.length ? [`本次未完成：${missing.join("、")}。相关维度用相邻数据估了值，报告中已标「估算」，结论请打折看。`] : []),
+    ...(cog
+      ? [
+          `工作能力段的正确率不是百分位排名：题本自编、暂无常模，核心 ${COG_CORE_LINE}% / 重要 ${COG_MAJOR_LINE}% 是参考线，不是常模切点。21 题在 15 分钟内完成，分维度信度约 0.65——单个能力维只能作参考，总分与达标判断才作主结论。`,
+        ]
+      : []),
+    ...(potential
+      ? [
+          "潜质指数看的是「现在这一刻」，不是终身判定；它只用来决定「要不要给机会」，给多大机会要看试用期的实际结果。带人这件事，真实带过一小队人的预测力高于任何问卷。",
+        ]
+      : []),
+    "测评不作为录用或淘汰的唯一依据，也不解释为心理诊断。",
+  ];
+
+  /* 面试追问：先问这个人这份卷子暴露出的短板，再用岗位通用题打底。
+     追问只有「针对他」才值钱，套话问谁都一样。 */
+  const probeDims = [...new Set([...current.gaps.map((g) => g.dim), ...risks.map((r) => r.dim)])].slice(0, 2);
+  const interview = [...probeDims.map((d) => DIM_PROBE[d]), ...JOB_INTERVIEW[position].slice(0, 2)];
+
+  return {
+    meta: {
+      name: input.name,
+      position,
+      positionLabel: JOB_LABEL[position],
+      positionTrack: JOB_TRACK[position],
+      kind: JOB_KIND[position],
+      generatedAt: input.generatedAt,
+    },
+    completeness,
+    fits,
+    current,
+    currentBand: {
+      key: potential ? potential.band : band,
+      label: potential ? potential.bandLabel : FIT_BAND_LABEL[band],
+      text: potential ? potential.bandText : FIT_BAND_TEXT[band],
+    },
+    potential,
+    persona: personaOf(position),
+    summary: {
+      verdict: potential ? `${potential.bandLabel} · ${potential.best.label}` : FIT_BAND_TEXT[band],
+      action,
+      focus,
+    },
+    requirements,
+    dims: dimRows,
+    weights,
+    strengths,
+    risks,
+    bigger: { bigfive: parts.bigfive ?? null, value: parts.value ?? null, disc: parts.discwork ?? null },
+    disc: parts.discwork && (answered.discwork ?? 0) >= 12 ? buildDiscProfile(parts.discwork, position) : null,
+    eq,
+    coaching,
+    interview,
+    caveats,
+    cognitive: cog,
+    appendix,
+  };
+}
+
+/* ------------------------------ 供 UI 复用的元信息 ------------------------------ */
+
+export { JOB_LABEL, JOB_BLURB, JOB_WEIGHTS, WEIGHT_LABEL, DIM_LABEL, DIM_SOURCE, FIT_BAND_LABEL, FIT_BAND_TEXT, CORE_GAP_LINE, WEAK_LINE };
+export { DUTY_PACKS, PART_META, BIGFIVE_DIM_LABEL, VALUE_DIM_LABEL };

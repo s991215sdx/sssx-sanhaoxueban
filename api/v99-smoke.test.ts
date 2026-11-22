@@ -13,7 +13,7 @@ function need(src: string, needle: string, label: string) {
 
 describe("v99 回收站跳转修复", () => {
   it("RoleGate 员工路径白名单含 /recycle-bin", () => {
-    need(read("src/App.tsx"), 'staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report"]', "员工路径白名单");
+    need(read("src/App.tsx"), 'staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report", "/talent"]', "员工路径白名单");
   });
 });
 
@@ -37,7 +37,7 @@ describe("v99 删除人与可见范围", () => {
     need(recycle, "deletedByName", "列表带删除人");
     need(recycle, "visibleDeletedStudentIds", "可见范围函数");
     const coach = read("api/coachRouter.ts");
-    need(coach, "visibleDeletedStudentIds(db, ctx.user.id)", "回收站按可见范围过滤");
+    need(coach, "visibleDeletedStudentIds(db, ctx.user)", "回收站按当前身份机构与可见范围过滤");
   });
 
   it("isMyStudent 追加扫码注册条件", () => {

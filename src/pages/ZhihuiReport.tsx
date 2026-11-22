@@ -276,13 +276,13 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   /* v217：首选科目回传后端做专业推荐过滤。首屏数据未到前为 undefined（后端按四维潜力兜底），
      combos 算出后回填并触发一次精确重取 */
   const [firstTrackOpt, setFirstTrackOpt] = useState<"物理" | "历史" | undefined>(undefined);
-  const { data, isLoading } = trpc.zhihui.reportData.useQuery({ studentId, firstTrack: firstTrackOpt });
+  const { data, error, isLoading } = trpc.zhihui.reportData.useQuery({ studentId, firstTrack: firstTrackOpt });
   /* v194：校园渠道标识（粤华版选科规则/权重/成绩门禁） */
   const { data: access } = trpc.invite.myAssessmentAccess.useQuery();
   const campus = !!access?.campus && !studentId; // 内嵌查看（伴学师看别人）时不启用校园版规则
-  /* v198：校园版标题「粤华学校 新高一选科规划与生涯指导」——校名去地名前缀 */
-  const schoolShort = (access?.orgName || "粤华学校").replace(/^东莞/, "");
-  const campusTitle = `${schoolShort} 新高一选科规划与生涯指导`;
+  /* 校园报告与注册页统一使用“学校 + 学业生涯测评”口径。 */
+  const schoolShort = (access?.orgName || data?.student.schoolName || "学校").replace(/^东莞/, "");
+  const campusTitle = `${schoolShort} 学业生涯测评与升学规划`;
   /* v206：按「被查看学生」是否校园渠道决定封面展示（伴学师/管理员内嵌查看粤华学生同样生效）；
      只影响报告封面信息，不动上面 campus 的选科规则/成绩门禁口径，非校园渠道学生完全不受影响 */
   const stuCampus = campus || !!data?.student.campus;
@@ -525,7 +525,28 @@ export function ZhihuiReportBody({ studentId, printId }: { studentId?: number; p
   const [openMenlei, setOpenMenlei] = useState<string | null>(null);
 
   if (isLoading) return <div className="paper-card h-40 animate-pulse bg-cream-deep/50" />;
+  if (error) return <p role="alert" className="paper-card mx-auto my-10 max-w-xl p-6 text-center text-[14px] text-olive-soft">{error.message}</p>;
   if (!data) return <p className="py-10 text-center text-olive-mute">报告数据加载失败</p>;
+  if (stuCampus && data.prerequisites && !data.prerequisites.ready) {
+    const items = [
+      { ready: data.prerequisites.subject4d, label: "完成学科四维测评" },
+      { ready: data.prerequisites.holland, label: "完成霍兰德职业兴趣测评" },
+      { ready: data.prerequisites.academics, label: "录入最近成绩与目标分数" },
+      { ready: data.prerequisites.expectations, label: "填写未来期望（目标学校、专业或职业至少一项）" },
+    ];
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-4 py-10">
+        <div className="paper-card w-full max-w-lg p-7">
+          <h2 className="text-[19px] font-bold text-olive">综合报告还未生成</h2>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-olive-soft">老师已为你开放报告。请补齐以下信息，系统才能生成有依据的选科与升学建议。</p>
+          <ul className="mt-4 space-y-2.5">
+            {items.map((item) => <li key={item.label} className="flex items-center gap-2 text-[13.5px] text-olive-soft"><span className={item.ready ? "text-lime-deep" : "text-terra"}>{item.ready ? "✓" : "○"}</span>{item.label}</li>)}
+          </ul>
+          <Link to="/assessments" className="mt-5 block rounded-xl bg-brand py-3 text-center text-[14px] font-semibold text-cream hover:bg-lime-deep">去补齐测评与信息 →</Link>
+        </div>
+      </div>
+    );
+  }
 
   /* v194：校园模式成绩门禁——9 科月考成绩全部填完才允许查看报告（组合测评流程内已内置成绩步骤） */
   const GRADE9 = ["语文", "数学", "英语", "物理", "化学", "生物", "历史", "道德与法治", "地理"];

@@ -21,7 +21,7 @@
  * 3. 数据缺一块就少说一块：某本缺数据时 ready=false 并写清缺什么，
  *    不拿通用建议把页面填满。家长一眼能看出哪句是印好的、哪句是说他家的。
  */
-import type { DiscDims, DiscResult, DiscType } from "./assessments";
+import { discTendencyFromDims, discTendencyText, type DiscDims, type DiscResult, type DiscType } from "./assessments";
 
 /* ------------------------------------------------------------------ */
 /* 类型                                                                */
@@ -38,7 +38,8 @@ export type KitBlock =
   | { t: "table"; head: string[]; rows: string[][]; mark?: { row: number; col: number } }
   | { t: "cards"; items: { title: string; sub?: string; rows: { k: string; v: string }[] }[] }
   /** 一个人四个维度（个人版） */
-  | { t: "dim-bars"; rows: { label: string; value: number; tag?: string }[] }
+  /** dual：value 是双极倾向度（可为负），条从中线向两侧伸；缺省按 0—100 绝对分画单向条 */
+  | { t: "dim-bars"; rows: { label: string; value: number; tag?: string }[]; dual?: boolean }
   /** 多人同维对比（家长家庭综合版） */
   | { t: "group-bars"; groups: { label: string; sub?: string; rows: { name: string; value: number }[] }[] }
   | { t: "quote"; text: string; sub?: string }
@@ -118,6 +119,9 @@ export type KitMember = {
   type: DiscType;
   second: DiscType;
   score: Score100;
+  /** 原始四维（V2：0–24 中性 12）。v293 起展示走倾向度，由它算，不用 score 反推。 */
+  dims: DiscDims;
+  version?: 2;
 };
 
 export type CommKitInput = {
@@ -893,11 +897,12 @@ function parentOf(label: string): { name: string; teenCall: string } {
 /* ------------------------------------------------------------------ */
 
 export function buildCommKit(input: CommKitInput): CommKitResult {
-  const studentScore = input.disc ? toScore100(input.disc.dims, input.disc.version) : null;
+  const sd = input.disc ?? null;
+  const studentScore = sd ? toScore100(sd.dims, sd.version) : null;
   const sRank = studentScore ? ranked(studentScore) : null;
 
   const student: KitMember | null =
-    studentScore && sRank
+    sd && studentScore && sRank
       ? {
           key: "student",
           name: input.studentName?.trim() || "孩子",
@@ -906,6 +911,8 @@ export function buildCommKit(input: CommKitInput): CommKitResult {
           type: sRank[0],
           second: sRank[1],
           score: studentScore,
+          dims: sd.dims,
+          version: sd.version,
         }
       : null;
 
@@ -923,6 +930,8 @@ export function buildCommKit(input: CommKitInput): CommKitResult {
         type: r[0],
         second: r[1],
         score: s,
+        dims: p.result.dims,
+        version: p.result.version,
       };
     });
 
@@ -2306,7 +2315,11 @@ function buildParentBooks(parents: KitMember[]): KitBook[] {
 
 function buildOneParentBook(p: KitMember): KitBook {
   const no = (n: number) => String(n).padStart(2, "0");
+  /* v293：`sc` 是 0—100 绝对分，只留给判定用（两轴四格以 50 为中性基准）；**展示一律走 td**。
+     原来同一本读本里封面写 58 / 56 / 54 / 31，翻一页图表写 +17% / +13% / +8% / −37%，
+     家长拿笔一算对不上——这是同一份作答的两套刻度，现在只留倾向度这一套。 */
   const sc = p.score;
+  const td = discTendencyFromDims(p.dims, p.version);
   const sorted = DIMS.map((d) => ({ d, v: sc[d] })).sort((a, b) => b.v - a.v);
   const hi = sorted[0];
   const lo = sorted[3];
@@ -2314,6 +2327,8 @@ function buildOneParentBook(p: KitMember): KitBook {
   /* 两轴：要求轴取 D，回应轴取 (I + S) / 2 */
   const demand = sc.D;
   const resp = Math.round((sc.I + sc.S) / 2);
+  /* 回应轴的倾向度版本，只用于文案展示；判定仍用上面的绝对分 resp（50 是它的中性基准） */
+  const respT = Math.round((td.I + td.S) / 2);
   const quadrant =
     demand >= 50 && resp >= 50
       ? { name: "高要求 · 高回应", plain: "权威型", desc: "同样严格，但会听、会解释、会商量。教育研究里效果最稳的一格。" }
@@ -2331,19 +2346,23 @@ function buildOneParentBook(p: KitMember): KitBook {
     title: "你的四个维度",
     lead: `你是 ${p.type} 主导、带 ${p.second} 副维的人`,
     blocks: [
-      { t: "p", text: `四个维度不是四种性格，是四种倾向——每个人都有，只是高低不同。你的形状很清楚：${hi.d} 最高（${hi.v}），${lo.d} 最低（${lo.v}），中间两个是 ${sorted[1].d} ${sorted[1].v}、${sorted[2].d} ${sorted[2].v}。` },
+      { t: "p", text: `四个维度不是四种性格，是四种倾向——每个人都有，只是高低不同。你的形状很清楚：${hi.d} 最高（${discTendencyText(td[hi.d])}），${lo.d} 最低（${discTendencyText(td[lo.d])}），中间两个是 ${sorted[1].d} ${discTendencyText(td[sorted[1].d])}、${sorted[2].d} ${discTendencyText(td[sorted[2].d])}。` },
       {
         t: "dim-bars",
-        rows: sorted.map((r, i) => ({ label: `${r.d} ${DIM_NAME[r.d].name}`, value: r.v, tag: i === 0 ? "主导" : i === 1 ? "副维" : "—" })),
+        rows: sorted.map((r, i) => ({ label: `${r.d} ${DIM_NAME[r.d].name}`, value: td[r.d], tag: i === 0 ? "主导" : i === 1 ? "副维" : "—" })),
+        dual: true,
       },
       {
         t: "table",
-        head: ["维度", "分值", "在你身上是什么样"],
-        rows: sorted.map((r, i) => [r.d, `${r.v}（${i === 0 ? "最高" : i === 3 ? "最低" : r.v >= 55 ? "中" : "中低"}）`, dimText(r.d, r.v)]),
+        head: ["维度", "倾向度", "在你身上是什么样"],
+        rows: sorted.map((r, i) => [r.d, `${discTendencyText(td[r.d])}（${i === 0 ? "最高" : i === 3 ? "最低" : r.v >= 55 ? "中" : "中低"}）`, dimText(r.d, r.v)]),
       },
       {
         t: "p",
-        text: `为什么要看副因子：只看最高分，会把你看成一个单面的 ${p.type}。但你的 ${p.second} 有 ${sc[p.second]}，说明你并不缺那一面——所以你身上的问题不是「不会」，而是「太快」：三句话之内就把结论给了，对方没有插话的余地。这个区别很关键：前者要你「多沟通」，后者只要你在说完之后停三秒。后者容易得多。`,
+        /* v289：这句原来四种类型共用「太快…停三秒」，S / C 的家长读到会觉得说的不是自己
+           （他们的卡点是不表态、是先看见错处）。改成与学生版同一条类型无关的说法：
+           不给「改造性格」的建议，只指出「换个动作」。具体动作在 06 / 07 节里各型都有。 */
+        text: `为什么要看副因子：只看最高分，会把你看成一个单面的 ${p.type}。但你的 ${p.second} 有 ${discTendencyText(td[p.second])}，说明你并不缺那一面——你只是习惯先用 ${p.type} 的方式应对。这个区别很重要：前者要你「变成另一个人」，那是在改性格；后者只要你在关键时候换个动作，那是个动作。动作比性格好改。`,
       },
       {
         t: "table",
@@ -2351,7 +2370,7 @@ function buildOneParentBook(p: KitMember): KitBook {
         rows: PARENT_GIFTS[p.type].map((g) => [g.k, g.v]),
       },
       { t: "quote", text: SHAPE_ONE_LINE[p.type], sub: "这种人在公司里是能扛事的那种，在家里是容易把话说死的那种。" },
-      { t: "note", text: "依据 24 组选择题，每组在两个词里选更像自己的一个，折算为 0—100 的四维绝对分。主因子取最高分，副因子取次高分。这是倾向描述，不是性格鉴定，也不代表不能改。" },
+      { t: "note", text: "依据 24 组选择题，每组在两个词里选更像自己的一个，折算为双极倾向度（-100%…+100%，四维合计恒为 0）。主因子取最高，副因子取次高。这是倾向描述，不是性格鉴定，也不代表不能改。" },
     ],
   });
 
@@ -2374,7 +2393,7 @@ function buildOneParentBook(p: KitMember): KitBook {
         ],
       },
       { t: "p", text: "察觉其中任何一个，就说一句「我先想想」，离开三分钟。三分钟不长，但足够把一句话从「命令」改回「商量」。这不是忍，是换挡。" },
-      { t: "note", text: `依据 六行行为描述取自 ${p.type} 主导型的通用表现，配上你的 ${p.second} ${sc[p.second]}。请以家庭实际观察为准，不必全部套用。` },
+      { t: "note", text: `依据 六行行为描述取自 ${p.type} 主导型的通用表现，配上你的 ${p.second} ${discTendencyText(td[p.second])}。请以家庭实际观察为准，不必全部套用。` },
     ],
   });
 
@@ -2393,7 +2412,7 @@ function buildOneParentBook(p: KitMember): KitBook {
           ["要求低", `低要求 · 低回应（忽视型）\n既不管也不问。${quadrant.name === "低要求 · 低回应" ? " ← 你的落点" : ""}`, `低要求 · 高回应（放任型）\n关系好，但没边界。孩子舒服，也容易没底。${quadrant.name === "低要求 · 高回应" ? " ← 你的落点" : ""}`],
         ],
       },
-      { t: "p", text: `你的落点怎么来的：要求轴取 D 分 ${sc.D}（${sc.D >= 50 ? "高" : "低"}），回应轴取 S ${sc.S} 与 I ${sc.I} 的平均 ${resp}（${resp >= 50 ? "偏高" : "偏低"}）。${p.type === "D" ? `有意思的是你的 I 有 ${sc.I}，说明你并不是不回应，你只是回应得太快：先给方案，再问感受，有时干脆不问。所以严格说，你不在「低回应」的最底端。` : ""}` },
+      { t: "p", text: `你的落点怎么来的：要求轴取 D ${discTendencyText(td.D)}（${sc.D >= 50 ? "偏强" : "偏弱"}），回应轴取 S ${discTendencyText(td.S)} 与 I ${discTendencyText(td.I)} 的平均 ${discTendencyText(respT)}（${resp >= 50 ? "偏高" : "偏低"}）。${p.type === "D" ? `有意思的是你的 I 是 ${discTendencyText(td.I)}，说明你并不是不回应，你只是回应得太快：先给方案，再问感受，有时干脆不问。所以严格说，你不在「低回应」的最底端。` : ""}` },
       {
         t: "table",
         head: ["孩子是什么样", "长成什么"],
@@ -2411,7 +2430,7 @@ function buildOneParentBook(p: KitMember): KitBook {
         ],
       },
       { t: "p", text: "三条的共同点是：都不削弱你的权威，只是在你原来那句话后面多留一个回合。你的要求已经够用了，缺的从来不是强度，是这一回合。" },
-      { t: "note", text: `依据 两轴判定：要求轴取 D 分（${sc.D}），回应轴取 S（${sc.S}）与 I（${sc.I}）平均（${resp}），落点为「${quadrant.name}」。四格命名为教育研究通用框架，非本机构独创。` },
+      { t: "note", text: `依据 两轴判定：要求轴取 D（${discTendencyText(td.D)}），回应轴取 S（${discTendencyText(td.S)}）与 I（${discTendencyText(td.I)}）平均（${discTendencyText(respT)}），落点为「${quadrant.name}」。四格命名为教育研究通用框架，非本机构独创。` },
     ],
   });
 
@@ -2425,7 +2444,7 @@ function buildOneParentBook(p: KitMember): KitBook {
       { t: "cards", items: PARENT_BLIND[p.type].map((b, i) => ({ title: `0${i + 1} ${b.title}`, rows: [{ k: "", v: b.text }] })) },
       { t: "table", head: ["盲区", "对应的动作"], rows: PARENT_BLIND[p.type].map((b) => [b.short, b.fix]) },
       { t: "p", text: "四个动作有一个共同点：都在给你自己加一个停顿。你的问题从来不是不会做，是做得太快——所以解药也不是「多做」，是「慢半拍」。" },
-      { t: "note", text: `依据 由 ${p.type} ${sc[p.type]} 与 ${p.second} ${sc[p.second]} 推导；四条都是倾向，不是定论，可以拿具体事件对照。` },
+      { t: "note", text: `依据 由 ${p.type} ${discTendencyText(td[p.type])} 与 ${p.second} ${discTendencyText(td[p.second])} 推导；四条都是倾向，不是定论，可以拿具体事件对照。` },
     ],
   });
 
@@ -2476,7 +2495,7 @@ function buildOneParentBook(p: KitMember): KitBook {
         ],
       },
       { t: "p", text: "先练「作业拖延」那一句。理由很实际：它每天都会发生，练的机会最多。一句话练二十次才会变成习惯，一周说不到三次的话，练不出来。" },
-      { t: "note", text: `依据 六句按 ${p.type} 主导 / ${p.second} 副维 / 最低维 ${lo.d} ${lo.v} 的组合设计——共同点是「不削弱你的权威，只增加一个停顿」。不含孩子的测评数据，适用面比家长家庭综合版更宽。` },
+      { t: "note", text: `依据 六句按 ${p.type} 主导 / ${p.second} 副维 / 最低维 ${lo.d} ${discTendencyText(td[lo.d])} 的组合设计——共同点是「不削弱你的权威，只增加一个停顿」。不含孩子的测评数据，适用面比家长家庭综合版更宽。` },
     ],
   });
 
@@ -2507,7 +2526,7 @@ function buildOneParentBook(p: KitMember): KitBook {
         ],
       },
       { t: "p", text: "还有一件要说清楚：这份报告只有你一个人的数据，所以它只能讲「你」，讲不了「你们」。想知道你们俩为什么会卡住、他那一侧是什么样，需要他也做一份——两份合在一起，才能出那一本《家庭沟通锦囊》。一个人有一份说明书，两个人才能有一本对话录。" },
-      { t: "note", text: `依据 四步动作由 ${p.type} ${sc[p.type]} / ${p.second} ${sc[p.second]} / ${lo.d} ${lo.v} 的组合推导。不含孩子的测评数据。` },
+      { t: "note", text: `依据 四步动作由 ${p.type} ${discTendencyText(td[p.type])} / ${p.second} ${discTendencyText(td[p.second])} / ${lo.d} ${discTendencyText(td[lo.d])} 的组合推导。不含孩子的测评数据。` },
     ],
   });
 

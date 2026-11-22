@@ -15,9 +15,9 @@ describe("v170 邀请学员默认可看报告", () => {
   });
 
   it("注册时按伴学师默认配置写入分配记录", () => {
-    const src = readFileSync("api/inviteRouter.ts", "utf-8");
+    const src = readFileSync("api/inviteRegistration.ts", "utf-8");
     if (!/reportAccess: tutor\?\.inviteReportDefault \?\? false/.test(src)) throw new Error("注册未按默认配置写权限");
-    if (!/db\.insert\(studentTutor\)/.test(src)) throw new Error("注册未写 student_tutor");
+    if (!/tx\.insert\(studentTutor\)/.test(src)) throw new Error("注册未写 student_tutor");
   });
 
   it("存量兼容：无显式分配记录不收紧", () => {

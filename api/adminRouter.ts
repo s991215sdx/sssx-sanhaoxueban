@@ -3,7 +3,18 @@ import { createRouter, authedQuery, adminQuery, staffAdminQuery } from "./middle
 import { getDb } from "./queries/connection";
 import { attempts, dailyPlans, errorLogs, moodEntries, organizations, papers, previewSessions, studentProfile, studentTutor, users } from "@db/schema";
 import { getStudentDetail, listStudents } from "./studentDetail";
-import { isPlatformAdmin, maskPhone, orgScope, sameOrg } from "./tenant";
+import { isPlatformAdmin, listOrgStudentIds, maskPhone, orgScope, sameOrg } from "./tenant";
+
+/** 新增分配也必须落在同一机构；无机构旧学员可明确分配给一位机构伴学师。 */
+async function assertAssignmentTenant(db: ReturnType<typeof getDb>, studentUserId: number, tutorUserId: number) {
+  const pair = await db.select({ id: users.id, orgId: users.orgId }).from(users)
+    .where(inArray(users.id, [studentUserId, tutorUserId]));
+  const student = pair.find((user) => user.id === studentUserId);
+  const tutor = pair.find((user) => user.id === tutorUserId);
+  if (student?.orgId != null && tutor?.orgId != null && student.orgId !== tutor.orgId) {
+    throw new Error("伴学师和学员必须属于同一机构，请切换到学员所在机构的身份再分配");
+  }
+}
 
 export const adminRouter = createRouter({
   /**
@@ -110,10 +121,11 @@ export const adminRouter = createRouter({
       .from(attempts)
       .groupBy(attempts.userId);
     const attMap = new Map(attRows.map((r) => [r.userId, Number(r.c)]));
+    const scopedStudentIds = await listOrgStudentIds(db, orgId);
     return tutors.map((t) => {
       const ids = new Set<number>();
-      for (const p of profiles) if (p.tutorId === t.id) ids.add(p.userId);
-      for (const l of links) if (l.tutorUserId === t.id) ids.add(l.studentUserId);
+      for (const p of profiles) if (p.tutorId === t.id && (!scopedStudentIds || scopedStudentIds.has(p.userId))) ids.add(p.userId);
+      for (const l of links) if (l.tutorUserId === t.id && (!scopedStudentIds || scopedStudentIds.has(l.studentUserId))) ids.add(l.studentUserId);
       const mine = profiles.filter((p) => ids.has(p.userId));
       return {
         id: t.id,
@@ -151,6 +163,7 @@ export const adminRouter = createRouter({
       if (!(await sameOrg(db, ctx.user, input.studentUserId))) throw new Error("该学员不在你的机构内");
       if (input.tutorId != null) {
         if (!(await sameOrg(db, ctx.user, input.tutorId))) throw new Error("该伴学师不在你的机构内");
+        await assertAssignmentTenant(db, input.studentUserId, input.tutorId);
         const t = await db.query.users.findFirst({ where: eq(users.id, input.tutorId) });
         if (!t || (t.role !== "tutor" && t.role !== "admin")) throw new Error("对方不是伴学师");
       }
@@ -197,6 +210,7 @@ export const adminRouter = createRouter({
       const tutorIds = items.map((t) => t.tutorUserId);
       for (const sid of studentIds) {
         if (!(await sameOrg(db, ctx.user, sid))) throw new Error(`学员 ${sid} 不在你的机构内`);
+        for (const tutorId of tutorIds) await assertAssignmentTenant(db, sid, tutorId);
         /* 合并：仅重写这些伴学师的记录，保留学员名下其他伴学师 */
         await db.delete(studentTutor).where(and(eq(studentTutor.studentUserId, sid), inArray(studentTutor.tutorUserId, tutorIds)));
         await db.insert(studentTutor).values(
@@ -246,6 +260,7 @@ export const adminRouter = createRouter({
       const ids = items.map((t) => t.tutorUserId);
       for (const id of ids) {
         if (!(await sameOrg(db, ctx.user, id))) throw new Error(`用户 ${id} 不在你的机构内`);
+        await assertAssignmentTenant(db, input.studentUserId, id);
         const t = await db.query.users.findFirst({ where: eq(users.id, id) });
         if (!t) throw new Error(`用户 ${id} 不存在`);
         if (t.role !== "tutor" && t.role !== "admin") throw new Error(`「${t.name ?? id}」当前不是伴学师，请先在总览把该账号设为伴学师，或改选其他伴学师`);
@@ -278,6 +293,7 @@ export const adminRouter = createRouter({
       const db = getDb();
       if (!(await sameOrg(db, ctx.user, input.studentUserId))) throw new Error("该学员不在你的机构内");
       if (!(await sameOrg(db, ctx.user, input.tutorUserId))) throw new Error("该伴学师不在你的机构内");
+      await assertAssignmentTenant(db, input.studentUserId, input.tutorUserId);
       const t = await db.query.users.findFirst({ where: eq(users.id, input.tutorUserId) });
       if (!t || (t.role !== "tutor" && t.role !== "admin")) throw new Error("对方不是伴学师");
       const expiresAt = typeof input.expiresAt === "string" && input.expiresAt ? new Date(input.expiresAt) : null;

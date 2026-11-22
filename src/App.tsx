@@ -25,6 +25,14 @@ const SsoStudentView = lazy(() => import("./pages/SsoStudentView"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Tutor = lazy(() => import("./pages/Tutor"));
 const Library = lazy(() => import("./pages/Library"));
+/* v253 人才测评：与测评中心并列的独立栏目（岗位评估 + 候选人扫码） */
+const TalentCenter = lazy(() => import("./pages/TalentCenter"));
+const TalentQuizPage = lazy(() => import("./pages/TalentQuiz"));
+const TalentReportPage = lazy(() => import("./pages/TalentReport"));
+const TalentJoin = lazy(() => import("./pages/TalentJoin"));
+const ParentDiscJoin = lazy(() => import("./pages/ParentDiscJoin"));
+/* v286 家长 DISC 融合读本的打印页：服务端出 PDF 与「自己按 Ctrl+P」都用这一页 */
+const ParentDiscPrint = lazy(() => import("./pages/ParentDiscPrint"));
 const RecycleBin = lazy(() => import("./pages/RecycleBin"));
 const ProfileStage = lazy(() => import("@/components/welcome/ProfileStage"));
 
@@ -33,6 +41,7 @@ const ReportDetail = lazy(() => import("./pages/ReportDetail"));
 const ZhihuiReport = lazy(() => import("./pages/ZhihuiReport"));
 const LearnFlow = lazy(() => import("./pages/LearnFlow"));
 const AssessmentCenter = lazy(() => import("./pages/AssessmentCenter"));
+const FamilyCoaching = lazy(() => import("./pages/FamilyCoaching"));
 
 function PageSpinner() {
   return (
@@ -85,18 +94,11 @@ function BasicsGate({ children }: { children: React.ReactNode }) {
   if (isLoading) return <FullScreenLoading text="正在打开你的学习档案…" />;
   if (!profile || isPlaceholderName(profile.name)) {
     return (
+      // v271：标题卡片由 ProfileStage 自带，这里不再重复渲染「先认识一下你」
       <div className="mx-auto max-w-xl px-4 py-10">
-        <div className="paper-card p-6">
-          <h2 className="text-lg font-bold text-olive">先认识一下你</h2>
-          <p className="mt-1 text-[14px] text-olive-soft">
-            测评需要基于你的基本情况才能给出贴合的解读。花两分钟填好基本信息，就能开始测评。
-          </p>
-        </div>
-        <div className="mt-4">
-          {/* v181e：基本信息完成后落到测评中心（不带 queue 参数），由学员自己选要做的测评组合；
-             用整页跳转而非 reload，避免重新触发注册套餐的连测队列。 */}
-          <ProfileStage onNext={() => window.location.replace("/assessments")} />
-        </div>
+        {/* v181e：基本信息完成后落到测评中心（不带 queue 参数），由学员自己选要做的测评组合；
+           用整页跳转而非 reload，避免重新触发注册套餐的连测队列。 */}
+        <ProfileStage onNext={() => window.location.replace("/assessments")} />
       </div>
     );
   }
@@ -135,7 +137,7 @@ function RoleGate({ children }: { children: React.ReactNode }) {
     if (location.pathname !== "/admin") return <Navigate to="/admin" replace />;
     return <>{children}</>;
   }
-  const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report"];
+  const staffPaths = ["/tutor", "/admin", "/recycle-bin", "/library", "/zhihui-report", "/talent"];
   const onStaffPath = staffPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`));
   if (isStaff && !onStaffPath) {
     return <Navigate to="/tutor" replace />;
@@ -154,6 +156,12 @@ export default function App() {
       <Route path="/f/:code" element={<Suspense fallback={<PageSpinner />}><FamilyJoin /></Suspense>} />
       {/* v239 测评码：一张码对应「某个孩子 + 某份测评」，孩子扫码进自己账号，家长扫码就地作答 */}
       <Route path="/p/:code" element={<Suspense fallback={<PageSpinner />}><PassJoin /></Suspense>} />
+      {/* v253 人才测评邀请码：候选人扫码就地作答，不用注册；答完不看分数，报告回发起人 */}
+      <Route path="/t/:code" element={<Suspense fallback={<PageSpinner />}><TalentJoin /></Suspense>} />
+      {/* v283 家长 DISC 扫码直测：固定二维码入口，免登录免码，结果先入公共池待融合 */}
+      <Route path="/pd" element={<Suspense fallback={<PageSpinner />}><ParentDiscJoin /></Suspense>} />
+      {/* v286 家长 DISC 读本打印页：公开（家长凭查看钥匙）、后台老师凭登录态，两种都进得来 */}
+      <Route path="/pd-report" element={<Suspense fallback={<PageSpinner />}><ParentDiscPrint /></Suspense>} />
       {/* v158：一体通 SSO 免登只读视图：公开路由（ticket 兑换 10 分钟短会话，仅可读对应学员） */}
       <Route path="/sso/view/:studentId" element={<Suspense fallback={<PageSpinner />}><SsoStudentView /></Suspense>} />
       {/* 首次引导：需登录，不套 Layout，不做档案守卫 */}
@@ -184,6 +192,10 @@ export default function App() {
                     <Route path="/preview/:code" element={<PreviewSession />} />
                     <Route path="/gaps" element={<Gaps />} />
                     <Route path="/assessments" element={<AssessmentCenter />} />
+                    <Route path="/coaching" element={<FamilyCoaching />} />
+                    <Route path="/talent" element={<TalentCenter />} />
+                    <Route path="/talent/quiz" element={<TalentQuizPage />} />
+                    <Route path="/talent/report/:id" element={<TalentReportPage />} />
                     <Route path="/learn/:errorId" element={<LearnFlow />} />
                     <Route path="/papers" element={<Papers />} />
                     <Route path="/treehole" element={<Treehole />} />

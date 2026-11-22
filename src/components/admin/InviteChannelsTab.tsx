@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { Download, Link2, Plus, QrCode, RefreshCw, FileText, ClipboardList, GraduationCap } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { INVITE_CHANNEL_KINDS, INVITE_REPORT_KINDS, INVITE_ASSESS_KINDS } from "@contracts/invite";
+import { assessmentCredits, inviteAssessmentQuote } from "@contracts/orgService";
 
 function inviteUrl(code: string): string {
   return `${window.location.origin}/invite/${code}`;
@@ -113,15 +114,39 @@ function ReportAccessEditor({
  * 绑定后：客户扫码注册 → 自动一站式连做勾选的测评；未勾选的测评在客户端隐藏，
  * 由伴学师在学员卡上「推送测评」后开放。
  */
+function AssessPriceSummary({ on, kinds, billable, nonBillableNote }: { on: boolean; kinds: string[]; billable: boolean; nonBillableNote?: string }) {
+  const quote = inviteAssessmentQuote(on, kinds);
+  const paidCount = quote.items.filter((item) => item.credits > 0).length;
+  if (!billable) {
+    return (
+      <div className="mt-3 rounded-xl border border-border bg-cream/60 px-3.5 py-3 text-[12px] leading-relaxed text-olive-mute">
+        {nonBillableNote ?? "校园版及平台公共渠道注册不消耗积分；校园学员注册人数上限由平台超管设置。"}
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-xl border border-[#0C7064]/20 bg-mint-pale/45 px-3.5 py-3 text-[12px] leading-relaxed text-olive" data-testid="invite-registration-price">
+      <div>这个码每成功注册 <b>1 人</b>，发码人个人钱包消耗 <b className="mono text-[20px] text-[#0C7064]">{quote.total}</b> 积分。</div>
+      <div className="mt-0.5 text-[11px] text-olive-mute">含默认学科四维 10 积分；当前共 {paidCount} 个计费单项，MBTI、DISC、家长 DISC 免费。报告开放不计费，重复项只计一次。</div>
+      {on && kinds.includes("all") && <div className="mt-0.5 text-[11px] text-olive-mute">全部测评按单项合计 130 积分，不自动换算为 199 积分的学习力综合诊断包。</div>}
+      <div className="mt-0.5 text-[11px] text-olive-mute">仅机构版新用户注册成功时扣费；老用户再次扫码、并发重复注册或注册失败均不扣。校园版始终免积分。</div>
+    </div>
+  );
+}
+
 function AssessAccessEditor({
   enabled,
   kinds,
   saving,
+  billable,
+  nonBillableNote,
   onSave,
 }: {
   enabled: boolean;
   kinds: string[];
   saving: boolean;
+  billable: boolean;
+  nonBillableNote?: string;
   onSave: (enabled: boolean, kinds: string[]) => void;
 }) {
   const [on, setOn] = useState(enabled);
@@ -170,6 +195,8 @@ function AssessAccessEditor({
             </button>
             {INVITE_ASSESS_KINDS.map((k) => {
               const active = allPicked || picked.includes(k.key);
+              /* mental 是旧配置兼容项，实际展开四套心理量表，因此显示 40 而非单项 10。 */
+              const price = k.key === "mental" ? 40 : assessmentCredits(k.key);
               return (
                 <button
                   key={k.key}
@@ -182,7 +209,7 @@ function AssessAccessEditor({
                   }`}
                 >
                   {active ? "✓ " : ""}
-                  {k.label}
+                  {k.label}{billable ? ` · ${price ? `${price} 积分` : "免费"}` : ""}{k.key === "subject4d" ? "（默认）" : ""}
                 </button>
               );
             })}
@@ -208,6 +235,7 @@ function AssessAccessEditor({
           {saving ? "保存中…" : "关闭测评套餐（注册客户恢复全部测评可见）"}
         </button>
       )}
+      <AssessPriceSummary on={on} kinds={picked} billable={billable} nonBillableNote={nonBillableNote} />
     </div>
   );
 }
@@ -363,6 +391,7 @@ export default function InviteChannelsTab() {
             enabled={assessOn}
             kinds={assessKinds}
             saving={create.isPending}
+            billable={data?.currentBillingEnabled ?? false}
             onSave={(on, kinds) => {
               setAssessOn(on);
               setAssessKinds(kinds);
@@ -457,6 +486,17 @@ export default function InviteChannelsTab() {
                       <span className="mono">码：{c.code}</span>
                       <span>{new Date(c.createdAt).toLocaleDateString("zh-CN")} 创建</span>
                       {c.note && <span>备注：{c.note}</span>}
+                      <span className="font-semibold text-[#0C7064]">
+                        {c.edition === "school"
+                          ? "校园版免积分 · 注册人数由平台限额"
+                          : c.orgId == null
+                            ? "平台公共码 · 不按机构积分扣费"
+                            : c.legacyPlatformChannel
+                              ? "平台代发历史码 · 免机构积分"
+                              : c.billingEnabled
+                                ? `每成功注册 1 人扣 ${inviteAssessmentQuote(!!c.assessmentAccess, c.assessmentKinds).total} 积分`
+                                : "机构版 · 发码人无效，请重新建码"}
+                      </span>
                     </div>
                     <div className="mt-2.5 flex flex-wrap gap-2">
                       <button
@@ -518,6 +558,14 @@ export default function InviteChannelsTab() {
                           enabled={!!c.assessmentAccess}
                           kinds={(c.assessmentKinds ?? []) as string[]}
                           saving={setAssessments.isPending}
+                          billable={c.billingEnabled}
+                          nonBillableNote={
+                            c.edition === "school"
+                              ? "校园版注册及测评不消耗积分；学员注册人数上限由平台超管设置。"
+                              : c.legacyPlatformChannel || c.orgId == null
+                                ? "平台公共或平台代发历史渠道不消耗机构积分。"
+                                : "该机构历史渠道的发码人已失效，请重新建码；当前渠道不能完成新注册。"
+                          }
                           onSave={(on, kinds) =>
                             setAssessments.mutate(
                               { id: c.id, assessmentAccess: on, assessmentKinds: on ? kinds : [] },

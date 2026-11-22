@@ -578,7 +578,7 @@ export default function E3Stage({ renderAction, onSkip }: { renderAction: () => 
               ? "看看我的诊断结果 →"
               : `还有 ${E3V37_RATING_COUNT - answeredCount} 题评分${motivation ? "" : "、状态单选"}没完成`}
         </button>
-        {submit.isError && <p className="mt-2 text-center text-[13px] text-terra">提交没成功，再点一次试试。</p>}
+        {submit.isError && <p role="alert" className="mt-2 text-center text-[13px] text-terra">{submit.error?.message || "提交没成功，请保留当前页面并重试。"}</p>}
       </div>
     </div>
   );
