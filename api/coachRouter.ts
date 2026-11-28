@@ -8,7 +8,7 @@ import { ACADEMIC_SUBJECTS, type AcademicsData } from "@contracts/academics";
 import { sanitizeModules } from "@contracts/studentModules";
 import { normalizeAssessKinds } from "@contracts/invite";
 import { getStudentDetail, listStudents } from "./studentDetail";
-import { isMyStudent } from "./tutorAccess";
+import { isMyStudent, listInviteeStudentIds } from "./tutorAccess";
 import { sameOrg, canAccessUser } from "./tenant";
 import { tryChat } from "./ai";
 import { THREE_TIER_PLANS } from "@/data/training/threeTierPlans";
@@ -21,10 +21,14 @@ export const coachRouter = createRouter({
   myStudents: tutorQuery.query(async ({ ctx }) => {
     /* 每个机构身份只看当前机构，伴学师再按当前 users.id 的名下关系过滤。
        同手机号的其他机构账号有不同 users.id，不能共享学员缓存或分配关系。 */
-    const all = await listStudents(getDb(), ctx.user.orgId);
+    const db = getDb();
+    const all = await listStudents(db, ctx.user.orgId);
     if (ctx.user.role === "admin") return all;
-    // V56：名下 = 主管伴学师 或 student_tutor 多对多分配
-    return all.filter((s) => s.tutorId === ctx.user.id || s.tutorIds.includes(ctx.user.id));
+    // V56：名下 = 主管伴学师 / 多对多分配；v297：也包括经自己的码注册的学员。
+    const invitees = await listInviteeStudentIds(db, ctx.user.id);
+    return all
+      .filter((s) => s.tutorId === ctx.user.id || s.tutorIds.includes(ctx.user.id) || invitees.has(s.userId))
+      .map((s) => ({ ...s, invitedByMe: invitees.has(s.userId) }));
   }),
 
   /** 学员详情（伴学师仅可查自己名下学员；管理员可查本机构任意学员）。 */

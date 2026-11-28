@@ -43,17 +43,35 @@ export async function listTutorLinksWithAccess(db: Db): Promise<TutorLink[]> {
   }
 }
 
+/** v297：学员是否经该伴学师自己的邀请码注册。 */
+export async function isInviteeOfTutor(db: Db, tutorUserId: number, studentUserId: number): Promise<boolean> {
+  try {
+    const row = await db
+      .select({ id: inviteRegistrations.id })
+      .from(inviteRegistrations)
+      .innerJoin(inviteChannels, eq(inviteChannels.id, inviteRegistrations.channelId))
+      .where(and(eq(inviteRegistrations.userId, studentUserId), eq(inviteChannels.tutorId, tutorUserId)))
+      .limit(1);
+    return row.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * v169：某伴学师对某学员的测评报告查看权限。
  * report_access=true 且（未设有效期或尚未到期）→ allowed。
- * v170 修正：查不到分配记录 → 放行（存量主管/渠道关系早于 v169，无显式记录不收紧），
- * 新关系（注册/分配时写入的显式记录）一律按记录执行——未付费老师的新学员因此默认无报告权限。
+ * v170 修正：查不到分配记录 → 放行（存量主管/渠道关系早于 v169，无显式记录不收紧）。
+ * v297：经伴学师自己的码注册的学员，该伴学师始终可看完整报告，不受分配记录开关限制。
  */
 export async function getTutorReportAccess(
   db: Db,
   tutorUserId: number,
   studentUserId: number,
-): Promise<{ allowed: boolean; expiresAt: Date | null }> {
+): Promise<{ allowed: boolean; expiresAt: Date | null; via: "invite" | "legacy" | "grant" }> {
+  if (await isInviteeOfTutor(db, tutorUserId, studentUserId)) {
+    return { allowed: true, expiresAt: null, via: "invite" };
+  }
   try {
     const row = (
       await db
@@ -65,14 +83,14 @@ export async function getTutorReportAccess(
         .where(and(eq(studentTutor.studentUserId, studentUserId), eq(studentTutor.tutorUserId, tutorUserId)))
         .limit(1)
     )[0];
-    if (!row) return { allowed: true, expiresAt: null }; // 存量关系：无显式记录不收紧
-    if (!row.reportAccess) return { allowed: false, expiresAt: row.reportAccessExpiresAt ?? null };
+    if (!row) return { allowed: true, expiresAt: null, via: "legacy" }; // 存量关系：无显式记录不收紧
+    if (!row.reportAccess) return { allowed: false, expiresAt: row.reportAccessExpiresAt ?? null, via: "grant" };
     const exp = row.reportAccessExpiresAt;
-    if (exp && exp.getTime() <= Date.now()) return { allowed: false, expiresAt: exp };
-    return { allowed: true, expiresAt: exp ?? null };
+    if (exp && exp.getTime() <= Date.now()) return { allowed: false, expiresAt: exp, via: "grant" };
+    return { allowed: true, expiresAt: exp ?? null, via: "grant" };
   } catch {
     /* 迁移未就绪：放行（兼容存量），迁好后自动收紧 */
-    return { allowed: true, expiresAt: null };
+    return { allowed: true, expiresAt: null, via: "legacy" };
   }
 }
 

@@ -42,6 +42,8 @@ export type StudentListItem = {
   /** V56：名下全部伴学师（多对多，含主管）；v169：附带报告权限与有效期（无权限信息=存量默认放行） */
   tutors: { id: number; name: string; reportAccess: boolean; reportAccessExpiresAt: Date | null }[];
   tutorIds: number[];
+  /** v297：当前伴学师是否通过自己的邀请码邀请到该学员（管理员全量列表不标记）。 */
+  invitedByMe?: boolean;
   /** 学员端功能开关（null=全功能） */
   enabledModules: string[] | null;
   /** V54：报告是否已推送给家长（false=伴学师把关中） */
@@ -132,7 +134,18 @@ export async function listStudents(db: Db, orgId?: number | null, search?: strin
   // V56：学员-伴学师多对多分配（容错：表未就绪时退化为空）
   const { listTutorLinksWithAccess } = await import("./tutorAccess");
   const links = await listTutorLinksWithAccess(db);
+  // v297：注册渠道归属关系独立保留；发码伴学师对自己邀请的学员始终有报告权限。
+  const inviteTutorOf = new Map<number, number>();
+  for (const r of regRows) {
+    const ch = chanMap.get(r.channelId);
+    if (ch?.tutorId != null && r.userId > 0 && !inviteTutorOf.has(r.userId)) {
+      inviteTutorOf.set(r.userId, ch.tutorId);
+    }
+  }
   const accessOf = (studentUserId: number, tutorId: number) => {
+    if (inviteTutorOf.get(studentUserId) === tutorId) {
+      return { reportAccess: true, reportAccessExpiresAt: null };
+    }
     const l = links.find((x) => x.studentUserId === studentUserId && x.tutorUserId === tutorId);
     /* 无权限信息（迁移前存量/容错）→ 默认放行，兼容历史行为 */
     return { reportAccess: l?.reportAccess ?? true, reportAccessExpiresAt: l?.reportAccessExpiresAt ?? null };
@@ -145,6 +158,8 @@ export async function listStudents(db: Db, orgId?: number | null, search?: strin
         ids.push(l.tutorUserId);
       }
     }
+    const invitedBy = inviteTutorOf.get(studentUserId);
+    if (invitedBy != null && !ids.includes(invitedBy) && (orgId == null || tutorNameMap.has(invitedBy))) ids.push(invitedBy);
     return ids;
   };
 

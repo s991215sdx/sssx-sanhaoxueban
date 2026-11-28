@@ -109,12 +109,11 @@ export async function createInviteRegistrationTx(tx: PointTx, channel: InviteReg
     campusReportKinds: input.campus ? [] : null,
   });
   if (channel.tutorId != null) {
-    const [tutor] = await tx.select({ inviteReportDefault: users.inviteReportDefault })
-      .from(users).where(eq(users.id, channel.tutorId)).limit(1);
+    // v297：经伴学师自己的码注册即建立完整报告权限，不再受旧默认开关影响。
     await tx.insert(studentTutor).values({
       studentUserId: userId,
       tutorUserId: channel.tutorId,
-      reportAccess: tutor?.inviteReportDefault ?? false,
+      reportAccess: true,
       reportAccessExpiresAt: null,
     });
   }
