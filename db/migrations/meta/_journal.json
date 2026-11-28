@@ -422,6 +422,13 @@
       "when": 1794586203186,
       "tag": "0047_talent_jobs6",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "5",
+      "when": 1794808121739,
+      "tag": "0060_coach_invite_report_full",
+      "breakpoints": true
     }
   ]
 }

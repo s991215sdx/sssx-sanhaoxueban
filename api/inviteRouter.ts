@@ -9,6 +9,7 @@ import { getDb } from "./queries/connection";
 import { hashPassword, setSessionCookie } from "./auth-router";
 import { signSessionToken } from "./kimi/session";
 import { env } from "./lib/env";
+import { pointsBillingEnabled } from "@contracts/edition";
 
 const PHONE_RE = /^1[3-9]\d{9}$/;
 /* 渠道码字母表：去掉 0/o、1/l/i 等易混淆字符，10 位约 2.8e15 空间 */
@@ -222,7 +223,7 @@ export const inviteRouter = createRouter({
           : eq(inviteChannels.orgId, ctx.user.orgId)
         : or(eq(inviteChannels.tutorId, ctx.user.id), eq(inviteChannels.createdBy, ctx.user.id));
     const [channels, counts, recent, currentOrg] = await Promise.all([
-      db.select({ channel: inviteChannels, edition: organizations.edition }).from(inviteChannels)
+      db.select({ channel: inviteChannels, edition: organizations.edition, settings: organizations.settings }).from(inviteChannels)
         .leftJoin(organizations, eq(organizations.id, inviteChannels.orgId)).where(where).orderBy(desc(inviteChannels.createdAt)),
       db
         .select({ channelId: inviteRegistrations.channelId, c: sql<number>`count(*)` })
@@ -231,7 +232,7 @@ export const inviteRouter = createRouter({
       db.select().from(inviteRegistrations).orderBy(desc(inviteRegistrations.createdAt)).limit(50),
       ctx.user.orgId == null
         ? Promise.resolve(null)
-        : db.select({ edition: organizations.edition }).from(organizations).where(eq(organizations.id, ctx.user.orgId)).limit(1).then((rows) => rows[0] ?? null),
+        : db.select({ edition: organizations.edition, settings: organizations.settings }).from(organizations).where(eq(organizations.id, ctx.user.orgId)).limit(1).then((rows) => rows[0] ?? null),
     ]);
     const payerIds = [...new Set(channels.map((row) => row.channel.tutorId ?? row.channel.createdBy))];
     const payers = payerIds.length
@@ -242,13 +243,14 @@ export const inviteRouter = createRouter({
     const totalMap = new Map(counts.map((r) => [Number(r.channelId), Number(r.c)]));
     const mine = new Set(channels.map((row) => row.channel.id));
     return {
-      currentBillingEnabled: currentOrg?.edition === "org" && ["tutor", "admin"].includes(ctx.user.role),
+      currentBillingEnabled: currentOrg?.edition === "org" && pointsBillingEnabled(currentOrg.settings) && ["tutor", "admin"].includes(ctx.user.role),
+      currentBillingDisabled: currentOrg?.edition === "org" && !pointsBillingEnabled(currentOrg.settings),
       channels: channels.map((row) => {
         const c = row.channel;
         const payer = payerMap.get(c.tutorId ?? c.createdBy);
         const legacyPlatformChannel = c.tutorId == null && payer?.role === "admin" && payer.orgId == null;
-        const billingEnabled = row.edition === "org" && !legacyPlatformChannel && !!payer && !payer.deletedAt && payer.orgId === c.orgId && ["tutor", "admin"].includes(payer.role);
-        return { ...c, edition: row.edition, billingEnabled, legacyPlatformChannel, registrations: totalMap.get(c.id) ?? 0 };
+        const billingEnabled = row.edition === "org" && pointsBillingEnabled(row.settings) && !legacyPlatformChannel && !!payer && !payer.deletedAt && payer.orgId === c.orgId && ["tutor", "admin"].includes(payer.role);
+        return { ...c, edition: row.edition, billingEnabled, billingDisabled: row.edition === "org" && !pointsBillingEnabled(row.settings), legacyPlatformChannel, registrations: totalMap.get(c.id) ?? 0 };
       }),
       /* 只看得到自己权限范围内渠道的注册记录（V59：管理员也限本机构，不看全局） */
       recent: recent.filter((r) => mine.has(r.channelId)),

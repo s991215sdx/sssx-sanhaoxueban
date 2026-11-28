@@ -12,11 +12,6 @@ export default function TutorsTab({ orgScope, tutorLabel = "伴学师" }: { orgS
   const { data: tutors, isLoading } = trpc.admin.tutors.useQuery(orgScope);
   const { data: students } = trpc.admin.students.useQuery(orgScope);
   const assignedOf = (userId: number) => students?.find((s) => s.userId === userId)?.tutors ?? [];
-  const utils = trpc.useUtils();
-  /* v170：邀请学员默认可看报告开关 */
-  const setInviteDefault = trpc.admin.setTutorInviteReportDefault.useMutation({
-    onSuccess: () => utils.admin.tutors.invalidate(),
-  });
   /* v161：每位指导老师名下学员默认折叠，点「展开」看全部；列表分页（每页 10 个） */
   const [expandedTutors, setExpandedTutors] = useState<number[]>([]);
   const toggleTutor = (id: number) =>
@@ -46,18 +41,13 @@ export default function TutorsTab({ orgScope, tutorLabel = "伴学师" }: { orgS
                       {new Date(t.lastSignInAt).toLocaleDateString("zh-CN")}
                     </div>
                   </div>
-                  {/* v170：邀请学员默认可看报告——开启后扫他的码注册的新学员自动带报告权限 */}
-                  <button
-                    type="button"
-                    title={`开启后，扫这位${tutorLabel}二维码注册的新学员默认可查看测评报告`}
-                    onClick={() => setInviteDefault.mutate({ tutorUserId: t.id, value: !t.inviteReportDefault })}
-                    disabled={setInviteDefault.isPending}
-                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                      t.inviteReportDefault ? "bg-brand text-white" : "bg-cream-card text-olive-mute ring-1 ring-border hover:text-olive"
-                    }`}
+                  {/* v297：自己的邀请码对应完整报告权限，不再提供容易误解的旧默认开关。 */}
+                  <span
+                    title={`扫这位${tutorLabel}自己的二维码注册的学员，他的测评报告始终可看；不需要再逐人开权限`}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-butter-pale px-2.5 py-1 text-[11px] font-semibold text-brand ring-1 ring-[#0C7064]/15"
                   >
-                    {t.inviteReportDefault ? "默认可看报告 ✓" : "默认无报告"}
-                  </button>
+                    自己的码 · 报告全开
+                  </span>
                 </div>
                 <button
                   onClick={() => toggleTutor(t.id)}

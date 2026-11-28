@@ -12,7 +12,9 @@ type View = "launch" | "activities" | "reports";
 export default function OrgAssessmentCenter({ onOpenReport, onOpenCoaching }: {
   onOpenReport: (studentUserId: number) => void; onOpenCoaching: (caseId: number) => void;
 }) {
-  const { data: wallet } = trpc.orgService.myWallet.useQuery();
+  const { data: catalog } = trpc.orgService.catalog.useQuery();
+  const billingEnabled = catalog?.billingEnabled !== false;
+  const { data: wallet } = trpc.orgService.myWallet.useQuery(undefined, { enabled: billingEnabled });
   const { data: students = [] } = trpc.coach.myStudents.useQuery();
   const { data: activities = [] } = trpc.orgService.activities.useQuery();
   const [view, setView] = useState<View>("launch");
@@ -34,7 +36,9 @@ export default function OrgAssessmentCenter({ onOpenReport, onOpenCoaching }: {
     <header className="rounded-2xl border border-border bg-white px-4 shadow-sm sm:px-5">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 pt-1">
         <nav aria-label="测评中心视图" className="flex gap-6 overflow-x-auto">{([{ key: "launch", label: "发起测评", icon: Send }, { key: "activities", label: "测评活动", icon: ClipboardList }, { key: "reports", label: "报告记录", icon: FileText }] as const).map((item) => <button type="button" key={item.key} onClick={() => { setView(item.key); setGrowOpen(false); }} className={`relative flex min-h-11 shrink-0 items-center gap-1.5 px-1 text-[12.5px] font-semibold after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full ${view === item.key ? "text-[#0C7064] after:bg-[#0C7064]" : "text-olive-mute after:bg-transparent hover:text-olive"}`}><item.icon size={15} />{item.label}</button>)}</nav>
-        <div className="mb-1.5 flex items-center gap-2 rounded-xl bg-mint-pale/50 px-3.5 py-1.5 text-[#0C7064]"><WalletCards size={16} /><div><span className="block text-[10px] text-olive-mute">我的可用积分</span><b className="mono text-[17px] leading-tight">{(wallet?.balance ?? 0).toLocaleString()}</b></div></div>
+        {billingEnabled
+          ? <div className="mb-1.5 flex items-center gap-2 rounded-xl bg-mint-pale/50 px-3.5 py-1.5 text-[#0C7064]"><WalletCards size={16} /><div><span className="block text-[10px] text-olive-mute">我的可用积分</span><b className="mono text-[17px] leading-tight">{(wallet?.balance ?? 0).toLocaleString()}</b></div></div>
+          : <div className="mb-1.5 rounded-xl bg-mint-pale/50 px-3.5 py-2 text-[12px] font-semibold text-[#0C7064]">本机构注册与测评免积分</div>}
       </div>
     </header>
     {view === "launch" && <AssessmentLaunch key={retest ? `${retest.assignmentId}:${retest.studentUserId}:${retest.title}` : "new"} retest={retest} onClearRetest={() => setRetest(null)} onOpenReport={openReport} onOpenCoaching={onOpenCoaching} />}

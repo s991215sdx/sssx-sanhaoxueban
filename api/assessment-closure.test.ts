@@ -139,6 +139,34 @@ describe("测评到期、取消和复测（模拟事务）", () => {
     }));
   });
 
+  it("免积分机构的学员直接提交不进入伴学师钱包检查", async () => {
+    const mock = mockDb([
+      [], [],
+      [{ orgId: 7, edition: "org", settings: { services: { pointsBilling: false } } }],
+    ]);
+    const saved = await persistAssessmentResult(mock.db, {
+      userId: 101,
+      outcome: { kind: "e3", result: { abilities: [] } },
+      answers: { ratings: Array(70).fill(3), openAnswers: ["目标", "困难", "计划"] },
+      submissionKey: "org-billing-disabled-direct-submit",
+    });
+    expect(saved).toMatchObject({ kind: "e3", resultId: 1, assignmentId: null });
+    expect(mock.inserts[0]?.values.submissionKey).toBe("org-billing-disabled-direct-submit");
+    expect(debitMock).not.toHaveBeenCalled();
+  });
+
+  it("免积分机构发起测评保存零价快照，零积分任务不写扣费", async () => {
+    const mock = mockDb([
+      [{ edition: "org", settings: { services: { pointsBilling: false } } }], [],
+    ]);
+    const result = await createAssessmentActivity(mock.db, me, {
+      requestKey: "org-billing-disabled-launch", studentIds: [101], selections: ["e3"], title: "免积分测评",
+    });
+    expect(result).toEqual({ activityId: 1, duplicate: false });
+    expect(mock.inserts.find((row) => row.table === assessmentActivityItems)?.values.priceSnapshot).toBe(0);
+    expect(debitMock).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ amount: 0, kind: "e3" }));
+  });
+
   it("复测新建 20 积分组合任务并保留原结果与复测来源", async () => {
     const completedAt = new Date(Date.now() - 210 * 24 * 60 * 60 * 1000);
     const source = {
@@ -151,7 +179,7 @@ describe("测评到期、取消和复测（模拟事务）", () => {
       source.assignment,
       { id: 41, activityItemId: 10, status: "completed", studentUserId: 101, completedAt, resultId: 89 },
     ];
-    const mock = mockDb([[source], sourcePackage, []]);
+    const mock = mockDb([[source], sourcePackage, [{ edition: "org", settings: null }], []]);
     const result = await createAssessmentActivity(mock.db, me, { requestKey: "retest-request-001", studentIds: [101], selections: ["xuanke_free"], title: "选科复测", retestOfAssignmentId: 40 });
     expect(result).toEqual({ activityId: 1, duplicate: false });
     expect(mock.inserts.find((row) => row.table === assessmentActivityItems)?.values.priceSnapshot).toBe(20);

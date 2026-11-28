@@ -47,8 +47,11 @@ function ReportAccessEditor({
           />
         </button>
         <span className="text-[13px] font-bold text-olive">开放测评报告功能</span>
-        <span className="text-[11.5px] text-olive-mute">扫码注册的客户，客户端可直接查看下方勾选的报告</span>
+        <span className="text-[11.5px] text-olive-mute">扫码注册的家长/学员端可直接查看下方勾选的报告</span>
       </label>
+      <p className="mt-1.5 pl-[50px] text-[11px] leading-relaxed text-olive-mute/85">
+        只决定家长/学员在自己的账号里能看到哪些报告。发码的伴学师本人不受此开关限制——经他这张码注册的学员，他始终能查看完整报告。
+      </p>
       {on && (
         <>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -392,6 +395,9 @@ export default function InviteChannelsTab() {
             kinds={assessKinds}
             saving={create.isPending}
             billable={data?.currentBillingEnabled ?? false}
+            nonBillableNote={data?.currentBillingDisabled
+              ? "本机构已关闭积分扣费：扫码注册和后续测评均免积分，不要求伴学师个人钱包。"
+              : undefined}
             onSave={(on, kinds) => {
               setAssessOn(on);
               setAssessKinds(kinds);
@@ -493,9 +499,11 @@ export default function InviteChannelsTab() {
                             ? "平台公共码 · 不按机构积分扣费"
                             : c.legacyPlatformChannel
                               ? "平台代发历史码 · 免机构积分"
-                              : c.billingEnabled
-                                ? `每成功注册 1 人扣 ${inviteAssessmentQuote(!!c.assessmentAccess, c.assessmentKinds).total} 积分`
-                                : "机构版 · 发码人无效，请重新建码"}
+                              : c.billingDisabled
+                                ? "本机构已关闭积分扣费 · 注册与测评免积分"
+                                : c.billingEnabled
+                                  ? `每成功注册 1 人扣 ${inviteAssessmentQuote(!!c.assessmentAccess, c.assessmentKinds).total} 积分`
+                                  : "机构版 · 发码人无效，请重新建码"}
                       </span>
                     </div>
                     <div className="mt-2.5 flex flex-wrap gap-2">
@@ -562,9 +570,11 @@ export default function InviteChannelsTab() {
                           nonBillableNote={
                             c.edition === "school"
                               ? "校园版注册及测评不消耗积分；学员注册人数上限由平台超管设置。"
-                              : c.legacyPlatformChannel || c.orgId == null
-                                ? "平台公共或平台代发历史渠道不消耗机构积分。"
-                                : "该机构历史渠道的发码人已失效，请重新建码；当前渠道不能完成新注册。"
+                              : c.billingDisabled
+                                ? "本机构已关闭积分扣费：扫码注册和后续测评均免积分，不要求伴学师个人钱包。"
+                                : c.legacyPlatformChannel || c.orgId == null
+                                  ? "平台公共或平台代发历史渠道不消耗机构积分。"
+                                  : "该机构历史渠道的发码人已失效，请重新建码；当前渠道不能完成新注册。"
                           }
                           onSave={(on, kinds) =>
                             setAssessments.mutate(

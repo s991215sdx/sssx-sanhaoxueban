@@ -100,6 +100,7 @@ export default function Tutor() {
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const orgView = !campusView && user?.orgId != null;
+  const pointsEnabled = schoolCtx?.services?.pointsBilling !== false;
   /* 支持左侧「积分管理」等深链直达；无权限的 section 参数回退学员管理。 */
   const sectionOptions = ["students", "assessments", "parentdisc", "coaching", "points", "training"] as const;
   type TutorSection = (typeof sectionOptions)[number];
@@ -108,7 +109,7 @@ export default function Tutor() {
   const canOpenSection = requestedSection === "students" || requestedSection === "assessments"
     || (requestedSection === "parentdisc" && (user?.orgId != null || user?.role === "admin"))
     || (!campusView && requestedSection === "training")
-    || (orgView && (requestedSection !== "points" || user?.role === "admin"));
+    || (orgView && (requestedSection !== "points" || (user?.role === "admin" && pointsEnabled)));
   const section: TutorSection = canOpenSection ? requestedSection : "students";
   const sectionTitle = section === "assessments" ? "测评中心"
     : section === "parentdisc" ? "家长扫码"
@@ -181,7 +182,7 @@ export default function Tutor() {
               { key: "students", label: "学员管理", visible: true },
               { key: "assessments", label: "测评中心", visible: orgView || campusView },
               { key: "parentdisc", label: "家长扫码", visible: user?.orgId != null || user?.role === "admin" },
-              { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
+              { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" && pointsEnabled },
               { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
           ).filter((t) => t.visible).map((t) => (
@@ -305,6 +306,11 @@ export default function Tutor() {
                     )}
                     {s.hasMulti && <span className="chip !py-0.5 !text-[10.5px] text-olive">多元 ✓</span>}
                     {s.hasAcademics && <span className="chip !py-0.5 !text-[10.5px] text-olive">学业目标 ✓</span>}
+                    {s.invitedByMe && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-butter-pale px-2 py-0.5 text-[10.5px] font-semibold text-brand">
+                        我的码 · 报告可看
+                      </span>
+                    )}
                     {/* V55：家长/学员点了「请伴学师推送报告」——橙色提醒，推送后自动消失 */}
                     {s.reportPushRequestedAt && !s.reportReleased && (
                       <span className="inline-flex items-center gap-1 rounded-full border border-[#E3B53A99] bg-[#FAF0CC] px-2 py-0.5 text-[10.5px] font-semibold text-[#8A6500]">
@@ -336,7 +342,7 @@ export default function Tutor() {
           {!campusView && <section className="pt-3">
             <h2 className="text-[17px] font-bold text-olive">邀请注册 · 我的二维码</h2>
             <p className="mt-1 text-[12.5px] leading-relaxed text-olive-mute">
-              生成你自己的注册二维码发给家长（可打印、可复制链接）：通过你的码注册的学员<b className="text-olive">自动归到你名下</b>。学员注册后默认只显示测评中心，在上方学员卡里可以逐人开启更多功能。
+              生成你自己的注册二维码发给家长（可打印、可复制链接）：通过你的码注册的学员<b className="text-olive">自动归到你名下</b>，他的测评报告<b className="text-olive">你始终能看</b>。学员注册后默认只显示测评中心，在上方学员卡里可以逐人开启更多功能。
             </p>
             <div className="mt-3">
               <InviteChannelsTab />
@@ -364,7 +370,7 @@ export default function Tutor() {
         </section>
       )}
 
-      {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
+      {orgView && user?.role === "admin" && pointsEnabled && section === "points" && <OrgPointsPanel />}
 
       {section === "parentdisc" && (user?.orgId != null || user?.role === "admin") && <ParentDiscPanel />}
 

@@ -4,6 +4,7 @@ import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { orgPointAccounts, orgPointLedger } from "@db/schema";
 import { coachingCases, organizations, users } from "@db/schema";
 import { DEFAULT_ORG_POINTS } from "@contracts/orgService";
+import { pointsBillingEnabled } from "@contracts/edition";
 import type { getDb } from "./queries/connection";
 
 export type PointDb = ReturnType<typeof getDb>;
@@ -140,9 +141,9 @@ export async function adjustOrgPoints(db: PointDb, input: { orgId: number; actor
 
 export async function debitPoints(tx: PointTx, input: { orgId: number; payerUserId: number; actorUserId: number; amount: number; eventKey: string } & EntryMeta): Promise<void> {
   if (input.amount === 0) return;
-  /* 最后一道版本红线：校园版无论从哪个旧入口进入，都不读钱包、不写积分流水。 */
-  const [org] = await tx.select({ edition: organizations.edition }).from(organizations).where(eq(organizations.id, input.orgId)).for("update");
-  if (org?.edition === "school") return;
+  /* 最后一道红线：校园版及免积分机构无论从哪个旧入口进入，都不读钱包、不写流水。 */
+  const [org] = await tx.select({ edition: organizations.edition, settings: organizations.settings }).from(organizations).where(eq(organizations.id, input.orgId)).for("update");
+  if (org?.edition === "school" || !pointsBillingEnabled(org?.settings)) return;
   const payer = (await lockAccounts(tx, input.orgId, [input.payerUserId])).get(input.payerUserId);
   if (!payer) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "伴学师暂无积分钱包，请联系机构管理员分配" });
   await writeLedger(tx, payer, -input.amount, { ...input, actorUserId: input.actorUserId, type: "assessment_debit", eventGroup: input.eventKey });
