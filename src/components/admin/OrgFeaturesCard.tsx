@@ -54,6 +54,14 @@ const SERVICE_MANUAL: Record<OrgServiceKey, { summary: string; points: string[] 
       "关闭后：教职人员默认可查看本机构学员的报告",
     ],
   },
+  pointsBilling: {
+    summary: "机构积分钱包与测评计费总开关，由平台超管按机构配置。",
+    points: [
+      "开启后：扫码注册、发起测评和学员直接提交按目录价格扣伴学师积分",
+      "关闭后：本机构注册与测评全流程免积分，不再要求伴学师个人钱包",
+      "历史积分余额和流水保留，不会因关闭开关而清零",
+    ],
+  },
 };
 
 export default function OrgFeaturesCard({ defaultOpen = false }: { defaultOpen?: boolean }) {

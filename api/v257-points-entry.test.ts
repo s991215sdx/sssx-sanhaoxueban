@@ -15,10 +15,11 @@ describe("v257 机构管理员积分管理直达入口", () => {
 
   it("工作台读取 section 深链，无权限参数回退学员管理", () => {
     expect(tutor).toContain('searchParams.get("section")');
-    expect(tutor).toContain('requestedSection !== "points" || user?.role === "admin"');
+    expect(tutor).toContain('requestedSection !== "points" || (user?.role === "admin" && pointsEnabled)');
     expect(tutor).toContain("canOpenSection ? requestedSection : \"students\"");
     expect(tutor).toContain('params.set("section", next)');
-    expect(tutor).toContain('{orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}');
+    expect(tutor).toContain('visible: orgView && user?.role === "admin" && pointsEnabled');
+    expect(tutor).toContain('{orgView && user?.role === "admin" && pointsEnabled && section === "points" && <OrgPointsPanel />}');
   });
 
   it("保留机构分配页面并递增版本号", () => {

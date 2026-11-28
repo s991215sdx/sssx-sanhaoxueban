@@ -9,6 +9,7 @@ import { adjustOrgPoints, allocateOrgPoints, initializeOrgPoints, pointOverview,
 import { cancelAssessmentItem, cancelAssessmentStudent, createAssessmentActivity, listAssessmentActivities, listAssessmentActivityEvents, myAssessmentAssignments, myCompletedAssignments, remindAssessmentActivity, rescheduleAssessmentActivity, startAssessmentAssignment } from "./assessmentActivities";
 import { listAssessmentReports } from "./assessmentReports";
 import { requireOrgStaff } from "./orgAccess";
+import { servicesForOrg } from "./orgServices";
 
 function platformOrg(ctx: { user: { role: "tutor" | "user" | "admin" | "jiaowu"; orgId: number | null } }, orgId: number): number {
   if (!isPlatformAdmin(ctx.user)) throw new TRPCError({ code: "FORBIDDEN", message: "仅平台超管可调整机构总积分" });
@@ -16,7 +17,7 @@ function platformOrg(ctx: { user: { role: "tutor" | "user" | "admin" | "jiaowu";
 }
 
 export const orgServiceRouter = createRouter({
-  catalog: tutorQuery.query(() => ({
+  catalog: tutorQuery.query(async ({ ctx }) => ({
     packages: ASSESSMENT_PACKAGES,
     singles: INVITE_ASSESS_KINDS.map((k) => selectionFor(k.key)!),
     courses: COURSE_CATALOG,
@@ -24,6 +25,7 @@ export const orgServiceRouter = createRouter({
     students: 200,
     recommendedPoints: recommendedOrgPoints(200),
     defaultPoints: DEFAULT_ORG_POINTS,
+    billingEnabled: (await servicesForOrg(getDb(), requireOrgStaff(ctx.user))).pointsBilling,
   })),
 
   myWallet: tutorQuery.query(({ ctx }) => walletBalance(getDb(), requireOrgStaff(ctx.user), ctx.user.id)),

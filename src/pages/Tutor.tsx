@@ -100,6 +100,7 @@ export default function Tutor() {
   const [releaseFor, setReleaseFor] = useState<number | null>(null);
   const [q, setQ] = useState("");
   const orgView = !campusView && user?.orgId != null;
+  const pointsEnabled = schoolCtx?.services?.pointsBilling !== false;
   /* 支持左侧「积分管理」等深链直达；无权限的 section 参数回退学员管理。 */
   const sectionOptions = ["students", "assessments", "parentdisc", "coaching", "points", "training"] as const;
   type TutorSection = (typeof sectionOptions)[number];
@@ -108,7 +109,7 @@ export default function Tutor() {
   const canOpenSection = requestedSection === "students" || requestedSection === "assessments"
     || (requestedSection === "parentdisc" && (user?.orgId != null || user?.role === "admin"))
     || (!campusView && requestedSection === "training")
-    || (orgView && (requestedSection !== "points" || user?.role === "admin"));
+    || (orgView && (requestedSection !== "points" || (user?.role === "admin" && pointsEnabled)));
   const section: TutorSection = canOpenSection ? requestedSection : "students";
   const sectionTitle = section === "assessments" ? "测评中心"
     : section === "parentdisc" ? "家长扫码"
@@ -181,7 +182,7 @@ export default function Tutor() {
               { key: "students", label: "学员管理", visible: true },
               { key: "assessments", label: "测评中心", visible: orgView || campusView },
               { key: "parentdisc", label: "家长扫码", visible: user?.orgId != null || user?.role === "admin" },
-              { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" },
+              { key: "points", label: "积分管理", visible: orgView && user?.role === "admin" && pointsEnabled },
               { key: "training", label: "陪跑训练专栏", visible: !campusView },
             ] as const
           ).filter((t) => t.visible).map((t) => (
@@ -364,7 +365,7 @@ export default function Tutor() {
         </section>
       )}
 
-      {orgView && user?.role === "admin" && section === "points" && <OrgPointsPanel />}
+      {orgView && user?.role === "admin" && pointsEnabled && section === "points" && <OrgPointsPanel />}
 
       {section === "parentdisc" && (user?.orgId != null || user?.role === "admin") && <ParentDiscPanel />}
 

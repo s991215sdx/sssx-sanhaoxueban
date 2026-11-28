@@ -7,6 +7,7 @@ import { assertStudentAccess, requireOrgStaff, type StaffUser } from "./orgAcces
 import { debitPoints, refundOriginalDebitTx } from "./orgPoints";
 import { syncAssessmentActivityStatus } from "./assessmentActivityStatus";
 import { queueCoachingNotification } from "./coachingNotifications";
+import { servicesForOrg } from "./orgServices";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -68,6 +69,7 @@ export async function createAssessmentActivity(db: Db, me: StaffUser, input: { r
     if (activity.createdBy !== me.id || activity.orgId !== orgId) throw new TRPCError({ code: "CONFLICT", message: "发起标识已被占用，请刷新重试" });
     return { activityId: activity.id, duplicate: true as const };
   };
+  const billingEnabled = (await servicesForOrg(db, orgId)).pointsBilling;
   const [old] = await db.select().from(assessmentActivities).where(eq(assessmentActivities.requestKey, input.requestKey)).limit(1);
   const duplicate = ownedActivity(old);
   if (duplicate) return duplicate;
@@ -82,7 +84,7 @@ export async function createAssessmentActivity(db: Db, me: StaffUser, input: { r
       for (let index = 0; index < selections.length; index++) {
         const selection = selections[index];
         const [{ id: itemId }] = await tx.insert(assessmentActivityItems).values({ activityId, selectionKey: selection.key,
-          title: selection.title, includedKinds: selection.kinds, priceSnapshot: selection.price, category: selection.category, sortOrder: index }).$returningId();
+          title: selection.title, includedKinds: selection.kinds, priceSnapshot: billingEnabled ? selection.price : 0, category: selection.category, sortOrder: index }).$returningId();
         for (const studentUserId of studentIds) {
           let firstAssignmentId: number | null = null;
           for (const kind of selection.kinds) {
@@ -90,7 +92,7 @@ export async function createAssessmentActivity(db: Db, me: StaffUser, input: { r
               retestOfAssignmentId: input.retestOfAssignmentId ?? null }).$returningId();
             firstAssignmentId ??= id;
           }
-          await debitPoints(tx, { orgId, payerUserId: me.id, actorUserId: me.id, amount: selection.price,
+          await debitPoints(tx, { orgId, payerUserId: me.id, actorUserId: me.id, amount: billingEnabled ? selection.price : 0,
             eventKey: `assessment:item:${itemId}:student:${studentUserId}`, activityId, assignmentId: firstAssignmentId,
             studentUserId, kind: selection.key, reason: `${input.retestOfAssignmentId ? "复测" : "发起测评"}：${selection.title}` });
         }

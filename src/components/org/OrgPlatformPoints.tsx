@@ -3,9 +3,9 @@ import { Coins, SlidersHorizontal } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { DEFAULT_ORG_POINTS } from "@contracts/orgService";
 
-export default function OrgPlatformPoints({ orgs }: { orgs: { id: number; name: string; brandName: string; edition: "school" | "org" }[] }) {
+export default function OrgPlatformPoints({ orgs }: { orgs: { id: number; name: string; brandName: string; edition: "school" | "org"; settings?: { services?: { pointsBilling?: boolean } } | null }[] }) {
   const utils = trpc.useUtils();
-  const institutionOrgs = orgs.filter((o) => o.edition === "org");
+  const institutionOrgs = orgs.filter((o) => o.edition === "org" && o.settings?.services?.pointsBilling !== false);
   const [orgId, setOrgId] = useState(0);
   const [initialAmount, setInitialAmount] = useState(DEFAULT_ORG_POINTS);
   const [delta, setDelta] = useState(1000);

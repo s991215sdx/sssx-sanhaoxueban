@@ -160,7 +160,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const showTutorTraining = showCoach && !campusMgr && !campusTutor;
   const showTutorLibrary = showCoach && !campusMgr && schoolCtx?.services?.library !== false;
   /* 机构管理员直达积分分配；校园版无积分，平台超管仍走机构管理中的总积分调整。 */
-  const showOrgPoints = isAdmin && !isPlatformAdmin && user?.orgId != null && schoolCtx?.edition === "org" && schoolCtx.campus === false;
+  const showOrgPoints = isAdmin && !isPlatformAdmin && user?.orgId != null && schoolCtx?.edition === "org" && schoolCtx.campus === false && schoolCtx.services?.pointsBilling !== false;
   /* v229：资料库功能被平台超管关闭时，学校版菜单同步隐藏该入口 */
   const schoolGroups = campusMgr
     ? (schoolCtx?.services?.library === false
