@@ -13,7 +13,7 @@ describe("v256 多机构身份的伴学师名单隔离", () => {
   const router = read("api/router.ts");
 
   it("伴学师和管理员都先按当前机构取数，再按当前身份过滤", () => {
-    if (!/listStudents\(getDb\(\), ctx\.user\.orgId\)/.test(coach))
+    if (!/const db = getDb\(\);[\s\S]*listStudents\(db, ctx\.user\.orgId\)/.test(coach))
       throw new Error("缺：myStudents 当前机构范围");
     if (/ctx\.user\.role === "admin" \? ctx\.user\.orgId : null/.test(coach))
       throw new Error("残留：伴学师全量拉取策略");

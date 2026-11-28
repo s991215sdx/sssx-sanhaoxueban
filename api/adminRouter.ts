@@ -305,6 +305,12 @@ export const adminRouter = createRouter({
           .limit(1)
       )[0];
       const grant = input.reportAccess !== false;
+      if (!grant) {
+        const { isInviteeOfTutor } = await import("./tutorAccess");
+        if (await isInviteeOfTutor(db, input.tutorUserId, input.studentUserId)) {
+          throw new Error("这位学员是扫该伴学师自己的码注册的，报告始终可看；如需限制，请先更换学员的注册渠道");
+        }
+      }
       if (existing) {
         await db
           .update(studentTutor)
