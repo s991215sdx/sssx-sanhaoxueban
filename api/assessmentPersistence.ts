@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { assessmentActivities, assessmentActivityItems, assessmentAssignments, assessmentResults, organizations, orgPointAccounts, studentProfile, studentTutor, users } from "@db/schema";
 import { assessmentCredits } from "@contracts/orgService";
+import { pointsBillingEnabled } from "@contracts/edition";
 import { getDb } from "./queries/connection";
 import { debitPoints, type PointTx } from "./orgPoints";
 import { syncAssessmentActivityStatus } from "./assessmentActivityStatus";
@@ -87,11 +88,12 @@ export async function persistAssessmentResult(
         }
         if (["cancelled", "completed", "expired"].includes(hit.assignment.status)) throw new TRPCError({ code: "CONFLICT", message: "该测评任务已结束，请让伴学师重新发起" });
       }
-      const [student] = await tx.select({ orgId: users.orgId, edition: organizations.edition }).from(users)
+      const [student] = await tx.select({ orgId: users.orgId, edition: organizations.edition, settings: organizations.settings }).from(users)
         .leftJoin(organizations, eq(organizations.id, users.orgId)).where(eq(users.id, input.userId)).limit(1);
       const schoolEdition = student?.edition === "school";
-      const price = hit ? 0 : assessmentCredits(input.outcome.kind);
-      /* 校园版直接作答完全免费，不读取钱包，也不因未配置机构积分而拦截测评。 */
+      const billingEnabled = pointsBillingEnabled(student?.settings);
+      const price = hit || !billingEnabled ? 0 : assessmentCredits(input.outcome.kind);
+      /* 校园版及关闭积分计费的机构直接作答完全免费，不读取钱包。 */
       const payer = !hit && price > 0 && !schoolEdition ? await legacyPayer(tx, input.userId) : null;
       if (!hit && price > 0 && !schoolEdition && student?.orgId != null && !payer) {
         const [pool] = await tx.select({ initialized: orgPointAccounts.initialized }).from(orgPointAccounts)

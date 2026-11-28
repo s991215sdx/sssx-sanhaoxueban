@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import { inviteRegistrations, organizations, studentProfile, studentTutor, users, type InviteChannel, type Organization } from "@db/schema";
 import { DEFAULT_INVITE_MODULES } from "@contracts/studentModules";
-import { campusUserLimit } from "@contracts/edition";
+import { campusUserLimit, pointsBillingEnabled } from "@contracts/edition";
 import { inviteAssessmentQuote } from "@contracts/orgService";
 import { debitPoints, type PointDb, type PointTx } from "./orgPoints";
 
@@ -59,6 +59,7 @@ export async function debitInviteRegistrationTx(
   if (channel.orgId == null) return { credits: 0, billed: false as const, reason: "platform_channel" as const };
   const org = lockedOrg === undefined ? await lockChannelOrganization(tx, channel.orgId) : lockedOrg;
   if (org?.edition === "school") return { credits: 0, billed: false as const, reason: "school_edition" as const };
+  if (!pointsBillingEnabled(org?.settings)) return { credits: 0, billed: false as const, reason: "org_billing_disabled" as const };
   const quote = inviteAssessmentQuote(channel.assessmentAccess, channel.assessmentKinds);
   const payerUserId = channel.tutorId ?? channel.createdBy;
   const [payer] = await tx.select({ id: users.id, orgId: users.orgId, role: users.role, deletedAt: users.deletedAt })

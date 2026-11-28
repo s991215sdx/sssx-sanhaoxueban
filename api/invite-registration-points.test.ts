@@ -37,10 +37,13 @@ describe("渠道注册计价", () => {
 });
 
 /** 带事务快照与机构行锁串行模拟的内存实现；真实 MySQL 并发仍需集成验证。 */
-function registrationDb(initialBalance: number, options: { edition?: "org" | "school"; campusUserLimit?: number | null; initialUserCount?: number; walletAvailable?: boolean } = {}) {
+function registrationDb(initialBalance: number, options: { edition?: "org" | "school"; campusUserLimit?: number | null; pointsBilling?: boolean; initialUserCount?: number; walletAvailable?: boolean } = {}) {
   const payer = { id: 9, orgId: 7, role: "tutor", deletedAt: null, inviteReportDefault: true };
   const account = { id: 1, orgId: 7, ownerUserId: 9, balance: initialBalance, initialized: true, createdAt: new Date(), updatedAt: new Date() };
-  const org = { id: 7, edition: options.edition ?? "org", settings: options.campusUserLimit == null ? null : { campusUserLimit: options.campusUserLimit } };
+  const org = { id: 7, edition: options.edition ?? "org", settings: options.campusUserLimit == null && options.pointsBilling == null ? null : {
+    ...(options.campusUserLimit == null ? {} : { campusUserLimit: options.campusUserLimit }),
+    ...(options.pointsBilling == null ? {} : { services: { pointsBilling: options.pointsBilling } }),
+  } };
   const existingUsers = Array.from({ length: options.initialUserCount ?? 0 }, (_, index) => ({ id: index + 1, unionId: `existing:${index}`, orgId: 7, role: "user" }));
   const state = {
     users: [...existingUsers] as Record<string, unknown>[], profiles: [] as Record<string, unknown>[], tutors: [] as Record<string, unknown>[],
@@ -228,6 +231,26 @@ describe("渠道注册积分事务（内存模拟）", () => {
     expect(mock.state.registrations).toHaveLength(1);
     expect(mock.state.ledger).toHaveLength(0);
     expect(readFileSync("api/inviteRegistration.ts", "utf8")).toContain('.for("update")');
+  });
+
+  it("机构版关闭计费后，无个人钱包也能扫码注册且不写积分流水", async () => {
+    const mock = registrationDb(0, { pointsBilling: false, walletAvailable: false });
+    const result = await createInviteRegistration(mock.db, channel(), input);
+    expect(result.billing).toMatchObject({ credits: 0, billed: false, reason: "org_billing_disabled" });
+    expect(mock.state.users).toHaveLength(1);
+    expect(mock.state.registrations).toHaveLength(1);
+    expect(mock.state.ledger).toHaveLength(0);
+    expect(mock.account.balance).toBe(0);
+  });
+
+  it("统一扣费入口拒绝免积分机构扣费，旧测评路径也不能绕过", async () => {
+    const mock = registrationDb(0, { pointsBilling: false, walletAvailable: false });
+    await expect(debitPoints(mock.tx, {
+      orgId: 7, payerUserId: 9, actorUserId: 9, amount: 10,
+      eventKey: "org-billing-disabled-must-not-debit", studentUserId: 1, kind: "e3",
+    })).resolves.toBeUndefined();
+    expect(mock.state.ledger).toHaveLength(0);
+    expect(mock.account.balance).toBe(0);
   });
 
   it("统一扣费入口也拒绝校园扣费，旧测评提交路径无法绕过", async () => {

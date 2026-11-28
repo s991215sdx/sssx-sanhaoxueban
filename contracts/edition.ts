@@ -42,10 +42,17 @@ export const ORG_SERVICES = [
   { key: "library", label: "资料库", desc: "学习资料库模块" },
   { key: "aiCoach", label: "AI 陪练与树洞", desc: "AI 对话陪练、心情树洞" },
   { key: "reportAssign", label: "报告查看需分配", desc: "开启后伴学老师须管理员逐个分配才能看学员报告" },
+  { key: "pointsBilling", label: "积分钱包与测评扣费", desc: "关闭后本机构扫码注册、发起测评和直接提交测评均不扣积分，也不要求个人钱包" },
 ] as const;
 
 export type OrgServiceKey = (typeof ORG_SERVICES)[number]["key"];
 export type OrgServices = Record<OrgServiceKey, boolean>;
+
+/** 计费默认开启；只有平台超管显式关闭时才免积分，存量机构行为不变。 */
+export function pointsBillingEnabled(settings: unknown): boolean {
+  const services = (settings as { services?: { pointsBilling?: unknown } } | null | undefined)?.services;
+  return services?.pointsBilling !== false;
+}
 
 const EDITION_KEYS = new Set<string>(ORG_EDITIONS.map((e) => e.key));
 const SERVICE_KEYS = new Set<string>(ORG_SERVICES.map((s) => s.key));

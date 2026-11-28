@@ -68,8 +68,8 @@ describe("机构测评计价与课程节奏", () => {
 
   it("唯一键竞争下，同一发起标识返回原活动且不重复建单", async () => {
     const old = { id: 88, orgId: 7, createdBy: 9, requestKey: "request-key-123456" };
-    // 首次查重、学员存在性、统一机构权限校验，最后读取竞争事务已创建的活动。
-    const reads = [[], [{ id: 101, orgId: 7, role: "user", deletedAt: null }], [{ orgId: 7, role: "user" }], [old]];
+    // 机构计费配置、首次查重、学员存在性、统一机构权限校验，最后读取竞争事务已创建的活动。
+    const reads = [[{ edition: "org", settings: null }], [], [{ id: 101, orgId: 7, role: "user", deletedAt: null }], [{ orgId: 7, role: "user" }], [old]];
     const db = {
       select: () => ({ from: () => ({ where: () => ({ limit: async () => reads.shift() ?? [] }) }) }),
       transaction: vi.fn().mockRejectedValue(Object.assign(new Error("Duplicate entry"), { code: "ER_DUP_ENTRY" })),
